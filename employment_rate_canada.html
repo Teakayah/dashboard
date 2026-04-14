@@ -1,6 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- responsive-inject-v2 -->
+  <style>
+    @media (min-width: 769px) {
+      body { max-width: 1200px; margin: 0 auto; }
+      .panel > .card { height: 440px; }
+      canvas { min-height: 380px; }
+    }
+  </style>
+  <script>
+    (function () {
+      if (window.innerWidth < 769) return;
+      Object.defineProperty(window, 'Chart', {
+        configurable: true,
+        set: function (C) {
+          Object.defineProperty(window, 'Chart', { configurable: true, writable: true, value: C });
+          C.defaults.maintainAspectRatio = false;
+        }
+      });
+    })();
+  </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Canadian Labour & Fiscal Dashboard</title>
@@ -42,22 +62,9 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
   <meta property="og:image:height" content="315">
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:image" content="https://teakayah.github.io/dashboard/previews/employment_rate_canada.png">
-  <!-- responsive-inject -->
-  <style>
-    @media (min-width: 769px) {
-      body { max-width: 1200px; margin: 0 auto; }
-      canvas { min-height: 380px; }
-    }
-  </style>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      if (typeof Chart !== 'undefined') {
-        Chart.defaults.maintainAspectRatio = false;
-      }
-    });
-  </script>
 </head>
 <body>
+<!-- back-link-inject --><div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:6px 0 2px;font-size:0.78rem;"><a href="https://teakayah.github.io/dashboard/" style="color:#4f8ef7;text-decoration:none;font-weight:600;">&#8592; DataDashboard</a></div>
 
 <h1>Canadian Labour &amp; Fiscal Dashboard</h1>
 <p class="subtitle">Statistics Canada &mdash; Seasonally adjusted where applicable &middot; Total gender &middot; Provincial governments</p>
