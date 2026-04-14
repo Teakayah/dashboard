@@ -10,6 +10,7 @@ from datetime import datetime
 
 ROOT = Path(__file__).parent
 EXCLUDE = {'index.html', 'generate_index.py'}
+SITE_URL = 'https://teakayah.github.io/dashboard'
 
 # Chart.js-inspired accent colors (top border on cards)
 ACCENT_COLORS = [
@@ -88,6 +89,43 @@ def get_analyses() -> list[dict]:
     return analyses
 
 
+def inject_og_tags(filepath: Path) -> None:
+    """Inject og:image/twitter:image into an analysis HTML file if not already present."""
+    try:
+        content = filepath.read_text(encoding='utf-8')
+    except Exception:
+        return
+
+    if 'og:image' in content:
+        return  # already has one, leave it alone
+
+    stem = filepath.stem
+    image_url = f'{SITE_URL}/previews/{stem}.png'
+
+    # Extract title for og:title
+    title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
+    title = title_match.group(1).strip() if title_match else stem.replace('_', ' ').title()
+    title = title.replace('&amp;', '&').replace('"', '&quot;')
+
+    og_block = (
+        f'\n  <!-- Open Graph / Social Sharing -->'
+        f'\n  <meta property="og:type" content="article">'
+        f'\n  <meta property="og:url" content="{SITE_URL}/{filepath.name}">'
+        f'\n  <meta property="og:title" content="{title}">'
+        f'\n  <meta property="og:image" content="{image_url}">'
+        f'\n  <meta property="og:image:width" content="600">'
+        f'\n  <meta property="og:image:height" content="315">'
+        f'\n  <meta property="twitter:card" content="summary_large_image">'
+        f'\n  <meta property="twitter:image" content="{image_url}">'
+    )
+
+    # Insert just before </head>
+    new_content = re.sub(r'(</head>)', og_block + r'\n\1', content, count=1, flags=re.IGNORECASE)
+    if new_content != content:
+        filepath.write_text(new_content, encoding='utf-8')
+        print(f'  Injected og:image into {filepath.name}')
+
+
 def build_card(analysis: dict, index: int) -> str:
     color = ACCENT_COLORS[index % len(ACCENT_COLORS)]
     chartjs_badge = (
@@ -126,7 +164,7 @@ def build_html(analyses: list[dict]) -> str:
         if not analyses else ''
     )
 
-    og_image_url = 'https://teakayah.github.io/dashboard/preview.png'
+    og_image_url = f'{SITE_URL}/previews/index.png'
     og_desc = f'{count} analysis{"" if count == 1 else "es"} from various datasets and projects.' if count else 'A hub for data analysis visualizations and insights.'
 
     return f'''<!DOCTYPE html>
@@ -138,16 +176,16 @@ def build_html(analyses: list[dict]) -> str:
 
   <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://teakayah.github.io/dashboard/">
+  <meta property="og:url" content="{SITE_URL}/">
   <meta property="og:title" content="DataDashboard">
   <meta property="og:description" content="{og_desc}">
   <meta property="og:image" content="{og_image_url}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
+  <meta property="og:image:width" content="600">
+  <meta property="og:image:height" content="315">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://teakayah.github.io/dashboard/">
+  <meta property="twitter:url" content="{SITE_URL}/">
   <meta property="twitter:title" content="DataDashboard">
   <meta property="twitter:description" content="{og_desc}">
   <meta property="twitter:image" content="{og_image_url}">
@@ -370,6 +408,11 @@ def build_html(analyses: list[dict]) -> str:
 
 def main():
     analyses = get_analyses()
+
+    # Inject og:image into each analysis page
+    for a in analyses:
+        inject_og_tags(ROOT / a['filename'])
+
     html = build_html(analyses)
     output = ROOT / 'index.html'
     output.write_text(html, encoding='utf-8')
