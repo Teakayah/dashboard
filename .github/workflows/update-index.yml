@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'index.html'     # don't re-trigger on the bot's own commit
+      - 'index.html'
+      - 'preview.png'
       - '.github/**'
       - 'output/**'
       - 'source/**'
@@ -22,10 +23,33 @@ jobs:
       - name: Generate index.html
         run: python3 generate_index.py
 
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Screenshot index page → preview.png
+        run: |
+          python3 -m http.server 8765 &
+          SERVER_PID=$!
+          sleep 2
+          python3 - <<'EOF'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page(viewport={'width': 1200, 'height': 630})
+              page.goto('http://localhost:8765')
+              page.wait_for_load_state('networkidle')
+              page.screenshot(path='preview.png')
+              browser.close()
+          print('Saved preview.png')
+          EOF
+          kill $SERVER_PID
+
       - name: Commit if changed
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add index.html preview.png
           git diff --staged --quiet && echo "No changes." || \
-            git commit -m "chore: update index.html [skip ci]" && git push
+            git commit -m "chore: update index and preview [skip ci]" && git push
