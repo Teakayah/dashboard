@@ -28,35 +28,37 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
 
-      - name: Screenshot all pages → previews/
+      - name: Screenshot all pages into previews/
         run: |
           mkdir -p previews
           python3 -m http.server 8765 &
-          SERVER_PID=$!
+          echo $! > /tmp/server.pid
           sleep 2
-          python3 - <<'EOF'
-          import os
+
+          python3 << 'PYEOF'
           from pathlib import Path
           from playwright.sync_api import sync_playwright
 
-          pages = [p.name for p in Path('.').glob('*.html')]
+          pages = [p.name for p in sorted(Path('.').glob('*.html'))]
+          print(f'Screenshotting {len(pages)} page(s): {pages}')
 
           with sync_playwright() as pw:
               browser = pw.chromium.launch()
               for name in pages:
                   stem = Path(name).stem
-                  page = browser.new_page(viewport={'width': 600, 'height': 315})
-                  page.goto(f'http://localhost:8765/{name}')
+                  p = browser.new_page(viewport={'width': 600, 'height': 315})
+                  p.goto(f'http://localhost:8765/{name}')
                   try:
-                      page.wait_for_load_state('networkidle', timeout=8000)
+                      p.wait_for_load_state('networkidle', timeout=8000)
                   except Exception:
-                      pass  # best-effort; some pages load external CDN assets slowly
-                  page.screenshot(path=f'previews/{stem}.png')
-                  page.close()
-                  print(f'  Captured previews/{stem}.png')
+                      pass  # best-effort; CDN assets may be slow
+                  p.screenshot(path=f'previews/{stem}.png')
+                  p.close()
+                  print(f'  Saved previews/{stem}.png')
               browser.close()
-          EOF
-          kill $SERVER_PID
+          PYEOF
+
+          kill $(cat /tmp/server.pid)
 
       - name: Commit if changed
         run: |
