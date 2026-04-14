@@ -1,11 +1,11 @@
-name: CI + auto-merge dev → main
+name: CI + deploy dev → main
 
 on:
   push:
     branches: [dev]
 
 jobs:
-  # ── 1. Run usability tests ──────────────────────────────────────────────────
+  # ── 1. Usability tests ──────────────────────────────────────────────────────
   test:
     name: Usability tests
     runs-on: ubuntu-latest
@@ -24,9 +24,9 @@ jobs:
       - name: Run usability tests
         run: pytest tests/ -v --tb=short
 
-  # ── 2. Merge dev → main if tests passed ────────────────────────────────────
-  auto-merge:
-    name: Merge dev → main
+  # ── 2. Merge + rebuild index + screenshots ──────────────────────────────────
+  deploy:
+    name: Merge dev → main + update previews
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history needed for merge
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Merge dev into main
@@ -43,5 +43,51 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout main
-          git merge origin/dev --no-ff -m "chore: auto-merge dev into main"
-          git push origin main
+          git merge origin/dev --no-ff -m "chore: auto-merge dev into main [skip ci]"
+
+      - name: Generate index.html + inject og tags
+        run: python3 generate_index.py
+
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Screenshot all pages into previews/
+        run: |
+          mkdir -p previews
+          python3 -m http.server 8765 &
+          echo $! > /tmp/server.pid
+          sleep 2
+
+          python3 << 'PYEOF'
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
+
+          pages = [p.name for p in sorted(Path('.').glob('*.html'))]
+          print(f'Screenshotting {len(pages)} page(s): {pages}')
+
+          with sync_playwright() as pw:
+              browser = pw.chromium.launch()
+              for name in pages:
+                  stem = Path(name).stem
+                  p = browser.new_page(viewport={'width': 600, 'height': 315})
+                  p.goto(f'http://localhost:8765/{name}')
+                  try:
+                      p.wait_for_load_state('networkidle', timeout=8000)
+                  except Exception:
+                      pass
+                  p.screenshot(path=f'previews/{stem}.png')
+                  p.close()
+                  print(f'  Saved previews/{stem}.png')
+              browser.close()
+          PYEOF
+
+          kill $(cat /tmp/server.pid)
+
+      - name: Commit and push to main
+        run: |
+          git add index.html previews/ *.html
+          git diff --staged --quiet && echo "Nothing new to commit." || \
+            git commit -m "chore: update index, previews, og tags [skip ci]"
+          git push main main
