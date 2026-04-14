@@ -63,4 +63,4 @@ jobs:
           git add index.html previews/ *.html
           git diff --staged --quiet && echo "Nothing new to commit." || \
             git commit -m "chore: update index, previews, og tags [skip ci]"
-          git push main main
+          git push origin main
