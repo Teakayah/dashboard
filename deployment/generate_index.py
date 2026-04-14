@@ -6,12 +6,21 @@ Run locally or via GitHub Actions on every push.
 
 import argparse
 import re
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 EXCLUDE = {'index.html'}
 SITE_URL = 'https://teakayah.github.io/dashboard'
+
+# Visualization library detection patterns for card badges
+LIBRARY_PATTERNS = {
+    'Chart.js': r'chart\.js|chart\.umd',
+    'D3.js': r'd3(?:\.v\d+)?(?:\.min)?\.js|cdn\.jsdelivr\.net/npm/d3@',
+    'Plotly': r'plotly(?:\.min)?\.js|cdn\.plot\.ly',
+    'Vega': r'vega(?:-lite)?(?:\.min)?\.js',
+}
 
 # Chart.js-inspired accent colors (top border on cards)
 ACCENT_COLORS = [
@@ -24,6 +33,21 @@ ACCENT_COLORS = [
     '#ffce56',  # yellow
     '#2ecc71',  # green
 ]
+
+
+def _git_date(filepath: Path) -> str:
+    """Return 'Mon YYYY' from git log; fall back to mtime if the file isn't committed."""
+    try:
+        result = subprocess.run(
+            ['git', 'log', '-1', '--format=%ci', '--', str(filepath)],
+            capture_output=True, text=True, cwd=str(ROOT),
+        )
+        stamp = result.stdout.strip()
+        if stamp:
+            return datetime.fromisoformat(stamp).strftime('%b %Y')
+    except Exception:
+        pass
+    return datetime.fromtimestamp(filepath.stat().st_mtime).strftime('%b %Y')
 
 
 def extract_meta(filepath: Path) -> dict:
@@ -55,18 +79,18 @@ def extract_meta(filepath: Path) -> dict:
             if len(description) > 120:
                 description = description[:117] + '…'
 
-    # Detect Chart.js usage
-    uses_chartjs = bool(re.search(r'chart\.js|chart\.umd', content, re.IGNORECASE))
+    # Detect visualization libraries
+    tags = [name for name, pattern in LIBRARY_PATTERNS.items()
+            if re.search(pattern, content, re.IGNORECASE)]
 
-    # File modification time
-    mtime = filepath.stat().st_mtime
-    date_str = datetime.fromtimestamp(mtime).strftime('%b %Y')
+    # Date from git log (CI-safe; mtime is always "now" after checkout)
+    date_str = _git_date(filepath)
 
     return {
         'filename': filepath.name,
         'title': title,
         'description': description,
-        'uses_chartjs': uses_chartjs,
+        'tags': tags,
         'date': date_str,
     }
 
@@ -76,7 +100,7 @@ def _fallback(filepath: Path) -> dict:
         'filename': filepath.name,
         'title': filepath.stem.replace('_', ' ').title(),
         'description': '',
-        'uses_chartjs': False,
+        'tags': [],
         'date': '',
     }
 
@@ -114,7 +138,8 @@ RESPONSIVE_PRESETS = {
         }
       });
     })();
-  </script>''',
+  </script>
+  <!-- /responsive-inject -->''',
     },
     'none': {
         'marker': None,
@@ -148,7 +173,7 @@ def inject_responsive(filepath: Path, preset_name: str = 'default') -> None:
         return
 
     content = re.sub(
-        r'\s*<!-- responsive-inject(?:-v\d+)? -->.*?</script>',
+        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject -->)?',
         '',
         content,
         flags=re.DOTALL,
@@ -249,9 +274,7 @@ def inject_og_tags(filepath: Path) -> None:
 
 def build_card(analysis: dict, index: int) -> str:
     color = ACCENT_COLORS[index % len(ACCENT_COLORS)]
-    chartjs_badge = (
-        '<span class="badge">Chart.js</span>' if analysis['uses_chartjs'] else ''
-    )
+    badges_html = ''.join(f'<span class="badge">{tag}</span>' for tag in analysis['tags'])
     desc_html = (
         f'<p class="card-desc">{analysis["description"]}</p>'
         if analysis['description'] else ''
@@ -263,7 +286,7 @@ def build_card(analysis: dict, index: int) -> str:
     return f'''      <a class="card" href="{analysis['filename']}" style="--accent:{color}">
         <div class="card-top">
           <div class="card-title">{analysis['title']}</div>
-          {chartjs_badge}
+          <div class="badges">{badges_html}</div>
         </div>
         {desc_html}
         <div class="card-footer">
@@ -414,8 +437,14 @@ def build_html(analyses: list[dict]) -> str:
       line-height: 1.35;
       flex: 1;
     }}
-    .badge {{
+    .badges {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
       flex-shrink: 0;
+      margin-top: 2px;
+    }}
+    .badge {{
       font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.04em;
@@ -424,7 +453,6 @@ def build_html(analyses: list[dict]) -> str:
       border-radius: 4px;
       padding: 2px 6px;
       white-space: nowrap;
-      margin-top: 2px;
     }}
     .card-desc {{
       font-size: 0.78rem;
@@ -467,8 +495,15 @@ def build_html(analyses: list[dict]) -> str:
       font-size: 0.84em;
     }}
 
-    /* ── Hide on search ──────────────────────────────────────── */
+    /* ── Search match highlight ──────────────────────────────── */
     .card.hidden {{ display: none; }}
+    .card.match {{ background: #fffdf5; box-shadow: 0 1px 6px rgba(0,0,0,0.07), 0 0 0 2px rgba(79,142,247,0.25); }}
+
+    /* ── Keyboard focus ──────────────────────────────────────── */
+    .card:focus-visible {{
+      outline: 2px solid #4f8ef7;
+      outline-offset: 2px;
+    }}
 
     /* ── Footer ─────────────────────────────────────────────── */
     footer {{
@@ -517,7 +552,9 @@ def build_html(analyses: list[dict]) -> str:
     const q = input.value.trim().toLowerCase();
     cards.forEach(c => {{
       const text = c.textContent.toLowerCase();
-      c.classList.toggle('hidden', q !== '' && !text.includes(q));
+      const matches = q !== '' && text.includes(q);
+      c.classList.toggle('hidden', q !== '' && !matches);
+      c.classList.toggle('match', matches);
     }});
   }});
 </script>

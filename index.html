@@ -124,8 +124,14 @@
       line-height: 1.35;
       flex: 1;
     }
-    .badge {
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
       flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .badge {
       font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.04em;
@@ -134,7 +140,6 @@
       border-radius: 4px;
       padding: 2px 6px;
       white-space: nowrap;
-      margin-top: 2px;
     }
     .card-desc {
       font-size: 0.78rem;
@@ -177,8 +182,15 @@
       font-size: 0.84em;
     }
 
-    /* ── Hide on search ──────────────────────────────────────── */
+    /* ── Search match highlight ──────────────────────────────── */
     .card.hidden { display: none; }
+    .card.match { background: #fffdf5; box-shadow: 0 1px 6px rgba(0,0,0,0.07), 0 0 0 2px rgba(79,142,247,0.25); }
+
+    /* ── Keyboard focus ──────────────────────────────────────── */
+    .card:focus-visible {
+      outline: 2px solid #4f8ef7;
+      outline-offset: 2px;
+    }
 
     /* ── Footer ─────────────────────────────────────────────── */
     footer {
@@ -201,7 +213,7 @@
 
 <header>
   <h1>Data<span>Dashboard</span></h1>
-  <div class="header-sub">2 analysis</div>
+  <div class="header-sub">2 analysises</div>
 </header>
 
 <div class="search-bar">
@@ -211,23 +223,23 @@
 <main>
   <div class="grid-label">Analyses</div>
   <div class="grid" id="grid">
-      <a class="card" href="employment_rate_canada.html" style="--accent:#4f8ef7">
+      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#4f8ef7">
         <div class="card-top">
-          <div class="card-title">Canadian Labour & Fiscal Dashboard</div>
-          <span class="badge">Chart.js</span>
+          <div class="card-title">NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</div>
+          <div class="badges"><span class="badge">Chart.js</span></div>
         </div>
-        <p class="card-desc">Statistics Canada &mdash; Seasonally adjusted where applicable &middot; Total gender &middot; Provincial governments</p>
+        <p class="card-desc">Statistics Canada · Table 18-10-0205-01 · Base: December 2016 = 100</p>
         <div class="card-footer">
           <span class="card-date">Apr 2026</span>
           <span class="card-link">View analysis →</span>
         </div>
       </a>
-      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#ff6384">
+      <a class="card" href="employment_rate_canada.html" style="--accent:#ff6384">
         <div class="card-top">
-          <div class="card-title">NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</div>
-          <span class="badge">Chart.js</span>
+          <div class="card-title">Canadian Labour & Fiscal Dashboard</div>
+          <div class="badges"><span class="badge">Chart.js</span></div>
         </div>
-        <p class="card-desc">Statistics Canada · Table 18-10-0205-01 · Base: December 2016 = 100</p>
+        <p class="card-desc">Statistics Canada &mdash; Seasonally adjusted where applicable &middot; Total gender &middot; Provincial governments</p>
         <div class="card-footer">
           <span class="card-date">Apr 2026</span>
           <span class="card-link">View analysis →</span>
@@ -248,7 +260,9 @@
     const q = input.value.trim().toLowerCase();
     cards.forEach(c => {
       const text = c.textContent.toLowerCase();
-      c.classList.toggle('hidden', q !== '' && !text.includes(q));
+      const matches = q !== '' && text.includes(q);
+      c.classList.toggle('hidden', q !== '' && !matches);
+      c.classList.toggle('match', matches);
     });
   });
 </script>
