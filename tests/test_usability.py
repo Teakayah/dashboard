@@ -207,3 +207,29 @@ def test_analysis_page_no_vertical_clip_desktop(page: Page, filename: str):
         }
     """)
     assert clipped is None, f'{filename}: canvas overflows its container — {clipped}'
+
+
+def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.goto(f'{BASE}/employment_rate_canada.html')
+    try:
+        page.wait_for_load_state('networkidle', timeout=8000)
+    except Exception:
+        pass
+
+    def assert_height_stable(toggle_selector: str):
+        page.locator(toggle_selector).click()
+        page.wait_for_timeout(250)
+        heights = []
+        for _ in range(5):
+            heights.append(page.evaluate('document.documentElement.scrollHeight'))
+            page.wait_for_timeout(200)
+        assert max(heights) - min(heights) <= 4, (
+            f'{toggle_selector}: page height keeps changing after switching to province view: {heights}'
+        )
+
+    assert_height_stable('#rate-btnS')
+    page.locator('.tab', has_text='Government Debt').click()
+    assert_height_stable('#debt-btnS')
+    page.locator('.tab', has_text='Population').click()
+    assert_height_stable('#pop-btnS')
