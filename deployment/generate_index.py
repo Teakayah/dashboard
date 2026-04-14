@@ -4,9 +4,10 @@ Generate index.html from all HTML analysis files in the repository root.
 Run locally or via GitHub Actions on every push.
 """
 
+import argparse
 import re
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 EXCLUDE = {'index.html'}
@@ -89,14 +90,17 @@ def get_analyses() -> list[dict]:
     return analyses
 
 
-RESPONSIVE_MARKER = '<!-- responsive-inject-v3 -->'
-
-RESPONSIVE_SNIPPET = '''\
-  <!-- responsive-inject-v3 -->
+RESPONSIVE_PRESETS = {
+    'default': {
+        'marker': '<!-- responsive-inject-v4 -->',
+        'snippet': '''\
+  <!-- responsive-inject-v4 -->
   <style>
     @media (min-width: 769px) {
       body { max-width: 1200px; margin: 0 auto; }
       .panel > .card { height: 440px; }
+      .grid canvas { display: block; width: 100% !important; }
+      .grid .small-card canvas { height: 190px !important; }
     }
   </style>
   <script>
@@ -110,36 +114,60 @@ RESPONSIVE_SNIPPET = '''\
         }
       });
     })();
-  </script>'''
+  </script>''',
+    },
+    'none': {
+        'marker': None,
+        'snippet': None,
+    },
+}
 
 
-def inject_responsive(filepath: Path) -> None:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__.strip())
+    parser.add_argument(
+        '--responsive-preset',
+        choices=sorted(RESPONSIVE_PRESETS),
+        default='default',
+        help='Responsive injection preset to apply to analysis pages.',
+    )
+    return parser.parse_args(argv)
+
+
+def inject_responsive(filepath: Path, preset_name: str = 'default') -> None:
     """Inject responsive desktop layout enhancer into an analysis HTML file.
 
     Injected right after <head> so the Chart.js defineProperty trap runs
     before chart.js itself is loaded (which typically appears in <head>).
     Strips any older version of the injection before re-injecting.
     """
+    preset = RESPONSIVE_PRESETS[preset_name]
     try:
         content = filepath.read_text(encoding='utf-8')
     except Exception:
         return
 
-    if RESPONSIVE_MARKER in content:
-        return  # already up to date
-
-    # Strip any older responsive injection (v1 had no version suffix)
     content = re.sub(
         r'\s*<!-- responsive-inject(?:-v\d+)? -->.*?</script>',
         '',
         content,
         flags=re.DOTALL,
     )
+    if preset_name == 'none':
+        if content != filepath.read_text(encoding='utf-8'):
+            filepath.write_text(content, encoding='utf-8')
+            print(f'  Removed responsive enhancer from {filepath.name}')
+        return
+
+    marker = preset['marker']
+    snippet = preset['snippet']
+    if marker in content:
+        return  # already up to date
 
     # Inject right after <head> so our script runs before chart.js loads
     new_content = re.sub(
         r'(<head[^>]*>)',
-        r'\1\n' + RESPONSIVE_SNIPPET,
+        r'\1\n' + snippet,
         content,
         count=1,
         flags=re.IGNORECASE,
@@ -499,12 +527,13 @@ def build_html(analyses: list[dict]) -> str:
 '''
 
 
-def main():
+def main(argv: list[str] | None = None):
+    args = parse_args(argv)
     analyses = get_analyses()
 
     # Inject enhancements into each analysis page
     for a in analyses:
-        inject_responsive(ROOT / a['filename'])
+        inject_responsive(ROOT / a['filename'], args.responsive_preset)
         inject_back_link(ROOT / a['filename'])
         inject_og_tags(ROOT / a['filename'])
 
