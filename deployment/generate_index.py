@@ -89,39 +89,98 @@ def get_analyses() -> list[dict]:
     return analyses
 
 
-RESPONSIVE_MARKER = '<!-- responsive-inject -->'
+RESPONSIVE_MARKER = '<!-- responsive-inject-v2 -->'
 
 RESPONSIVE_SNIPPET = '''\
-  <!-- responsive-inject -->
+  <!-- responsive-inject-v2 -->
   <style>
     @media (min-width: 769px) {
       body { max-width: 1200px; margin: 0 auto; }
+      .panel > .card { height: 440px; }
       canvas { min-height: 380px; }
     }
   </style>
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      if (typeof Chart !== 'undefined') {
-        Chart.defaults.maintainAspectRatio = false;
-      }
-    });
+    (function () {
+      if (window.innerWidth < 769) return;
+      Object.defineProperty(window, 'Chart', {
+        configurable: true,
+        set: function (C) {
+          Object.defineProperty(window, 'Chart', { configurable: true, writable: true, value: C });
+          C.defaults.maintainAspectRatio = false;
+        }
+      });
+    })();
   </script>'''
 
 
 def inject_responsive(filepath: Path) -> None:
-    """Inject responsive desktop layout enhancer into an analysis HTML file."""
+    """Inject responsive desktop layout enhancer into an analysis HTML file.
+
+    Injected right after <head> so the Chart.js defineProperty trap runs
+    before chart.js itself is loaded (which typically appears in <head>).
+    Strips any older version of the injection before re-injecting.
+    """
     try:
         content = filepath.read_text(encoding='utf-8')
     except Exception:
         return
 
     if RESPONSIVE_MARKER in content:
-        return  # already injected
+        return  # already up to date
 
-    new_content = re.sub(r'(</head>)', RESPONSIVE_SNIPPET + r'\n\1', content, count=1, flags=re.IGNORECASE)
+    # Strip any older responsive injection (v1 had no version suffix)
+    content = re.sub(
+        r'\s*<!-- responsive-inject(?:-v\d+)? -->.*?</script>',
+        '',
+        content,
+        flags=re.DOTALL,
+    )
+
+    # Inject right after <head> so our script runs before chart.js loads
+    new_content = re.sub(
+        r'(<head[^>]*>)',
+        r'\1\n' + RESPONSIVE_SNIPPET,
+        content,
+        count=1,
+        flags=re.IGNORECASE,
+    )
     if new_content != content:
         filepath.write_text(new_content, encoding='utf-8')
         print(f'  Injected responsive enhancer into {filepath.name}')
+
+
+BACK_LINK_MARKER = '<!-- back-link-inject -->'
+
+BACK_LINK_SNIPPET = (
+    '<!-- back-link-inject -->'
+    '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;'
+    'padding:6px 0 2px;font-size:0.78rem;">'
+    f'<a href="{SITE_URL}/" style="color:#4f8ef7;text-decoration:none;font-weight:600;">'
+    '&#8592; DataDashboard</a></div>'
+)
+
+
+def inject_back_link(filepath: Path) -> None:
+    """Inject a 'back to homepage' link right after <body> in an analysis file."""
+    try:
+        content = filepath.read_text(encoding='utf-8')
+    except Exception:
+        return
+
+    if BACK_LINK_MARKER in content:
+        return
+
+    new_content = re.sub(
+        r'(<body[^>]*>)',
+        r'\1\n' + BACK_LINK_SNIPPET,
+        content,
+        count=1,
+        flags=re.IGNORECASE,
+    )
+    if new_content != content:
+        filepath.write_text(new_content, encoding='utf-8')
+        print(f'  Injected back-link into {filepath.name}')
 
 
 def inject_og_tags(filepath: Path) -> None:
@@ -444,9 +503,10 @@ def build_html(analyses: list[dict]) -> str:
 def main():
     analyses = get_analyses()
 
-    # Inject responsive enhancer + og:image into each analysis page
+    # Inject enhancements into each analysis page
     for a in analyses:
         inject_responsive(ROOT / a['filename'])
+        inject_back_link(ROOT / a['filename'])
         inject_og_tags(ROOT / a['filename'])
 
     html = build_html(analyses)
