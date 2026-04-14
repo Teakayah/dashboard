@@ -1,3 +1,4 @@
+import socket
 import subprocess
 import time
 from pathlib import Path
@@ -9,6 +10,17 @@ PORT = 8765
 BASE_URL = f'http://localhost:{PORT}'
 
 
+def _wait_for_server(host: str, port: int, retries: int = 40, interval: float = 0.1) -> None:
+    """Poll until the server accepts connections or raise after timeout."""
+    for _ in range(retries):
+        try:
+            socket.create_connection((host, port), timeout=0.5).close()
+            return
+        except OSError:
+            time.sleep(interval)
+    raise RuntimeError(f'HTTP server did not start on {host}:{port}')
+
+
 @pytest.fixture(scope='session', autouse=True)
 def local_server():
     """Serve the repo root over HTTP for the duration of the test session."""
@@ -18,7 +30,7 @@ def local_server():
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    time.sleep(1)
+    _wait_for_server('localhost', PORT)
     yield proc
     proc.terminate()
     proc.wait()
