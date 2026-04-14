@@ -42,6 +42,20 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
   <meta property="og:image:height" content="315">
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:image" content="https://teakayah.github.io/dashboard/previews/employment_rate_canada.png">
+  <!-- responsive-inject -->
+  <style>
+    @media (min-width: 769px) {
+      body { max-width: 1200px; margin: 0 auto; }
+      canvas { min-height: 380px; }
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof Chart !== 'undefined') {
+        Chart.defaults.maintainAspectRatio = false;
+      }
+    });
+  </script>
 </head>
 <body>
 
