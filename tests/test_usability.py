@@ -168,3 +168,42 @@ def test_analysis_page_no_horizontal_scroll_mobile(page: Page, filename: str):
         f'{filename}: horizontal overflow on mobile '
         f'(scrollWidth={scroll_width} > viewportWidth={viewport_width})'
     )
+
+
+@pytest.mark.parametrize('filename', analysis_pages())
+def test_analysis_page_no_horizontal_scroll_desktop(page: Page, filename: str):
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.goto(f'{BASE}/{filename}')
+    try:
+        page.wait_for_load_state('networkidle', timeout=8000)
+    except Exception:
+        pass
+    scroll_width = page.evaluate('document.body.scrollWidth')
+    viewport_width = page.evaluate('window.innerWidth')
+    assert scroll_width <= viewport_width + 2, (
+        f'{filename}: horizontal overflow on desktop '
+        f'(scrollWidth={scroll_width} > viewportWidth={viewport_width})'
+    )
+
+
+@pytest.mark.parametrize('filename', analysis_pages())
+def test_analysis_page_no_vertical_clip_desktop(page: Page, filename: str):
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.goto(f'{BASE}/{filename}')
+    try:
+        page.wait_for_load_state('networkidle', timeout=8000)
+    except Exception:
+        pass
+    clipped = page.evaluate("""
+        () => {
+            const canvases = document.querySelectorAll('canvas');
+            for (const c of canvases) {
+                const parent = c.parentElement;
+                if (parent && c.offsetHeight > parent.offsetHeight + 5) {
+                    return (c.id || 'canvas') + ': ' + c.offsetHeight + 'px > parent ' + parent.offsetHeight + 'px';
+                }
+            }
+            return null;
+        }
+    """)
+    assert clipped is None, f'{filename}: canvas overflows its container — {clipped}'

@@ -89,15 +89,14 @@ def get_analyses() -> list[dict]:
     return analyses
 
 
-RESPONSIVE_MARKER = '<!-- responsive-inject-v2 -->'
+RESPONSIVE_MARKER = '<!-- responsive-inject-v3 -->'
 
 RESPONSIVE_SNIPPET = '''\
-  <!-- responsive-inject-v2 -->
+  <!-- responsive-inject-v3 -->
   <style>
     @media (min-width: 769px) {
       body { max-width: 1200px; margin: 0 auto; }
       .panel > .card { height: 440px; }
-      canvas { min-height: 380px; }
     }
   </style>
   <script>
