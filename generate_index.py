@@ -114,6 +114,31 @@ def build_card(analysis: dict, index: int) -> str:
       </a>'''
 
 
+def build_og_image() -> str:
+    """Generate an SVG preview image as a data URI."""
+    svg = '''<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#2d3561;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <rect width="1200" height="630" fill="url(#grad)"/>
+    <text x="60" y="140" font-size="72" font-weight="700" fill="#fff" font-family="system-ui, sans-serif">Data<tspan fill="#4f8ef7">Dashboard</tspan></text>
+    <text x="60" y="200" font-size="32" fill="rgba(255,255,255,0.6)" font-family="system-ui, sans-serif">Data Analysis Hub</text>
+    <g transform="translate(900, 450)">
+      <rect x="0" y="0" width="40" height="120" fill="#4f8ef7"/>
+      <rect x="50" y="30" width="40" height="90" fill="#ff6384"/>
+      <rect x="100" y="60" width="40" height="60" fill="#4bc0c0"/>
+      <rect x="150" y="20" width="40" height="100" fill="#ff9f40"/>
+    </g>
+  </svg>'''
+
+    import base64
+    encoded = base64.b64encode(svg.encode()).decode()
+    return f'data:image/svg+xml;base64,{encoded}'
+
+
 def build_html(analyses: list[dict]) -> str:
     count = len(analyses)
     subtitle = f'{count} analysis{"" if count == 1 else "es"}' if count else 'No analyses yet — drop an HTML file here'
@@ -124,12 +149,31 @@ def build_html(analyses: list[dict]) -> str:
         if not analyses else ''
     )
 
+    og_image = build_og_image()
+    og_desc = f'{count} analysis{"" if count == 1 else "es"} from various datasets and projects.' if count else 'A hub for data analysis visualizations and insights.'
+
     return f'''<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DataDashboard</title>
+
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://teakayah.github.io/dashboard/">
+  <meta property="og:title" content="DataDashboard">
+  <meta property="og:description" content="{og_desc}">
+  <meta property="og:image" content="{og_image}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://teakayah.github.io/dashboard/">
+  <meta property="twitter:title" content="DataDashboard">
+  <meta property="twitter:description" content="{og_desc}">
+  <meta property="twitter:image" content="{og_image}">
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
