@@ -8,8 +8,8 @@ import re
 from pathlib import Path
 from datetime import datetime
 
-ROOT = Path(__file__).parent
-EXCLUDE = {'index.html', 'generate_index.py'}
+ROOT = Path(__file__).parent.parent
+EXCLUDE = {'index.html'}
 SITE_URL = 'https://teakayah.github.io/dashboard'
 
 # Chart.js-inspired accent colors (top border on cards)
@@ -87,6 +87,41 @@ def get_analyses() -> list[dict]:
             continue
         analyses.append(extract_meta(html_file))
     return analyses
+
+
+RESPONSIVE_MARKER = '<!-- responsive-inject -->'
+
+RESPONSIVE_SNIPPET = '''\
+  <!-- responsive-inject -->
+  <style>
+    @media (min-width: 769px) {
+      body { max-width: 1200px; margin: 0 auto; }
+      canvas { min-height: 380px; }
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof Chart !== 'undefined') {
+        Chart.defaults.maintainAspectRatio = false;
+      }
+    });
+  </script>'''
+
+
+def inject_responsive(filepath: Path) -> None:
+    """Inject responsive desktop layout enhancer into an analysis HTML file."""
+    try:
+        content = filepath.read_text(encoding='utf-8')
+    except Exception:
+        return
+
+    if RESPONSIVE_MARKER in content:
+        return  # already injected
+
+    new_content = re.sub(r'(</head>)', RESPONSIVE_SNIPPET + r'\n\1', content, count=1, flags=re.IGNORECASE)
+    if new_content != content:
+        filepath.write_text(new_content, encoding='utf-8')
+        print(f'  Injected responsive enhancer into {filepath.name}')
 
 
 def inject_og_tags(filepath: Path) -> None:
@@ -409,8 +444,9 @@ def build_html(analyses: list[dict]) -> str:
 def main():
     analyses = get_analyses()
 
-    # Inject og:image into each analysis page
+    # Inject responsive enhancer + og:image into each analysis page
     for a in analyses:
+        inject_responsive(ROOT / a['filename'])
         inject_og_tags(ROOT / a['filename'])
 
     html = build_html(analyses)

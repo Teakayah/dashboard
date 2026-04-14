@@ -10,7 +10,7 @@ import time
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).parent.parent
 PORT = 8765
 
 
