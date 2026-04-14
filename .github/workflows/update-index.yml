@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths-ignore:
       - 'index.html'
-      - 'preview.png'
+      - 'previews/**'
       - '.github/**'
       - 'output/**'
       - 'source/**'
@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate index.html
+      - name: Generate index.html + inject og:image tags
         run: python3 generate_index.py
 
       - name: Install Playwright
@@ -28,21 +28,33 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
 
-      - name: Screenshot index page → preview.png
+      - name: Screenshot all pages → previews/
         run: |
+          mkdir -p previews
           python3 -m http.server 8765 &
           SERVER_PID=$!
           sleep 2
           python3 - <<'EOF'
+          import os
+          from pathlib import Path
           from playwright.sync_api import sync_playwright
-          with sync_playwright() as p:
-              browser = p.chromium.launch()
-              page = browser.new_page(viewport={'width': 1200, 'height': 630})
-              page.goto('http://localhost:8765')
-              page.wait_for_load_state('networkidle')
-              page.screenshot(path='preview.png')
+
+          pages = [p.name for p in Path('.').glob('*.html')]
+
+          with sync_playwright() as pw:
+              browser = pw.chromium.launch()
+              for name in pages:
+                  stem = Path(name).stem
+                  page = browser.new_page(viewport={'width': 600, 'height': 315})
+                  page.goto(f'http://localhost:8765/{name}')
+                  try:
+                      page.wait_for_load_state('networkidle', timeout=8000)
+                  except Exception:
+                      pass  # best-effort; some pages load external CDN assets slowly
+                  page.screenshot(path=f'previews/{stem}.png')
+                  page.close()
+                  print(f'  Captured previews/{stem}.png')
               browser.close()
-          print('Saved preview.png')
           EOF
           kill $SERVER_PID
 
@@ -50,6 +62,6 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html preview.png
+          git add index.html previews/ *.html
           git diff --staged --quiet && echo "No changes." || \
-            git commit -m "chore: update index and preview [skip ci]" && git push
+            git commit -m "chore: update index, previews, og tags [skip ci]" && git push
