@@ -20,6 +20,9 @@
   <meta property="twitter:title" content="DataDashboard">
   <meta property="twitter:description" content="2 analysises from various datasets and projects.">
   <meta property="twitter:image" content="https://teakayah.github.io/dashboard/previews/index.png">
+
+  <!-- RSS / Atom feed -->
+  <link rel="alternate" type="application/atom+xml" title="DataDashboard feed" href="https://teakayah.github.io/dashboard/feed.xml">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -223,23 +226,23 @@
 <main>
   <div class="grid-label">Analyses</div>
   <div class="grid" id="grid">
-      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#4f8ef7">
-        <div class="card-top">
-          <div class="card-title">NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</div>
-          <div class="badges"><span class="badge">Chart.js</span></div>
-        </div>
-        <p class="card-desc">Statistics Canada · Table 18-10-0205-01 · Base: December 2016 = 100</p>
-        <div class="card-footer">
-          <span class="card-date">Apr 2026</span>
-          <span class="card-link">View analysis →</span>
-        </div>
-      </a>
-      <a class="card" href="employment_rate_canada.html" style="--accent:#ff6384">
+      <a class="card" href="employment_rate_canada.html" style="--accent:#4f8ef7">
         <div class="card-top">
           <div class="card-title">Canadian Labour & Fiscal Dashboard</div>
           <div class="badges"><span class="badge">Chart.js</span></div>
         </div>
         <p class="card-desc">Statistics Canada &mdash; Seasonally adjusted where applicable &middot; Total gender &middot; Provincial governments</p>
+        <div class="card-footer">
+          <span class="card-date">Apr 2026</span>
+          <span class="card-link">View analysis →</span>
+        </div>
+      </a>
+      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#ff6384">
+        <div class="card-top">
+          <div class="card-title">NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</div>
+          <div class="badges"><span class="badge">Chart.js</span></div>
+        </div>
+        <p class="card-desc">Statistics Canada · Table 18-10-0205-01 · Base: December 2016 = 100</p>
         <div class="card-footer">
           <span class="card-date">Apr 2026</span>
           <span class="card-link">View analysis →</span>
@@ -251,6 +254,8 @@
 
 <footer>
   Auto-generated · <a href="https://github.com/Teakayah/dashboard" style="color:#bbb">Teakayah/dashboard</a>
+  &nbsp;·&nbsp;
+  <a href="https://teakayah.github.io/dashboard/feed.xml" style="color:#bbb" title="Subscribe via RSS/Atom">&#x2605; RSS feed</a>
 </footer>
 
 <script>

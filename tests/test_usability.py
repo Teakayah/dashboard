@@ -86,10 +86,18 @@ def test_index_search_finds_match(page: Page):
 
 def test_index_footer_github_link(page: Page):
     page.goto(BASE)
-    link = page.locator('footer a')
-    expect(link).to_be_visible()
-    href = link.get_attribute('href')
+    github_link = page.locator('footer a[href*="github.com"]')
+    expect(github_link).to_be_visible()
+    href = github_link.get_attribute('href')
     assert href and 'github.com' in href
+
+
+def test_index_footer_rss_link(page: Page):
+    page.goto(BASE)
+    rss_link = page.locator('footer a[href*="feed.xml"]')
+    expect(rss_link).to_be_visible()
+    href = rss_link.get_attribute('href')
+    assert href and 'feed.xml' in href
 
 
 def test_index_no_js_errors(page: Page):

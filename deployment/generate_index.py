@@ -353,6 +353,9 @@ def build_html(analyses: list[dict]) -> str:
   <meta property="twitter:title" content="DataDashboard">
   <meta property="twitter:description" content="{og_desc}">
   <meta property="twitter:image" content="{og_image_url}">
+
+  <!-- RSS / Atom feed -->
+  <link rel="alternate" type="application/atom+xml" title="DataDashboard feed" href="{SITE_URL}/feed.xml">
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
@@ -563,6 +566,8 @@ def build_html(analyses: list[dict]) -> str:
 
 <footer>
   Auto-generated · <a href="https://github.com/Teakayah/dashboard" style="color:#bbb">Teakayah/dashboard</a>
+  &nbsp;·&nbsp;
+  <a href="{SITE_URL}/feed.xml" style="color:#bbb" title="Subscribe via RSS/Atom">&#x2605; RSS feed</a>
 </footer>
 
 <script>
