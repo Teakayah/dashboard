@@ -5,6 +5,7 @@ Run locally or via GitHub Actions on every push.
 """
 
 import argparse
+import json
 import re
 import subprocess
 from datetime import datetime
@@ -35,6 +36,16 @@ ACCENT_COLORS = [
 ]
 
 
+DESCRIPTIONS_FILE = ROOT / 'descriptions.json'
+
+
+def load_descriptions() -> dict:
+    """Load pre-generated AI descriptions from descriptions.json (committed to repo)."""
+    if DESCRIPTIONS_FILE.exists():
+        return json.loads(DESCRIPTIONS_FILE.read_text(encoding='utf-8'))
+    return {}
+
+
 def _git_date(filepath: Path) -> str:
     """Return 'Mon YYYY' from git log; fall back to mtime if the file isn't committed."""
     try:
@@ -50,8 +61,12 @@ def _git_date(filepath: Path) -> str:
     return datetime.fromtimestamp(filepath.stat().st_mtime).strftime('%b %Y')
 
 
-def extract_meta(filepath: Path) -> dict:
-    """Extract title, description, and tags from an HTML file."""
+def extract_meta(filepath: Path, descriptions: dict | None = None) -> dict:
+    """Extract title, description, and tags from an HTML file.
+
+    Falls back to pre-generated descriptions from descriptions.json when no
+    <meta name="description"> or subtitle element is found in the HTML.
+    """
     try:
         content = filepath.read_text(encoding='utf-8', errors='ignore')
     except Exception:
@@ -78,6 +93,10 @@ def extract_meta(filepath: Path) -> dict:
             description = re.sub(r'\s+', ' ', description)
             if len(description) > 120:
                 description = description[:117] + '…'
+
+    # Fallback: use pre-generated description from descriptions.json
+    if not description and descriptions:
+        description = descriptions.get(filepath.name, '')
 
     # Detect visualization libraries
     tags = [name for name, pattern in LIBRARY_PATTERNS.items()
@@ -106,11 +125,12 @@ def _fallback(filepath: Path) -> dict:
 
 
 def get_analyses() -> list[dict]:
+    descriptions = load_descriptions()
     analyses = []
     for html_file in sorted(ROOT.glob('*.html'), key=lambda p: p.stat().st_mtime, reverse=True):
         if html_file.name.lower() in EXCLUDE:
             continue
-        analyses.append(extract_meta(html_file))
+        analyses.append(extract_meta(html_file, descriptions=descriptions))
     return analyses
 
 
