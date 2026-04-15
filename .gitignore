@@ -2,7 +2,7 @@
 source/*
 output/*
 .DS_Store
-tests/__pycache__/**
+conftest*
 .pytest_cache/**
 *.pyc
 *.pyo
@@ -10,3 +10,4 @@ tests/__pycache__/**
 __pycache__/**
 tests_*
 .digest/**
+tests/**

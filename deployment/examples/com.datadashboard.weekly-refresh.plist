@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
+<!--
+  macOS LaunchAgent — DataDashboard weekly refresh
+  ══════════════════════════════════════════════════
+
+  SETUP (one-time):
+    1. Copy to your LaunchAgents folder:
+         cp deployment/examples/com.datadashboard.weekly-refresh.plist \
+            ~/Library/LaunchAgents/
+    3. Load it:
+         launchctl load ~/Library/LaunchAgents/com.datadashboard.weekly-refresh.plist
+
+  VERIFY it is loaded:
+    launchctl list | grep datadashboard
+
+  RUN MANUALLY (to test):
+    launchctl start com.datadashboard.weekly-refresh
+
+  UNLOAD / DISABLE:
+    launchctl unload ~/Library/LaunchAgents/com.datadashboard.weekly-refresh.plist
+
+  LOGS:
+    tail -f /tmp/datadashboard-refresh.log
+    tail -f /tmp/datadashboard-refresh.err
+
+  NOTE: The agent only fires when your Mac is awake at the scheduled time.
+  If the machine is asleep, launchd will run the job the next time it wakes.
+-->
+
+<plist version="1.0">
+<dict>
+
+  <!-- Unique label — must match the filename -->
+  <key>Label</key>
+  <string>com.datadashboard.weekly-refresh</string>
+
+  <!-- ── Command ────────────────────────────────────────────────────────── -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/opt/python@3.14/bin/python3</string>
+    <string>/Users/nicolasleclerc/Documents/_project/github DataDashboard/deployment/refresh.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/nicolasleclerc/Documents/_project/github DataDashboard</string>
+
+  <!-- ── Schedule: every Monday at 07:00 local time ─────────────────────── -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>1</integer>   <!-- 1 = Monday (0 = Sunday) -->
+    <key>Hour</key>
+    <integer>7</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <!-- ── Logs ──────────────────────────────────────────────────────────── -->
+  <key>StandardOutPath</key>
+  <string>/tmp/datadashboard-refresh.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/datadashboard-refresh.err</string>
+
+  <!-- ── Environment ───────────────────────────────────────────────────── -->
+  <!--
+    launchd agents start with a minimal PATH. Inherit PATH from your shell
+    by adding /usr/local/bin and Homebrew paths so git, python3, etc. resolve.
+  -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/opt/homebrew/opt/python@3.14/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>HOME</key>
+    <string>/Users/nicolasleclerc</string>
+  </dict>
+
+  <!-- Restart on crash — false keeps things quiet for a weekly job -->
+  <key>KeepAlive</key>
+  <false/>
+
+</dict>
+</plist>
