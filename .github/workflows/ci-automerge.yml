@@ -48,6 +48,9 @@ jobs:
       - name: Generate index.html + inject og tags
         run: python3 deployment/generate_index.py
 
+      - name: Generate feed.xml
+        run: python3 deployment/generate_feed.py
+
       - name: Install Playwright
         run: |
           pip install playwright
@@ -60,9 +63,9 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html previews/ *.html
+          git add index.html feed.xml previews/ *.html
           git diff --staged --quiet && echo "Nothing new to commit." || \
-            git commit -m "chore: update index, previews, og tags [skip ci]"
+            git commit -m "chore: update index, feed, previews, og tags [skip ci]"
           git push origin main
 
   # ── 3. Notify on failure ────────────────────────────────────────────────────
