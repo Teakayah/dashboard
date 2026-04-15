@@ -1,3 +1,4 @@
+.env
 source/*
 output/*
 .DS_Store
@@ -7,3 +8,5 @@ tests/__pycache__/**
 *.pyo
 *.pyd
 __pycache__/**
+tests_*
+.digest/**
