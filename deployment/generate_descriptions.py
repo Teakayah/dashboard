@@ -5,9 +5,9 @@ Generate AI descriptions for HTML analysis files and save them to descriptions.j
 Run this locally whenever you add or update an analysis page. The output file is
 committed to the repo so that GitHub Actions never needs to call Ollama.
 
-Configuration (via environment variables or a .env file):
-    OLLAMA_URL    Ollama HTTP endpoint  (default: http://localhost:11434/api/generate)
-    OLLAMA_MODEL  Model to use          (default: gemma4:e4b)
+Configuration: copy .env.example to .env and fill in your values.
+    OLLAMA_URL    Ollama HTTP endpoint
+    OLLAMA_MODEL  Model to use
 
 Usage:
     python deployment/generate_descriptions.py              # update missing entries
@@ -18,6 +18,7 @@ Usage:
 import argparse
 import json
 import os
+import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -25,10 +26,33 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 DESCRIPTIONS_FILE = ROOT / 'descriptions.json'
 EXCLUDE = {'index.html'}
-
-OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434/api/generate')
-OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'gemma4:e4b')
 OLLAMA_TIMEOUT = 30  # seconds
+
+
+def _load_dotenv() -> None:
+    """Parse ROOT/.env and inject values into os.environ (does not overwrite existing vars)."""
+    env_file = ROOT / '.env'
+    if not env_file.exists():
+        return
+    for line in env_file.read_text(encoding='utf-8').splitlines():
+        line = line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, _, value = line.partition('=')
+        key = key.strip()
+        value = value.strip()
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_dotenv()
+
+_missing = [v for v in ('OLLAMA_URL', 'OLLAMA_MODEL') if not os.environ.get(v)]
+if _missing:
+    sys.exit(f"Error: missing required env var(s): {', '.join(_missing)}. Copy .env.example to .env and fill in the values.")
+
+OLLAMA_URL = os.environ['OLLAMA_URL']
+OLLAMA_MODEL = os.environ['OLLAMA_MODEL']
 
 
 def ollama_describe(content: str, filename: str) -> str:
