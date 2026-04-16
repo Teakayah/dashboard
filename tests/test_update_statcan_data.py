@@ -9,10 +9,11 @@ def test_fetch_changed_since_success():
     mock_payload = [
         {"productId": "1010001501"},
         {"productId": "1410028701"},
-        {"productId": "9999999901"}, # Not in our TABLES
+        {"productId": "9999999901"}, # Not in our (mocked) _OUR_IDS
     ]
 
-    with patch('urllib.request.urlopen') as mock_urlopen:
+    with patch('urllib.request.urlopen') as mock_urlopen, \
+         patch('deployment.update_statcan_data._OUR_IDS', {"10100015", "14100287"}):
         mock_response = MagicMock()
         mock_response.read.return_value = json.dumps(mock_payload).encode('utf-8')
         mock_response.__enter__.return_value = mock_response
