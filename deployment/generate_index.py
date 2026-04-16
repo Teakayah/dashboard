@@ -179,47 +179,42 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def inject_responsive(filepath: Path, preset_name: str = 'default') -> None:
-    """Inject responsive desktop layout enhancer into an analysis HTML file.
+def inject_responsive(content: str, filename: str, preset_name: str = 'default') -> str:
+    """Inject responsive desktop layout enhancer into an analysis HTML file content.
 
     Injected right after <head> so the Chart.js defineProperty trap runs
     before chart.js itself is loaded (which typically appears in <head>).
     Strips any older version of the injection before re-injecting.
     """
     preset = RESPONSIVE_PRESETS[preset_name]
-    try:
-        content = filepath.read_text(encoding='utf-8')
-    except Exception:
-        return
 
-    content = re.sub(
+    new_content = re.sub(
         r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject -->)?',
         '',
         content,
         flags=re.DOTALL,
     )
     if preset_name == 'none':
-        if content != filepath.read_text(encoding='utf-8'):
-            filepath.write_text(content, encoding='utf-8')
-            print(f'  Removed responsive enhancer from {filepath.name}')
-        return
+        if new_content != content:
+            print(f'  Removed responsive enhancer from {filename}')
+        return new_content
 
     marker = preset['marker']
     snippet = preset['snippet']
-    if marker in content:
-        return  # already up to date
+    if marker in new_content:
+        return new_content  # already up to date
 
     # Inject right after <head> so our script runs before chart.js loads
-    new_content = re.sub(
+    final_content = re.sub(
         r'(<head[^>]*>)',
         r'\1\n' + snippet,
-        content,
+        new_content,
         count=1,
         flags=re.IGNORECASE,
     )
-    if new_content != content:
-        filepath.write_text(new_content, encoding='utf-8')
-        print(f'  Injected responsive enhancer into {filepath.name}')
+    if final_content != new_content:
+        print(f'  Injected responsive enhancer into {filename}')
+    return final_content
 
 
 BACK_LINK_MARKER = '<!-- back-link-inject -->'
@@ -233,15 +228,10 @@ BACK_LINK_SNIPPET = (
 )
 
 
-def inject_back_link(filepath: Path) -> None:
-    """Inject a 'back to homepage' link right after <body> in an analysis file."""
-    try:
-        content = filepath.read_text(encoding='utf-8')
-    except Exception:
-        return
-
+def inject_back_link(content: str, filename: str) -> str:
+    """Inject a 'back to homepage' link right after <body> in an analysis file content."""
     if BACK_LINK_MARKER in content:
-        return
+        return content
 
     new_content = re.sub(
         r'(<body[^>]*>)',
@@ -251,21 +241,15 @@ def inject_back_link(filepath: Path) -> None:
         flags=re.IGNORECASE,
     )
     if new_content != content:
-        filepath.write_text(new_content, encoding='utf-8')
-        print(f'  Injected back-link into {filepath.name}')
+        print(f'  Injected back-link into {filename}')
+    return new_content
 
 
-def inject_og_tags(filepath: Path) -> None:
-    """Inject og:image/twitter:image into an analysis HTML file if not already present."""
-    try:
-        content = filepath.read_text(encoding='utf-8')
-    except Exception:
-        return
-
+def inject_og_tags(content: str, filename: str, stem: str) -> str:
+    """Inject og:image/twitter:image into an analysis HTML file content if not already present."""
     if 'og:image' in content:
-        return  # already has one, leave it alone
+        return content  # already has one, leave it alone
 
-    stem = filepath.stem
     image_url = f'{SITE_URL}/previews/{stem}.png'
 
     # Extract title for og:title
@@ -276,7 +260,7 @@ def inject_og_tags(filepath: Path) -> None:
     og_block = (
         f'\n  <!-- Open Graph / Social Sharing -->'
         f'\n  <meta property="og:type" content="article">'
-        f'\n  <meta property="og:url" content="{SITE_URL}/{filepath.name}">'
+        f'\n  <meta property="og:url" content="{SITE_URL}/{filename}">'
         f'\n  <meta property="og:title" content="{title}">'
         f'\n  <meta property="og:image" content="{image_url}">'
         f'\n  <meta property="og:image:width" content="600">'
@@ -288,8 +272,8 @@ def inject_og_tags(filepath: Path) -> None:
     # Insert just before </head>
     new_content = re.sub(r'(</head>)', og_block + r'\n\1', content, count=1, flags=re.IGNORECASE)
     if new_content != content:
-        filepath.write_text(new_content, encoding='utf-8')
-        print(f'  Injected og:image into {filepath.name}')
+        print(f'  Injected og:image into {filename}')
+    return new_content
 
 
 def build_card(analysis: dict, index: int) -> str:
@@ -595,9 +579,18 @@ def main(argv: list[str] | None = None):
 
     # Inject enhancements into each analysis page
     for a in analyses:
-        inject_responsive(ROOT / a['filename'], args.responsive_preset)
-        inject_back_link(ROOT / a['filename'])
-        inject_og_tags(ROOT / a['filename'])
+        filepath = ROOT / a['filename']
+        try:
+            content = filepath.read_text(encoding='utf-8')
+        except Exception:
+            continue
+
+        new_content = inject_responsive(content, a['filename'], args.responsive_preset)
+        new_content = inject_back_link(new_content, a['filename'])
+        new_content = inject_og_tags(new_content, a['filename'], filepath.stem)
+
+        if new_content != content:
+            filepath.write_text(new_content, encoding='utf-8')
 
     html = build_html(analyses)
     output = ROOT / 'index.html'

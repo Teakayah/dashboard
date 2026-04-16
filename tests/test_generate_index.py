@@ -11,56 +11,67 @@ def load_generate_index_module():
     return module
 
 
-def test_inject_responsive_default_adds_v4_marker_and_canvas_rules(tmp_path):
+def test_inject_responsive_default_adds_v4_marker_and_canvas_rules():
     module = load_generate_index_module()
-    html = tmp_path / 'analysis.html'
-    html.write_text('<html><head></head><body><div class="grid"></div></body></html>', encoding='utf-8')
+    initial_content = '<html><head></head><body><div class="grid"></div></body></html>'
 
-    module.inject_responsive(html)
+    content = module.inject_responsive(initial_content, 'analysis.html')
 
-    content = html.read_text(encoding='utf-8')
     assert '<!-- responsive-inject-v4 -->' in content
     assert '.grid canvas { display: block; width: 100% !important; }' in content
     assert '.grid .small-card canvas { height: 190px !important; }' in content
 
 
-def test_inject_responsive_is_idempotent(tmp_path):
+def test_inject_responsive_is_idempotent():
     module = load_generate_index_module()
-    html = tmp_path / 'analysis.html'
-    html.write_text('<html><head></head><body></body></html>', encoding='utf-8')
+    initial_content = '<html><head></head><body></body></html>'
 
-    module.inject_responsive(html)
-    first = html.read_text(encoding='utf-8')
-    module.inject_responsive(html)
-    second = html.read_text(encoding='utf-8')
+    first = module.inject_responsive(initial_content, 'analysis.html')
+    second = module.inject_responsive(first, 'analysis.html')
 
     assert first == second
     assert second.count('<!-- responsive-inject-v4 -->') == 1
 
 
-def test_inject_responsive_replaces_older_versions(tmp_path):
+def test_inject_responsive_replaces_older_versions():
     module = load_generate_index_module()
-    html = tmp_path / 'analysis.html'
-    html.write_text(
-        '\n'.join([
-            '<html>',
-            '<head>',
-            '  <!-- responsive-inject-v3 -->',
-            '  <style>.old { color: red; }</style>',
-            '  <script>window.oldResponsive = true;</script>',
-            '</head>',
-            '<body></body>',
-            '</html>',
-        ]),
-        encoding='utf-8',
-    )
+    initial_content = '\n'.join([
+        '<html>',
+        '<head>',
+        '  <!-- responsive-inject-v3 -->',
+        '  <style>.old { color: red; }</style>',
+        '  <script>window.oldResponsive = true;</script>',
+        '</head>',
+        '<body></body>',
+        '</html>',
+    ])
 
-    module.inject_responsive(html)
+    content = module.inject_responsive(initial_content, 'analysis.html')
 
-    content = html.read_text(encoding='utf-8')
     assert '<!-- responsive-inject-v3 -->' not in content
     assert 'window.oldResponsive = true' not in content
     assert content.count('<!-- responsive-inject-v4 -->') == 1
+
+
+def test_inject_functions_handle_missing_tags():
+    module = load_generate_index_module()
+    content_no_tags = "<html><body>No head here</body></html>"
+
+    # inject_responsive expects <head>
+    res1 = module.inject_responsive(content_no_tags, "test.html")
+    assert res1 == content_no_tags
+    assert isinstance(res1, str)
+
+    content_no_body = "<html><head></head>No body here</html>"
+    # inject_back_link expects <body>
+    res2 = module.inject_back_link(content_no_body, "test.html")
+    assert res2 == content_no_body
+    assert isinstance(res2, str)
+
+    # inject_og_tags expects </head>
+    res3 = module.inject_og_tags(content_no_tags, "test.html", "test")
+    assert res3 == content_no_tags
+    assert isinstance(res3, str)
 
 
 def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, monkeypatch):
