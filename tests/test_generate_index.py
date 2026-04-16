@@ -53,6 +53,27 @@ def test_inject_responsive_replaces_older_versions():
     assert content.count('<!-- responsive-inject-v4 -->') == 1
 
 
+def test_inject_functions_handle_missing_tags():
+    module = load_generate_index_module()
+    content_no_tags = "<html><body>No head here</body></html>"
+
+    # inject_responsive expects <head>
+    res1 = module.inject_responsive(content_no_tags, "test.html")
+    assert res1 == content_no_tags
+    assert isinstance(res1, str)
+
+    content_no_body = "<html><head></head>No body here</html>"
+    # inject_back_link expects <body>
+    res2 = module.inject_back_link(content_no_body, "test.html")
+    assert res2 == content_no_body
+    assert isinstance(res2, str)
+
+    # inject_og_tags expects </head>
+    res3 = module.inject_og_tags(content_no_tags, "test.html", "test")
+    assert res3 == content_no_tags
+    assert isinstance(res3, str)
+
+
 def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, monkeypatch):
     module = load_generate_index_module()
     analysis = tmp_path / 'sample.html'
