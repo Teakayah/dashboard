@@ -2,7 +2,28 @@ import json
 from datetime import date
 from unittest.mock import MagicMock, patch
 
-from deployment.update_statcan_data import fetch_changed_since
+from deployment.update_statcan_data import fetch_changed_since, _normalize_pid
+
+def test_normalize_pid():
+    # 10-digit IDs ending in '01'
+    assert _normalize_pid('1010001501') == '10100015'
+    assert _normalize_pid(1010001501) == '10100015'
+
+    # 10-digit IDs not ending in '01'
+    assert _normalize_pid('1010001502') == '1010001502'
+
+    # Normal 8-digit IDs
+    assert _normalize_pid('10100015') == '10100015'
+    assert _normalize_pid(10100015) == '10100015'
+
+    # Inputs with leading/trailing whitespaces
+    assert _normalize_pid(' 1010001501 ') == '10100015'
+    assert _normalize_pid(' 10100015 ') == '10100015'
+
+    # Other lengths/strings
+    assert _normalize_pid('short') == 'short'
+    assert _normalize_pid('thisiswaytoolong') == 'thisiswaytoolong'
+    assert _normalize_pid('10100015010') == '10100015010'
 
 def test_fetch_changed_since_success():
     # Mock data returned by Stats Canada API
