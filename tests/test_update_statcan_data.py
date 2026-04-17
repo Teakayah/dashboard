@@ -24,7 +24,7 @@ def test_fetch_changed_since_success():
         assert result == {"10100015", "14100287"}
         mock_urlopen.assert_called_once()
 
-def test_fetch_changed_since_error():
+def test_fetch_changed_since_error(capsys):
     with patch('urllib.request.urlopen') as mock_urlopen:
         mock_urlopen.side_effect = Exception("API failure")
 
@@ -32,3 +32,6 @@ def test_fetch_changed_since_error():
 
         assert result is None
         mock_urlopen.assert_called_once()
+
+        captured = capsys.readouterr()
+        assert "WARNING: changed-cubes API call failed (API failure) — will download all." in captured.out
