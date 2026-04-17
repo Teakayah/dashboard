@@ -549,7 +549,7 @@ def build_html(analyses: list[dict]) -> str:
 </main>
 
 <footer>
-  Auto-generated · <a href="https://github.com/Teakayah/dashboard" style="color:#bbb">Teakayah/dashboard</a>
+  Auto-generated · <a href="https://github.com/Teakayah/dashboard" style="color:#bbb" target="_blank" rel="noopener noreferrer">Teakayah/dashboard</a>
   &nbsp;·&nbsp;
   <a href="{SITE_URL}/feed.xml" style="color:#bbb" title="Subscribe via RSS/Atom">&#x2605; RSS feed</a>
 </footer>
