@@ -61,17 +61,12 @@ def _git_date(filepath: Path) -> str:
     return datetime.fromtimestamp(filepath.stat().st_mtime).strftime('%b %Y')
 
 
-def extract_meta(filepath: Path, descriptions: dict | None = None) -> dict:
-    """Extract title, description, and tags from an HTML file.
+def extract_meta(filepath: Path, content: str, descriptions: dict | None = None) -> dict:
+    """Extract title, description, and tags from an HTML file content.
 
     Falls back to pre-generated descriptions from descriptions.json when no
     <meta name="description"> or subtitle element is found in the HTML.
     """
-    try:
-        content = filepath.read_text(encoding='utf-8', errors='ignore')
-    except Exception:
-        return _fallback(filepath)
-
     # Title
     title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
     title = title_match.group(1).strip() if title_match else filepath.stem.replace('_', ' ').title()
@@ -122,16 +117,6 @@ def _fallback(filepath: Path) -> dict:
         'tags': [],
         'date': '',
     }
-
-
-def get_analyses() -> list[dict]:
-    descriptions = load_descriptions()
-    analyses = []
-    for html_file in sorted(ROOT.glob('*.html'), key=lambda p: p.stat().st_mtime, reverse=True):
-        if html_file.name.lower() in EXCLUDE:
-            continue
-        analyses.append(extract_meta(html_file, descriptions=descriptions))
-    return analyses
 
 
 RESPONSIVE_PRESETS = {
@@ -575,19 +560,30 @@ def build_html(analyses: list[dict]) -> str:
 
 def main(argv: list[str] | None = None):
     args = parse_args(argv)
-    analyses = get_analyses()
+    descriptions = load_descriptions()
+    analyses = []
 
-    # Inject enhancements into each analysis page
-    for a in analyses:
-        filepath = ROOT / a['filename']
+    # Process all HTML files, extract meta, and inject enhancements
+    html_files = [p for p in ROOT.glob('*.html') if p.name.lower() not in EXCLUDE]
+    # Sort files by modification time before we potentially write back and alter their mtime
+    html_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+
+    for filepath in html_files:
         try:
-            content = filepath.read_text(encoding='utf-8')
+            content = filepath.read_text(encoding='utf-8', errors='ignore')
         except Exception:
+            # Fallback for file read errors if any
+            analyses.append(_fallback(filepath))
             continue
 
-        new_content = inject_responsive(content, a['filename'], args.responsive_preset)
-        new_content = inject_back_link(new_content, a['filename'])
-        new_content = inject_og_tags(new_content, a['filename'], filepath.stem)
+        # Extract meta
+        meta = extract_meta(filepath, content, descriptions=descriptions)
+        analyses.append(meta)
+
+        # Inject enhancements
+        new_content = inject_responsive(content, meta['filename'], args.responsive_preset)
+        new_content = inject_back_link(new_content, meta['filename'])
+        new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
 
         if new_content != content:
             filepath.write_text(new_content, encoding='utf-8')
