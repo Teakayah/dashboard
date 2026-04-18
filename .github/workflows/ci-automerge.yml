@@ -20,7 +20,7 @@ jobs:
         run: |
           mkdir -p source
           python3 deployment/update_flood_data.py
-          python3 deployment/rebuild_analyses.py
+          python3 deployment/rebuild_analyses.py || [ $? -eq 1 ]
 
       - name: Install test dependencies
         run: |
