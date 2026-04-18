@@ -38,11 +38,6 @@
           C.defaults.maintainAspectRatio = false;
         }
       });
-      const v = '4';
-      if (window.location.search.includes('v=' + v)) return;
-      const url = new URL(window.location.href);
-      url.searchParams.set('v', v);
-      window.history.replaceState({}, '', url.toString());
     })();
   </script>
   <!-- /responsive-inject -->
