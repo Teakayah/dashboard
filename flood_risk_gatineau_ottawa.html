@@ -4,28 +4,10 @@
   <!-- responsive-inject-v4 -->
   <style>
     @media (min-width: 769px) {
-      html, body { height: 100vh; overflow: hidden; margin: 0; padding: 0; }
-      body { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; padding: 12px 24px !important; box-sizing: border-box; }
-      .panel { flex: 1; min-height: 0; display: none; flex-direction: column; overflow: hidden; }
-      .panel.active { display: flex !important; }
-      .panel > .card { flex: 1; min-height: 0; padding: 12px 20px 20px !important; margin-bottom: 8px !important; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-      .gauge-chart-grid { flex: 1; min-height: 0; display: flex !important; gap: 16px !important; margin-bottom: 0 !important; }
-      .gauge-chart-wrap { flex: 1; min-height: 0 !important; height: auto !important; display: flex; flex-direction: column; margin-top: 4px !important; margin-bottom: 0 !important; }
-      .canvas-container { flex: 1; min-height: 0; position: relative; width: 100%; }
-      .canvas-container canvas { position: absolute !important; top: 0; left: 0; width: 100% !important; height: 100% !important; }
-      #floodMap { flex: 1; min-height: 0 !important; height: 100% !important; position: relative; }
-      .flood-note { margin-top: 2px !important; font-size: 0.65rem !important; margin-bottom: 0 !important; flex-shrink: 0; }
-      .vitals-grid { margin-bottom: 8px !important; gap: 8px !important; display: grid !important; grid-template-columns: repeat(6, 1fr) !important; flex-shrink: 0; }
-      .vital-card { padding: 6px !important; }
-      .vital-value { font-size: 1.1rem !important; }
-      .gauge-hero { margin-bottom: 8px !important; flex-shrink: 0; }
-      .threshold-legend { margin-bottom: 4px !important; flex-shrink: 0; }
-      h1 { font-size: 1.1rem !important; margin-bottom: 0 !important; flex-shrink: 0; }
-      .subtitle { margin-bottom: 8px !important; font-size: 0.72rem !important; flex-shrink: 0; }
-      .disclaimer { padding: 6px 10px !important; margin-bottom: 8px !important; font-size: 0.7rem !important; flex-shrink: 0; }
-      .tabs { margin-bottom: 8px !important; flex-shrink: 0; }
-      footer { margin-top: 4px !important; padding-bottom: 4px !important; font-size: 0.65rem !important; flex-shrink: 0; }
-      #impactStatement { margin-top: 4px !important; margin-bottom: 8px !important; padding: 4px 8px !important; font-size: 0.7rem !important; flex-shrink: 0; }
+      body { max-width: 1200px; margin: 0 auto; }
+      .panel > .card { height: 440px; }
+      .grid canvas { display: block; width: 100% !important; }
+      .grid .small-card canvas { height: 190px !important; }
     }
   </style>
   <script>
@@ -38,11 +20,6 @@
           C.defaults.maintainAspectRatio = false;
         }
       });
-      const v = '4';
-      if (window.location.search.includes('v=' + v)) return;
-      const url = new URL(window.location.href);
-      url.searchParams.set('v', v);
-      window.history.replaceState({}, '', url.toString());
     })();
   </script>
   <!-- /responsive-inject -->
