@@ -2,8 +2,29 @@ import json
 from datetime import date
 from unittest.mock import MagicMock, patch
 
-from deployment.update_statcan_data import fetch_changed_since, _get_end_period
+from deployment.update_statcan_data import fetch_changed_since, _get_end_period, _normalize_pid
 import csv
+
+def test_normalize_pid():
+    # 10-digit IDs ending in '01'
+    assert _normalize_pid('1010001501') == '10100015'
+    assert _normalize_pid(1010001501) == '10100015'
+
+    # 10-digit IDs not ending in '01'
+    assert _normalize_pid('1010001502') == '1010001502'
+
+    # Normal 8-digit IDs
+    assert _normalize_pid('10100015') == '10100015'
+    assert _normalize_pid(10100015) == '10100015'
+
+    # Inputs with leading/trailing whitespaces
+    assert _normalize_pid(' 1010001501 ') == '10100015'
+    assert _normalize_pid(' 10100015 ') == '10100015'
+
+    # Other lengths/strings
+    assert _normalize_pid('short') == 'short'
+    assert _normalize_pid('thisiswaytoolong') == 'thisiswaytoolong'
+    assert _normalize_pid('10100015010') == '10100015010'
 
 def test_fetch_changed_since_success():
     # Mock data returned by Stats Canada API
@@ -25,9 +46,24 @@ def test_fetch_changed_since_success():
         assert result == {"10100015", "14100287"}
         mock_urlopen.assert_called_once()
 
-def test_fetch_changed_since_error():
+def test_fetch_changed_since_error(capsys):
     with patch('urllib.request.urlopen') as mock_urlopen:
         mock_urlopen.side_effect = Exception("API failure")
+
+        result = fetch_changed_since(date(2023, 1, 1))
+
+        assert result is None
+        mock_urlopen.assert_called_once()
+        captured = capsys.readouterr()
+        assert "WARNING: changed-cubes API call failed (API failure) — will download all." in captured.out
+
+def test_fetch_changed_since_invalid_json():
+    """Test that invalid JSON from Stats Canada API returns None."""
+    with patch('urllib.request.urlopen') as mock_urlopen:
+        mock_response = MagicMock()
+        mock_response.read.return_value = b'invalid json'
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
 
         result = fetch_changed_since(date(2023, 1, 1))
 

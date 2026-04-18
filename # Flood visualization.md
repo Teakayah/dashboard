@@ -4,7 +4,7 @@
 
 ### What was built
 4-tab self-contained HTML dashboard:
-1. **Britannia Gauge** — draggable slider (58.0–62.0m MASL) updates a horizontal bar chart with threshold annotations (59.60m watch, 60.44m 2017 peak, 60.70m 2019 peak). Color-coded risk badge.
+1. **Station 02KF005 Gauge** — draggable slider (58.0–62.0m MASL) updates a horizontal bar chart with threshold annotations (59.60m watch, 60.44m 2017 peak, 60.70m 2019 peak). Color-coded risk badge.
 2. **Historical Floods** — Chart.js bar chart for notable years (1974, 1976, 1998, 2008, 2017, 2019, 2020, 2023) with red/orange/blue coloring vs. the 59.60m threshold.
 3. **Snowpack Risk** — SWE % of normal line chart (Oct–Apr) showing 2017 season, 2019 season, current (simulated), and long-term average. Risk interpretation box below.
 4. **Flood Map** — Leaflet.js map (OpenStreetMap tiles) with gauge station markers (02KF005 Britannia, 02KF009 Hull) and approximate 2019 flood extent polygons for Britannia Village and Pointe-Gatineau.
@@ -26,7 +26,7 @@
 
 I want to make a visualization for the flood risk of gatineau ottawa based on the snow pake in the north and the rainy season. I want it to be also historical and present information on past flooding for the region. What are the dataset I should be looking into importing. I want to make a britannia gauge.
 
-To build a flood risk visualization for the Gatineau-Ottawa region that replicates the "Britannia Gauge" simulator, you need to integrate three specific data layers: Real-Time Hydrometry (River Levels), Snow Water Equivalent (Predictive Volume), and Geospatial Flood Polygons (Impact Zones).
+To build a flood risk visualization for the Gatineau-Ottawa region that replicates the "Station 02KF005" simulator, you need to integrate three specific data layers: Real-Time Hydrometry (River Levels), Snow Water Equivalent (Predictive Volume), and Geospatial Flood Polygons (Impact Zones).
 The primary datasets you must import are:
 1. River Levels & Flow (The "Gauge" Data)
 Source: Water Survey of Canada (Environment & Climate Change Canada)
