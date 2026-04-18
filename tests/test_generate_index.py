@@ -17,7 +17,7 @@ def test_inject_responsive_default_adds_v4_marker_and_canvas_rules():
 
     content = module.inject_responsive(initial_content, 'analysis.html')
 
-    assert '<!-- responsive-inject-v4 -->' in content
+    assert '<!-- responsive-inject-v5 -->' in content
     assert '.grid canvas { display: block; width: 100% !important; }' in content
     assert '.grid .small-card canvas { height: 190px !important; }' in content
 
@@ -30,7 +30,7 @@ def test_inject_responsive_is_idempotent():
     second = module.inject_responsive(first, 'analysis.html')
 
     assert first == second
-    assert second.count('<!-- responsive-inject-v4 -->') == 1
+    assert second.count('<!-- responsive-inject-v5 -->') == 1
 
 
 def test_inject_responsive_replaces_older_versions():
@@ -50,7 +50,7 @@ def test_inject_responsive_replaces_older_versions():
 
     assert '<!-- responsive-inject-v3 -->' not in content
     assert 'window.oldResponsive = true' not in content
-    assert content.count('<!-- responsive-inject-v4 -->') == 1
+    assert content.count('<!-- responsive-inject-v5 -->') == 1
 
 
 def test_inject_functions_handle_missing_tags():
@@ -88,7 +88,7 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     module.main(['--responsive-preset', 'none'])
 
     content = analysis.read_text(encoding='utf-8')
-    assert '<!-- responsive-inject-v4 -->' not in content
+    assert '<!-- responsive-inject-v5 -->' not in content
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
