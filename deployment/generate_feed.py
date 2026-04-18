@@ -10,6 +10,7 @@ import html as html_lib
 import json
 import re
 import subprocess
+from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -27,6 +28,7 @@ def _load_descriptions() -> dict:
     return {}
 
 
+@lru_cache(maxsize=None)
 def _git_iso(filepath: Path) -> str:
     """Return ISO 8601 timestamp from git log; fall back to current time."""
     try:
