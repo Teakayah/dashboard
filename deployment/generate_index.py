@@ -170,26 +170,37 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
     Injected right after <head> so the Chart.js defineProperty trap runs
     before chart.js itself is loaded (which typically appears in <head>).
     Strips any older version of the injection before re-injecting.
+    Files that already contain the current marker are left untouched so that
+    hand-crafted responsive blocks are not overwritten by the default preset.
     """
     preset = RESPONSIVE_PRESETS[preset_name]
 
-    new_content = re.sub(
-        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject -->)?',
-        '',
-        content,
-        flags=re.DOTALL,
-    )
     if preset_name == 'none':
+        new_content = re.sub(
+            r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject -->)?',
+            '',
+            content,
+            flags=re.DOTALL,
+        )
         if new_content != content:
             print(f'  Removed responsive enhancer from {filename}')
         return new_content
 
     marker = preset['marker']
     snippet = preset['snippet']
-    if marker in new_content:
-        return new_content  # already up to date
 
-    # Inject right after <head> so our script runs before chart.js loads
+    # If the current marker is already present, the file has a hand-crafted or
+    # up-to-date block — leave it completely untouched.
+    if marker in content:
+        return content
+
+    # Strip any older-version block, then inject the current preset.
+    new_content = re.sub(
+        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject -->)?',
+        '',
+        content,
+        flags=re.DOTALL,
+    )
     final_content = re.sub(
         r'(<head[^>]*>)',
         r'\1\n' + snippet,
