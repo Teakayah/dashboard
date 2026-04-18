@@ -178,6 +178,74 @@ def test_analysis_page_no_horizontal_scroll_mobile(page: Page, filename: str):
     )
 
 
+def test_vitals_grid_no_overflow_mobile(page: Page):
+    """Specifically ensure the vitals-grid on the flood page doesn't overflow its container."""
+    page.set_viewport_size({'width': 360, 'height': 800}) # Slightly narrower than iPhone
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+    
+    overflow = page.evaluate("""
+        () => {
+            const grid = document.querySelector('.vitals-grid');
+            if (!grid) return 'Grid not found';
+            if (grid.scrollWidth > grid.clientWidth + 1) {
+                return `scrollWidth ${grid.scrollWidth} > clientWidth ${grid.clientWidth}`;
+            }
+            return null;
+        }
+    """)
+    assert overflow is None, f'Vitals grid overflow on mobile: {overflow}'
+
+
+def test_charts_no_overflow_card(page: Page):
+    """Ensure that charts do not spill out of their cards on the flood dashboard."""
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+    
+    # Wait for charts to be rendered
+    page.wait_for_selector('canvas#gaugeChart')
+    page.wait_for_selector('canvas#comparisonChart')
+    
+    overflows = page.evaluate("""
+        () => {
+            const results = [];
+            const card = document.querySelector('#panel-gauge .card');
+            const canvases = document.querySelectorAll('#panel-gauge canvas');
+            if (!card) return 'Card not found';
+            const cardRect = card.getBoundingClientRect();
+            for (const canvas of canvases) {
+                const rect = canvas.getBoundingClientRect();
+                if (rect.bottom > cardRect.bottom + 10) {
+                    results.push({ id: canvas.id, diff: rect.bottom - cardRect.bottom });
+                }
+            }
+            return results.length ? results : null;
+        }
+    """)
+    assert overflows is None, f"Canvases overflow card bottom: {overflows}"
+
+
+def test_flood_simulator_updates_multiple_stations(page: Page):
+    """Verify that the offset slider updates both Britannia and Hull levels."""
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+    
+    # Get initial values
+    initial_brit = page.locator('#levelDisplay').inner_text()
+    initial_hull = page.locator('#hullDisplay').inner_text()
+    
+    # Move slider
+    slider = page.locator('#levelSlider')
+    page.evaluate("s => { s.value = '2.00'; s.dispatchEvent(new Event('input')); }", slider.element_handle())
+    
+    # Verify updates
+    page.wait_for_timeout(300)
+    new_brit = page.locator('#levelDisplay').inner_text()
+    new_hull = page.locator('#hullDisplay').inner_text()
+    
+    assert float(new_brit) > float(initial_brit), f"Britannia level didn't increase: {initial_brit} -> {new_brit}"
+    assert float(new_hull) > float(initial_hull), f"Hull level didn't increase: {initial_hull} -> {new_hull}"
+    expect(page.locator('#offsetDisplay')).to_contain_text('2.00m')
+
+
 @pytest.mark.parametrize('filename', analysis_pages())
 def test_analysis_page_no_horizontal_scroll_desktop(page: Page, filename: str):
     page.set_viewport_size({'width': 1280, 'height': 800})
@@ -191,6 +259,26 @@ def test_analysis_page_no_horizontal_scroll_desktop(page: Page, filename: str):
     assert scroll_width <= viewport_width + 2, (
         f'{filename}: horizontal overflow on desktop '
         f'(scrollWidth={scroll_width} > viewportWidth={viewport_width})'
+    )
+
+
+@pytest.mark.parametrize('filename', analysis_pages())
+def test_analysis_page_no_vertical_scroll_desktop(page: Page, filename: str):
+    """Ensure that analysis pages fit within the vertical viewport on desktop without scrolling."""
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.goto(f'{BASE}/{filename}')
+    try:
+        page.wait_for_load_state('networkidle', timeout=8000)
+    except Exception:
+        pass
+    
+    scroll_height = page.evaluate('document.documentElement.scrollHeight')
+    viewport_height = page.evaluate('window.innerHeight')
+    
+    # We allow a small buffer for precision issues
+    assert scroll_height <= viewport_height + 5, (
+        f'{filename}: vertical overflow on desktop '
+        f'(scrollHeight={scroll_height} > viewportHeight={viewport_height})'
     )
 
 
@@ -241,3 +329,94 @@ def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
     assert_height_stable('#debt-btnS')
     page.locator('.tab', has_text='Population').click()
     assert_height_stable('#pop-btnS')
+
+
+def test_flood_dashboard_height_stabilizes(page: Page):
+    """Ensure the flood dashboard height remains stable across all tabs."""
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+    try:
+        page.wait_for_load_state('networkidle', timeout=8000)
+    except Exception:
+        pass
+
+    tabs = ['gauge', 'history', 'snowpack']
+    for tab in tabs:
+        page.evaluate(f"showTab('{tab}')")
+        page.wait_for_timeout(300)
+        heights = []
+        for _ in range(5):
+            heights.append(page.evaluate('document.documentElement.scrollHeight'))
+            page.wait_for_timeout(200)
+        
+        diff = max(heights) - min(heights)
+        assert diff <= 5, (
+            f'Tab {tab}: page height is unstable (range: {min(heights)}-{max(heights)}): {heights}'
+        )
+        
+        viewport_height = page.evaluate('window.innerHeight')
+        assert max(heights) <= viewport_height + 5, (
+            f'Tab {tab}: page height {max(heights)} exceeds viewport {viewport_height}'
+        )
+
+
+@pytest.mark.parametrize('filename', analysis_pages())
+def test_viz_elements_have_height(page: Page, filename: str):
+    """Ensure that critical visualization elements (canvases, maps) have a non-zero height when visible."""
+    page.goto(f'{BASE}/{filename}')
+    try:
+        page.wait_for_load_state('networkidle', timeout=5000)
+    except Exception:
+        pass
+
+    # Check multiple tabs if the page has a .tab interface
+    tab_count = page.locator('.tab').count()
+    if tab_count > 0:
+        tabs = page.locator('.tab')
+        for i in range(tab_count):
+            # Click the tab and wait for animation/rendering
+            tabs.nth(i).click()
+            page.wait_for_timeout(300)
+            
+            elements = page.evaluate("""
+                () => {
+                    const results = [];
+                    // Find the container that was just activated
+                    const activePanel = document.querySelector('.panel.active');
+                    const container = activePanel || document.body;
+                    
+                    const canvases = container.querySelectorAll('canvas');
+                    const maps = container.querySelectorAll('#floodMap, .leaflet-container');
+                    
+                    canvases.forEach(c => {
+                        // Element is only 'collapsed' if it's supposed to be visible (offsetParent is not null)
+                        if (c.offsetParent !== null && c.offsetHeight < 10) {
+                            results.push({ id: c.id || 'unnamed-canvas', h: c.offsetHeight });
+                        }
+                    });
+                    maps.forEach(m => {
+                        if (m.offsetParent !== null && m.offsetHeight < 10) {
+                            results.push({ id: m.id || 'unnamed-map', h: m.offsetHeight });
+                        }
+                    });
+                    return results;
+                }
+            """)
+            tab_name = page.evaluate(f"document.querySelectorAll('.tab')[{i}].innerText").strip()
+            assert not elements, f"Collapsed visualizations on {filename} tab '{tab_name}': {elements}"
+    else:
+        # Standard page with no tabs
+        page.wait_for_timeout(500)
+        elements = page.evaluate("""
+            () => {
+                const results = [];
+                const canvases = document.querySelectorAll('canvas');
+                canvases.forEach(c => {
+                    if (c.offsetParent !== null && c.offsetHeight < 10) {
+                        results.push({ id: c.id || 'unnamed-canvas', h: c.offsetHeight });
+                    }
+                });
+                return results;
+            }
+        """)
+        assert not elements, f"Collapsed visualizations on {filename}: {elements}"

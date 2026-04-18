@@ -74,7 +74,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     skip_descriptions = args.no_descriptions
-    total_steps = 6 if skip_descriptions else 7
+    total_steps = 7 if skip_descriptions else 8
     step = 0
 
     print('=' * 62)
@@ -108,6 +108,10 @@ def main() -> None:
         sys.exit(0)
 
     print(f'\n  Updated tables: {updated_tables}')
+
+    # 1b. Fetch flood visualization data
+    _header(step, total_steps, 'Fetch flood visualization data')
+    _run('python3', str(DEPLOY / 'update_flood_data.py'))
 
     # 2. Rebuild analysis HTML data constants
     step += 1
