@@ -121,9 +121,9 @@ def _fallback(filepath: Path) -> dict:
 
 RESPONSIVE_PRESETS = {
     'default': {
-        'marker': '<!-- responsive-inject-v4 -->',
+        'marker': '<!-- responsive-inject-v5 -->',
         'snippet': '''\
-  <!-- responsive-inject-v4 -->
+  <!-- responsive-inject-v5 -->
   <style>
     @media (min-width: 769px) {
       body { max-width: 1200px; margin: 0 auto; }
@@ -144,7 +144,7 @@ RESPONSIVE_PRESETS = {
       });
     })();
   </script>
-  <!-- /responsive-inject -->''',
+  <!-- /responsive-inject-v5 -->''',
     },
     'none': {
         'marker': None,
@@ -177,7 +177,7 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
 
     if preset_name == 'none':
         new_content = re.sub(
-            r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject -->)?',
+            r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
             '',
             content,
             flags=re.DOTALL,
@@ -196,7 +196,7 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
 
     # Strip any older-version block, then inject the current preset.
     new_content = re.sub(
-        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject -->)?',
+        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
         '',
         content,
         flags=re.DOTALL,
