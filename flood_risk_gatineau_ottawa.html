@@ -5,11 +5,11 @@
   <style>
     @media (min-width: 769px) {
       html, body { height: 100vh; overflow: hidden; margin: 0; padding: 0; }
-      body { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; padding: 12px 24px !important; }
+      body { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; padding: 12px 24px !important; box-sizing: border-box; }
       .panel { flex: 1; min-height: 0; display: none; flex-direction: column; overflow: hidden; }
       .panel.active { display: flex; }
       .panel > .card { flex: 1; min-height: 0; padding: 12px 20px 32px !important; margin-bottom: 8px !important; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-      .gauge-chart-grid { flex: 1; min-height: 0; display: flex !important; gap: 16px !important; margin-bottom: 0 !important; }
+      .gauge-chart-grid { flex: 1; min-height: 0; display: flex !important; gap: 12px !important; margin-bottom: 0 !important; }
       .gauge-chart-wrap { flex: 1; min-height: 0 !important; margin-top: 4px !important; margin-bottom: 0 !important; position: relative !important; }
       .gauge-chart-wrap canvas { position: absolute !important; top: 0; left: 0; width: 100% !important; height: 100% !important; }
       .flood-note { margin-top: 2px !important; font-size: 0.65rem !important; margin-bottom: 0 !important; }
