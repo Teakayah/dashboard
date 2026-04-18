@@ -86,18 +86,30 @@ def main():
     precip = fetch_precip_data(PRECIP_STATION)
     
     # 3. SWE (Simulated for now, based on real 2024/2025 trends if available)
-    # In a real scenario, this would parse https://www.ottawariver.ca/current-conditions/
     swe = {
         'current_season': [38, 60, 88, 105, 120, 135, 142], # Oct-Apr
         'label': '2025-2026 season',
         'updated': datetime.now(timezone.utc).isoformat()
+    }
+
+    # 4. Forecast & Reservoirs (New Enhancements)
+    # Mocked 3-day forecast offsets for Britannia
+    forecast = [0.08, 0.15, 0.22, 0.18] # Today (actual) + 3 days
+    
+    # Mocked aggregate reservoir capacity
+    reservoirs = {
+        'percentage_full': 82,
+        'label': 'Principal Reservoirs (Baskatong, Cabonga, Dozois)',
+        'status': 'Normal for season'
     }
     
     result = {
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'gauges': gauges,
         'precip': precip,
-        'swe': swe
+        'swe': swe,
+        'forecast': forecast,
+        'reservoirs': reservoirs
     }
     
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
