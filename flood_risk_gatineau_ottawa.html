@@ -729,9 +729,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
               box-shadow: 0 1px 8px rgba(0,0,0,0.07); margin-bottom: 16px; }
 
     /* ── Gauge ── */
-    .gauge-hero { display: flex; align-items: center; justify-content: center; gap: 32px; flex-wrap: wrap; margin-bottom: 20px; }
+    /* Gauge tab — single flex card */
+    #panel-gauge > .card { display: flex; flex-direction: column; }
+    .gauge-top { flex-shrink: 0; }
+    .gauge-chart-wrap { flex: 1; min-height: 0; position: relative; }
+    .gauge-chart-wrap canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+
+    /* Map tab — map fills card */
+    #panel-map > .card { display: flex; flex-direction: column; overflow: hidden; }
+    #floodMap { flex: 1; min-height: 0; height: auto !important; border-radius: 8px; overflow: hidden; }
+
+    .gauge-hero { display: flex; align-items: center; justify-content: center; gap: 32px; flex-wrap: wrap; margin-bottom: 12px; }
     .gauge-readout { text-align: center; min-width: 160px; }
-    .gauge-level { font-size: 3.4rem; font-weight: 800; line-height: 1; letter-spacing: -1px; transition: color 0.25s; font-variant-numeric: tabular-nums; }
+    .gauge-level { font-size: 2.8rem; font-weight: 800; line-height: 1; letter-spacing: -1px; transition: color 0.25s; font-variant-numeric: tabular-nums; }
     .gauge-unit { font-size: 0.82rem; color: #999; margin-top: 4px; }
     .risk-badge { display: inline-block; margin-top: 10px; padding: 5px 18px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: #fff; transition: background 0.25s; letter-spacing: 0.02em; }
     .slider-wrap { flex: 1; min-width: 220px; max-width: 500px; }
@@ -803,30 +813,32 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 <!-- ══ TAB 1: GAUGE ════════════════════════════════════════════════════ -->
 <div id="panel-gauge" class="panel active">
-  <div class="card" style="margin-bottom:14px;">
-    <div class="gauge-hero">
-      <div class="gauge-readout">
-        <div class="gauge-level" id="levelDisplay">59.20</div>
-        <div class="gauge-unit">m MASL &mdash; Ottawa River at Britannia</div>
-        <div><span class="risk-badge" id="riskBadge" style="background:#27ae60;">Normal</span></div>
-      </div>
-      <div class="slider-wrap">
-        <label for="levelSlider">Simulate water level &mdash; drag to explore scenarios:</label>
-        <input type="range" id="levelSlider" min="58.00" max="62.00" step="0.01" value="59.20">
-        <div class="slider-ticks">
-          <span>58.0m</span><span>59.0m</span><span>60.0m</span><span>61.0m</span><span>62.0m</span>
+  <div class="card">
+    <div class="gauge-top">
+      <div class="gauge-hero">
+        <div class="gauge-readout">
+          <div class="gauge-level" id="levelDisplay">59.20</div>
+          <div class="gauge-unit">m MASL &mdash; Ottawa River at Britannia</div>
+          <div><span class="risk-badge" id="riskBadge" style="background:#27ae60;">Normal</span></div>
+        </div>
+        <div class="slider-wrap">
+          <label for="levelSlider">Simulate water level &mdash; drag to explore scenarios:</label>
+          <input type="range" id="levelSlider" min="58.00" max="62.00" step="0.01" value="59.20">
+          <div class="slider-ticks">
+            <span>58.0m</span><span>59.0m</span><span>60.0m</span><span>61.0m</span><span>62.0m</span>
+          </div>
         </div>
       </div>
+      <div class="threshold-legend">
+        <div class="tleg"><div class="tleg-dot" style="background:#27ae60"></div><span>Normal (&lt;59.60m)</span></div>
+        <div class="tleg"><div class="tleg-dot" style="background:#f39c12"></div><span>Flood Watch (&ge;59.60m)</span></div>
+        <div class="tleg"><div class="tleg-dot" style="background:#e67e22"></div><span>Flood Warning (&ge;59.80m)</span></div>
+        <div class="tleg"><div class="tleg-dot" style="background:#e74c3c"></div><span>Major Flood (&ge;60.44m)</span></div>
+      </div>
     </div>
-    <div class="threshold-legend">
-      <div class="tleg"><div class="tleg-dot" style="background:#27ae60"></div><span>Normal (&lt;59.60m)</span></div>
-      <div class="tleg"><div class="tleg-dot" style="background:#f39c12"></div><span>Flood Watch (&ge;59.60m)</span></div>
-      <div class="tleg"><div class="tleg-dot" style="background:#e67e22"></div><span>Flood Warning (&ge;59.80m)</span></div>
-      <div class="tleg"><div class="tleg-dot" style="background:#e74c3c"></div><span>Major Flood (&ge;60.44m)</span></div>
+    <div class="gauge-chart-wrap">
+      <canvas id="gaugeChart"></canvas>
     </div>
-  </div>
-  <div class="card">
-    <canvas id="gaugeChart" height="200"></canvas>
   </div>
 </div>
 
