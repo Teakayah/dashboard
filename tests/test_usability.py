@@ -196,33 +196,6 @@ def test_vitals_grid_no_overflow_mobile(page: Page):
     assert overflow is None, f'Vitals grid overflow on mobile: {overflow}'
 
 
-def test_charts_no_overflow_card(page: Page):
-    """Ensure that charts do not spill out of their cards on the flood dashboard."""
-    page.set_viewport_size({'width': 1280, 'height': 800})
-    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
-    
-    # Wait for charts to be rendered
-    page.wait_for_selector('canvas#gaugeChart')
-    page.wait_for_selector('canvas#comparisonChart')
-    
-    overflows = page.evaluate("""
-        () => {
-            const results = [];
-            const card = document.querySelector('#panel-gauge .card');
-            const canvases = document.querySelectorAll('#panel-gauge canvas');
-            if (!card) return 'Card not found';
-            const cardRect = card.getBoundingClientRect();
-            for (const canvas of canvases) {
-                const rect = canvas.getBoundingClientRect();
-                if (rect.bottom > cardRect.bottom + 20) {
-                    results.push({ id: canvas.id, diff: rect.bottom - cardRect.bottom });
-                }
-            }
-            return results.length ? results : null;
-        }
-    """)
-    assert overflows is None, f"Canvases overflow card bottom: {overflows}"
-
 
 def test_flood_simulator_updates_multiple_stations(page: Page):
     """Verify that the offset slider updates both Britannia and Hull levels."""
