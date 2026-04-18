@@ -34,6 +34,18 @@ def test_fetch_changed_since_error():
         assert result is None
         mock_urlopen.assert_called_once()
 
+def test_fetch_changed_since_json_error():
+    with patch('urllib.request.urlopen') as mock_urlopen:
+        mock_response = MagicMock()
+        mock_response.read.return_value = b'invalid json'
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
+
+        result = fetch_changed_since(date(2023, 1, 1))
+
+        assert result is None
+        mock_urlopen.assert_called_once()
+
 
 def test_get_end_period_missing_file(tmp_path):
     missing_file = tmp_path / "nonexistent.csv"
