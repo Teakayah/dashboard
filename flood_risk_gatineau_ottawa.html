@@ -771,6 +771,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .map-legend h4 { font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: #1a1a2e; }
     .legend-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
 
+    /* ── Live indicator ── */
+    #liveIndicator { font-size: 0.73rem; color: #999; margin-top: 6px; min-height: 1.2em; }
+
+    /* ── Regional chips ── */
+    .regional-levels { margin-top: 10px; border-top: 1px solid #f0f0ec; padding-top: 10px; }
+    .regional-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #bbb; margin-bottom: 7px; }
+    .regional-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .reg-chip { background: #f8f8f6; border-radius: 8px; padding: 7px 12px; min-width: 90px; text-align: center; border: 1px solid #ececea; }
+    .reg-chip-label { font-size: 0.67rem; color: #999; font-weight: 600; margin-bottom: 2px; }
+    .reg-chip-level { font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .reg-chip-detail { font-size: 0.63rem; color: #bbb; margin-top: 1px; }
+
     /* ── Links ── */
     a.ext { color: #4f8ef7; text-decoration: none; font-weight: 600; }
     a.ext:hover { text-decoration: underline; }
@@ -789,12 +801,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <body>
 <!-- back-link-inject --><div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:6px 0 2px;font-size:0.78rem;"><a href="https://teakayah.github.io/dashboard/" style="color:#4f8ef7;text-decoration:none;font-weight:600;">&#8592; DataDashboard</a></div>
 
-<div style="padding:6px 0 2px;font-size:0.78rem;">
-  <a href="https://teakayah.github.io/dashboard/" class="ext">&#8592; DataDashboard</a>
-</div>
-
 <h1>Ottawa-Gatineau Flood Risk</h1>
-<p class="subtitle">Britannia Gauge (02KF005) &middot; Ottawa River &middot; Historical &amp; Predictive &middot; All data simulated or historical</p>
+<p class="subtitle">Britannia Gauge (02KF005) &middot; Ottawa River &middot; Live &amp; Historical &middot; Water Survey of Canada</p>
 
 <div class="disclaimer">
   <strong>&#9888; Educational use only.</strong>
@@ -820,6 +828,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div class="gauge-level" id="levelDisplay">59.20</div>
           <div class="gauge-unit">m MASL &mdash; Ottawa River at Britannia</div>
           <div><span class="risk-badge" id="riskBadge" style="background:#27ae60;">Normal</span></div>
+          <div id="liveIndicator">Loading live data&hellip;</div>
         </div>
         <div class="slider-wrap">
           <label for="levelSlider">Simulate water level &mdash; drag to explore scenarios:</label>
@@ -834,6 +843,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div class="tleg"><div class="tleg-dot" style="background:#f39c12"></div><span>Flood Watch (&ge;59.60m)</span></div>
         <div class="tleg"><div class="tleg-dot" style="background:#e67e22"></div><span>Flood Warning (&ge;59.80m)</span></div>
         <div class="tleg"><div class="tleg-dot" style="background:#e74c3c"></div><span>Major Flood (&ge;60.44m)</span></div>
+      </div>
+      <div class="regional-levels" id="regionalLevels" style="display:none;">
+        <div class="regional-title">Regional Overview &mdash; Current Levels</div>
+        <div class="regional-chips" id="regionalChips"></div>
       </div>
     </div>
     <div class="gauge-chart-wrap">
@@ -1177,6 +1190,90 @@ function initSWE() {
     txt.innerHTML = 'Current SWE is <strong>' + latest + '% of normal</strong> — snowmelt flood risk is <strong>low</strong> this season.';
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LIVE DATA — GeoMet OGC API (CORS-enabled, no key required)
+   https://api.weather.gc.ca/collections/hydrometric-realtime
+   ══════════════════════════════════════════════════════════════════════ */
+
+const REGIONAL_STATIONS = [
+  { id: '02KF005', label: 'Britannia',      sub: 'Ottawa River',  threshold: 59.60 },
+  { id: '02LA015', label: 'Hull',           sub: 'Ottawa River',  threshold: null  },
+  { id: '02LA027', label: 'Rideau Falls',   sub: 'Rideau River',  threshold: null  },
+];
+
+async function fetchLatestReading(stationId) {
+  const now = new Date();
+  const twoHoursAgo = new Date(now.getTime() - 2 * 3600 * 1000);
+  const dtParam = twoHoursAgo.toISOString() + '/' + now.toISOString();
+  const url = 'https://api.weather.gc.ca/collections/hydrometric-realtime/items'
+    + '?STATION_NUMBER=' + stationId
+    + '&f=json&limit=25&datetime=' + encodeURIComponent(dtParam);
+  const resp = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const data = await resp.json();
+  const features = data.features || [];
+  if (!features.length) throw new Error('No data');
+  features.sort((a, b) => (a.properties.DATETIME < b.properties.DATETIME ? -1 : 1));
+  const p = features[features.length - 1].properties;
+  if (p.LEVEL == null) throw new Error('No level reading');
+  return { level: p.LEVEL, discharge: p.DISCHARGE, datetime: p.DATETIME, name: p.STATION_NAME };
+}
+
+async function loadLiveData() {
+  const liveEl = document.getElementById('liveIndicator');
+
+  // ── Britannia main gauge ──
+  try {
+    const r = await fetchLatestReading('02KF005');
+    const level = r.level;
+    document.getElementById('levelSlider').value = level.toFixed(2);
+    updateGauge(level);
+    const dt = new Date(r.datetime);
+    const timeStr = dt.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short', timeZone: 'America/Toronto' });
+    liveEl.innerHTML = '<span style="color:#27ae60;font-weight:700;">&#9679; Live</span> &middot; ' + timeStr
+      + ' &middot; <a href="https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=02KF005" target="_blank" rel="noopener noreferrer" class="ext">WSC &#8599;</a>';
+  } catch (e) {
+    liveEl.textContent = 'Live data unavailable \u2014 showing simulated level';
+    liveEl.style.color = '#bbb';
+  }
+
+  // ── Regional overview chips ──
+  const wrapEl = document.getElementById('regionalLevels');
+  const chipsEl = document.getElementById('regionalChips');
+  wrapEl.style.display = 'block';
+  chipsEl.innerHTML = REGIONAL_STATIONS.map(s =>
+    '<div class="reg-chip"><div class="reg-chip-label">' + s.label + '</div>'
+    + '<div class="reg-chip-detail" style="color:#ccc;">' + s.sub + '</div>'
+    + '<div class="reg-chip-level" style="color:#ccc;">&#8230;</div></div>'
+  ).join('');
+
+  const results = await Promise.allSettled(REGIONAL_STATIONS.map(s => fetchLatestReading(s.id)));
+
+  chipsEl.innerHTML = REGIONAL_STATIONS.map((s, i) => {
+    const res = results[i];
+    if (res.status === 'rejected' || res.value == null) {
+      return '<div class="reg-chip"><div class="reg-chip-label">' + s.label + '</div>'
+        + '<div class="reg-chip-detail">' + s.sub + '</div>'
+        + '<div class="reg-chip-level" style="color:#ccc;font-size:0.85rem;">N/A</div></div>';
+    }
+    const level = res.value.level;
+    let color = '#444';
+    if (s.threshold && level >= s.threshold + 0.4) color = '#e74c3c';
+    else if (s.threshold && level >= s.threshold)    color = '#f39c12';
+    const detail = res.value.discharge != null
+      ? s.sub + ' &middot; ' + Math.round(res.value.discharge) + '\u202fm\u00b3/s'
+      : s.sub;
+    return '<div class="reg-chip">'
+      + '<div class="reg-chip-label">' + s.label + '</div>'
+      + '<div class="reg-chip-detail">' + detail + '</div>'
+      + '<div class="reg-chip-level" style="color:' + color + '">' + level.toFixed(2)
+      + '<span style="font-size:0.6em;color:#bbb;font-weight:400;"> m</span></div></div>';
+  }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', loadLiveData);
+setInterval(loadLiveData, 5 * 60 * 1000); // refresh every 5 min
 
 /* ═══════════════════════════════════════════════════════════════════════
    TAB 4 — MAP
