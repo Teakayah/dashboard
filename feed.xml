@@ -5,7 +5,7 @@
   <link href="https://teakayah.github.io/dashboard/" />
   <link rel="self" type="application/atom+xml" href="https://teakayah.github.io/dashboard/feed.xml" />
   <id>https://teakayah.github.io/dashboard/</id>
-  <updated>2026-04-17T20:44:41-04:00</updated>
+  <updated>2026-04-17T20:56:12-04:00</updated>
   <author>
     <name>DataDashboard</name>
     <uri>https://teakayah.github.io/dashboard/</uri>
@@ -14,9 +14,9 @@
     <title>Ottawa-Gatineau Flood Risk — Britannia Gauge</title>
     <link href="https://teakayah.github.io/dashboard/flood_risk_gatineau_ottawa.html" />
     <id>https://teakayah.github.io/dashboard/flood_risk_gatineau_ottawa.html</id>
-    <updated>2026-04-17T20:44:41-04:00</updated>
-    <summary type="text">Britannia Gauge (02KF005) · Ottawa River · Historical &amp; Predictive · All data simulated or historical</summary>
-    <content type="html">&lt;img src="https://teakayah.github.io/dashboard/previews/flood_risk_gatineau_ottawa.png" alt="Ottawa-Gatineau Flood Risk — Britannia Gauge" style="max-width:100%;border-radius:8px;margin-bottom:8px;" /&gt;&lt;p&gt;Britannia Gauge (02KF005) · Ottawa River · Historical &amp; Predictive · All data simulated or historical&lt;/p&gt;</content>
+    <updated>2026-04-17T20:56:12-04:00</updated>
+    <summary type="text">Britannia Gauge (02KF005) · Ottawa River · Live &amp; Historical · Water Survey of Canada</summary>
+    <content type="html">&lt;img src="https://teakayah.github.io/dashboard/previews/flood_risk_gatineau_ottawa.png" alt="Ottawa-Gatineau Flood Risk — Britannia Gauge" style="max-width:100%;border-radius:8px;margin-bottom:8px;" /&gt;&lt;p&gt;Britannia Gauge (02KF005) · Ottawa River · Live &amp; Historical · Water Survey of Canada&lt;/p&gt;</content>
   </entry>
   <entry>
     <title>Canadian Labour &amp; Fiscal Dashboard</title>
