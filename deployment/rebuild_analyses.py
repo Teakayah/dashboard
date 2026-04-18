@@ -23,18 +23,23 @@ SRC = ROOT / "source" / "Stat Can"
 
 
 def _read_csv(path: Path) -> list[dict]:
-    """Read a Stats Canada CSV (UTF-8 BOM) into a list of row dicts."""
+    """Read a Stats Canada CSV (UTF-8 BOM) into a list of row dicts. Keys and values are stripped."""
     with open(path, encoding="utf-8-sig") as f:
-        return list(csv.DictReader(f))
+        reader = csv.reader(f)
+        try:
+            headers = [h.strip() for h in next(reader)]
+        except StopIteration:
+            return []
+        return [dict(zip(headers, (v.strip() for v in row))) for row in reader]
 
 
 def _clean(val: str) -> float | None:
     """Return float or None for Stats Canada VALUE cells."""
-    v = val.strip()
-    if v in ("", "..", "F", "x", "E", "r", "p"):
+    # Value is already stripped by _read_csv
+    if val in ("", "..", "F", "x", "E", "r", "p"):
         return None
     try:
-        return float(v)
+        return float(val)
     except ValueError:
         return None
 
@@ -47,16 +52,16 @@ def extract_emp_rate(rows: list[dict]) -> dict:
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
         if (
-            row["Gender"].strip() == "Total - Gender"
-            and row["Age group"].strip() == "15 years and over"
-            and row["Labour force characteristics"].strip() == "Employment rate"
-            and row["Data type"].strip() == "Seasonally adjusted"
-            and row["Statistics"].strip() == "Estimate"
+            row["Gender"] == "Total - Gender"
+            and row["Age group"] == "15 years and over"
+            and row["Labour force characteristics"] == "Employment rate"
+            and row["Data type"] == "Seasonally adjusted"
+            and row["Statistics"] == "Estimate"
         ):
             val = _clean(row["VALUE"])
             if val is not None:
                 year = int(row["REF_DATE"][:4])
-                buckets[row["GEO"].strip()][year].append(val)
+                buckets[row["GEO"]][year].append(val)
 
     return {
         geo: sorted(
@@ -72,16 +77,16 @@ def extract_emp_jobs(rows: list[dict]) -> dict:
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
         if (
-            row["Gender"].strip() == "Total - Gender"
-            and row["Age group"].strip() == "15 years and over"
-            and row["Labour force characteristics"].strip() == "Employment"
-            and row["Data type"].strip() == "Seasonally adjusted"
-            and row["Statistics"].strip() == "Estimate"
+            row["Gender"] == "Total - Gender"
+            and row["Age group"] == "15 years and over"
+            and row["Labour force characteristics"] == "Employment"
+            and row["Data type"] == "Seasonally adjusted"
+            and row["Statistics"] == "Estimate"
         ):
             val = _clean(row["VALUE"])
             if val is not None:
                 year = int(row["REF_DATE"][:4])
-                buckets[row["GEO"].strip()][year].append(val)
+                buckets[row["GEO"]][year].append(val)
 
     result = {}
     for geo, yd in buckets.items():
@@ -101,10 +106,10 @@ def extract_fed_debt(rows: list[dict]) -> list[dict]:
     buckets: dict[int, list[float]] = defaultdict(list)
     for row in rows:
         if (
-            row["GEO"].strip() == "Canada"
-            and row["Statement of government operations and balance sheet"].strip()
+            row["GEO"] == "Canada"
+            and row["Statement of government operations and balance sheet"]
             == "Liabilities"
-            and row["Government sectors"].strip() == "Federal government"
+            and row["Government sectors"] == "Federal government"
         ):
             val = _clean(row["VALUE"])
             if val is not None:
@@ -125,16 +130,15 @@ def extract_prov_debt(rows: list[dict]) -> dict:
     data: dict[str, dict[int, float]] = defaultdict(dict)
     for row in rows:
         if (
-            row["Display value"].strip() == "Stocks"
-            and row["Statement of operations and balance sheet"].strip()
-            == "Liabilities [63]"
-            and row["Public sector components"].strip()
+            row["Display value"] == "Stocks"
+            and row["Statement of operations and balance sheet"] == "Liabilities [63]"
+            and row["Public sector components"]
             == "Provincial and territorial governments"
         ):
             val = _clean(row["VALUE"])
             if val is not None:
-                geo = row["GEO"].strip()
-                year = int(row["REF_DATE"].strip())
+                geo = row["GEO"]
+                year = int(row["REF_DATE"])
                 data[geo][year] = val
 
     return {
@@ -150,14 +154,11 @@ def extract_pop_data(rows: list[dict]) -> dict:
     """Annual population by province + year-over-year change — table 17100005."""
     data: dict[str, dict[int, int]] = defaultdict(dict)
     for row in rows:
-        if (
-            row["Age group"].strip() == "All ages"
-            and row["Gender"].strip() == "Total - gender"
-        ):
+        if row["Age group"] == "All ages" and row["Gender"] == "Total - gender":
             val = _clean(row["VALUE"])
             if val is not None:
-                geo = row["GEO"].strip()
-                year = int(row["REF_DATE"].strip())
+                geo = row["GEO"]
+                year = int(row["REF_DATE"])
                 data[geo][year] = int(val)
 
     result = {}
@@ -198,14 +199,14 @@ def extract_nhpi(rows: list[dict]) -> dict:
         lambda: {m: {} for m in measures}
     )
     for row in rows:
-        measure = row[idx_col].strip()
+        measure = row[idx_col]
         if measure not in measures:
             continue
         val = _clean(row["VALUE"])
         if val is None:
             continue
-        date = row["REF_DATE"].strip()  # "1981-01"
-        geo = row["GEO"].strip()
+        date = row["REF_DATE"]  # "1981-01"
+        geo = row["GEO"]
         buckets[geo][measure][date] = val
 
     result = {}
