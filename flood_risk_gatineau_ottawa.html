@@ -10,13 +10,14 @@
       .panel.active { display: flex; }
       .panel > .card { flex: 1; min-height: 0; padding: 10px 20px 80px !important; margin-bottom: 8px !important; display: flex; flex-direction: column; overflow: hidden; }
       .gauge-chart-grid { flex: 1; min-height: 0; display: flex !important; gap: 12px !important; margin-bottom: 0 !important; }
-      .gauge-chart-wrap { flex: 1; min-height: 180px !important; margin-top: 8px !important; margin-bottom: 24px !important; position: relative; }
+      .gauge-chart-wrap { flex: 1; min-height: 180px !important; margin-top: 4px !important; margin-bottom: 24px !important; position: relative; }
       .flood-note { margin-top: 2px !important; font-size: 0.65rem !important; margin-bottom: 2px !important; }
-      .vitals-grid { margin-bottom: 8px !important; gap: 8px !important; display: grid !important; grid-template-columns: repeat(5, 1fr) !important; }
+      .vitals-grid { margin-bottom: 8px !important; gap: 8px !important; display: grid !important; grid-template-columns: repeat(6, 1fr) !important; }
       .vital-card { padding: 6px !important; }
       .vital-value { font-size: 1.1rem !important; }
       .gauge-hero { margin-bottom: 8px !important; }
       .threshold-legend { margin-bottom: 4px !important; }
+
       h1 { font-size: 1.1rem !important; margin-bottom: 0 !important; }
       .subtitle { margin-bottom: 8px !important; }
       .disclaimer { padding: 6px 10px !important; margin-bottom: 8px !important; font-size: 0.7rem !important; }
@@ -186,6 +187,12 @@
           <div id="rideauBadge" class="vital-badge" style="background:#27ae60;">Normal</div>
         </div>
         <div class="vital-card">
+          <div class="vital-label">Upstream Reservoirs</div>
+          <div class="vital-value" id="reservoirDisplay">---</div>
+          <div class="vital-unit">% Capacity Full</div>
+          <div id="reservoirStatus" style="font-size:0.55rem;color:#bbb;margin-top:3px;">Northern Dams</div>
+        </div>
+        <div class="vital-card">
           <div class="vital-label">7-Day Rain</div>
           <div class="vital-value" id="precipDisplay">---</div>
           <div class="vital-unit">mm Total</div>
@@ -203,6 +210,10 @@
           <div id="offsetDisplay" style="text-align:center; font-size:0.75rem; font-weight:700; color:#4f8ef7; margin-top:6px;">Current Offset: 0.00m</div>
           <button onclick="resetLevel()" style="margin-top:10px;padding:5px 16px;font-size:0.72rem;font-weight:600;background:#f0f0ec;border:1px solid #ddd;border-radius:6px;cursor:pointer;color:#555;">&#8635; Reset to Live Data</button>
         </div>
+      </div>
+
+      <div id="impactStatement" class="disclaimer" style="margin-top: 10px; margin-bottom: 20px; font-weight: 600; border-left-color: #4f8ef7; display: none;">
+        <!-- Dynamically populated -->
       </div>
 
       <div class="threshold-legend">
@@ -286,22 +297,35 @@ const REGIONAL_STATIONS = [
 ];
 
 const gaugeChart = new Chart(document.getElementById('gaugeChart'), {
-  type: 'bar',
+  type: 'line',
   data: {
-    labels: REGIONAL_STATIONS.map(s => s.label),
-    datasets: [{ label: 'Level (m MASL)', data: [59.20, 42.15, 4.90], backgroundColor: '#27ae60', borderRadius: 5, barPercentage: 0.6 }]
+    labels: ['Actual', 'Day 1 Forecast', 'Day 2 Forecast', 'Day 3 Forecast'],
+    datasets: [{
+      label: 'Britannia Level (m MASL)',
+      data: [59.20, 59.35, 59.45, 59.38],
+      borderColor: '#4f8ef7',
+      backgroundColor: 'rgba(79,142,247,0.1)',
+      borderWidth: 3,
+      pointRadius: 6,
+      fill: true,
+      tension: 0.3,
+      segment: {
+        borderDash: ctx => ctx.p0DataIndex === 0 ? [] : [6, 4]
+      }
+    }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: { 
-      y: { type: 'linear' }, 
-      x: { grid: { display: false }, ticks: { font: { size: 10 } } } 
+      y: { type: 'linear', title: { display: true, text: 'Level (m MASL)' } }, 
+      x: { grid: { display: false } } 
     },
     plugins: {
       legend: { display: false },
       annotation: {
         drawTime: 'afterDatasetsDraw',
         annotations: {
+          watch: { type: 'line', yMin: 59.60, yMax: 59.60, borderColor: '#f39c12', borderWidth: 1.5, borderDash: [5, 5], label: { content: 'Watch', display: true, position: 'end', backgroundColor: '#f39c12', color: '#fff', font: { size: 9 } } },
           peak2019: { type: 'line', yMin: 60.70, yMax: 60.70, borderColor: '#e74c3c', borderWidth: 2, borderDash: [6, 3], label: { content: '2019 Peak (60.70m)', display: true, position: 'end', backgroundColor: 'rgba(231,76,60,0.8)', color: '#fff', font: { size: 9 } } }
         }
       }
@@ -318,12 +342,19 @@ const comparisonChart = new Chart(document.getElementById('comparisonChart'), {
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
-      y: { grid: { color: (ctx) => ctx.tick.value === 0 ? '#333' : '#eee', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } },
+      y: { title: { display: true, text: '± Meters from Watch' }, grid: { color: (ctx) => ctx.tick.value === 0 ? '#333' : '#eee', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } },
       x: { grid: { display: false }, ticks: { font: { size: 10 } } }
     },
     plugins: { legend: { display: false } }
   }
 });
+
+const IMPACT_DATA = [
+  { threshold: 60.44, text: "MAJOR FLOODING: Widespread evacuation orders. Significant property damage in low-lying areas of Hull and Gatineau.", color: "#ffebee", textColor: "#b71c1c" },
+  { threshold: 59.80, text: "FLOOD WARNING: Water overtops the berm at Britannia. Several streets in Pointe-Gatineau begin to flood; localized road closures.", color: "#fff3e0", textColor: "#e65100" },
+  { threshold: 59.60, text: "FLOOD WATCH: Water approaches the Britannia water purification plant path. Minor pooling in Jacques-Cartier Park.", color: "#e3f2fd", textColor: "#0d47a1" },
+  { threshold: 0, text: "Levels are normal. No immediate flood impacts expected.", color: "#f1f8e9", textColor: "#1b5e20" }
+];
 
 let liveLevels = {}; 
 let currentOffset = 0.0;
@@ -355,13 +386,27 @@ function updateAllGauges(offset) {
     if (b) { b.textContent = risk.label; b.style.background = risk.color; }
   });
 
-  gaugeChart.data.datasets[0].data = updatedLevels;
-  gaugeChart.data.datasets[0].backgroundColor = updatedLevels.map((val, i) => getRiskForStation(val, REGIONAL_STATIONS[i]).color);
+  // 1. Update Gauge Chart (Britannia Time Series with Forecast)
+  const britLive = updatedLevels[0];
+  const forecastOffsets = DATA.forecast || [0.08, 0.15, 0.22, 0.18];
+  const forecastLevels = forecastOffsets.map(fo => britLive + fo);
+  gaugeChart.data.datasets[0].data = [britLive, ...forecastLevels.slice(1)];
   gaugeChart.update('none');
 
+  // 2. Update Comparison Chart (Relative to Watch)
   comparisonChart.data.datasets[0].data = updatedLevels.map((val, i) => val - REGIONAL_STATIONS[i].watch);
-  comparisonChart.data.datasets[0].backgroundColor = gaugeChart.data.datasets[0].backgroundColor;
+  comparisonChart.data.datasets[0].backgroundColor = updatedLevels.map((val, i) => getRiskForStation(val, REGIONAL_STATIONS[i]).color);
   comparisonChart.update('none');
+
+  // 3. Update Impact Statement
+  const impactBox = document.getElementById('impactStatement');
+  if (impactBox) {
+    const impact = IMPACT_DATA.find(d => britLive >= d.threshold);
+    impactBox.textContent = impact.text;
+    impactBox.style.background = impact.color;
+    impactBox.style.color = impact.textColor;
+    impactBox.style.display = 'block';
+  }
 }
 
 /* ── TAB 2: HISTORY ── */
@@ -420,18 +465,33 @@ function initSWE() {
 }
 
 /* ── DATA ── */
-const DATA={"timestamp":"2026-04-18T02:26:38.721338+00:00","gauges":{"02KF005":{"level":58.431,"discharge":1400.0,"datetime":"2026-03-18T05:00:00Z","station_id":"02KF005"},"02LA015":{"level":42.157,"discharge":null,"datetime":"2026-03-18T05:00:00Z","station_id":"02LA015"},"02LA027":{"level":4.898,"discharge":null,"datetime":"2026-03-18T05:00:00Z","station_id":"02LA027"}},"precip":{"total_7d":3.2,"latest_date":"1992-12-08 00:00:00"},"swe":{"current_season":[38,60,88,105,120,135,142],"label":"2025-2026 season","updated":"2026-04-18T02:26:38.721330+00:00"}};
+const DATA={"timestamp":"2026-04-18T03:43:55.853755+00:00","gauges":{"02KF005":{"level":58.431,"discharge":1400.0,"datetime":"2026-03-18T05:00:00Z","station_id":"02KF005"},"02LA015":{"level":42.157,"discharge":null,"datetime":"2026-03-18T05:00:00Z","station_id":"02LA015"},"02LA027":{"level":4.898,"discharge":null,"datetime":"2026-03-18T05:00:00Z","station_id":"02LA027"}},"precip":{"total_7d":3.2,"latest_date":"1992-12-08 00:00:00"},"swe":{"current_season":[38,60,88,105,120,135,142],"label":"2025-2026 season","updated":"2026-04-18T03:43:55.853744+00:00"},"forecast":[0.08,0.15,0.22,0.18],"reservoirs":{"percentage_full":82,"label":"Principal Reservoirs (Baskatong, Cabonga, Dozois)","status":"Normal for season"}};
 function loadLiveData() {
   if (!DATA.gauges) return;
   REGIONAL_STATIONS.forEach(s => { if (DATA.gauges[s.id]) liveLevels[s.id] = DATA.gauges[s.id].level; });
+
   const brit = DATA.gauges['02KF005'];
   if (brit) {
-    const f = document.getElementById('flowDisplay'); if (f) f.textContent = Math.round(brit.discharge || 0);
+    const flowEl = document.getElementById('flowDisplay');
+    if (flowEl) flowEl.textContent = Math.round(brit.discharge || 0);
+    const liveEl = document.getElementById('liveIndicator');
     const dt = new Date(brit.datetime);
     const timeStr = dt.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
-    const liveEl = document.getElementById('liveIndicator'); if (liveEl) liveEl.textContent = 'Live: ' + timeStr;
+    if (liveEl) liveEl.textContent = 'Live: ' + timeStr;
   }
-  if (DATA.precip) { const p = document.getElementById('precipDisplay'); if (p) p.textContent = DATA.precip.total_7d; }
+
+  if (DATA.precip) {
+    const pEl = document.getElementById('precipDisplay');
+    if (pEl) pEl.textContent = DATA.precip.total_7d;
+  }
+  
+  if (DATA.reservoirs) {
+    const resEl = document.getElementById('reservoirDisplay');
+    if (resEl) resEl.textContent = DATA.reservoirs.percentage_full + '%';
+    const resStatus = document.getElementById('reservoirStatus');
+    if (resStatus) resStatus.textContent = DATA.reservoirs.status;
+  }
+
   updateAllGauges(currentOffset);
 }
 
