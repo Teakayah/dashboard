@@ -281,11 +281,35 @@ def rebuild_nhpi(html_path: Path) -> bool:
     return True
 
 
+def rebuild_flood(html_path: Path) -> bool:
+    """Rebuild const DATA={...} in flood_risk_gatineau_ottawa.html."""
+    print(f'Rebuilding {html_path.name}...')
+
+    flood_json = ROOT / 'source' / '.flood_data.json'
+    if not flood_json.exists():
+        print(f'  SKIP — {flood_json.name} not found.')
+        return False
+
+    data = json.loads(flood_json.read_text(encoding='utf-8'))
+
+    html = html_path.read_text(encoding='utf-8')
+    new_html, changed = _inject_const(html, 'DATA', data)
+
+    if not changed:
+        print('  No change in DATA.')
+        return False
+
+    html_path.write_text(new_html, encoding='utf-8')
+    print(f'  DATA updated in {html_path.name}')
+    return True
+
+
 # ── Registry: HTML file → rebuild function ────────────────────────────────────
 
 REBUILDERS = {
     'employment_rate_canada.html': rebuild_employment,
     'nhpi_big6_comparison.html':   rebuild_nhpi,
+    'flood_risk_gatineau_ottawa.html': rebuild_flood,
 }
 
 
