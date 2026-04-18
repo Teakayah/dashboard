@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- responsive-inject-v4 -->
+  <style>
+    @media (min-width: 769px) {
+      html, body { height: 100vh; overflow: hidden; margin: 0; padding: 0; }
+      body { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; padding: 12px 24px !important; box-sizing: border-box; }
+      .panel { flex: 1; min-height: 0; display: none; flex-direction: column; overflow: hidden; }
+      .panel.active { display: flex !important; }
+      .panel > .card { flex: 1; min-height: 0; padding: 12px 20px 20px !important; margin-bottom: 8px !important; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+      .gauge-chart-grid { flex: 1; min-height: 0; display: flex !important; gap: 16px !important; margin-bottom: 0 !important; }
+      .gauge-chart-wrap { flex: 1; min-height: 0 !important; height: auto !important; display: flex; flex-direction: column; margin-top: 4px !important; margin-bottom: 0 !important; }
+      .canvas-container { flex: 1; min-height: 0; position: relative; width: 100%; }
+      .canvas-container canvas { position: absolute !important; top: 0; left: 0; width: 100% !important; height: 100% !important; }
+      #floodMap { flex: 1; min-height: 0 !important; height: 100% !important; position: relative; }
+      .flood-note { margin-top: 2px !important; font-size: 0.65rem !important; margin-bottom: 0 !important; flex-shrink: 0; }
+      .vitals-grid { margin-bottom: 8px !important; gap: 8px !important; display: grid !important; grid-template-columns: repeat(6, 1fr) !important; flex-shrink: 0; }
+      .vital-card { padding: 6px !important; }
+      .vital-value { font-size: 1.1rem !important; }
+      .gauge-hero { margin-bottom: 8px !important; flex-shrink: 0; }
+      .threshold-legend { margin-bottom: 4px !important; flex-shrink: 0; }
+      h1 { font-size: 1.1rem !important; margin-bottom: 0 !important; flex-shrink: 0; }
+      .subtitle { margin-bottom: 8px !important; font-size: 0.72rem !important; flex-shrink: 0; }
+      .disclaimer { padding: 6px 10px !important; margin-bottom: 8px !important; font-size: 0.7rem !important; flex-shrink: 0; }
+      .tabs { margin-bottom: 8px !important; flex-shrink: 0; }
+      footer { margin-top: 4px !important; padding-bottom: 4px !important; font-size: 0.65rem !important; flex-shrink: 0; }
+      #impactStatement { margin-top: 4px !important; margin-bottom: 8px !important; padding: 4px 8px !important; font-size: 0.7rem !important; flex-shrink: 0; }
+    }
+  </style>
+  <script>
+    (function () {
+      if (window.innerWidth < 769) return;
+      Object.defineProperty(window, 'Chart', {
+        configurable: true,
+        set: function (C) {
+          Object.defineProperty(window, 'Chart', { configurable: true, writable: true, value: C });
+          C.defaults.maintainAspectRatio = false;
+        }
+      });
+      const v = '4';
+      if (window.location.search.includes('v=' + v)) return;
+      const url = new URL(window.location.href);
+      url.searchParams.set('v', v);
+      window.history.replaceState({}, '', url.toString());
+    })();
+  </script>
+  <!-- /responsive-inject -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ottawa-Gatineau Flood Risk — Station 02KF005</title>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://teakayah.github.io/dashboard/flood_risk_gatineau_ottawa.html">
+  <meta property="og:title" content="Ottawa-Gatineau Flood Risk — Station 02KF005">
+  <meta property="og:description" content="Interactive flood risk dashboard for Ottawa-Gatineau: Britannia gauge level simulator, historical flood peaks, snowpack risk, and regional vitals.">
+  <meta property="og:image" content="https://teakayah.github.io/dashboard/previews/flood_risk_gatineau_ottawa.png">
+  <meta property="og:image:width" content="600">
+  <meta property="og:image:height" content="315">
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:image" content="https://teakayah.github.io/dashboard/previews/flood_risk_gatineau_ottawa.png">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f2; color: #222; min-height: 100vh; padding: 12px 24px; }
+
+    h1 { font-size: 1.2rem; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+    .subtitle { font-size: 0.75rem; color: #888; margin-bottom: 12px; }
+
+    .disclaimer {
+      background: #fff8e1; border-left: 4px solid #f39c12; border-radius: 6px;
+      padding: 8px 12px; margin-bottom: 12px; font-size: 0.72rem; color: #555; line-height: 1.4;
+    }
+    .disclaimer strong { color: #e67e22; }
+
+    .tabs { display: flex; gap: 0; margin-bottom: 12px; border-bottom: 2px solid #ddd; overflow-x: auto; }
+    .tab { padding: 7px 16px; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: #888;
+             border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s;
+             white-space: nowrap; flex-shrink: 0; user-select: none; }
+    .tab:hover { color: #444; }
+    .tab.active { color: #1a1a2e; border-bottom-color: #1a1a2e; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .card { background: #fff; border-radius: 12px; padding: 16px 20px 24px;
+              box-shadow: 0 1px 8px rgba(0,0,0,0.07); margin-bottom: 12px; width: 100%; }
+
+    /* ── Gauge ── */
+    .gauge-top { margin-bottom: 16px; }
+    .gauge-chart-wrap { position: relative; height: 300px; margin-top: 8px; width: 100%; }
+    .gauge-chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; }
+
+    @media (max-width: 800px) {
+      .gauge-chart-grid { grid-template-columns: 1fr; }
+      .gauge-chart-wrap { height: 260px; }
+    }
+
+    .gauge-hero { display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
+    
+    /* ── River Vitals ── */
+    .vitals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; width: 100%; margin-bottom: 16px; }
+    @media (max-width: 500px) {
+      .vitals-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .vital-card { padding: 8px 6px; }
+      .vital-value { font-size: 1.1rem; }
+    }
+    .vital-card { background: #fcfcf9; border: 1px solid #eee; border-radius: 10px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; overflow: hidden; }
+    .vital-card:hover { background: #fff; border-color: #ddd; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+    .vital-label { font-size: 0.62rem; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+    .vital-value { font-size: 1.2rem; font-weight: 800; color: #333; font-variant-numeric: tabular-nums; }
+    .vital-unit { font-size: 0.65rem; color: #999; margin-top: 1px; }
+    .vital-badge { margin-top: 5px; padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; color: #fff; display: inline-block; }
+
+    .slider-wrap { flex: 1; min-width: 220px; max-width: 500px; }
+    .slider-wrap label { font-size: 0.75rem; color: #666; font-weight: 600; display: block; margin-bottom: 8px; }
+    #levelSlider {
+      width: 100%; -webkit-appearance: none; height: 6px; border-radius: 4px; outline: none; cursor: pointer;
+      background: linear-gradient(to right, #27ae60 0%, #27ae60 40%, #f39c12 40%, #f39c12 55%, #e67e22 55%, #e67e22 66%, #e74c3c 66%, #e74c3c 100%);
+    }
+    #levelSlider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #1a1a2e; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.35); }
+    #levelSlider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #1a1a2e; cursor: pointer; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.35); }
+    .slider-ticks { display: flex; justify-content: space-between; font-size: 0.65rem; color: #bbb; margin-top: 4px; }
+
+    .threshold-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; font-size: 0.7rem; }
+    .tleg { display: flex; align-items: center; gap: 4px; }
+    .tleg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Historical ── */
+    .flood-note { font-size: 0.7rem; color: #999; margin-top: 6px; font-style: italic; line-height: 1.4; }
+
+    /* ── Snowpack ── */
+    .swe-risk-box { border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: 0.78rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .swe-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+    /* ── Live indicator ── */
+    #liveIndicator { font-size: 0.7rem; color: #999; margin-top: 5px; min-height: 1.1em; }
+
+    /* ── Footer ── */
+    footer { font-size: 0.65rem; color: #bbb; text-align: center; margin-top: 14px; font-style: italic; padding-bottom: 10px; }
+  </style>
+</head>
+<body>
+<!-- back-link-inject --><div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:6px 0 2px;font-size:0.78rem;"><a href="https://teakayah.github.io/dashboard/" style="color:#4f8ef7;text-decoration:none;font-weight:600;">&#8592; DataDashboard</a></div>
+
+<h1>Ottawa-Gatineau Flood Risk</h1>
+<p class="subtitle">Ottawa River at Britannia (02KF005) &middot; Live &amp; Historical &middot; Water Survey of Canada</p>
+
+<div class="disclaimer">
+  <strong>&#9888; Educational use only.</strong>
+  For active flood advisories consult
+  <a href="https://www.ottawa.ca/en/residents/emergency-preparedness-and-response" target="_blank" rel="noopener noreferrer" style="color:#e67e22;">Ottawa Emergency Management</a>.
+  Live data: <a href="https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=02KF005" target="_blank" rel="noopener noreferrer" class="ext">WSC &#8599;</a>
+</div>
+
+<div class="tabs">
+  <div class="tab active"  onclick="showTab('gauge')">&#127777; River Vitals</div>
+  <div class="tab"         onclick="showTab('history')">&#128200; Historical Floods</div>
+  <div class="tab"         onclick="showTab('snowpack')">&#10052; Snowpack Risk</div>
+</div>
+
+<!-- ══ TAB 1: GAUGE ════════════════════════════════════════════════════ -->
+<div id="panel-gauge" class="panel active">
+  <div class="card">
+    <div class="gauge-top">
+      <div class="vitals-grid">
+        <div class="vital-card">
+          <div class="vital-label">Britannia Village</div>
+          <div class="vital-value" id="levelDisplay">59.20</div>
+          <div class="vital-unit">m MASL</div>
+          <div class="vital-badge" id="riskBadge" style="background:#27ae60;">Normal</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-label">Britannia Flow</div>
+          <div class="vital-value" id="flowDisplay">---</div>
+          <div class="vital-unit">m&sup3;/s</div>
+          <div id="liveIndicator">Live: loading...</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-label">Pointe-Gatineau</div>
+          <div class="vital-value" id="hullDisplay">42.15</div>
+          <div class="vital-unit">m MASL</div>
+          <div id="hullBadge" class="vital-badge" style="background:#27ae60;">Normal</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-label">Rideau Falls</div>
+          <div class="vital-value" id="rideauDisplay">4.90</div>
+          <div class="vital-unit">m MASL</div>
+          <div id="rideauBadge" class="vital-badge" style="background:#27ae60;">Normal</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-label">Upstream Reservoirs</div>
+          <div class="vital-value" id="reservoirDisplay">---</div>
+          <div class="vital-unit">% Capacity Full</div>
+          <div id="reservoirStatus" style="font-size:0.55rem;color:#bbb;margin-top:3px;">Northern Dams</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-label">7-Day Rain</div>
+          <div class="vital-value" id="precipDisplay">---</div>
+          <div class="vital-unit">mm Total</div>
+          <div id="precipIndicator" style="font-size:0.55rem;color:#bbb;margin-top:3px;">Ottawa CDA</div>
+        </div>
+      </div>
+
+      <div class="gauge-hero">
+        <div class="slider-wrap">
+          <label for="levelSlider">Simulate regional flood scenario (Relative Offset):</label>
+          <input type="range" id="levelSlider" min="-1.00" max="3.00" step="0.05" value="0.00">
+          <div class="slider-ticks">
+            <span>-1m (Dry)</span><span>0m (Live)</span><span>+1m</span><span>+2m</span><span>+3m (Extreme)</span>
+          </div>
+          <div id="offsetDisplay" style="text-align:center; font-size:0.75rem; font-weight:700; color:#4f8ef7; margin-top:6px;">Current Offset: 0.00m</div>
+          <button onclick="resetLevel()" style="margin-top:10px;padding:5px 16px;font-size:0.72rem;font-weight:600;background:#f0f0ec;border:1px solid #ddd;border-radius:6px;cursor:pointer;color:#555;">&#8635; Reset to Live Data</button>
+        </div>
+      </div>
+
+      <div id="impactStatement" class="disclaimer" style="margin-top: 10px; margin-bottom: 20px; font-weight: 600; border-left-color: #4f8ef7; display: none;">
+        <!-- Dynamically populated -->
+      </div>
+
+      <div class="threshold-legend">
+        <div class="tleg"><div class="tleg-dot" style="background:#27ae60"></div><span>Normal</span></div>
+        <div class="tleg"><div class="tleg-dot" style="background:#f39c12"></div><span>Flood Watch</span></div>
+        <div class="tleg"><div class="tleg-dot" style="background:#e67e22"></div><span>Flood Warning</span></div>
+        <div class="tleg"><div class="tleg-dot" style="background:#e74c3c"></div><span>Major Flood</span></div>
+      </div>
+    </div>
+
+    <div class="gauge-chart-grid">
+      <div class="gauge-chart-wrap">
+        <div style="font-size:0.68rem; font-weight:700; color:#999; text-transform:uppercase; margin-bottom:6px;">Regional Levels (Absolute MASL)</div>
+        <div class="canvas-container"><canvas id="gaugeChart"></canvas></div>
+      </div>
+      <div class="gauge-chart-wrap">
+        <div style="font-size:0.68rem; font-weight:700; color:#999; text-transform:uppercase; margin-bottom:6px;">Regional Risk (Relative to Watch)</div>
+        <div class="canvas-container"><canvas id="comparisonChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 2: HISTORICAL ═══════════════════════════════════════════════ -->
+<div id="panel-history" class="panel">
+  <div class="card">
+    <canvas id="historyChart"></canvas>
+  </div>
+  <p class="flood-note">
+    Peak levels at Stn 02KF005 (Britannia, m MASL).
+    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e74c3c;margin:0 2px;vertical-align:middle;"></span>Record &nbsp;
+    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e67e22;margin:0 2px;vertical-align:middle;"></span>Above threshold &nbsp;
+    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#4f8ef7;margin:0 2px;vertical-align:middle;"></span>Below.
+  </p>
+</div>
+
+<!-- ══ TAB 3: SNOWPACK ═════════════════════════════════════════════════ -->
+<div id="panel-snowpack" class="panel">
+  <div class="card">
+    <canvas id="sweChart"></canvas>
+  </div>
+  <div id="sweRiskBox" class="swe-risk-box">
+    <span class="swe-icon">&#129716;</span>
+    <span id="sweRiskText">Loading&hellip;</span>
+  </div>
+  <p class="flood-note">
+    SWE % of normal (Upper Ottawa Basin). >150% + rapid warming elevates risk.
+  </p>
+</div>
+
+<footer>
+  Data: WSC &middot; ECCC &middot; ORRPB &middot; Open Ottawa &middot; Donn&eacute;es Qu&eacute;bec
+</footer>
+
+<!-- ══ Scripts ════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+
+<script>
+const TAB_NAMES = ['gauge','history','snowpack'];
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', TAB_NAMES[i] === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'history'  && !historyInitialized)  initHistory();
+  if (name === 'snowpack' && !sweInitialized)       initSWE();
+}
+
+function getRiskForStation(level, station) {
+  if (station.major && level >= station.major) return { label: 'Major Flood',  color: '#e74c3c' };
+  if (station.warning && level >= station.warning) return { label: 'Flood Warning', color: '#e67e22' };
+  if (station.watch && level >= station.watch) return { label: 'Flood Watch',  color: '#f39c12' };
+  return { label: 'Normal', color: '#27ae60' };
+}
+
+/* ── TAB 1: GAUGE ── */
+const REGIONAL_STATIONS = [
+  { id: '02KF005', label: 'Britannia (Ottawa River)', watch: 59.60, major: 60.44 },
+  { id: '02LA015', label: 'Hull (Ottawa River)',      watch: 43.50, major: 45.00 },
+  { id: '02LA027', label: 'Rideau Falls',             watch:  5.10, major:  5.50 },
+];
+
+const gaugeChart = new Chart(document.getElementById('gaugeChart'), {
+  type: 'line',
+  data: {
+    labels: ['Actual', 'Day 1 Forecast', 'Day 2 Forecast', 'Day 3 Forecast'],
+    datasets: [{
+      label: 'Britannia Level (m MASL)',
+      data: [59.20, 59.35, 59.45, 59.38],
+      borderColor: '#4f8ef7',
+      backgroundColor: 'rgba(79,142,247,0.1)',
+      borderWidth: 3,
+      pointRadius: 6,
+      fill: true,
+      tension: 0.3,
+      segment: {
+        borderDash: ctx => ctx.p0DataIndex === 0 ? [] : [6, 4]
+      }
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: { 
+      y: { type: 'linear', title: { display: true, text: 'Level (m MASL)' } }, 
+      x: { grid: { display: false } } 
+    },
+    plugins: {
+      legend: { display: false },
+      annotation: {
+        drawTime: 'afterDatasetsDraw',
+        annotations: {
+          watch: { type: 'line', yMin: 59.60, yMax: 59.60, borderColor: '#f39c12', borderWidth: 1.5, borderDash: [5, 5], label: { content: 'Watch', display: true, position: 'end', backgroundColor: '#f39c12', color: '#fff', font: { size: 9 } } },
+          peak2019: { type: 'line', yMin: 60.70, yMax: 60.70, borderColor: '#e74c3c', borderWidth: 2, borderDash: [6, 3], label: { content: '2019 Peak (60.70m)', display: true, position: 'end', backgroundColor: 'rgba(231,76,60,0.8)', color: '#fff', font: { size: 9 } } }
+        }
+      }
+    }
+  }
+});
+
+const comparisonChart = new Chart(document.getElementById('comparisonChart'), {
+  type: 'bar',
+  data: {
+    labels: REGIONAL_STATIONS.map(s => s.label),
+    datasets: [{ label: 'Meters from Watch', data: [0, 0, 0], backgroundColor: '#4f8ef7', borderRadius: 4, barPercentage: 0.6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      y: { title: { display: true, text: '± Meters from Watch' }, grid: { color: (ctx) => ctx.tick.value === 0 ? '#333' : '#eee', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } },
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+    },
+    plugins: { legend: { display: false } }
+  }
+});
+
+const IMPACT_DATA = [
+  { threshold: 60.44, text: "MAJOR FLOODING: Widespread evacuation orders. Significant property damage in low-lying areas of Hull and Gatineau.", color: "#ffebee", textColor: "#b71c1c" },
+  { threshold: 59.80, text: "FLOOD WARNING: Water overtops the berm at Britannia. Several streets in Pointe-Gatineau begin to flood; localized road closures.", color: "#fff3e0", textColor: "#e65100" },
+  { threshold: 59.60, text: "FLOOD WATCH: Water approaches the Britannia water purification plant path. Minor pooling in Jacques-Cartier Park.", color: "#e3f2fd", textColor: "#0d47a1" },
+  { threshold: 0, text: "Levels are normal. No immediate flood impacts expected.", color: "#f1f8e9", textColor: "#1b5e20" }
+];
+
+let liveLevels = {}; 
+let currentOffset = 0.0;
+
+function resetLevel() {
+  currentOffset = 0.0;
+  const slider = document.getElementById('levelSlider');
+  if (slider) slider.value = "0.00";
+  updateAllGauges(0.0);
+}
+
+function updateAllGauges(offset) {
+  currentOffset = offset;
+  const offEl = document.getElementById('offsetDisplay');
+  if (offEl) offEl.textContent = `Current Offset: ${offset >= 0 ? '+' : ''}${offset.toFixed(2)}m`;
+
+  const updatedLevels = REGIONAL_STATIONS.map(s => {
+    const live = liveLevels[s.id] || (s.id === '02KF005' ? 59.20 : s.id === '02LA015' ? 42.15 : 4.90);
+    return live + offset;
+  });
+
+  const ids = ['levelDisplay', 'hullDisplay', 'rideauDisplay'];
+  const badges = ['riskBadge', 'hullBadge', 'rideauBadge'];
+  
+  updatedLevels.forEach((val, i) => {
+    const risk = getRiskForStation(val, REGIONAL_STATIONS[i]);
+    const el = document.getElementById(ids[i]);
+    const b = document.getElementById(badges[i]);
+    if (el) { el.textContent = val.toFixed(2); el.style.color = risk.color; }
+    if (b) { b.textContent = risk.label; b.style.background = risk.color; }
+  });
+
+  const britLive = updatedLevels[0];
+  const forecastOffsets = DATA.forecast || [0.08, 0.15, 0.22, 0.18];
+  const forecastLevels = forecastOffsets.map(fo => britLive + fo);
+  gaugeChart.data.datasets[0].data = [britLive, ...forecastLevels.slice(1)];
+  gaugeChart.update('none');
+
+  comparisonChart.data.datasets[0].data = updatedLevels.map((val, i) => val - REGIONAL_STATIONS[i].watch);
+  comparisonChart.data.datasets[0].backgroundColor = updatedLevels.map((val, i) => getRiskForStation(val, REGIONAL_STATIONS[i]).color);
+  comparisonChart.update('none');
+  
+  const impactBox = document.getElementById('impactStatement');
+  if (impactBox) {
+    const impact = IMPACT_DATA.find(d => britLive >= d.threshold);
+    impactBox.textContent = impact.text;
+    impactBox.style.background = impact.color;
+    impactBox.style.color = impact.textColor;
+    impactBox.style.display = 'block';
+  }
+}
+
+/* ── TAB 2: HISTORY ── */
+let historyInitialized = false;
+function initHistory() {
+  historyInitialized = true;
+  const data = [['1947',60.14],['1974',59.81],['1976',59.65],['1981',59.47],['1986',59.22],['1993',59.38],['1998',59.42],['2001',59.15],['2008',59.38],['2011',59.55],['2013',59.30],['2017',60.44],['2019',60.70],['2020',59.20],['2021',59.35],['2023',59.55],['2024',59.40],['2025',59.45]];
+  const THRESHOLD = 59.60;
+  new Chart(document.getElementById('historyChart'), {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d[0]),
+      datasets: [{ label: 'Peak Level (m MASL)', data: data.map(d => d[1]), backgroundColor: data.map(d => d[1] >= 60.44 ? '#e74c3c' : d[1] >= THRESHOLD ? '#e67e22' : '#4f8ef7'), borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { min: 58.9, max: 61.0 } },
+      plugins: {
+        legend: { display: false },
+        annotation: {
+          drawTime: 'afterDatasetsDraw',
+          annotations: {
+            watch: { type: 'line', yMin: THRESHOLD, yMax: THRESHOLD, borderColor: '#e74c3c', borderWidth: 2, borderDash: [8, 4], label: { content: 'Flood watch — 59.60m MASL', display: true, position: 'end', backgroundColor: 'rgba(231,76,60,0.85)', color: '#fff', font: { size: 10 } } }
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ── TAB 3: SNOWPACK ── */
+let sweInitialized = false;
+function initSWE() {
+  sweInitialized = true;
+  const datasets = [
+    { label: '2019', data: [45, 82, 110, 145, 168, 190, 210], borderColor: '#e74c3c', pointRadius: 0, fill: false },
+    { label: '2017', data: [40, 75, 98, 130, 150, 165, 185], borderColor: '#e67e22', pointRadius: 0, fill: false },
+    { label: 'Current', data: DATA.swe ? DATA.swe.current_season : [38, 60, 88, 105, 120, null, null], borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,0.1)', fill: true },
+  ];
+  new Chart(document.getElementById('sweChart'), {
+    type: 'line',
+    data: { labels: ['Oct','Nov','Dec','Jan','Feb','Mar','Apr'], datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { min: 0, max: 230 } },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+  const currentData = DATA.swe ? DATA.swe.current_season.filter(v => v !== null) : [38, 60, 88, 105, 120];
+  const latest = currentData.at(-1);
+  const box = document.getElementById('sweRiskBox');
+  const txt = document.getElementById('sweRiskText');
+  if (latest >= 150) { box.style.background = '#ffebee'; box.style.color = '#b71c1c'; txt.textContent = `SWE: ${latest}% - High Risk`; }
+  else if (latest >= 100) { box.style.background = '#fff3e0'; box.style.color = '#e65100'; txt.textContent = `SWE: ${latest}% - Moderate Risk`; }
+  else { box.style.background = '#e8f5e9'; box.style.color = '#2e7d32'; txt.textContent = `SWE: ${latest}% - Low Risk`; }
+}
+
+/* ── DATA ── */
+const DATA={"timestamp":"2026-04-18T03:43:55.853755+00:00","gauges":{"02KF005":{"level":58.431,"discharge":1400.0,"datetime":"2026-03-18T05:00:00Z","station_id":"02KF005"},"02LA015":{"level":42.157,"discharge":null,"datetime":"2026-03-18T05:00:00Z","station_id":"02LA015"},"02LA027":{"level":4.898,"discharge":null,"datetime":"2026-03-18T05:00:00Z","station_id":"02LA027"}},"precip":{"total_7d":3.2,"latest_date":"1992-12-08 00:00:00"},"swe":{"current_season":[38,60,88,105,120,135,142],"label":"2025-2026 season","updated":"2026-04-18T03:43:55.853744+00:00"},"forecast":[0.08,0.15,0.22,0.18],"reservoirs":{"percentage_full":82,"label":"Principal Reservoirs (Baskatong, Cabonga, Dozois)","status":"Normal for season"}};
+function loadLiveData() {
+  if (!DATA.gauges) return;
+  REGIONAL_STATIONS.forEach(s => { if (DATA.gauges[s.id]) liveLevels[s.id] = DATA.gauges[s.id].level; });
+
+  const brit = DATA.gauges['02KF005'];
+  if (brit) {
+    const flowEl = document.getElementById('flowDisplay');
+    if (flowEl) flowEl.textContent = Math.round(brit.discharge || 0);
+    const liveEl = document.getElementById('liveIndicator');
+    const dt = new Date(brit.datetime);
+    const timeStr = dt.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
+    if (liveEl) liveEl.textContent = 'Live: ' + timeStr;
+  }
+
+  if (DATA.precip) {
+    const pEl = document.getElementById('precipDisplay');
+    if (pEl) pEl.textContent = DATA.precip.total_7d;
+  }
+  
+  if (DATA.reservoirs) {
+    const resEl = document.getElementById('reservoirDisplay');
+    if (resEl) resEl.textContent = DATA.reservoirs.percentage_full + '%';
+    const resStatus = document.getElementById('reservoirStatus');
+    if (resStatus) resStatus.textContent = DATA.reservoirs.status;
+  }
+
+  updateAllGauges(currentOffset);
+}
+
+document.addEventListener('DOMContentLoaded', loadLiveData);
+document.getElementById('levelSlider').addEventListener('input', function() { updateAllGauges(parseFloat(this.value)); });
+</script>
+</body>
+</html>
