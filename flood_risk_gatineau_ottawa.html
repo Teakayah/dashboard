@@ -4,25 +4,25 @@
   <!-- responsive-inject-v4 -->
   <style>
     @media (min-width: 769px) {
-      html, body { height: 100vh; overflow: hidden; }
-      body { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; padding: 10px 20px !important; }
+      html, body { height: 100vh; overflow: hidden; margin: 0; padding: 0; }
+      body { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; padding: 12px 24px !important; }
       .panel { flex: 1; min-height: 0; display: none; flex-direction: column; overflow: hidden; }
       .panel.active { display: flex; }
-      .panel > .card { flex: 1; min-height: 0; padding: 10px 20px 80px !important; margin-bottom: 8px !important; display: flex; flex-direction: column; overflow: hidden; }
-      .gauge-chart-grid { flex: 1; min-height: 0; display: flex !important; gap: 12px !important; margin-bottom: 0 !important; }
-      .gauge-chart-wrap { flex: 1; min-height: 180px !important; margin-top: 4px !important; margin-bottom: 24px !important; position: relative; }
-      .flood-note { margin-top: 2px !important; font-size: 0.65rem !important; margin-bottom: 2px !important; }
+      .panel > .card { flex: 1; min-height: 0; padding: 12px 20px 32px !important; margin-bottom: 8px !important; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+      .gauge-chart-grid { flex: 1; min-height: 0; display: flex !important; gap: 16px !important; margin-bottom: 0 !important; }
+      .gauge-chart-wrap { flex: 1; min-height: 0 !important; margin-top: 4px !important; margin-bottom: 0 !important; position: relative !important; }
+      .gauge-chart-wrap canvas { position: absolute !important; top: 0; left: 0; width: 100% !important; height: 100% !important; }
+      .flood-note { margin-top: 2px !important; font-size: 0.65rem !important; margin-bottom: 0 !important; }
       .vitals-grid { margin-bottom: 8px !important; gap: 8px !important; display: grid !important; grid-template-columns: repeat(6, 1fr) !important; }
       .vital-card { padding: 6px !important; }
       .vital-value { font-size: 1.1rem !important; }
       .gauge-hero { margin-bottom: 8px !important; }
       .threshold-legend { margin-bottom: 4px !important; }
-
       h1 { font-size: 1.1rem !important; margin-bottom: 0 !important; }
-      .subtitle { margin-bottom: 8px !important; }
+      .subtitle { margin-bottom: 8px !important; font-size: 0.72rem !important; }
       .disclaimer { padding: 6px 10px !important; margin-bottom: 8px !important; font-size: 0.7rem !important; }
       .tabs { margin-bottom: 8px !important; }
-      footer { margin-top: 4px !important; padding-bottom: 4px !important; }
+      footer { margin-top: 4px !important; padding-bottom: 4px !important; font-size: 0.65rem !important; }
     }
   </style>
   <script>
@@ -81,7 +81,7 @@
     .panel { display: none; }
     .panel.active { display: block; }
 
-    .card { background: #fff; border-radius: 12px; padding: 16px 20px 60px;
+    .card { background: #fff; border-radius: 12px; padding: 16px 20px 24px;
               box-shadow: 0 1px 8px rgba(0,0,0,0.07); margin-bottom: 12px; width: 100%; }
 
     /* ── Gauge ── */
@@ -361,7 +361,8 @@ let currentOffset = 0.0;
 
 function resetLevel() {
   currentOffset = 0.0;
-  document.getElementById('levelSlider').value = "0.00";
+  const slider = document.getElementById('levelSlider');
+  if (slider) slider.value = "0.00";
   updateAllGauges(0.0);
 }
 
@@ -386,19 +387,16 @@ function updateAllGauges(offset) {
     if (b) { b.textContent = risk.label; b.style.background = risk.color; }
   });
 
-  // 1. Update Gauge Chart (Britannia Time Series with Forecast)
   const britLive = updatedLevels[0];
   const forecastOffsets = DATA.forecast || [0.08, 0.15, 0.22, 0.18];
   const forecastLevels = forecastOffsets.map(fo => britLive + fo);
   gaugeChart.data.datasets[0].data = [britLive, ...forecastLevels.slice(1)];
   gaugeChart.update('none');
 
-  // 2. Update Comparison Chart (Relative to Watch)
   comparisonChart.data.datasets[0].data = updatedLevels.map((val, i) => val - REGIONAL_STATIONS[i].watch);
   comparisonChart.data.datasets[0].backgroundColor = updatedLevels.map((val, i) => getRiskForStation(val, REGIONAL_STATIONS[i]).color);
   comparisonChart.update('none');
-
-  // 3. Update Impact Statement
+  
   const impactBox = document.getElementById('impactStatement');
   if (impactBox) {
     const impact = IMPACT_DATA.find(d => britLive >= d.threshold);
