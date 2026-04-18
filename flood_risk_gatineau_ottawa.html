@@ -6,11 +6,11 @@
     @media (min-width: 769px) {
       html, body { height: 100vh; overflow: hidden; margin: 0; padding: 0; }
       body { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; padding: 12px 24px !important; box-sizing: border-box; }
-      .panel { flex: 1; min-height: 0; display: none; flex-direction: column; overflow: hidden; }
+      .panel { flex: 1; min-height: 0; display: none; flex-direction: column; overflow-y: auto; }
       .panel.active { display: flex !important; }
-      .panel > .card { flex: 1; min-height: 0; padding: 12px 20px 20px !important; margin-bottom: 8px !important; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-      .gauge-chart-grid { flex: 1; min-height: 0; display: flex !important; gap: 16px !important; margin-bottom: 0 !important; }
-      .gauge-chart-wrap { flex: 1; min-height: 0 !important; height: auto !important; display: flex; flex-direction: column; margin-top: 4px !important; margin-bottom: 0 !important; }
+      .panel > .card { padding: 12px 20px 20px !important; margin-bottom: 8px !important; display: flex; flex-direction: column; position: relative; }
+      .gauge-chart-grid { display: flex !important; gap: 16px !important; margin-bottom: 0 !important; }
+      .gauge-chart-wrap { min-height: 0 !important; display: flex; flex-direction: column; margin-top: 4px !important; margin-bottom: 0 !important; }
       .canvas-container { flex: 1; min-height: 0; position: relative; width: 100%; }
       .canvas-container canvas { position: absolute !important; top: 0; left: 0; width: 100% !important; height: 100% !important; }
       #floodMap { flex: 1; min-height: 0 !important; height: 100% !important; position: relative; }
