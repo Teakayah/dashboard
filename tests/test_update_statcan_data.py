@@ -34,7 +34,8 @@ def test_fetch_changed_since_error():
         assert result is None
         mock_urlopen.assert_called_once()
 
-def test_fetch_changed_since_json_error():
+def test_fetch_changed_since_invalid_json():
+    """Test that invalid JSON from Stats Canada API returns None."""
     with patch('urllib.request.urlopen') as mock_urlopen:
         mock_response = MagicMock()
         mock_response.read.return_value = b'invalid json'
