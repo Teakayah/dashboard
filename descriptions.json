@@ -1,4 +1,5 @@
 {
   "employment_rate_canada.html": "Displays Statistics Canada's seasonally adjusted employment rate data for Canadian provincial governments.",
-  "nhpi_big6_comparison.html": "Comparison of the New Housing Price Index (NHPI) across six major Canadian cities using Statistics Canada data."
+  "nhpi_big6_comparison.html": "Comparison of the New Housing Price Index (NHPI) across six major Canadian cities using Statistics Canada data.",
+  "flood_risk_gatineau_ottawa.html": "Interactive flood risk dashboard for Ottawa-Gatineau: Britannia gauge level simulator, historical flood peaks, snowpack (SWE) risk, and flood zone map."
 }
