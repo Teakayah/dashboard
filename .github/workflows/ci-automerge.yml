@@ -16,6 +16,12 @@ jobs:
       - name: Generate index.html + inject og tags
         run: python3 deployment/generate_index.py
 
+      - name: Fetch and Rebuild flood data
+        run: |
+          mkdir -p source
+          python3 deployment/update_flood_data.py
+          python3 deployment/rebuild_analyses.py || [ $? -eq 1 ]
+
       - name: Install test dependencies
         run: |
           pip install pytest pytest-playwright playwright
