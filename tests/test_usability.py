@@ -314,6 +314,51 @@ def test_flood_dashboard_height_stabilizes(page: Page):
         )
 
 
+def test_flood_charts_no_overflow_card(page: Page):
+    """Ensure that charts do not spill out of their cards on the flood dashboard."""
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+
+    page.wait_for_selector('canvas#gaugeChart')
+    page.wait_for_selector('canvas#comparisonChart')
+
+    overflows = page.evaluate("""
+        () => {
+            const results = [];
+            const card = document.querySelector('#panel-gauge .card');
+            const canvases = document.querySelectorAll('#panel-gauge canvas');
+            if (!card) return 'Card not found';
+            const cardRect = card.getBoundingClientRect();
+            for (const canvas of canvases) {
+                const rect = canvas.getBoundingClientRect();
+                if (rect.bottom > cardRect.bottom + 20) {
+                    results.push({ id: canvas.id, diff: rect.bottom - cardRect.bottom });
+                }
+            }
+            return results.length ? results : null;
+        }
+    """)
+    assert overflows is None, f"Canvases overflow card bottom: {overflows}"
+
+
+def test_flood_no_vertical_scroll_desktop(page: Page):
+    """Ensure the flood page fits within the vertical viewport on desktop without scrolling."""
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+    try:
+        page.wait_for_load_state('networkidle', timeout=8000)
+    except Exception:
+        pass
+
+    scroll_height = page.evaluate('document.documentElement.scrollHeight')
+    viewport_height = page.evaluate('window.innerHeight')
+
+    assert scroll_height <= viewport_height + 50, (
+        f'flood_risk_gatineau_ottawa.html: vertical overflow on desktop '
+        f'(scrollHeight={scroll_height} > viewportHeight={viewport_height})'
+    )
+
+
 @pytest.mark.parametrize('filename', analysis_pages())
 def test_viz_elements_have_height(page: Page, filename: str):
     """Ensure that critical visualization elements (canvases, maps) have a non-zero height when visible."""
