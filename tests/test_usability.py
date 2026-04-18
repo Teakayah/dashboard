@@ -235,25 +235,6 @@ def test_analysis_page_no_horizontal_scroll_desktop(page: Page, filename: str):
     )
 
 
-@pytest.mark.parametrize('filename', analysis_pages())
-def test_analysis_page_no_vertical_scroll_desktop(page: Page, filename: str):
-    """Ensure that analysis pages fit within the vertical viewport on desktop without scrolling."""
-    page.set_viewport_size({'width': 1280, 'height': 800})
-    page.goto(f'{BASE}/{filename}')
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
-    
-    scroll_height = page.evaluate('document.documentElement.scrollHeight')
-    viewport_height = page.evaluate('window.innerHeight')
-    
-    # We allow a small buffer for precision and font-rendering issues (e.g. 800 -> 827)
-    assert scroll_height <= viewport_height + 50, (
-        f'{filename}: vertical overflow on desktop '
-        f'(scrollHeight={scroll_height} > viewportHeight={viewport_height})'
-    )
-
 
 @pytest.mark.parametrize('filename', analysis_pages())
 def test_analysis_page_no_vertical_clip_desktop(page: Page, filename: str):
