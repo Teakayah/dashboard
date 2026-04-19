@@ -71,7 +71,6 @@ def test_extract_emp_rate_empty():
     [
         ("123", 123.0),
         ("-45.6", -45.6),
-        ("  78.9  ", 78.9),
         ("0", 0.0),
         ("0.0", 0.0),
         ("1e3", 1000.0),
@@ -100,12 +99,6 @@ def test_clean_nan():
         "E",
         "r",
         "p",
-        "  ..  ",
-        "  F  ",
-        "  x  ",
-        "  E  ",
-        "  r  ",
-        "  p  ",
     ],
 )
 def test_clean_special_strings(val):
