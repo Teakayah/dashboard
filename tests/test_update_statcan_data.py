@@ -57,6 +57,18 @@ def test_fetch_changed_since_error(capsys):
         captured = capsys.readouterr()
         assert "WARNING: changed-cubes API call failed (API failure) — will download all." in captured.out
 
+def test_fetch_changed_since_url_error(capsys):
+    from urllib.error import URLError
+    with patch('urllib.request.urlopen') as mock_urlopen:
+        mock_urlopen.side_effect = URLError("Network unreachable")
+
+        result = fetch_changed_since(date(2023, 1, 1))
+
+        assert result is None
+        mock_urlopen.assert_called_once()
+        captured = capsys.readouterr()
+        assert "WARNING: changed-cubes API call failed (<urlopen error Network unreachable>) — will download all." in captured.out
+
 def test_fetch_changed_since_invalid_json():
     """Test that invalid JSON from Stats Canada API returns None."""
     with patch('urllib.request.urlopen') as mock_urlopen:
