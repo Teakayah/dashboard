@@ -66,6 +66,34 @@ def test_extract_emp_rate_empty():
     assert extract_emp_rate([]) == {}
 
 
+def test_extract_emp_rate_unordered_years():
+    rows = [
+        create_row(geo="Ontario", ref_date="2025-01", value="65.0"),
+        create_row(geo="Ontario", ref_date="2023-01", value="60.0"),
+        create_row(geo="Ontario", ref_date="2024-01", value="63.3"),
+    ]
+    result = extract_emp_rate(rows)
+    expected = {
+        "Ontario": [
+            {"year": 2023, "value": 60.0},
+            {"year": 2024, "value": 63.3},
+            {"year": 2025, "value": 65.0},
+        ]
+    }
+    assert result == expected
+
+
+def test_extract_emp_rate_missing_value():
+    rows = [
+        create_row(geo="Ontario", ref_date="2023-01", value="60.0"),
+        create_row(geo="Ontario", ref_date="2023-02", value="x"),
+        create_row(geo="Ontario", ref_date="2023-03", value=".."),
+    ]
+    result = extract_emp_rate(rows)
+    expected = {"Ontario": [{"year": 2023, "value": 60.0}]}
+    assert result == expected
+
+
 @pytest.mark.parametrize(
     "val, expected",
     [
