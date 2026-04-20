@@ -1,28 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- responsive-inject-v5 -->
-  <style>
-    @media (min-width: 769px) {
-      body { max-width: 1200px; margin: 0 auto; }
-      .panel > .card { height: 440px; }
-      .grid canvas { display: block; width: 100% !important; }
-      .grid .small-card canvas { height: 190px !important; }
-    }
-  </style>
-  <script>
-    (function () {
-      if (window.innerWidth < 769) return;
-      Object.defineProperty(window, 'Chart', {
-        configurable: true,
-        set: function (C) {
-          Object.defineProperty(window, 'Chart', { configurable: true, writable: true, value: C });
-          C.defaults.maintainAspectRatio = false;
-        }
-      });
-    })();
-  </script>
-  <!-- /responsive-inject-v5 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ottawa-Gatineau Flood Risk — Station 02KF005</title>
@@ -298,7 +276,7 @@ function getRiskForStation(level, station) {
 /* ── TAB 1: GAUGE ── */
 const REGIONAL_STATIONS = [
   { id: '02KF005', label: 'Britannia (Ottawa River)', watch: 59.60, major: 60.44 },
-  { id: '02LA015', label: 'Hull (Ottawa River)',      watch: 43.50, major: 45.00 },
+  { id: '02LA015', label: 'Hull (Ottawa River)',      watch: 42.10, major: 45.00 },
   { id: '02LA027', label: 'Rideau Falls',             watch:  5.10, major:  5.50 },
 ];
 
