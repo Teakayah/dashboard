@@ -5,6 +5,7 @@ Run locally or via GitHub Actions on every push.
 """
 
 import argparse
+import html
 import json
 import re
 import subprocess
@@ -71,7 +72,7 @@ def extract_meta(filepath: Path, content: str, descriptions: dict | None = None)
     title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
     title = title_match.group(1).strip() if title_match else filepath.stem.replace('_', ' ').title()
     # Clean HTML entities in title
-    title = title.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&#39;', "'")
+    title = html.unescape(title)
 
     # Meta description
     desc_match = re.search(
@@ -92,6 +93,8 @@ def extract_meta(filepath: Path, content: str, descriptions: dict | None = None)
     # Fallback: use pre-generated description from descriptions.json
     if not description and descriptions:
         description = descriptions.get(filepath.name, '')
+
+    description = html.unescape(description)
 
     # Detect visualization libraries
     tags = [name for name, pattern in LIBRARY_PATTERNS.items()
@@ -251,7 +254,7 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
     # Extract title for og:title
     title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
     title = title_match.group(1).strip() if title_match else stem.replace('_', ' ').title()
-    title = title.replace('&amp;', '&').replace('"', '&quot;')
+    title = html.escape(html.unescape(title), quote=True)
 
     og_block = (
         f'\n  <!-- Open Graph / Social Sharing -->'
@@ -274,18 +277,18 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
 
 def build_card(analysis: dict, index: int) -> str:
     color = ACCENT_COLORS[index % len(ACCENT_COLORS)]
-    badges_html = ''.join(f'<span class="badge">{tag}</span>' for tag in analysis['tags'])
+    badges_html = ''.join(f'<span class="badge">{html.escape(tag)}</span>' for tag in analysis['tags'])
     desc_html = (
-        f'<p class="card-desc">{analysis["description"]}</p>'
+        f'<p class="card-desc">{html.escape(analysis["description"])}</p>'
         if analysis['description'] else ''
     )
     date_html = (
-        f'<span class="card-date">{analysis["date"]}</span>'
+        f'<span class="card-date">{html.escape(analysis["date"])}</span>'
         if analysis['date'] else ''
     )
-    return f'''      <a class="card" href="{analysis['filename']}" style="--accent:{color}">
+    return f'''      <a class="card" href="{html.escape(analysis['filename'], quote=True)}" style="--accent:{color}">
         <div class="card-top">
-          <div class="card-title">{analysis['title']}</div>
+          <div class="card-title">{html.escape(analysis['title'])}</div>
           <div class="badges">{badges_html}</div>
         </div>
         {desc_html}

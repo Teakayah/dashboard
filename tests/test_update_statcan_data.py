@@ -2,7 +2,7 @@ import json
 from datetime import date
 from unittest.mock import MagicMock, patch
 
-from deployment.update_statcan_data import fetch_changed_since, _get_end_period, _normalize_pid
+from deployment.update_statcan_data import fetch_changed_since, _get_end_period, _normalize_pid, _load_last_checked
 import csv
 
 def test_normalize_pid():
@@ -57,6 +57,18 @@ def test_fetch_changed_since_error(capsys):
         captured = capsys.readouterr()
         assert "WARNING: changed-cubes API call failed (API failure) — will download all." in captured.out
 
+def test_fetch_changed_since_url_error(capsys):
+    from urllib.error import URLError
+    with patch('urllib.request.urlopen') as mock_urlopen:
+        mock_urlopen.side_effect = URLError("Network unreachable")
+
+        result = fetch_changed_since(date(2023, 1, 1))
+
+        assert result is None
+        mock_urlopen.assert_called_once()
+        captured = capsys.readouterr()
+        assert "WARNING: changed-cubes API call failed (<urlopen error Network unreachable>) — will download all." in captured.out
+
 def test_fetch_changed_since_invalid_json():
     """Test that invalid JSON from Stats Canada API returns None."""
     with patch('urllib.request.urlopen') as mock_urlopen:
@@ -106,3 +118,43 @@ def test_get_end_period_empty_file(tmp_path):
 def test_get_end_period_exception(tmp_path):
     # Pass a directory path where a file is expected, causing an exception when opening/reading
     assert _get_end_period(tmp_path) is None
+
+
+def test_get_end_period_invalid_csv(tmp_path):
+    csv_file = tmp_path / "invalid.csv"
+    with open(csv_file, 'w', encoding='utf-8-sig') as f:
+        f.write("This is just some text, not a CSV, and it lacks the correct headers\n")
+    assert _get_end_period(csv_file) is None
+
+
+def test_load_last_checked_missing_file(tmp_path):
+    with patch('deployment.update_statcan_data.STATUS_FILE', tmp_path / "missing.json"):
+        assert _load_last_checked() is None
+
+
+def test_load_last_checked_success(tmp_path):
+    status_file = tmp_path / "status.json"
+    status_file.write_text(json.dumps({'last_checked_date': '2023-11-15'}))
+    with patch('deployment.update_statcan_data.STATUS_FILE', status_file):
+        assert _load_last_checked() == date(2023, 11, 15)
+
+
+def test_load_last_checked_invalid_json(tmp_path):
+    status_file = tmp_path / "status.json"
+    status_file.write_text("invalid json")
+    with patch('deployment.update_statcan_data.STATUS_FILE', status_file):
+        assert _load_last_checked() is None
+
+
+def test_load_last_checked_missing_key(tmp_path):
+    status_file = tmp_path / "status.json"
+    status_file.write_text(json.dumps({'some_other_key': '2023-11-15'}))
+    with patch('deployment.update_statcan_data.STATUS_FILE', status_file):
+        assert _load_last_checked() is None
+
+
+def test_load_last_checked_invalid_date(tmp_path):
+    status_file = tmp_path / "status.json"
+    status_file.write_text(json.dumps({'last_checked_date': 'not-a-date'}))
+    with patch('deployment.update_statcan_data.STATUS_FILE', status_file):
+        assert _load_last_checked() is None

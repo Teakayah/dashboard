@@ -10,4 +10,4 @@ conftest*
 __pycache__/**
 tests_*
 .digest/**
-tests/**
+tests/**.coverage
