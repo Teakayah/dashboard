@@ -6,7 +6,7 @@ Each analysis page becomes a feed entry, sorted newest-first by git commit date.
 The feed is regenerated on every deploy so subscribers always see the latest updates.
 """
 
-import html as html_lib
+import html
 import json
 import re
 import subprocess
@@ -47,9 +47,7 @@ def _git_iso(filepath: Path) -> str:
 def _extract_title(content: str, stem: str) -> str:
     m = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
     raw = m.group(1).strip() if m else stem.replace('_', ' ').title()
-    return (raw
-            .replace('&amp;', '&').replace('&lt;', '<')
-            .replace('&gt;', '>').replace('&#39;', "'"))
+    return html.unescape(raw)
 
 
 def _extract_description(content: str, filename: str, descriptions: dict) -> str:
@@ -68,7 +66,7 @@ def _extract_description(content: str, filename: str, descriptions: dict) -> str
     )
     if m:
         text = re.sub(r'<[^>]+>', '', m.group(1)).strip()
-        text = html_lib.unescape(re.sub(r'\s+', ' ', text))
+        text = html.unescape(re.sub(r'\s+', ' ', text))
         return text[:120] + '…' if len(text) > 120 else text
 
     # 3. Pre-generated description from descriptions.json
@@ -100,22 +98,29 @@ def _build_entry(filepath: Path, descriptions: dict) -> dict:
 
 
 def _atom_entry(entry: dict) -> str:
-    preview_img = (
-        f'&lt;img src="{entry["preview_url"]}" '
-        f'alt="{escape(entry["title"])}" '
-        f'style="max-width:100%;border-radius:8px;margin-bottom:8px;" /&gt;'
+    preview_url_attr = html.escape(entry["preview_url"], quote=True) if entry["preview_url"] else ""
+    title_html_attr = html.escape(entry["title"], quote=True)
+    summary_html_text = html.escape(entry["summary"], quote=False)
+
+    preview_img_html = (
+        f'<img src="{preview_url_attr}" '
+        f'alt="{title_html_attr}" '
+        f'style="max-width:100%;border-radius:8px;margin-bottom:8px;" />'
         if entry['preview_url'] else ''
     )
-    summary_html = f'&lt;p&gt;{escape(entry["summary"])}&lt;/p&gt;' if entry['summary'] else ''
+    summary_html = f'<p>{summary_html_text}</p>' if entry['summary'] else ''
+
+    content_html = preview_img_html + summary_html
+    content_xml_safe = html.escape(content_html, quote=False)
 
     return f'''\
   <entry>
-    <title>{escape(entry['title'])}</title>
-    <link href="{entry['url']}" />
-    <id>{entry['id']}</id>
+    <title>{html.escape(entry['title'], quote=False)}</title>
+    <link href="{html.escape(entry['url'], quote=True)}" />
+    <id>{html.escape(entry['id'], quote=False)}</id>
     <updated>{entry['updated']}</updated>
-    <summary type="text">{escape(entry['summary'])}</summary>
-    <content type="html">{preview_img}{summary_html}</content>
+    <summary type="text">{html.escape(entry['summary'], quote=False)}</summary>
+    <content type="html">{content_xml_safe}</content>
   </entry>'''
 
 
