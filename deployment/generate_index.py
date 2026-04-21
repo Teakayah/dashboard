@@ -244,6 +244,20 @@ def inject_back_link(content: str, filename: str) -> str:
     return new_content
 
 
+
+def inject_favicon(content: str, filename: str) -> str:
+    """Inject favicon link into an analysis HTML file content if not already present."""
+    if 'rel="icon"' in content or "rel='icon'" in content:
+        return content  # already has one, leave it alone
+
+    favicon_link = f'\n  <link rel="icon" href="{SITE_URL}/favicon.ico" type="image/x-icon">'
+
+    # Insert just before </head>
+    new_content = re.sub(r'(</head>)', favicon_link + r'\n\1', content, count=1, flags=re.IGNORECASE)
+    if new_content != content:
+        print(f'  Injected favicon into {filename}')
+    return new_content
+
 def inject_og_tags(content: str, filename: str, stem: str) -> str:
     """Inject og:image/twitter:image into an analysis HTML file content if not already present."""
     if 'og:image' in content:
@@ -320,6 +334,7 @@ def build_html(analyses: list[dict]) -> str:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DataDashboard</title>
+  <link rel="icon" href="{SITE_URL}/favicon.ico" type="image/x-icon">
 
   <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
@@ -597,6 +612,7 @@ def main(argv: list[str] | None = None):
         # Inject enhancements
         new_content = inject_responsive(content, meta['filename'], args.responsive_preset)
         new_content = inject_back_link(new_content, meta['filename'])
+        new_content = inject_favicon(new_content, meta['filename'])
         new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
 
         if new_content != content:
