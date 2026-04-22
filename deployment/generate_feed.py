@@ -6,14 +6,13 @@ Each analysis page becomes a feed entry, sorted newest-first by git commit date.
 The feed is regenerated on every deploy so subscribers always see the latest updates.
 """
 
-import html as html_lib
+import html
 import json
 import re
 import subprocess
 from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
-from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).parent.parent
 EXCLUDE = {'index.html'}
@@ -68,7 +67,7 @@ def _extract_description(content: str, filename: str, descriptions: dict) -> str
     )
     if m:
         text = re.sub(r'<[^>]+>', '', m.group(1)).strip()
-        text = html_lib.unescape(re.sub(r'\s+', ' ', text))
+        text = html.unescape(re.sub(r'\s+', ' ', text))
         return text[:120] + '…' if len(text) > 120 else text
 
     # 3. Pre-generated description from descriptions.json
@@ -102,19 +101,19 @@ def _build_entry(filepath: Path, descriptions: dict) -> dict:
 def _atom_entry(entry: dict) -> str:
     preview_img = (
         f'&lt;img src="{entry["preview_url"]}" '
-        f'alt="{escape(entry["title"])}" '
+        f'alt="{html.escape(entry["title"], quote=True)}" '
         f'style="max-width:100%;border-radius:8px;margin-bottom:8px;" /&gt;'
         if entry['preview_url'] else ''
     )
-    summary_html = f'&lt;p&gt;{escape(entry["summary"])}&lt;/p&gt;' if entry['summary'] else ''
+    summary_html = f'&lt;p&gt;{html.escape(entry["summary"], quote=True)}&lt;/p&gt;' if entry['summary'] else ''
 
     return f'''\
   <entry>
-    <title>{escape(entry['title'])}</title>
+    <title>{html.escape(entry['title'], quote=True)}</title>
     <link href="{entry['url']}" />
     <id>{entry['id']}</id>
     <updated>{entry['updated']}</updated>
-    <summary type="text">{escape(entry['summary'])}</summary>
+    <summary type="text">{html.escape(entry['summary'], quote=True)}</summary>
     <content type="html">{preview_img}{summary_html}</content>
   </entry>'''
 
