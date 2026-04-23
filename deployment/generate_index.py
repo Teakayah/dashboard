@@ -291,18 +291,18 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
 
 def build_card(analysis: dict, index: int) -> str:
     color = ACCENT_COLORS[index % len(ACCENT_COLORS)]
-    badges_html = ''.join(f'<span class="badge">{html.escape(tag)}</span>' for tag in analysis['tags'])
+    badges_html = ''.join(f'<span class="badge">{html.escape(tag, quote=True)}</span>' for tag in analysis['tags'])
     desc_html = (
-        f'<p class="card-desc">{html.escape(analysis["description"])}</p>'
+        f'<p class="card-desc">{html.escape(analysis["description"], quote=True)}</p>'
         if analysis['description'] else ''
     )
     date_html = (
-        f'<span class="card-date">{html.escape(analysis["date"])}</span>'
+        f'<span class="card-date">{html.escape(analysis["date"], quote=True)}</span>'
         if analysis['date'] else ''
     )
     return f'''      <a class="card" href="{html.escape(analysis['filename'], quote=True)}" style="--accent:{color}">
         <div class="card-top">
-          <div class="card-title">{html.escape(analysis['title'])}</div>
+          <div class="card-title">{html.escape(analysis['title'], quote=True)}</div>
           <div class="badges">{badges_html}</div>
         </div>
         {desc_html}
