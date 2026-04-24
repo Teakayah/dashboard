@@ -13,7 +13,6 @@ import subprocess
 from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
-from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).parent.parent
 EXCLUDE = {'index.html'}
@@ -102,19 +101,19 @@ def _build_entry(filepath: Path, descriptions: dict) -> dict:
 def _atom_entry(entry: dict) -> str:
     preview_img = (
         f'&lt;img src="{entry["preview_url"]}" '
-        f'alt="{escape(entry["title"])}" '
+        f'alt="{html_lib.escape(entry["title"], quote=True)}" '
         f'style="max-width:100%;border-radius:8px;margin-bottom:8px;" /&gt;'
         if entry['preview_url'] else ''
     )
-    summary_html = f'&lt;p&gt;{escape(entry["summary"])}&lt;/p&gt;' if entry['summary'] else ''
+    summary_html = f'&lt;p&gt;{html_lib.escape(entry["summary"], quote=True)}&lt;/p&gt;' if entry['summary'] else ''
 
     return f'''\
   <entry>
-    <title>{escape(entry['title'])}</title>
+    <title>{html_lib.escape(entry['title'], quote=True)}</title>
     <link href="{entry['url']}" />
     <id>{entry['id']}</id>
     <updated>{entry['updated']}</updated>
-    <summary type="text">{escape(entry['summary'])}</summary>
+    <summary type="text">{html_lib.escape(entry['summary'], quote=True)}</summary>
     <content type="html">{preview_img}{summary_html}</content>
   </entry>'''
 
