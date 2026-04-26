@@ -224,9 +224,17 @@ def extract_nhpi(rows: list[dict]) -> dict:
 def _inject_const(html: str, var_name: str, new_value: object) -> tuple[str, bool]:
     """Replace `const VAR = {...};` (single-line or multiline) with new JSON value."""
     new_json = json.dumps(new_value, separators=(",", ":"), ensure_ascii=False)
+    new_json = (
+        new_json.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    )
     pattern = rf"const {re.escape(var_name)}\s*=\s*\{{.*?\}};"
-    replacement = f"const {var_name}={new_json};"
-    new_html, n = re.subn(pattern, replacement, html, count=1, flags=re.DOTALL)
+    new_html, n = re.subn(
+        pattern,
+        lambda m: f"const {var_name}={new_json};",
+        html,
+        count=1,
+        flags=re.DOTALL,
+    )
     return new_html, n > 0 and new_html != html
 
 
