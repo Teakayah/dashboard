@@ -1,5 +1,5 @@
 import pytest
-from deployment.rebuild_analyses import extract_emp_rate, _clean
+from deployment.rebuild_analyses import extract_emp_rate, _clean, _inject_const
 
 
 def create_row(
@@ -142,3 +142,33 @@ def test_clean_special_strings(val):
 )
 def test_clean_invalid_strings(val):
     assert _clean(val) is None
+
+
+def test_inject_const_xss_prevention():
+    html = "const DATA = {};\nconsole.log(DATA);"
+
+    # Payload containing characters dangerous in an HTML context
+    malicious_data = {
+        "text": "<script>alert(1)</script>",
+        "desc": "A & B > C",
+    }
+
+    new_html, changed = _inject_const(html, "DATA", malicious_data)
+
+    assert changed is True
+    # The original unsafe characters should not be in the replaced string
+    assert "<script>" not in new_html
+    assert "A & B > C" not in new_html
+
+    # They should be replaced by unicode escapes
+    assert r"\u003cscript\u003ealert(1)\u003c/script\u003e" in new_html
+    assert r"A \u0026 B \u003e C" in new_html
+
+
+def test_inject_const_regular_data():
+    html = "const RAW = {foo: 'bar'};"
+    data = {"numbers": [1, 2, 3], "string": "hello\nworld"}
+
+    new_html, changed = _inject_const(html, "RAW", data)
+    assert changed is True
+    assert 'const RAW={"numbers":[1,2,3],"string":"hello\\nworld"};' in new_html
