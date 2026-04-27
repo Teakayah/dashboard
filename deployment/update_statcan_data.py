@@ -18,6 +18,7 @@ import csv
 import json
 import sys
 import urllib.request
+from typing import Optional, Union
 import zipfile
 from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
@@ -70,7 +71,7 @@ _OUR_IDS = {t['id'] for t in TABLES}
 
 # ── Phase 1: check ─────────────────────────────────────────────────────────────
 
-def _load_last_checked() -> date | None:
+def _load_last_checked() -> Optional[date]:
     """Return the date of the last successful check, or None on first run."""
     if not STATUS_FILE.exists():
         return None
@@ -84,7 +85,7 @@ def _load_last_checked() -> date | None:
     return None
 
 
-def _normalize_pid(raw: str | int) -> str:
+def _normalize_pid(raw: Union[str, int]) -> str:
     """Stats Canada API returns 10-digit PIDs (8-digit + '01'). Strip to 8."""
     s = str(raw).strip()
     if len(s) == 10 and s.endswith('01'):
@@ -92,7 +93,7 @@ def _normalize_pid(raw: str | int) -> str:
     return s
 
 
-def fetch_changed_since(since: date) -> set[str] | None:
+def fetch_changed_since(since: date) -> Optional[set[str]]:
     """
     Call getChangedCubeList and return the set of 8-digit table IDs that changed
     since `since`. Returns None if the API call fails (caller should fall back).
@@ -116,7 +117,7 @@ def fetch_changed_since(since: date) -> set[str] | None:
 
 # ── Phase 2: download ──────────────────────────────────────────────────────────
 
-def _get_end_period(metadata_path: Path) -> str | None:
+def _get_end_period(metadata_path: Path) -> Optional[str]:
     """Read 'End Reference Period' from a Stats Canada metadata CSV."""
     if not metadata_path.exists():
         return None
