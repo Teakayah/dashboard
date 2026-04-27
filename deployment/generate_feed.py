@@ -110,8 +110,8 @@ def _atom_entry(entry: dict) -> str:
     return f'''\
   <entry>
     <title>{html_lib.escape(entry['title'], quote=True)}</title>
-    <link href="{entry['url']}" />
-    <id>{entry['id']}</id>
+    <link href="{html_lib.escape(entry['url'], quote=True)}" />
+    <id>{html_lib.escape(entry['id'], quote=True)}</id>
     <updated>{entry['updated']}</updated>
     <summary type="text">{html_lib.escape(entry['summary'], quote=True)}</summary>
     <content type="html">{preview_img}{summary_html}</content>
