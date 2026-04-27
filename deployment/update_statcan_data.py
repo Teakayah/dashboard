@@ -140,7 +140,7 @@ def download_table(table: dict) -> dict:
 
     url = _DL_URL.format(pid=pid)
     print(f'  [{pid}] {table["desc"]}')
-    print(f'         Downloading ...')
+    print('         Downloading ...')
 
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'DataDashboard/1.0'})
