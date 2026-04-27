@@ -4,7 +4,8 @@ from deployment.rebuild_analyses import (
     extract_fed_debt,
     extract_prov_debt,
     _clean,
-    _inject_const
+    _inject_const,
+    _read_csv
 )
 
 
@@ -320,3 +321,24 @@ def test_inject_const_regular_data():
     new_html, changed = _inject_const(html, "RAW", data)
     assert changed is True
     assert 'const RAW={"numbers":[1,2,3],"string":"hello\\nworld"};' in new_html
+
+
+def test_read_csv_empty_file(tmp_path):
+    empty_file = tmp_path / "empty.csv"
+    empty_file.touch()
+
+    result = _read_csv(empty_file)
+    assert result == []
+
+
+def test_read_csv_valid_file(tmp_path):
+    valid_file = tmp_path / "valid.csv"
+    # Testing that it strips whitespace from headers and values,
+    # and properly associates headers with column values.
+    valid_file.write_text(" col1 , col2 \n val1 , val2 \n val3 , val4 ")
+
+    result = _read_csv(valid_file)
+    assert result == [
+        {"col1": "val1", "col2": "val2"},
+        {"col1": "val3", "col2": "val4"},
+    ]
