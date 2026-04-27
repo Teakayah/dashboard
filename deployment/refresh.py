@@ -163,7 +163,7 @@ def main() -> None:
                  'feed.xml')
             _run('git', 'commit', '-m', msg)
             _run('git', 'push', 'origin', 'dev')
-            print(f'\n  Pushed to dev → CI will merge to main and take screenshots.')
+            print('\n  Pushed to dev → CI will merge to main and take screenshots.')
 
     print('\n' + '=' * 62)
     print('  ✓  Refresh complete')
