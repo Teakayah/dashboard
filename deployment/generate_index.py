@@ -10,7 +10,7 @@ import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 ROOT = Path(__file__).parent.parent
 EXCLUDE = {'index.html'}
@@ -22,6 +22,8 @@ LIBRARY_PATTERNS = {
     'D3.js': r'd3(?:\.v\d+)?(?:\.min)?\.js|cdn\.jsdelivr\.net/npm/d3@',
     'Plotly': r'plotly(?:\.min)?\.js|cdn\.plot\.ly',
     'Vega': r'vega(?:-lite)?(?:\.min)?\.js',
+    'DuckDB': r'duckdb',
+    'Grid.js': r'gridjs',
 }
 
 # Chart.js-inspired accent colors (top border on cards)
