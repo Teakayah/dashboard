@@ -34,11 +34,15 @@
       }
     }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="dropzone/vendor/gridjs/mermaid.min.css">
+    <link rel="icon" href="https://teakayah.github.io/dashboard/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="assets/theme.css">
+    <script src="assets/fullscreen.js"></script>
     <style>
         :root {
-            --primary: #2563eb;
-            --bg: #f8fafc;
+            --primary: #4f8ef7;
+            --bg: #f5f5f2;
             --card: #ffffff;
             --border: #e2e8f0;
             --text: #1e293b;
@@ -48,14 +52,21 @@
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 2rem;
             display: flex;
             flex-direction: column;
             gap: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
         }
-        header {
+        header.drop-header {
             border-bottom: 2px solid var(--border);
             padding-bottom: 1rem;
         }
@@ -73,6 +84,24 @@
             border-color: var(--primary);
             background: #eff6ff;
         }
+        .preview-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+        .preview-card {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .preview-card h3 {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
         .sql-console {
             display: flex;
             flex-direction: column;
@@ -82,15 +111,21 @@
             border-radius: 0.75rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
+        .console-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
         textarea {
             width: 100%;
-            height: 120px;
+            height: 100px;
             font-family: "JetBrains Mono", "Fira Code", monospace;
             padding: 1rem;
             border: 1px solid var(--border);
             border-radius: 0.5rem;
             resize: vertical;
             box-sizing: border-box;
+            font-size: 0.9rem;
         }
         button {
             background-color: var(--primary);
@@ -100,9 +135,13 @@
             border-radius: 0.5rem;
             font-weight: 600;
             cursor: pointer;
-            align-self: flex-start;
+            transition: opacity 0.2s;
         }
-        button:disabled { background-color: #94a3b8; }
+        button:hover { opacity: 0.9; }
+        button.secondary {
+            background-color: #64748b;
+        }
+        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
         .results-container {
             background: var(--card);
             border-radius: 0.75rem;
@@ -112,7 +151,6 @@
         .schema-info {
             font-size: 0.875rem;
             color: #64748b;
-            margin-top: 1rem;
         }
         #status {
             font-size: 0.875rem;
@@ -131,6 +169,10 @@
             align-items: center;
             font-weight: bold;
         }
+        @media (max-width: 600px) {
+            .preview-section { grid-template-columns: 1fr; }
+            .container { padding: 1rem; }
+        }
     </style>
 
   <!-- Open Graph / Social Sharing -->
@@ -144,30 +186,76 @@
   <meta property="twitter:image" content="https://teakayah.github.io/dashboard/previews/dropzone.png">
 </head>
 <body>
-<!-- back-link-inject --><div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:6px 0 2px;font-size:0.78rem;"><a href="https://teakayah.github.io/dashboard/" style="color:#4f8ef7;text-decoration:none;font-weight:600;">&#8592; DataDashboard</a></div>
-    <header>
-        <h1>Analytical Drop-Zone</h1>
-        <p>Drag & Drop CSV, JSON, or Parquet files to query them locally with SQL.</p>
-        <div id="status">Initializing DuckDB...</div>
-    </header>
+<!-- unified-header-inject -->
+<header class="unified-header">
+  <div class="back-link-box">
+    <a href="https://teakayah.github.io/dashboard/" style="font-weight:700; color:var(--primary); font-size:1.2rem;">DataDashboard</a>
+    <span style="opacity:0.3; margin: 0 4px;">/</span>
+    <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
+  </div>
+  <div class="nav-links">
+    <button class="share-btn" onclick="navigator.share({title: document.title, url: window.location.href})">Share</button>
+  </div>
+</header>
 
-    <div id="drop-zone" class="drop-zone">
-        <p>Drop files here or click to select</p>
-        <input type="file" id="file-input" style="display: none;" multiple>
+    <div class="container">
+        <header class="drop-header">
+            <h1>Analytical Drop-Zone</h1>
+            <p>Drag & Drop CSV, JSON, or Parquet files to query them locally with SQL.</p>
+            <div id="status">Initializing DuckDB...</div>
+        </header>
+
+        <div id="drop-zone" class="drop-zone">
+            <p>Drop files here or click to select</p>
+            <input type="file" id="file-input" style="display: none;" multiple>
+        </div>
+
+        <div id="instant-previews" class="preview-section"></div>
+
+        <div id="schema-display" class="schema-info"></div>
+
+        <div class="sql-console">
+            <textarea id="sql-input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
+            <div class="console-actions">
+                <button id="run-query" disabled>Run Query</button>
+                <button id="download-csv" class="secondary" disabled>Download Results as CSV</button>
+            </div>
+        </div>
+
+        <div id="results" class="results-container"></div>
     </div>
-
-    <div id="schema-display" class="schema-info"></div>
-
-    <div class="sql-console">
-        <textarea id="sql-input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
-        <button id="run-query" disabled>Run Query</button>
-    </div>
-
-    <div id="results" class="results-container"></div>
 
     <div id="loading" class="loading-overlay">Processing...</div>
 
     <script src="dropzone/vendor/gridjs/gridjs.js"></script>
     <script type="module" src="dropzone/app.js"></script>
+<!-- related-links-inject -->
+<section class="related-section">
+  <div class="related-label">Related Analyses</div>
+  <div class="related-grid">
+    <a href="nhpi_big6_comparison.html" class="related-link"><strong>NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</strong><span>Apr 2026</span></a><a href="employment_rate_canada.html" class="related-link"><strong>Canadian Labour & Fiscal Dashboard</strong><span>Apr 2026</span></a><a href="flood_risk_gatineau_ottawa.html" class="related-link"><strong>Ottawa-Gatineau Flood Risk — Station 02KF005</strong><span>Apr 2026</span></a>
+  </div>
+</section>
+<style>
+  .related-section { padding: 40px 20px; border-top: 1px solid var(--border); background: #fafafa; margin-top: 60px; }
+  .related-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #999; margin-bottom: 16px; letter-spacing: 0.05em; text-align: center; }
+  .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
+  .related-link { display: flex; flex-direction: column; padding: 16px; background: #fff; border-radius: 10px; border: 1px solid var(--border); text-decoration: none; color: inherit; transition: transform 0.2s; }
+  .related-link:hover { transform: translateY(-3px); border-color: var(--primary); }
+  .related-link strong { font-size: 0.9rem; color: #1a1a2e; margin-bottom: 4px; }
+  .related-link span { font-size: 0.75rem; color: #bbb; }
+</style>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          console.log('SW registered:', reg);
+        }).catch(err => {
+          console.log('SW registration failed:', err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
