@@ -1,0 +1,133 @@
+:root {
+  --primary: #4f8ef7;
+  --bg: #f5f5f2;
+  --card-bg: #ffffff;
+  --text: #222;
+  --text-muted: #666;
+  --text-dim: #bbb;
+  --border: #e8e8e4;
+  --border-dark: #d8d8d4;
+  --header-bg: #1a1a2e;
+  --header-text: #ffffff;
+  --header-muted: rgba(255, 255, 255, 0.45);
+  --accent-blue: #4f8ef7;
+  --accent-red: #ff6384;
+  --accent-teal: #4bc0c0;
+  --accent-orange: #ff9f40;
+  --accent-purple: #9966ff;
+  --accent-sky: #36a2eb;
+  --accent-yellow: #ffce56;
+  --accent-green: #2ecc71;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Common Layout Components */
+.unified-header {
+  background: var(--header-bg);
+  color: var(--header-text);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.unified-header h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  cursor: pointer;
+}
+
+.unified-header h1 span {
+  color: var(--primary);
+}
+
+.unified-header .nav-links {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.unified-header a {
+  color: var(--header-text);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+
+.unified-header a:hover {
+  opacity: 1;
+}
+
+.back-link-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.share-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Fullscreen Chart Support */
+.chart-container {
+  position: relative;
+}
+
+.fullscreen-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255,255,255,0.8);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.chart-container:hover .fullscreen-btn {
+  opacity: 1;
+}
+
+.chart-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: white !important;
+  padding: 20px !important;
+}
+
+@media (max-width: 600px) {
+  .unified-header {
+    padding: 10px 16px;
+  }
+}

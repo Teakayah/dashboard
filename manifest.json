@@ -1,0 +1,16 @@
+{
+  "name": "DataDashboard",
+  "short_name": "DataDash",
+  "description": "Interactive data analysis visualizations and local SQL tools.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
