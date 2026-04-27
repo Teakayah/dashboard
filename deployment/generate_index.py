@@ -5,10 +5,10 @@ Run locally or via GitHub Actions on every push.
 """
 
 import argparse
-import html
 import json
 import re
 import subprocess
+import random
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
@@ -66,16 +66,11 @@ def _git_date(filepath: Path) -> str:
 
 
 def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None) -> dict:
-    """Extract title, description, and tags from an HTML file content.
-
-    Falls back to pre-generated descriptions from descriptions.json when no
-    <meta name="description"> or subtitle element is found in the HTML.
-    """
+    """Extract title, description, and tags from an HTML file content."""
     # Title
     title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
     title = title_match.group(1).strip() if title_match else filepath.stem.replace('_', ' ').title()
-    # Clean HTML entities in title
-    title = html.unescape(title)
+    title = title.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&#39;', "'")
 
     # Meta description
     desc_match = re.search(
@@ -84,7 +79,6 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
     )
     description = desc_match.group(1).strip() if desc_match else ''
 
-    # If no meta description, look for a subtitle element (common pattern in your files)
     if not description:
         sub_match = re.search(r'class=["\'][^"\']*subtitle[^"\']*["\'][^>]*>(.*?)</[a-z]+>', content, re.IGNORECASE | re.DOTALL)
         if sub_match:
@@ -93,17 +87,12 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
             if len(description) > 120:
                 description = description[:117] + '…'
 
-    # Fallback: use pre-generated description from descriptions.json
     if not description and descriptions:
         description = descriptions.get(filepath.name, '')
 
-    description = html.unescape(description)
-
-    # Detect visualization libraries
     tags = [name for name, pattern in LIBRARY_PATTERNS.items()
             if re.search(pattern, content, re.IGNORECASE)]
 
-    # Date from git log (CI-safe; mtime is always "now" after checkout)
     date_str = _git_date(filepath)
 
     return {
@@ -171,14 +160,7 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
 
 
 def inject_responsive(content: str, filename: str, preset_name: str = 'default') -> str:
-    """Inject responsive desktop layout enhancer into an analysis HTML file content.
-
-    Injected right after <head> so the Chart.js defineProperty trap runs
-    before chart.js itself is loaded (which typically appears in <head>).
-    Strips any older version of the injection before re-injecting.
-    Files that already contain the current marker are left untouched so that
-    hand-crafted responsive blocks are not overwritten by the default preset.
-    """
+    """Inject responsive desktop layout enhancer into an analysis HTML file content."""
     preset = RESPONSIVE_PRESETS[preset_name]
 
     if preset_name == 'none':
@@ -188,19 +170,14 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
             content,
             flags=re.DOTALL,
         )
-        if new_content != content:
-            print(f'  Removed responsive enhancer from {filename}')
         return new_content
 
     marker = preset['marker']
     snippet = preset['snippet']
 
-    # If the current marker is already present, the file has a hand-crafted or
-    # up-to-date block — leave it completely untouched.
     if marker in content:
         return content
 
-    # Strip any older-version block, then inject the current preset.
     new_content = re.sub(
         r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
         '',
@@ -214,52 +191,62 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
         count=1,
         flags=re.IGNORECASE,
     )
-    if final_content != new_content:
-        print(f'  Injected responsive enhancer into {filename}')
     return final_content
 
 
-BACK_LINK_MARKER = '<!-- back-link-inject -->'
+THEME_LINK = '<link rel="stylesheet" href="assets/theme.css">'
+FULLSCREEN_SCRIPT = '<script src="assets/fullscreen.js"></script>'
+MANIFEST_LINK = '<link rel="manifest" href="manifest.json">'
 
-BACK_LINK_SNIPPET = (
-    '<!-- back-link-inject -->'
-    '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;'
-    'padding:6px 0 2px;font-size:0.78rem;">'
-    f'<a href="{SITE_URL}/" style="color:#4f8ef7;text-decoration:none;font-weight:600;">'
-    '&#8592; DataDashboard</a></div>'
-)
-
-
-def inject_back_link(content: str, filename: str) -> str:
-    """Inject a 'back to homepage' link right after <body> in an analysis file content."""
-    if BACK_LINK_MARKER in content:
+def inject_assets(content: str, filename: str) -> str:
+    """Inject theme CSS, manifest and utility JS into <head>."""
+    if THEME_LINK in content:
         return content
-
+    
+    head_assets = f'\n  {THEME_LINK}\n  {FULLSCREEN_SCRIPT}\n  {MANIFEST_LINK}'
     new_content = re.sub(
-        r'(<body[^>]*>)',
-        r'\1\n' + BACK_LINK_SNIPPET,
+        r'(</head>)',
+        head_assets + r'\n\1',
         content,
         count=1,
         flags=re.IGNORECASE,
     )
-    if new_content != content:
-        print(f'  Injected back-link into {filename}')
     return new_content
 
 
+HEADER_MARKER = '<!-- unified-header-inject -->'
 
-def inject_favicon(content: str, filename: str) -> str:
-    """Inject favicon link into an analysis HTML file content if not already present."""
-    if 'rel="icon"' in content or "rel='icon'" in content:
-        return content  # already has one, leave it alone
+def build_header_snippet() -> str:
+    return f'''<!-- unified-header-inject -->
+<header class="unified-header">
+  <div class="back-link-box">
+    <a href="{SITE_URL}/" style="font-weight:700; color:var(--primary); font-size:1.2rem;">DataDashboard</a>
+    <span style="opacity:0.3; margin: 0 4px;">/</span>
+    <a href="{SITE_URL}/" style="opacity:0.7;">Analyses</a>
+  </div>
+  <div class="nav-links">
+    <button class="share-btn" onclick="navigator.share({{title: document.title, url: window.location.href}})">Share</button>
+  </div>
+</header>'''
 
-    favicon_link = f'\n  <link rel="icon" href="{SITE_URL}/favicon.ico" type="image/x-icon">'
+def inject_unified_header(content: str, filename: str) -> str:
+    """Inject a unified site header at the top of <body>."""
+    if HEADER_MARKER in content:
+        return content
 
-    # Insert just before </head>
-    new_content = re.sub(r'(</head>)', favicon_link + r'\n\1', content, count=1, flags=re.IGNORECASE)
-    if new_content != content:
-        print(f'  Injected favicon into {filename}')
+    # Strip old back-link-inject block
+    content = re.sub(r'<!-- back-link-inject -->.*?</div>', '', content, flags=re.DOTALL)
+
+    header_snippet = build_header_snippet()
+    new_content = re.sub(
+        r'(<body[^>]*>)',
+        r'\1\n' + header_snippet,
+        content,
+        count=1,
+        flags=re.IGNORECASE,
+    )
     return new_content
+
 
 def inject_og_tags(content: str, filename: str, stem: str) -> str:
     """Inject og:image/twitter:image into an analysis HTML file content if not already present."""
@@ -271,7 +258,7 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
     # Extract title for og:title
     title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
     title = title_match.group(1).strip() if title_match else stem.replace('_', ' ').title()
-    title = html.escape(html.unescape(title), quote=True)
+    title = title.replace('&amp;', '&').replace('"', '&quot;')
 
     og_block = (
         f'\n  <!-- Open Graph / Social Sharing -->'
@@ -287,49 +274,102 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
 
     # Insert just before </head>
     new_content = re.sub(r'(</head>)', og_block + r'\n\1', content, count=1, flags=re.IGNORECASE)
-    if new_content != content:
-        print(f'  Injected og:image into {filename}')
     return new_content
+
+
+RELATED_MARKER = '<!-- related-links-inject -->'
+
+def build_related_links(current_filename: str, all_meta: list[dict]) -> str:
+    # Pick 3 random other analyses
+    others = [m for m in all_meta if m['filename'] != current_filename]
+    sample = random.sample(others, min(len(others), 3))
+    
+    links_html = "".join([
+        f'<a href="{m["filename"]}" class="related-link"><strong>{m["title"]}</strong><span>{m["date"]}</span></a>'
+        for m in sample
+    ])
+
+    return f'''<!-- related-links-inject -->
+<section class="related-section">
+  <div class="related-label">Related Analyses</div>
+  <div class="related-grid">
+    {links_html}
+  </div>
+</section>
+<style>
+  .related-section {{ padding: 40px 20px; border-top: 1px solid var(--border); background: #fafafa; margin-top: 60px; }}
+  .related-label {{ font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #999; margin-bottom: 16px; letter-spacing: 0.05em; text-align: center; }}
+  .related-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }}
+  .related-link {{ display: flex; flex-direction: column; padding: 16px; background: #fff; border-radius: 10px; border: 1px solid var(--border); text-decoration: none; color: inherit; transition: transform 0.2s; }}
+  .related-link:hover {{ transform: translateY(-3px); border-color: var(--primary); }}
+  .related-link strong {{ font-size: 0.9rem; color: #1a1a2e; margin-bottom: 4px; }}
+  .related-link span {{ font-size: 0.75rem; color: #bbb; }}
+</style>'''
+
+def inject_related_links(content: str, filename: str, all_meta: list[dict]) -> str:
+    if RELATED_MARKER in content or len(all_meta) < 2:
+        return content
+    
+    related_snippet = build_related_links(filename, all_meta)
+    new_content = re.sub(
+        r'(</body>)',
+        related_snippet + r'\n\1',
+        content,
+        count=1,
+        flags=re.IGNORECASE,
+    )
+    return new_content
+
+def inject_pwa_script(content: str) -> str:
+    if 'serviceWorker.register' in content:
+        return content
+    
+    script = '''
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          console.log('SW registered:', reg);
+        }).catch(err => {
+          console.log('SW registration failed:', err);
+        });
+      });
+    }
+  </script>'''
+    return re.sub(r'(</body>)', script + r'\n\1', content, count=1, flags=re.IGNORECASE)
 
 
 def build_card(analysis: dict, index: int) -> str:
     color = ACCENT_COLORS[index % len(ACCENT_COLORS)]
-    badges_html = ''.join(f'<span class="badge">{html.escape(tag)}</span>' for tag in analysis['tags'])
+    badges_html = ''.join(f'<span class="badge">{tag}</span>' for tag in analysis['tags'])
     desc_html = (
-        f'<p class="card-desc">{html.escape(analysis["description"])}</p>'
+        f'<p class="card-desc">{analysis["description"]}</p>'
         if analysis['description'] else ''
     )
     date_html = (
-        f'<span class="card-date">{html.escape(analysis["date"])}</span>'
+        f'<div class="card-date">Last Updated: <span>{analysis["date"]}</span></div>'
         if analysis['date'] else ''
     )
-    return f'''      <a class="card" href="{html.escape(analysis['filename'], quote=True)}" style="--accent:{color}">
+    return f'''      <a class="card" href="{analysis['filename']}" style="--accent:{color}">
         <div class="card-top">
-          <div class="card-title">{html.escape(analysis['title'])}</div>
+          <div class="card-title">{analysis['title']}</div>
           <div class="badges">{badges_html}</div>
         </div>
         {desc_html}
         <div class="card-footer">
           {date_html}
-          <span class="card-link">View analysis →</span>
+          <span class="card-link">Explore →</span>
         </div>
       </a>'''
 
 
-
-
 def build_html(analyses: list[dict]) -> str:
     count = len(analyses)
-    subtitle = f'{count} analysis{"" if count == 1 else "es"}' if count else 'No analyses yet — drop an HTML file here'
-
+    subtitle = f'{count} analysis{"" if count == 1 else "es"}' if count else 'A hub for interactive data insights'
     cards_html = '\n'.join(build_card(a, i) for i, a in enumerate(analyses))
-    empty_html = (
-        '<div class="empty">No analyses found yet.<br>Add <code>.html</code> files to the repo root and push.</div>'
-        if not analyses else ''
-    )
-
+    empty_html = '<div class="empty">No analyses found yet.</div>' if not analyses else ''
     og_image_url = f'{SITE_URL}/previews/index.png'
-    og_desc = f'{count} analysis{"" if count == 1 else "es"} from various datasets and projects.' if count else 'A hub for data analysis visualizations and insights.'
+    og_desc = f'{count} analysis{"" if count == 1 else "es"} from various datasets and projects.'
 
     return f'''<!DOCTYPE html>
 <html lang="en">
@@ -337,240 +377,63 @@ def build_html(analyses: list[dict]) -> str:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DataDashboard</title>
-  <link rel="icon" href="{SITE_URL}/favicon.ico" type="image/x-icon">
-
-  <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="{SITE_URL}/">
   <meta property="og:title" content="DataDashboard">
   <meta property="og:description" content="{og_desc}">
   <meta property="og:image" content="{og_image_url}">
-  <meta property="og:image:width" content="600">
-  <meta property="og:image:height" content="315">
-
-  <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="{SITE_URL}/">
-  <meta property="twitter:title" content="DataDashboard">
-  <meta property="twitter:description" content="{og_desc}">
-  <meta property="twitter:image" content="{og_image_url}">
-
-  <!-- RSS / Atom feed -->
   <link rel="alternate" type="application/atom+xml" title="DataDashboard feed" href="{SITE_URL}/feed.xml">
+  <link rel="stylesheet" href="assets/theme.css">
+  <link rel="manifest" href="manifest.json">
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
-
-    body {{
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f5f5f2;
-      color: #222;
-      min-height: 100vh;
-    }}
-
-    /* ── Header ─────────────────────────────────────────────── */
-    header {{
-      background: #1a1a2e;
-      color: #fff;
-      padding: 28px 32px 24px;
-    }}
-    header h1 {{
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-      margin-bottom: 4px;
-    }}
-    header h1 span {{
-      color: #4f8ef7;
-    }}
-    .header-sub {{
-      font-size: 0.82rem;
-      color: rgba(255,255,255,0.45);
-    }}
-
-    /* ── Search ─────────────────────────────────────────────── */
-    .search-bar {{
-      padding: 16px 32px;
-      background: #f5f5f2;
-      border-bottom: 1px solid #e8e8e4;
-    }}
-    .search-bar input {{
-      width: 100%;
-      max-width: 480px;
-      padding: 9px 14px;
-      border-radius: 8px;
-      border: 1px solid #d8d8d4;
-      background: #fff;
-      font-size: 0.85rem;
-      color: #222;
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }}
-    .search-bar input:focus {{
-      border-color: #4f8ef7;
-      box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
-    }}
-    .search-bar input::placeholder {{ color: #aaa; }}
-
-    /* ── Grid ───────────────────────────────────────────────── */
-    main {{
-      padding: 24px 32px 48px;
-    }}
-    .grid-label {{
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #999;
-      margin-bottom: 14px;
-    }}
-    .grid {{
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
-    }}
-
-    /* ── Card ───────────────────────────────────────────────── */
-    .card {{
-      display: flex;
-      flex-direction: column;
-      background: #fff;
-      border-radius: 12px;
-      padding: 18px 18px 14px;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
-      border-top: 3px solid var(--accent, #4f8ef7);
-      text-decoration: none;
-      color: inherit;
-      transition: transform 0.15s, box-shadow 0.15s;
-      cursor: pointer;
-    }}
-    .card:hover {{
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.11);
-    }}
-    .card-top {{
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 8px;
-    }}
-    .card-title {{
-      font-size: 0.92rem;
-      font-weight: 700;
-      color: #1a1a2e;
-      line-height: 1.35;
-      flex: 1;
-    }}
-    .badges {{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }}
-    .badge {{
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: #4f8ef7;
-      background: rgba(79,142,247,0.1);
-      border-radius: 4px;
-      padding: 2px 6px;
-      white-space: nowrap;
-    }}
-    .card-desc {{
-      font-size: 0.78rem;
-      color: #666;
-      line-height: 1.5;
-      flex: 1;
-      margin-bottom: 12px;
-    }}
-    .card-footer {{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: auto;
-      padding-top: 10px;
-      border-top: 1px solid #f0f0ec;
-    }}
-    .card-date {{
-      font-size: 0.72rem;
-      color: #bbb;
-      font-weight: 600;
-    }}
-    .card-link {{
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--accent, #4f8ef7);
-    }}
-
-    /* ── Empty state ─────────────────────────────────────────── */
-    .empty {{
-      font-size: 0.88rem;
-      color: #999;
-      padding: 40px 0;
-      text-align: center;
-      line-height: 1.7;
-    }}
-    .empty code {{
-      background: #eee;
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-size: 0.84em;
-    }}
-
-    /* ── Search match highlight ──────────────────────────────── */
+    body {{ min-height: 100vh; }}
+    header.hero {{ background: var(--header-bg); color: #fff; padding: 60px 32px 48px; text-align: center; }}
+    header.hero h1 {{ font-size: 2.2rem; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 8px; }}
+    header.hero h1 span {{ color: var(--primary); }}
+    .header-sub {{ font-size: 1rem; color: var(--header-muted); max-width: 600px; margin: 0 auto; }}
+    .search-bar {{ padding: 0 32px; margin-top: -24px; display: flex; justify-content: center; }}
+    .search-bar input {{ width: 100%; max-width: 600px; padding: 14px 20px; border-radius: 12px; border: 1px solid var(--border-dark); background: #fff; font-size: 0.95rem; color: #222; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: border-color 0.15s, box-shadow 0.15s; }}
+    .search-bar input:focus {{ border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79,142,247,0.15); }}
+    main {{ padding: 48px 32px 64px; max-width: 1200px; margin: 0 auto; }}
+    .grid-label {{ font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }}
+    .grid-label::after {{ content: ""; height: 1px; background: var(--border); flex: 1; }}
+    .grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }}
+    .card {{ display: flex; flex-direction: column; background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); border-top: 4px solid var(--accent, var(--primary)); text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s; }}
+    .card:hover {{ transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }}
+    .card-title {{ font-size: 1.05rem; font-weight: 700; color: #1a1a2e; line-height: 1.4; margin-bottom: 8px; }}
+    .badge {{ font-size: 0.65rem; font-weight: 700; color: var(--primary); background: rgba(79,142,247,0.1); border-radius: 6px; padding: 3px 8px; margin-right: 4px; }}
+    .card-desc {{ font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }}
+    .card-footer {{ display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }}
+    .card-date {{ font-size: 0.72rem; color: #bbb; font-weight: 600; }}
+    .card-date span {{ color: #999; }}
+    .card-link {{ font-size: 0.8rem; font-weight: 700; color: var(--accent, var(--primary)); }}
     .card.hidden {{ display: none; }}
-    .card.match {{ background: #fffdf5; box-shadow: 0 1px 6px rgba(0,0,0,0.07), 0 0 0 2px rgba(79,142,247,0.25); }}
-
-    /* ── Keyboard focus ──────────────────────────────────────── */
-    .card:focus-visible {{
-      outline: 2px solid #4f8ef7;
-      outline-offset: 2px;
-    }}
-
-    /* ── Footer ─────────────────────────────────────────────── */
-    footer {{
-      text-align: center;
-      font-size: 0.7rem;
-      color: #bbb;
-      padding: 0 32px 28px;
-    }}
-
-    /* ── Responsive ──────────────────────────────────────────── */
-    @media (max-width: 600px) {{
-      header {{ padding: 20px 18px 18px; }}
-      .search-bar {{ padding: 12px 18px; }}
-      main {{ padding: 18px 18px 40px; }}
-      footer {{ padding: 0 18px 24px; }}
-    }}
+    footer {{ text-align: center; font-size: 0.8rem; color: #bbb; padding: 0 32px 48px; }}
+    footer a {{ color: #999; text-decoration: none; font-weight: 600; }}
+    footer a:hover {{ color: var(--primary); }}
+    @media (max-width: 600px) {{ header.hero {{ padding: 40px 20px 32px; }} .grid {{ grid-template-columns: 1fr; }} }}
   </style>
 </head>
 <body>
-
-<header>
+<header class="hero">
   <h1>Data<span>Dashboard</span></h1>
   <div class="header-sub">{subtitle}</div>
 </header>
-
 <div class="search-bar">
-  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off">
+  <input id="search" type="search" placeholder="Search analyses and tools…" autocomplete="off">
 </div>
-
 <main>
-  <div class="grid-label">Analyses</div>
-  <div class="grid" id="grid">
-{cards_html}
-  </div>
+  <div class="grid-label">Available Analyses</div>
+  <div class="grid" id="grid">{cards_html}</div>
   {empty_html}
 </main>
-
 <footer>
-  Auto-generated · <a href="https://github.com/Teakayah/dashboard" style="color:#bbb" target="_blank" rel="noopener noreferrer">Teakayah/dashboard</a>
+  <a href="https://github.com/Teakayah/dashboard" target="_blank" rel="noopener noreferrer">View on GitHub</a>
   &nbsp;·&nbsp;
-  <a href="{SITE_URL}/feed.xml" style="color:#bbb" title="Subscribe via RSS/Atom">&#x2605; RSS feed</a>
+  <a href="{SITE_URL}/feed.xml">RSS Feed</a>
 </footer>
-
 <script>
   const input = document.getElementById('search');
   const cards = document.querySelectorAll('.card');
@@ -578,56 +441,47 @@ def build_html(analyses: list[dict]) -> str:
     const q = input.value.trim().toLowerCase();
     cards.forEach(c => {{
       const text = c.textContent.toLowerCase();
-      const matches = q !== '' && text.includes(q);
-      c.classList.toggle('hidden', q !== '' && !matches);
-      c.classList.toggle('match', matches);
+      c.classList.toggle('hidden', q !== '' && !text.includes(q));
     }});
   }});
 </script>
-
+<script>
+  if ('serviceWorker' in navigator) {{
+    window.addEventListener('load', () => {{
+      navigator.serviceWorker.register('/sw.js');
+    }});
+  }}
+</script>
 </body>
-</html>
-'''
+</html>'''
 
 
 def main(argv: Optional[list[str]] = None):
     args = parse_args(argv)
     descriptions = load_descriptions()
-    analyses = []
-
-    # Process all HTML files, extract meta, and inject enhancements
     html_files = [p for p in ROOT.glob('*.html') if p.name.lower() not in EXCLUDE]
-    # Sort files by modification time before we potentially write back and alter their mtime
     html_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-
+    
+    all_meta = []
     for filepath in html_files:
-        try:
-            content = filepath.read_text(encoding='utf-8', errors='ignore')
-        except Exception:
-            # Fallback for file read errors if any
-            analyses.append(_fallback(filepath))
-            continue
+        content = filepath.read_text(encoding='utf-8', errors='ignore')
+        all_meta.append(extract_meta(filepath, content, descriptions=descriptions))
 
-        # Extract meta
-        meta = extract_meta(filepath, content, descriptions=descriptions)
-        analyses.append(meta)
-
-        # Inject enhancements
-        new_content = inject_responsive(content, meta['filename'], args.responsive_preset)
-        new_content = inject_back_link(new_content, meta['filename'])
-        new_content = inject_favicon(new_content, meta['filename'])
-        new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
+    for filepath, meta in zip(html_files, all_meta):
+        content = filepath.read_text(encoding='utf-8', errors='ignore')
+        new_content = inject_assets(content, filepath.name)
+        new_content = inject_responsive(new_content, filepath.name, args.responsive_preset)
+        new_content = inject_unified_header(new_content, filepath.name)
+        new_content = inject_og_tags(new_content, filepath.name, filepath.stem)
+        new_content = inject_related_links(new_content, filepath.name, all_meta)
+        new_content = inject_pwa_script(new_content)
 
         if new_content != content:
             filepath.write_text(new_content, encoding='utf-8')
 
-    html = build_html(analyses)
-    output = ROOT / 'index.html'
-    output.write_text(html, encoding='utf-8')
-    print(f'Generated index.html with {len(analyses)} analysis file(s).')
-    for a in analyses:
-        print(f'  - {a["filename"]} → {a["title"]}')
-
+    html = build_html(all_meta)
+    (ROOT / 'index.html').write_text(html, encoding='utf-8')
+    print(f'Generated index.html with {len(all_meta)} analyses.')
 
 if __name__ == '__main__':
     main()
