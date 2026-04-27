@@ -10,6 +10,7 @@ import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 ROOT = Path(__file__).parent.parent
 EXCLUDE = {'index.html'}
@@ -61,7 +62,7 @@ def _git_date(filepath: Path) -> str:
     return datetime.fromtimestamp(filepath.stat().st_mtime).strftime('%b %Y')
 
 
-def extract_meta(filepath: Path, content: str, descriptions: dict | None = None) -> dict:
+def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None) -> dict:
     """Extract title, description, and tags from an HTML file content.
 
     Falls back to pre-generated descriptions from descriptions.json when no
@@ -153,7 +154,7 @@ RESPONSIVE_PRESETS = {
 }
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.strip())
     parser.add_argument(
         '--responsive-preset',
@@ -569,7 +570,7 @@ def build_html(analyses: list[dict]) -> str:
 '''
 
 
-def main(argv: list[str] | None = None):
+def main(argv: Optional[list[str]] = None):
     args = parse_args(argv)
     descriptions = load_descriptions()
     analyses = []

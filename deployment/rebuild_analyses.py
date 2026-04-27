@@ -14,6 +14,8 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional
+
 
 ROOT = Path(__file__).parent.parent
 SRC = ROOT / 'source' / 'Stat Can'
@@ -27,7 +29,7 @@ def _read_csv(path: Path) -> list[dict]:
         return list(csv.DictReader(f))
 
 
-def _clean(val: str) -> float | None:
+def _clean(val: str) -> Optional[float]:
     """Return float or None for Stats Canada VALUE cells."""
     v = val.strip()
     if v in ('', '..', 'F', 'x', 'E', 'r', 'p'):
