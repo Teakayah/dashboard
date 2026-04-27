@@ -1,5 +1,5 @@
 import pytest
-from deployment.rebuild_analyses import extract_emp_rate, _clean
+from deployment.rebuild_analyses import extract_emp_rate, extract_prov_debt, _clean
 
 
 def create_row(
@@ -21,6 +21,24 @@ def create_row(
         "Age group": age,
         "Statistics": stat,
         "Data type": dtype,
+    }
+
+
+def create_debt_row(
+    geo="Ontario",
+    ref_date="2023",
+    value="10000",
+    component="Provincial and territorial governments",
+    display="Stocks",
+    statement="Liabilities [63]",
+):
+    return {
+        "GEO": geo,
+        "REF_DATE": ref_date,
+        "VALUE": value,
+        "Public sector components": component,
+        "Display value": display,
+        "Statement of operations and balance sheet": statement,
     }
 
 
@@ -108,6 +126,58 @@ def test_extract_emp_rate_missing_value():
 )
 def test_clean_valid_floats(val, expected):
     assert _clean(val) == expected
+
+
+def test_extract_prov_debt_basic():
+    rows = [
+        # Valid row for Ontario 2023 (10000 -> 10.0)
+        create_debt_row(geo="Ontario", ref_date="2023", value="10000"),
+        # Valid row for Quebec 2023 (15000 -> 15.0)
+        create_debt_row(geo="Quebec", ref_date="2023", value="15000"),
+        # Valid row for Ontario 2024 (25500 -> 25.5)
+        create_debt_row(geo="Ontario", ref_date="2024", value="25500"),
+        # Invalid rows that should be filtered out:
+        # Wrong component
+        create_debt_row(component="Federal government"),
+        # Wrong display value
+        create_debt_row(display="Transactions"),
+        # Wrong statement
+        create_debt_row(statement="Assets"),
+        # Missing/invalid value
+        create_debt_row(value=".."),
+        create_debt_row(value="x"),
+        create_debt_row(value=""),
+    ]
+
+    result = extract_prov_debt(rows)
+
+    expected = {
+        "Ontario": [{"year": 2023, "value": 10.0}, {"year": 2024, "value": 25.5}],
+        "Quebec": [{"year": 2023, "value": 15.0}],
+    }
+
+    assert result == expected
+
+
+def test_extract_prov_debt_empty():
+    assert extract_prov_debt([]) == {}
+
+
+def test_extract_prov_debt_unordered_years():
+    rows = [
+        create_debt_row(geo="Ontario", ref_date="2025", value="30000"),
+        create_debt_row(geo="Ontario", ref_date="2023", value="10000"),
+        create_debt_row(geo="Ontario", ref_date="2024", value="20000"),
+    ]
+    result = extract_prov_debt(rows)
+    expected = {
+        "Ontario": [
+            {"year": 2023, "value": 10.0},
+            {"year": 2024, "value": 20.0},
+            {"year": 2025, "value": 30.0},
+        ]
+    }
+    assert result == expected
 
 
 def test_clean_nan():
