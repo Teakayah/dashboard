@@ -136,7 +136,7 @@ def main() -> None:
             print(f'    → {desc}')
             updated += 1
         else:
-            print(f'    → (no description generated)')
+            print('    → (no description generated)')
 
     save_descriptions(descriptions)
     print(f'\nDone. {updated} description(s) updated in {DESCRIPTIONS_FILE.relative_to(ROOT)}')
