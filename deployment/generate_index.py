@@ -266,7 +266,8 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
     if 'og:image' in content:
         return content  # already has one, leave it alone
 
-    image_url = f'{SITE_URL}/previews/{stem}.png'
+    esc_filename = html.escape(filename, quote=True)
+    image_url = f'{SITE_URL}/previews/{html.escape(stem, quote=True)}.png'
 
     # Extract title for og:title
     title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
@@ -276,7 +277,7 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
     og_block = (
         f'\n  <!-- Open Graph / Social Sharing -->'
         f'\n  <meta property="og:type" content="article">'
-        f'\n  <meta property="og:url" content="{SITE_URL}/{filename}">'
+        f'\n  <meta property="og:url" content="{SITE_URL}/{esc_filename}">'
         f'\n  <meta property="og:title" content="{title}">'
         f'\n  <meta property="og:image" content="{image_url}">'
         f'\n  <meta property="og:image:width" content="600">'
