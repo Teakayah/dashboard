@@ -1,5 +1,5 @@
 import pytest
-from deployment.rebuild_analyses import extract_emp_rate, _clean, _inject_const
+from deployment.rebuild_analyses import extract_emp_rate, extract_fed_debt, _clean, _inject_const
 
 
 def create_row(
@@ -22,6 +22,85 @@ def create_row(
         "Statistics": stat,
         "Data type": dtype,
     }
+
+
+def create_fed_debt_row(
+    geo="Canada",
+    ref_date="2023",
+    value="1500000",
+    sector="Federal government",
+    statement="Liabilities",
+):
+    return {
+        "GEO": geo,
+        "REF_DATE": ref_date,
+        "VALUE": value,
+        "Government sectors": sector,
+        "Statement of government operations and balance sheet": statement,
+    }
+
+
+def test_extract_fed_debt_basic():
+    rows = [
+        # Valid row for 2023
+        create_fed_debt_row(ref_date="2023-01", value="1000000"),
+        create_fed_debt_row(ref_date="2023-02", value="2000000"),
+        # Average for 2023: 1500000 -> 1500000 / 1000 = 1500.0
+
+        # Valid row for 2024
+        create_fed_debt_row(ref_date="2024-01", value="3000000"),
+
+        # Invalid rows that should be filtered out:
+        # Wrong GEO
+        create_fed_debt_row(geo="Ontario"),
+        # Wrong sector
+        create_fed_debt_row(sector="Provincial and territorial governments"),
+        # Wrong statement
+        create_fed_debt_row(statement="Assets"),
+        # Missing/invalid value
+        create_fed_debt_row(value=".."),
+        create_fed_debt_row(value="x"),
+        create_fed_debt_row(value=""),
+    ]
+
+    result = extract_fed_debt(rows)
+
+    expected = [
+        {"year": 2023, "value": 1500.0},
+        {"year": 2024, "value": 3000.0},
+    ]
+
+    assert result == expected
+
+
+def test_extract_fed_debt_empty():
+    assert extract_fed_debt([]) == []
+
+
+def test_extract_fed_debt_missing_value():
+    rows = [
+        create_fed_debt_row(ref_date="2023-01", value="1000000"),
+        create_fed_debt_row(ref_date="2023-02", value="x"),
+        create_fed_debt_row(ref_date="2023-03", value=".."),
+    ]
+    result = extract_fed_debt(rows)
+    expected = [{"year": 2023, "value": 1000.0}]
+    assert result == expected
+
+
+def test_extract_fed_debt_unordered_years():
+    rows = [
+        create_fed_debt_row(ref_date="2025-01", value="3000000"),
+        create_fed_debt_row(ref_date="2023-01", value="1000000"),
+        create_fed_debt_row(ref_date="2024-01", value="2000000"),
+    ]
+    result = extract_fed_debt(rows)
+    expected = [
+        {"year": 2023, "value": 1000.0},
+        {"year": 2024, "value": 2000.0},
+        {"year": 2025, "value": 3000.0},
+    ]
+    assert result == expected
 
 
 def test_extract_emp_rate_basic():
