@@ -100,7 +100,7 @@ def _build_entry(filepath: Path, descriptions: dict) -> dict:
 
 def _atom_entry(entry: dict) -> str:
     preview_img = (
-        f'&lt;img src="{entry["preview_url"]}" '
+        f'&lt;img src="{html_lib.escape(entry["preview_url"], quote=True)}" '
         f'alt="{html_lib.escape(entry["title"], quote=True)}" '
         f'style="max-width:100%;border-radius:8px;margin-bottom:8px;" /&gt;'
         if entry['preview_url'] else ''

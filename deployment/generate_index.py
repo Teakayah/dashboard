@@ -276,13 +276,13 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
     og_block = (
         f'\n  <!-- Open Graph / Social Sharing -->'
         f'\n  <meta property="og:type" content="article">'
-        f'\n  <meta property="og:url" content="{SITE_URL}/{filename}">'
+        f'\n  <meta property="og:url" content="{SITE_URL}/{html.escape(filename, quote=True)}">'
         f'\n  <meta property="og:title" content="{title}">'
-        f'\n  <meta property="og:image" content="{image_url}">'
+        f'\n  <meta property="og:image" content="{html.escape(image_url, quote=True)}">'
         f'\n  <meta property="og:image:width" content="600">'
         f'\n  <meta property="og:image:height" content="315">'
         f'\n  <meta property="twitter:card" content="summary_large_image">'
-        f'\n  <meta property="twitter:image" content="{image_url}">'
+        f'\n  <meta property="twitter:image" content="{html.escape(image_url, quote=True)}">'
     )
 
     # Insert just before </head>
@@ -294,18 +294,18 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
 
 def build_card(analysis: dict, index: int) -> str:
     color = ACCENT_COLORS[index % len(ACCENT_COLORS)]
-    badges_html = ''.join(f'<span class="badge">{html.escape(tag)}</span>' for tag in analysis['tags'])
+    badges_html = ''.join(f'<span class="badge">{html.escape(tag, quote=True)}</span>' for tag in analysis['tags'])
     desc_html = (
-        f'<p class="card-desc">{html.escape(analysis["description"])}</p>'
+        f'<p class="card-desc">{html.escape(analysis["description"], quote=True)}</p>'
         if analysis['description'] else ''
     )
     date_html = (
-        f'<span class="card-date">{html.escape(analysis["date"])}</span>'
+        f'<span class="card-date">{html.escape(analysis["date"], quote=True)}</span>'
         if analysis['date'] else ''
     )
     return f'''      <a class="card" href="{html.escape(analysis['filename'], quote=True)}" style="--accent:{color}">
         <div class="card-top">
-          <div class="card-title">{html.escape(analysis['title'])}</div>
+          <div class="card-title">{html.escape(analysis['title'], quote=True)}</div>
           <div class="badges">{badges_html}</div>
         </div>
         {desc_html}
