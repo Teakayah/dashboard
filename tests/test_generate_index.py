@@ -41,11 +41,11 @@ def test_inject_responsive_replaces_older_versions():
         '  <!-- responsive-inject-v3 -->',
         '  <style>.old { color: red; }</style>',
         '  <script>window.oldResponsive = true;</script>',
+        '  <!-- /responsive-inject-v3 -->',
         '</head>',
         '<body></body>',
         '</html>',
     ])
-
     content = module.inject_responsive(initial_content, 'analysis.html')
 
     assert '<!-- responsive-inject-v3 -->' not in content
