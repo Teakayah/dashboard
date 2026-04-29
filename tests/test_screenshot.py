@@ -1,0 +1,198 @@
+import importlib.util
+import subprocess
+from pathlib import Path
+from unittest.mock import patch, MagicMock
+
+import pytest
+
+def load_screenshot_module():
+    path = Path(__file__).parent.parent / 'deployment' / 'screenshot.py'
+    spec = importlib.util.spec_from_file_location('screenshot', path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+def test_git_commit_time_success():
+    module = load_screenshot_module()
+    with patch('subprocess.run') as mock_run:
+        mock_run.return_value = MagicMock(stdout='1234567890\n')
+        ts = module._git_commit_time('test.html')
+        assert ts == 1234567890
+        mock_run.assert_called_once()
+
+def test_git_commit_time_empty():
+    module = load_screenshot_module()
+    with patch('subprocess.run') as mock_run:
+        mock_run.return_value = MagicMock(stdout='')
+        ts = module._git_commit_time('test.html')
+        assert ts == 0
+        mock_run.assert_called_once()
+
+def test_needs_screenshot_missing():
+    module = load_screenshot_module()
+    with patch('pathlib.Path.exists', return_value=False):
+        assert module.needs_screenshot('test.html') is True
+
+def test_needs_screenshot_outdated():
+    module = load_screenshot_module()
+    with patch('pathlib.Path.exists', return_value=True), \
+         patch.object(module, '_git_commit_time', side_effect=lambda name: 200 if 'test.html' in name else 100):
+        # html is newer (200) than png (100)
+        assert module.needs_screenshot('test.html') is True
+
+def test_needs_screenshot_uptodate():
+    module = load_screenshot_module()
+    with patch('pathlib.Path.exists', return_value=True), \
+         patch.object(module, '_git_commit_time', side_effect=lambda name: 100 if 'test.html' in name else 200):
+        # html is older (100) than png (200)
+        assert module.needs_screenshot('test.html') is False
+
+def test_main_no_html_files():
+    module = load_screenshot_module()
+    with patch('pathlib.Path.glob', return_value=[]):
+        module.main()
+
+def test_main_all_uptodate():
+    module = load_screenshot_module()
+    mock_p = MagicMock()
+    mock_p.name = 'test.html'
+    with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'needs_screenshot', return_value=False):
+        module.main()
+
+
+def test_main_playwright_missing():
+    module = load_screenshot_module()
+    mock_p = MagicMock()
+    mock_p.name = 'test.html'
+
+    # We mock glob to return a file, and needs_screenshot to return True
+    # so we enter the execution block.
+    # We also mock socket, subprocess, and sys.exit.
+    with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'needs_screenshot', return_value=True), \
+         patch('subprocess.Popen') as mock_popen, \
+         patch('socket.create_connection'), \
+         patch.dict('sys.modules', {'playwright.sync_api': None}), \
+         pytest.raises(SystemExit) as exc_info:
+
+        module.main()
+
+    assert 'Playwright is not installed' in str(exc_info.value)
+    mock_popen.return_value.terminate.assert_called()
+
+
+def test_main_server_fails_to_start():
+    module = load_screenshot_module()
+    mock_p = MagicMock()
+    mock_p.name = 'test.html'
+
+    with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'needs_screenshot', return_value=True), \
+         patch('subprocess.Popen') as mock_popen, \
+         patch('socket.create_connection', side_effect=OSError), \
+         patch('time.sleep'), \
+         pytest.raises(SystemExit) as exc_info:
+        module.main()
+
+    assert 'HTTP server did not start' in str(exc_info.value)
+    mock_popen.return_value.terminate.assert_called()
+
+def test_main_success_flow():
+    module = load_screenshot_module()
+    mock_p = MagicMock()
+    mock_p.name = 'test.html'
+
+    mock_browser = MagicMock()
+    mock_page = MagicMock()
+    mock_browser.new_page.return_value = mock_page
+
+    mock_pw = MagicMock()
+    mock_pw.chromium.launch.return_value = mock_browser
+
+    mock_sync_playwright = MagicMock()
+    mock_sync_playwright.return_value.__enter__.return_value = mock_pw
+
+    with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'needs_screenshot', return_value=True), \
+         patch('subprocess.Popen') as mock_popen, \
+         patch('socket.create_connection'), \
+         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
+         patch('pathlib.Path.mkdir'), \
+         patch('pathlib.Path.stat') as mock_stat:
+
+        mock_stat.return_value.st_size = 1024
+        module.main()
+
+    mock_browser.new_page.assert_called_once()
+    mock_page.goto.assert_called_once()
+    mock_page.screenshot.assert_called_once()
+    mock_page.close.assert_called_once()
+    mock_browser.close.assert_called_once()
+    mock_popen.return_value.terminate.assert_called()
+    mock_popen.return_value.wait.assert_called()
+
+def test_main_screenshot_failure():
+    module = load_screenshot_module()
+    mock_p = MagicMock()
+    mock_p.name = 'test.html'
+
+    mock_browser = MagicMock()
+    mock_page = MagicMock()
+    mock_browser.new_page.return_value = mock_page
+    # Force screenshot to raise exception
+    mock_page.screenshot.side_effect = Exception("Screenshot failed")
+
+    mock_pw = MagicMock()
+    mock_pw.chromium.launch.return_value = mock_browser
+
+    mock_sync_playwright = MagicMock()
+    mock_sync_playwright.return_value.__enter__.return_value = mock_pw
+
+    with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'needs_screenshot', return_value=True), \
+         patch('subprocess.Popen') as mock_popen, \
+         patch('socket.create_connection'), \
+         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
+         patch('pathlib.Path.mkdir'), \
+         pytest.raises(SystemExit) as exc_info:
+
+        module.main()
+
+    assert 'Failed to screenshot: [\'test.html\']' in str(exc_info.value)
+
+
+def test_main_timeout_waiting_for_load_state():
+    module = load_screenshot_module()
+    mock_p = MagicMock()
+    mock_p.name = 'test.html'
+
+    mock_browser = MagicMock()
+    mock_page = MagicMock()
+    mock_browser.new_page.return_value = mock_page
+
+    # Wait for load state raises TimeoutError
+    mock_page.wait_for_load_state.side_effect = Exception("Timeout")
+
+    mock_pw = MagicMock()
+    mock_pw.chromium.launch.return_value = mock_browser
+
+    mock_sync_playwright = MagicMock()
+    mock_sync_playwright.return_value.__enter__.return_value = mock_pw
+
+    with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'needs_screenshot', return_value=True), \
+         patch('subprocess.Popen') as mock_popen, \
+         patch('socket.create_connection'), \
+         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
+         patch('pathlib.Path.mkdir'), \
+         patch('pathlib.Path.stat') as mock_stat:
+
+        mock_stat.return_value.st_size = 1024
+        module.main()
+
+    mock_browser.new_page.assert_called_once()
+    mock_page.goto.assert_called_once()
+    mock_page.screenshot.assert_called_once()
+    mock_page.close.assert_called_once()
