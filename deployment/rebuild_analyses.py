@@ -48,12 +48,14 @@ def _clean(val: str) -> Optional[float]:
 # ── Extractors for employment_rate_canada.html ────────────────────────────────
 
 
-def extract_emp_rate(rows: list[dict]) -> dict:
-    """Annual average employment rate (%) by province — table 14100287."""
+def _extract_lfs_buckets(
+    rows: list[dict], char_name: str
+) -> dict[str, dict[int, list[float]]]:
+    """Helper to filter LFS table 14100287 data by characteristic and extract values."""
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
         if (
-            row["Labour force characteristics"] == "Employment rate"
+            row["Labour force characteristics"] == char_name
             and row["Gender"] == "Total - Gender"
             and row["Age group"] == "15 years and over"
             and row["Statistics"] == "Estimate"
@@ -63,6 +65,12 @@ def extract_emp_rate(rows: list[dict]) -> dict:
             if val is not None:
                 year = int(row["REF_DATE"][:4])
                 buckets[row["GEO"]][year].append(val)
+    return buckets
+
+
+def extract_emp_rate(rows: list[dict]) -> dict:
+    """Annual average employment rate (%) by province — table 14100287."""
+    buckets = _extract_lfs_buckets(rows, "Employment rate")
 
     return {
         geo: sorted(
@@ -75,19 +83,7 @@ def extract_emp_rate(rows: list[dict]) -> dict:
 
 def extract_emp_jobs(rows: list[dict]) -> dict:
     """Annual avg employed persons (thousands) + year-over-year change — table 14100287."""
-    buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
-    for row in rows:
-        if (
-            row["Labour force characteristics"] == "Employment"
-            and row["Gender"] == "Total - Gender"
-            and row["Age group"] == "15 years and over"
-            and row["Statistics"] == "Estimate"
-            and row["Data type"] == "Seasonally adjusted"
-        ):
-            val = _clean(row["VALUE"])
-            if val is not None:
-                year = int(row["REF_DATE"][:4])
-                buckets[row["GEO"]][year].append(val)
+    buckets = _extract_lfs_buckets(rows, "Employment")
 
     result = {}
     for geo, yd in buckets.items():
