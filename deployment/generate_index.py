@@ -437,13 +437,35 @@ def build_html(analyses: list[dict]) -> str:
 <script>
   const input = document.getElementById('search');
   const cards = document.querySelectorAll('.card');
-  input.addEventListener('input', () => {{
+
+  function highlight(text, query) {
+    if (!query) return text;
+    const regex = new RegExp(`(${query})`, 'gi');
+    return text.replace(regex, '<mark style="background: #ffeb3b; padding: 0 2px; border-radius: 2px; color: #000;">$1</mark>');
+  }
+
+  input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
-    cards.forEach(c => {{
+    cards.forEach(c => {
+      const titleEl = c.querySelector('.card-title');
+      const descEl = c.querySelector('.card-desc');
+
+      if (!c.dataset.origTitle) c.dataset.origTitle = titleEl.innerHTML;
+      if (descEl && !c.dataset.origDesc) c.dataset.origDesc = descEl.innerHTML;
+
       const text = c.textContent.toLowerCase();
-      c.classList.toggle('hidden', q !== '' && !text.includes(q));
-    }});
-  }});
+      const matches = q === '' || text.includes(q);
+      c.classList.toggle('hidden', !matches);
+
+      if (q !== '' && matches) {
+        titleEl.innerHTML = highlight(c.dataset.origTitle, q);
+        if (descEl) descEl.innerHTML = highlight(c.dataset.origDesc, q);
+      } else {
+        titleEl.innerHTML = c.dataset.origTitle || titleEl.innerHTML;
+        if (descEl) descEl.innerHTML = c.dataset.origDesc || (descEl ? descEl.innerHTML : '');
+      }
+    });
+  });
 </script>
 <script>
   if ('serviceWorker' in navigator) {{
