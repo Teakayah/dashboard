@@ -215,11 +215,20 @@
         <div id="schema-display" class="schema-info"></div>
 
         <div class="sql-console">
-            <textarea id="sql-input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
             <div class="console-actions">
+                <select id="query-recipes" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.85rem; cursor: pointer;">
+                    <option value="" disabled selected>Query Recipes...</option>
+                    <option value="SELECT * FROM {{TABLE}} LIMIT 10">Show Top 10 Rows</option>
+                    <option value="SELECT count(*) FROM {{TABLE}}">Count Total Rows</option>
+                    <option value="SELECT * FROM {{TABLE}} ORDER BY 1 DESC LIMIT 100">Sort by First Column (Desc)</option>
+                    <option value="SELECT column_name, data_type FROM (DESCRIBE {{TABLE}})">Show Schema Details</option>
+                </select>
+                <div style="flex: 1"></div>
                 <button id="run-query" disabled>Run Query</button>
                 <button id="download-csv" class="secondary" disabled>Download Results as CSV</button>
             </div>
+            <textarea id="sql-input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
+            <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: -5px;">Tip: Click column names in the schema above to insert them into your query.</p>
         </div>
 
         <div id="results" class="results-container"></div>

@@ -16,6 +16,7 @@ let db = null;
 let conn = null;
 let lastResult = null;
 let currentTableName = '';
+const loadedTables = new Set();
 
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
@@ -23,6 +24,7 @@ const fileInput = document.getElementById('file-input');
 const sqlInput = document.getElementById('sql-input');
 const runBtn = document.getElementById('run-query');
 const downloadBtn = document.getElementById('download-csv');
+const recipeSelect = document.getElementById('query-recipes');
 const schemaDisplay = document.getElementById('schema-display');
 const loadingOverlay = document.getElementById('loading');
 const previewsContainer = document.getElementById('instant-previews');
@@ -79,6 +81,8 @@ async function handleFiles(files) {
         for (const file of files) {
             const tableName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
             currentTableName = tableName;
+            loadedTables.add(tableName);
+            
             const buffer = await file.arrayBuffer();
             await db.registerFileBuffer(file.name, new Uint8Array(buffer));
             
@@ -97,10 +101,27 @@ async function handleFiles(files) {
             await conn.query(`DROP TABLE IF EXISTS ${tableName}`);
             await conn.query(query);
             
-            // Show schema
+            // Show schema with clickable columns
             const schema = await conn.query(`DESCRIBE ${tableName}`);
-            const schemaRows = schema.toArray().map(r => `${r.column_name} (${r.column_type})`).join(', ');
-            schemaDisplay.innerHTML += `<div><strong>${file.name}:</strong> ${schemaRows}</div>`;
+            const cols = schema.toArray().map(r => {
+                const span = document.createElement('span');
+                span.className = 'clickable-col';
+                span.style.cursor = 'pointer';
+                span.style.textDecoration = 'underline';
+                span.style.marginRight = '8px';
+                span.style.color = 'var(--primary)';
+                span.textContent = `${r.column_name} (${r.column_type})`;
+                span.onclick = (e) => {
+                    e.stopPropagation();
+                    insertAtCursor(sqlInput, `"${r.column_name}"`);
+                };
+                return span;
+            });
+            
+            const tableDiv = document.createElement('div');
+            tableDiv.innerHTML = `<strong>${file.name} (table: ${tableName}):</strong> `;
+            cols.forEach(c => tableDiv.appendChild(c));
+            schemaDisplay.appendChild(tableDiv);
             
             // Generate Previews
             await generateInstantCharts(tableName);
@@ -109,7 +130,7 @@ async function handleFiles(files) {
             sqlInput.value = `SELECT * FROM ${tableName} LIMIT 100`;
             runBtn.disabled = false;
         }
-        statusEl.textContent = `Loaded ${files.length} file(s)`;
+        statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
     } catch (err) {
         console.error(err);
         alert('Error loading file: ' + err.message);
@@ -118,8 +139,33 @@ async function handleFiles(files) {
     }
 }
 
+function insertAtCursor(myField, myValue) {
+    if (document.selection) {
+        myField.focus();
+        const sel = document.selection.createRange();
+        sel.text = myValue;
+    } else if (myField.selectionStart || myField.selectionStart == '0') {
+        const startPos = myField.selectionStart;
+        const endPos = myField.selectionEnd;
+        myField.value = myField.value.substring(0, startPos)
+            + myValue
+            + myField.value.substring(endPos, myField.value.length);
+        myField.selectionStart = startPos + myValue.length;
+        myField.selectionEnd = startPos + myValue.length;
+    } else {
+        myField.value += myValue;
+    }
+    myField.focus();
+}
+
+recipeSelect.addEventListener('change', () => {
+    if (!currentTableName) return;
+    const recipe = recipeSelect.value.replace(/{{TABLE}}/g, currentTableName);
+    sqlInput.value = recipe;
+    recipeSelect.selectedIndex = 0;
+});
+
 async function generateInstantCharts(tableName) {
-    // 1. Identify Numeric Columns
     const schema = await conn.query(`DESCRIBE ${tableName}`);
     const columns = schema.toArray();
     const numericCols = columns.filter(c => 
@@ -132,10 +178,8 @@ async function generateInstantCharts(tableName) {
 
     if (numericCols.length === 0) return;
 
-    // 2. Correlation-based Selection (if > 1 numeric col)
     if (numericCols.length >= 2) {
         try {
-            // Find highest correlation pair
             let bestPair = [numericCols[0], numericCols[1]];
             let maxCorr = 0;
             
@@ -152,7 +196,7 @@ async function generateInstantCharts(tableName) {
                 }
             }
             
-            createPreviewCard(`Correlation Analysis: ${bestPair[0]} vs ${bestPair[1]}`, async (canvasId) => {
+            createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, async (canvasId) => {
                 const data = await conn.query(`SELECT "${bestPair[0]}" as x, "${bestPair[1]}" as y FROM ${tableName} WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
                 renderChart(canvasId, 'scatter', {
                     datasets: [{
@@ -167,11 +211,10 @@ async function generateInstantCharts(tableName) {
         } catch (e) { console.warn('Correlation check failed', e); }
     }
 
-    // 3. Categorical Aggregation (first text + first numeric)
     if (textCols.length > 0 && numericCols.length > 0) {
         const tCol = textCols[0];
         const nCol = numericCols[0];
-        createPreviewCard(`Overview: Avg ${nCol} by ${tCol}`, async (canvasId) => {
+        createPreviewCard(`Avg ${nCol} by ${tCol}`, async (canvasId) => {
             const data = await conn.query(`
                 SELECT "${tCol}" as label, AVG("${nCol}") as value 
                 FROM ${tableName} 
@@ -202,7 +245,9 @@ function createPreviewCard(title, renderFn) {
 }
 
 function renderChart(id, type, data, options = {}) {
-    const ctx = document.getElementById(id).getContext('2d');
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     new Chart(ctx, {
         type: type,
         data: data,
@@ -264,8 +309,6 @@ downloadBtn.addEventListener('click', async () => {
     loadingOverlay.style.display = 'flex';
     try {
         const csvPath = 'export.csv';
-        // Use DuckDB to copy result to a virtual file
-        // We use a temporary table for this to ensure we can export any complex query result
         await conn.query(`CREATE OR REPLACE TEMPORARY TABLE _export_tmp AS ${sqlInput.value.trim()}`);
         await conn.query(`COPY _export_tmp TO '${csvPath}' (HEADER, DELIMITER ',')`);
         
