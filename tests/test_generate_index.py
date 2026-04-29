@@ -63,8 +63,8 @@ def test_inject_functions_handle_missing_tags():
     assert isinstance(res1, str)
 
     content_no_body = "<html><head></head>No body here</html>"
-    # inject_back_link expects <body>
-    res2 = module.inject_back_link(content_no_body, "test.html")
+    # inject_unified_header expects <body>
+    res2 = module.inject_unified_header(content_no_body, "test.html")
     assert res2 == content_no_body
     assert isinstance(res2, str)
 
@@ -89,6 +89,6 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
 
     content = analysis.read_text(encoding='utf-8')
     assert '<!-- responsive-inject-v5 -->' not in content
-    assert module.BACK_LINK_MARKER in content
+    assert module.HEADER_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
