@@ -1,123 +1,79 @@
 #!/usr/bin/env python3
 """
 Generate index.html from all HTML analysis files in the repository root.
-Run locally or via GitHub Actions on every push.
+Run locally or in CI to rebuild the dashboard.
 """
 
-import argparse
-import json
+import os
 import re
-import subprocess
+import json
 import random
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union
+import html
 
-ROOT = Path(__file__).parent.parent
-EXCLUDE = {'index.html'}
-SITE_URL = 'https://teakayah.github.io/dashboard'
+# --- Configuration ---
+ROOT = Path(".")
+EXCLUDE = {"index.html", "dropzone.html", "404.html", "template.html", "Readme.md"}
+SITE_URL = "https://teakayah.github.io/dashboard"
+ACCENT_COLORS = ["#4f8ef7", "#2ecc71", "#f39c12", "#e74c3c", "#9b59b6", "#1abc9c"]
 
-# Visualization library detection patterns for card badges
-LIBRARY_PATTERNS = {
-    'Chart.js': r'chart\.js|chart\.umd',
-    'D3.js': r'd3(?:\.v\d+)?(?:\.min)?\.js|cdn\.jsdelivr\.net/npm/d3@',
-    'Plotly': r'plotly(?:\.min)?\.js|cdn\.plot\.ly',
-    'Vega': r'vega(?:-lite)?(?:\.min)?\.js',
-    'DuckDB': r'duckdb',
-    'Grid.js': r'gridjs',
-}
+# --- Metadata Extraction ---
 
-# Chart.js-inspired accent colors (top border on cards)
-ACCENT_COLORS = [
-    '#4f8ef7',  # blue
-    '#ff6384',  # pink/red
-    '#4bc0c0',  # teal
-    '#ff9f40',  # orange
-    '#9966ff',  # purple
-    '#36a2eb',  # sky blue
-    '#ffce56',  # yellow
-    '#2ecc71',  # green
-]
-
-
-DESCRIPTIONS_FILE = ROOT / 'descriptions.json'
-
-
-def load_descriptions() -> dict:
-    """Load pre-generated AI descriptions from descriptions.json (committed to repo)."""
-    if DESCRIPTIONS_FILE.exists():
-        return json.loads(DESCRIPTIONS_FILE.read_text(encoding='utf-8'))
-    return {}
-
-
-def _git_date(filepath: Path) -> str:
-    """Return 'Mon YYYY' from git log; fall back to mtime if the file isn't committed."""
-    try:
-        result = subprocess.run(
-            ['git', 'log', '-1', '--format=%ci', '--', str(filepath)],
-            capture_output=True, text=True, cwd=str(ROOT),
-        )
-        stamp = result.stdout.strip()
-        if stamp:
-            return datetime.fromisoformat(stamp).strftime('%b %Y')
-    except Exception:
-        pass
-    return datetime.fromtimestamp(filepath.stat().st_mtime).strftime('%b %Y')
-
-
-def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None) -> dict:
-    """Extract title, description, and tags from an HTML file content."""
-    # Title
+def get_metadata(file_path: Path) -> dict:
+    """Extract metadata from an HTML file by looking for specific markers or tags."""
+    content = file_path.read_text(encoding='utf-8')
+    
+    # 1. Try to find a title
     title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
-    title = title_match.group(1).strip() if title_match else filepath.stem.replace('_', ' ').title()
-    title = title.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&#39;', "'")
+    title = title_match.group(1).strip() if title_match else file_path.stem.replace('_', ' ').title()
+    title = title.replace('&amp;', '&').replace('"', '&quot;')
 
-    # Meta description
-    desc_match = re.search(
-        r'<meta[^>]*name=["\']description["\'][^>]*content=["\'](.*?)["\']',
-        content, re.IGNORECASE
-    )
-    description = desc_match.group(1).strip() if desc_match else ''
+    # 2. Look for a date (StatCan specific format usually)
+    date_match = re.search(r'Last updated: ([\d-]+)', content)
+    date = date_match.group(1) if date_match else ""
+    if not date:
+        # Fallback to file mtime if no date found
+        mtime = os.path.getmtime(file_path)
+        date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
 
-    if not description:
-        sub_match = re.search(r'class=["\'][^"\']*subtitle[^"\']*["\'][^>]*>(.*?)</[a-z]+>', content, re.IGNORECASE | re.DOTALL)
-        if sub_match:
-            description = re.sub(r'<[^>]+>', '', sub_match.group(1)).strip()
-            description = re.sub(r'\s+', ' ', description)
-            if len(description) > 120:
-                description = description[:117] + '…'
+    # 3. Look for tags in a custom meta tag or comment
+    tags = []
+    tags_match = re.search(r'<meta name="keywords" content="(.*?)"', content)
+    if tags_match:
+        tags = [t.strip() for t in tags_match.group(1).split(',')]
+    else:
+        # Heuristic tags based on filename
+        if 'flood' in file_path.name: tags.append('Environment')
+        if 'employment' in file_path.name: tags.append('Economy')
+        if 'price' in file_path.name: tags.append('Real Estate')
 
-    if not description and descriptions:
-        description = descriptions.get(filepath.name, '')
-
-    tags = [name for name, pattern in LIBRARY_PATTERNS.items()
-            if re.search(pattern, content, re.IGNORECASE)]
-
-    date_str = _git_date(filepath)
+    # 4. Description
+    desc_match = re.search(r'<meta name="description" content="(.*?)"', content)
+    description = desc_match.group(1) if desc_match else ""
 
     return {
-        'filename': filepath.name,
-        'title': title,
-        'description': description,
-        'tags': tags,
-        'date': date_str,
+        "filename": file_path.name,
+        "stem": file_path.stem,
+        "title": title,
+        "date": date,
+        "tags": tags[:3], # Limit to 3 tags
+        "description": description
     }
 
+# --- HTML Injection (for individual analysis pages) ---
 
-def _fallback(filepath: Path) -> dict:
-    return {
-        'filename': filepath.name,
-        'title': filepath.stem.replace('_', ' ').title(),
-        'description': '',
-        'tags': [],
-        'date': '',
-    }
+def inject_responsive(content: str, filename: str, preset_name: str = 'default') -> str:
+    """Inject responsive viewport and basic CSS into an analysis HTML file if not present."""
+    if 'responsive-inject-v' in content:
+        # Check version
+        if 'responsive-inject-v5' in content:
+            return content
+        else:
+            # Strip old version
+            content = re.sub(r'<!-- responsive-inject-v\d+ -->.*?<!-- /responsive-inject-v\d+ -->', '', content, flags=re.DOTALL)
 
-
-RESPONSIVE_PRESETS = {
-    'default': {
-        'marker': '<!-- responsive-inject-v5 -->',
-        'snippet': '''\
+    v5_style = """
   <!-- responsive-inject-v5 -->
   <style>
     @media (min-width: 769px) {
@@ -139,84 +95,31 @@ RESPONSIVE_PRESETS = {
       });
     })();
   </script>
-  <!-- /responsive-inject-v5 -->''',
-    },
-    'none': {
-        'marker': None,
-        'snippet': None,
-    },
-}
+  <!-- /responsive-inject-v5 -->"""
 
-
-def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.strip())
-    parser.add_argument(
-        '--responsive-preset',
-        choices=sorted(RESPONSIVE_PRESETS),
-        default='default',
-        help='Responsive injection preset to apply to analysis pages.',
-    )
-    return parser.parse_args(argv)
-
-
-def inject_responsive(content: str, filename: str, preset_name: str = 'default') -> str:
-    """Inject responsive desktop layout enhancer into an analysis HTML file content."""
-    preset = RESPONSIVE_PRESETS[preset_name]
-
-    if preset_name == 'none':
-        new_content = re.sub(
-            r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
-            '',
-            content,
-            flags=re.DOTALL,
-        )
-        return new_content
-
-    marker = preset['marker']
-    snippet = preset['snippet']
-
-    if marker in content:
-        return content
-
-    new_content = re.sub(
-        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
-        '',
-        content,
-        flags=re.DOTALL,
-    )
-    final_content = re.sub(
-        r'(<head[^>]*>)',
-        r'\1\n' + snippet,
-        new_content,
-        count=1,
-        flags=re.IGNORECASE,
-    )
-    return final_content
-
-
-THEME_LINK = '<link rel="stylesheet" href="assets/theme.css">'
-FULLSCREEN_SCRIPT = '<script src="assets/fullscreen.js"></script>'
-MANIFEST_LINK = '<link rel="manifest" href="manifest.json">'
+    # Insert just after <head>
+    new_content = re.sub(r'(<head[^>]*>)', r'\1' + v5_style, content, count=1, flags=re.IGNORECASE)
+    return new_content
 
 def inject_assets(content: str, filename: str) -> str:
-    """Inject theme CSS, manifest and utility JS into <head>."""
-    if THEME_LINK in content:
-        return content
+    """Inject theme.css and fullscreen.js if missing."""
+    assets = ""
+    if 'theme.css' not in content:
+        assets += '\n  <link rel="stylesheet" href="assets/theme.css">'
+    if 'fullscreen.js' not in content:
+        assets += '\n  <script src="assets/fullscreen.js"></script>'
     
-    head_assets = f'\n  {THEME_LINK}\n  {FULLSCREEN_SCRIPT}\n  {MANIFEST_LINK}'
-    new_content = re.sub(
-        r'(</head>)',
-        head_assets + r'\n\1',
-        content,
-        count=1,
-        flags=re.IGNORECASE,
-    )
+    if not assets:
+        return content
+
+    # Insert just before </head>
+    new_content = re.sub(r'(</head>)', assets + r'\n\1', content, count=1, flags=re.IGNORECASE)
     return new_content
 
 
 HEADER_MARKER = '<!-- unified-header-inject -->'
 
-def build_header_snippet() -> str:
+def build_header(current_filename: str) -> str:
     return f'''<!-- unified-header-inject -->
 <header class="unified-header">
   <div class="back-link-box">
@@ -230,21 +133,12 @@ def build_header_snippet() -> str:
 </header>'''
 
 def inject_unified_header(content: str, filename: str) -> str:
-    """Inject a unified site header at the top of <body>."""
     if HEADER_MARKER in content:
         return content
-
-    # Strip old back-link-inject block
-    content = re.sub(r'<!-- back-link-inject -->.*?</div>', '', content, flags=re.DOTALL)
-
-    header_snippet = build_header_snippet()
-    new_content = re.sub(
-        r'(<body[^>]*>)',
-        r'\1\n' + header_snippet,
-        content,
-        count=1,
-        flags=re.IGNORECASE,
-    )
+    
+    header_html = build_header(filename)
+    # Insert at the start of <body>
+    new_content = re.sub(r'(<body[^>]*>)', r'\1\n' + header_html, content, count=1, flags=re.IGNORECASE)
     return new_content
 
 
@@ -253,8 +147,8 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
     if 'og:image' in content:
         return content  # already has one, leave it alone
 
-    esc_filename = html.escape(filename, quote=True)
     image_url = f'{SITE_URL}/previews/{html.escape(stem, quote=True)}.png'
+    esc_filename = html.escape(filename, quote=True)
 
     # Extract title for og:title
     title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
@@ -266,11 +160,11 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
         f'\n  <meta property="og:type" content="article">'
         f'\n  <meta property="og:url" content="{SITE_URL}/{esc_filename}">'
         f'\n  <meta property="og:title" content="{title}">'
-        f'\n  <meta property="og:image" content="{image_url}">'
+        f'\n  <meta property="og:image" content="{html.escape(image_url, quote=True)}">'
         f'\n  <meta property="og:image:width" content="600">'
         f'\n  <meta property="og:image:height" content="315">'
         f'\n  <meta property="twitter:card" content="summary_large_image">'
-        f'\n  <meta property="twitter:image" content="{image_url}">'
+        f'\n  <meta property="twitter:image" content="{html.escape(image_url, quote=True)}">'
     )
 
     # Insert just before </head>
@@ -286,7 +180,7 @@ def build_related_links(current_filename: str, all_meta: list[dict]) -> str:
     sample = random.sample(others, min(len(others), 3))
     
     links_html = "".join([
-        f'<a href="{m["filename"]}" class="related-link"><strong>{m["title"]}</strong><span>{m["date"]}</span></a>'
+        f'<a href="{html.escape(m["filename"], quote=True)}" class="related-link"><strong>{html.escape(m["title"], quote=True)}</strong><span>{html.escape(m["date"], quote=True)}</span></a>'
         for m in sample
     ])
 
@@ -342,18 +236,18 @@ def inject_pwa_script(content: str) -> str:
 
 def build_card(analysis: dict, index: int) -> str:
     color = ACCENT_COLORS[index % len(ACCENT_COLORS)]
-    badges_html = ''.join(f'<span class="badge">{tag}</span>' for tag in analysis['tags'])
+    badges_html = ''.join(f'<span class="badge">{html.escape(tag, quote=True)}</span>' for tag in analysis['tags'])
     desc_html = (
-        f'<p class="card-desc">{analysis["description"]}</p>'
+        f'<p class="card-desc">{html.escape(analysis["description"], quote=True)}</p>'
         if analysis['description'] else ''
     )
     date_html = (
-        f'<div class="card-date">Last Updated: <span>{analysis["date"]}</span></div>'
+        f'<div class="card-date">Last Updated: <span>{html.escape(analysis["date"], quote=True)}</span></div>'
         if analysis['date'] else ''
     )
-    return f'''      <a class="card" href="{analysis['filename']}" style="--accent:{color}">
+    return f'''      <a class="card" href="{html.escape(analysis['filename'], quote=True)}" style="--accent:{color}">
         <div class="card-top">
-          <div class="card-title">{analysis['title']}</div>
+          <div class="card-title">{html.escape(analysis['title'], quote=True)}</div>
           <div class="badges">{badges_html}</div>
         </div>
         {desc_html}
@@ -399,42 +293,69 @@ def build_html(analyses: list[dict]) -> str:
     .search-bar input:focus {{ border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79,142,247,0.15); }}
     main {{ padding: 48px 32px 64px; max-width: 1200px; margin: 0 auto; }}
     .grid-label {{ font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }}
-    .grid-label::after {{ content: ""; height: 1px; background: var(--border); flex: 1; }}
-    .grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }}
-    .card {{ display: flex; flex-direction: column; background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); border-top: 4px solid var(--accent, var(--primary)); text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s; }}
-    .card:hover {{ transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }}
-    .card-title {{ font-size: 1.05rem; font-weight: 700; color: #1a1a2e; line-height: 1.4; margin-bottom: 8px; }}
-    .badge {{ font-size: 0.65rem; font-weight: 700; color: var(--primary); background: rgba(79,142,247,0.1); border-radius: 6px; padding: 3px 8px; margin-right: 4px; }}
-    .card-desc {{ font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }}
-    .card-footer {{ display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }}
-    .card-date {{ font-size: 0.72rem; color: #bbb; font-weight: 600; }}
-    .card-date span {{ color: #999; }}
-    .card-link {{ font-size: 0.8rem; font-weight: 700; color: var(--accent, var(--primary)); }}
+    .grid-label::after {{ content: ""; flex: 1; height: 1px; background: var(--border); }}
+    .grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px; }}
+    
+    .card {{ 
+      background: var(--card-bg); 
+      border: 1px solid var(--border); 
+      border-radius: 16px; 
+      padding: 24px; 
+      text-decoration: none; 
+      color: inherit; 
+      display: flex; 
+      flex-direction: column; 
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      box-shadow: var(--shadow);
+    }}
+    .card:hover {{ transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 12px 24px rgba(0,0,0,0.06); }}
     .card.hidden {{ display: none; }}
-    footer {{ text-align: center; font-size: 0.8rem; color: #bbb; padding: 0 32px 48px; }}
-    footer a {{ color: #999; text-decoration: none; font-weight: 600; }}
-    footer a:hover {{ color: var(--primary); }}
-    @media (max-width: 600px) {{ header.hero {{ padding: 40px 20px 32px; }} .grid {{ grid-template-columns: 1fr; }} }}
+    
+    .card-top {{ margin-bottom: 16px; }}
+    .card-title {{ font-size: 1.15rem; font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 8px; }}
+    .badges {{ display: flex; flex-wrap: wrap; gap: 6px; }}
+    .badge {{ font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 20px; background: rgba(0,0,0,0.05); color: var(--text-muted); }}
+    
+    .card-desc {{ font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }}
+    
+    .card-footer {{ display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); pt: 16px; margin-top: auto; padding-top: 16px; }}
+    .card-date {{ font-size: 0.72rem; color: var(--text-dim); }}
+    .card-date span {{ font-weight: 600; color: var(--text-muted); }}
+    .card-link {{ font-size: 0.8rem; font-weight: 700; color: var(--primary); }}
+
+    .empty {{ text-align: center; padding: 80px 0; color: var(--text-dim); }}
+    
+    footer {{ text-align: center; padding: 48px; color: var(--text-dim); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: 64px; }}
+
+    @media (max-width: 640px) {{
+      header.hero {{ padding: 48px 24px 40px; }}
+      header.hero h1 {{ font-size: 1.8rem; }}
+      main {{ padding: 32px 20px; }}
+      .grid {{ grid-template-columns: 1fr; gap: 20px; }}
+    }}
   </style>
 </head>
 <body>
-<header class="hero">
-  <h1>Data<span>Dashboard</span></h1>
-  <div class="header-sub">{subtitle}</div>
-</header>
-<div class="search-bar">
-  <input id="search" type="search" placeholder="Search analyses and tools…" autocomplete="off">
-</div>
-<main>
-  <div class="grid-label">Available Analyses</div>
-  <div class="grid" id="grid">{cards_html}</div>
-  {empty_html}
-</main>
-<footer>
-  <a href="https://github.com/Teakayah/dashboard" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-  &nbsp;·&nbsp;
-  <a href="{SITE_URL}/feed.xml">RSS Feed</a>
-</footer>
+  <header class="hero">
+    <h1>Data<span>Dashboard</span></h1>
+    <p class="header-sub">{subtitle}</p>
+  </header>
+
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search analyses, tags, or dates..." autocomplete="off">
+  </div>
+
+  <main>
+    <div class="grid-label">Available Analyses</div>
+    <div class="grid">
+      {cards_html}
+    </div>
+    {empty_html}
+  </main>
+
+  <footer>
+    &copy; {datetime.now().year} DataDashboard &middot; Built with Python &amp; DuckDB
+  </footer>
 <script>
   const input = document.getElementById('search');
   const cards = document.querySelectorAll('.card');
@@ -471,40 +392,55 @@ def build_html(analyses: list[dict]) -> str:
 <script>
   if ('serviceWorker' in navigator) {{
     window.addEventListener('load', () => {{
-      navigator.serviceWorker.register('/sw.js');
+      navigator.serviceWorker.register('/sw.js').then(reg => {{
+        console.log('SW registered:', reg);
+      }}).catch(err => {{
+        console.log('SW registration failed:', err);
+      }});
     }});
   }}
 </script>
 </body>
 </html>'''
 
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--responsive-preset', default='default')
+    args = parser.parse_args(argv)
 
-def main(argv: Optional[list[str]] = None):
-    args = parse_args(argv)
-    descriptions = load_descriptions()
-    html_files = [p for p in ROOT.glob('*.html') if p.name.lower() not in EXCLUDE]
-    html_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    print("Generating index.html and updating analyses...")
     
+    html_files = [f for f in ROOT.glob("*.html") if f.name not in EXCLUDE]
     all_meta = []
-    for filepath in html_files:
-        content = filepath.read_text(encoding='utf-8', errors='ignore')
-        all_meta.append(extract_meta(filepath, content, descriptions=descriptions))
 
-    for filepath, meta in zip(html_files, all_meta):
-        content = filepath.read_text(encoding='utf-8', errors='ignore')
-        new_content = inject_assets(content, filepath.name)
-        new_content = inject_responsive(new_content, filepath.name, args.responsive_preset)
-        new_content = inject_unified_header(new_content, filepath.name)
-        new_content = inject_og_tags(new_content, filepath.name, filepath.stem)
-        new_content = inject_related_links(new_content, filepath.name, all_meta)
-        new_content = inject_pwa_script(new_content)
+    for f in html_files:
+        print(f"  Processing {f.name}...")
+        meta = get_metadata(f)
+        all_meta.append(meta)
 
-        if new_content != content:
-            filepath.write_text(new_content, encoding='utf-8')
+        # Inject components into analysis pages
+        content = f.read_text(encoding='utf-8')
+        content = inject_responsive(content, f.name, args.responsive_preset)
+        content = inject_assets(content, f.name)
+        content = inject_unified_header(content, f.name)
+        content = inject_og_tags(content, f.name, meta['stem'])
+        content = inject_pwa_script(content)
+        # Note: inject_related_links needs all_meta, so we do it in a second pass
+        f.write_text(content, encoding='utf-8')
 
-    html = build_html(all_meta)
-    (ROOT / 'index.html').write_text(html, encoding='utf-8')
-    print(f'Generated index.html with {len(all_meta)} analyses.')
+    # Second pass for cross-analysis injections
+    for f in html_files:
+        content = f.read_text(encoding='utf-8')
+        content = inject_related_links(content, f.name, all_meta)
+        f.write_text(content, encoding='utf-8')
 
-if __name__ == '__main__':
+    # Build and write index.html
+    # Sort by date descending
+    all_meta.sort(key=lambda x: x['date'], reverse=True)
+    index_content = build_html(all_meta)
+    (ROOT / "index.html").write_text(index_content, encoding='utf-8')
+    print(f"Generated index.html with {len(all_meta)} analyses.")
+
+if __name__ == "__main__":
     main()
