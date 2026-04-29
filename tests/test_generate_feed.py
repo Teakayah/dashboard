@@ -108,3 +108,20 @@ def test_atom_entry_escapes_url_and_id():
     assert '<link href="https://example.com/page?param=1&amp;other=&lt;script&gt;" />' in entry_xml
     assert '<id>https://example.com/page?param=1&amp;other=&lt;script&gt;</id>' in entry_xml
     assert 'https://example.com/page?param=1&other=<script>' not in entry_xml
+
+def test_git_iso_handles_git_failure():
+    import unittest.mock
+    import re
+    from pathlib import Path
+
+    module = load_generate_feed_module()
+
+    # Clear cache since it is decorated with lru_cache
+    module._git_iso.cache_clear()
+
+    # Mock subprocess.run to raise an Exception
+    with unittest.mock.patch('subprocess.run', side_effect=Exception("git failed")):
+        result = module._git_iso(Path('dummy.html'))
+
+        # It should fall back to current time formatted as ISO 8601 string
+        assert re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$', result)
