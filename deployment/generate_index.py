@@ -65,13 +65,17 @@ def get_metadata(file_path: Path) -> dict:
 
 def inject_responsive(content: str, filename: str, preset_name: str = 'default') -> str:
     """Inject responsive viewport and basic CSS into an analysis HTML file if not present."""
+    if preset_name == 'none':
+        return content
+
     if 'responsive-inject-v' in content:
         # Check version
         if 'responsive-inject-v5' in content:
             return content
         else:
-            # Strip old version
+            # Strip old version (optionally handles missing closing tag)
             content = re.sub(r'<!-- responsive-inject-v\d+ -->.*?<!-- /responsive-inject-v\d+ -->', '', content, flags=re.DOTALL)
+            content = re.sub(r'<!-- responsive-inject-v\d+ -->', '', content)
 
     v5_style = """
   <!-- responsive-inject-v5 -->
