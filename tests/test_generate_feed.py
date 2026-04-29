@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock, mock_open
 from datetime import datetime, timezone
 import importlib.util
 from pathlib import Path
+import re
 
 def load_generate_feed_module():
     path = Path(__file__).parent.parent / 'deployment' / 'generate_feed.py'
@@ -112,7 +113,6 @@ def test_atom_entry_escapes_url_and_id():
     assert '<id>https://example.com/page?param=1&amp;other=&lt;script&gt;</id>' in entry_xml
     assert 'https://example.com/page?param=1&other=<script>' not in entry_xml
 
-
 def test_load_descriptions_exists():
     module = load_generate_feed_module()
     mock_data = '{"test.html": "A description"}'
@@ -142,6 +142,17 @@ def test_git_iso_fallback():
     with patch('subprocess.run', side_effect=Exception("Git error")):
         iso_str = module._git_iso(Path("test2.html"))
         assert "T" in iso_str and "Z" in iso_str
+
+def test_git_iso_handles_git_failure():
+    module = load_generate_feed_module()
+    # Clear cache since it is decorated with lru_cache
+    module._git_iso.cache_clear()
+
+    # Mock subprocess.run to raise an Exception
+    with patch('subprocess.run', side_effect=Exception("git failed")):
+        result = module._git_iso(Path('dummy.html'))
+        # It should fall back to current time formatted as ISO 8601 string
+        assert re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$', result)
 
 def test_build_entry_success():
     module = load_generate_feed_module()
