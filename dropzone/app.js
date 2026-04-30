@@ -96,7 +96,12 @@ async function handleFiles(files) {
             // Show schema
             const schema = await conn.query(`DESCRIBE ${tableName}`);
             const schemaRows = schema.toArray().map(r => `${r.column_name} (${r.column_type})`).join(', ');
-            schemaDisplay.innerHTML += `<div><strong>${file.name}:</strong> ${schemaRows}</div>`;
+            const schemaDiv = document.createElement('div');
+            const schemaStrong = document.createElement('strong');
+            schemaStrong.textContent = `${file.name}:`;
+            schemaDiv.appendChild(schemaStrong);
+            schemaDiv.appendChild(document.createTextNode(` ${schemaRows}`));
+            schemaDisplay.appendChild(schemaDiv);
             
             // Set default query if first file
             if (sqlInput.value === '') {
