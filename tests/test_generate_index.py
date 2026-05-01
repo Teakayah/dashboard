@@ -53,6 +53,47 @@ def test_inject_responsive_replaces_older_versions():
     assert content.count('<!-- responsive-inject-v5 -->') == 1
 
 
+def test_inject_og_tags_adds_tags():
+    module = load_generate_index_module()
+    initial_content = '<html><head><title>Test Title</title></head><body></body></html>'
+    content = module.inject_og_tags(initial_content, 'analysis.html', 'test_stem')
+
+    assert 'og:image' in content
+    assert 'og:title' in content
+    assert 'content="Test Title"' in content
+    assert f'content="{module.SITE_URL}/previews/test_stem.png"' in content
+    assert 'twitter:card' in content
+
+
+def test_inject_og_tags_idempotent():
+    module = load_generate_index_module()
+    initial_content = '<html><head><meta property="og:image" content="image.png"></head><body></body></html>'
+    content = module.inject_og_tags(initial_content, 'analysis.html', 'test_stem')
+
+    assert content == initial_content
+    assert content.count('og:image') == 1
+
+
+def test_inject_og_tags_no_title_fallback():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body></body></html>'
+    content = module.inject_og_tags(initial_content, 'analysis.html', 'test_stem_name')
+
+    assert 'og:title' in content
+    assert 'content="Test Stem Name"' in content
+
+
+def test_inject_og_tags_escapes_title():
+    module = load_generate_index_module()
+    initial_content = '<html><head><title>Test &amp; "Quote" <Title></title></head><body></body></html>'
+    content = module.inject_og_tags(initial_content, 'analysis.html', 'test_stem')
+
+    assert 'og:title' in content
+    # The title should be unescaped then escaped, resulting in standard HTML entities
+    # Specifically check that quotes are escaped properly for attribute usage
+    assert 'content="Test &amp; &quot;Quote&quot; &lt;Title&gt;"' in content
+
+
 def test_inject_functions_handle_missing_tags():
     module = load_generate_index_module()
     content_no_tags = "<html><body>No head here</body></html>"
