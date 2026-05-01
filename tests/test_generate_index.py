@@ -73,6 +73,11 @@ def test_inject_functions_handle_missing_tags():
     assert res3 == content_no_tags
     assert isinstance(res3, str)
 
+    # inject_favicon expects </head>
+    res4 = module.inject_favicon(content_no_tags, "test.html")
+    assert res4 == content_no_tags
+    assert isinstance(res4, str)
+
 
 def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, monkeypatch):
     module = load_generate_index_module()
@@ -92,3 +97,34 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
+
+def test_inject_favicon_adds_link_before_head_close():
+    module = load_generate_index_module()
+    initial_content = '<html><head><title>Test</title></head><body></body></html>'
+
+    content = module.inject_favicon(initial_content, 'analysis.html')
+
+    assert '<link rel="icon" href="' in content
+    assert 'type="image/x-icon">' in content
+    assert content.endswith('</head><body></body></html>') or 'favicon.ico"\n</head>' in content or 'type="image/x-icon">\n</head>' in content
+
+
+def test_inject_favicon_is_idempotent():
+    module = load_generate_index_module()
+
+    # 1. Has rel="icon"
+    content1 = '<html><head><link rel="icon" href="favicon.ico"></head><body></body></html>'
+    res1 = module.inject_favicon(content1, 'analysis.html')
+    assert res1 == content1
+
+    # 2. Has rel='icon'
+    content2 = "<html><head><link rel='icon' href='favicon.ico'></head><body></body></html>"
+    res2 = module.inject_favicon(content2, 'analysis.html')
+    assert res2 == content2
+
+    # 3. Call twice
+    initial_content = '<html><head></head><body></body></html>'
+    first = module.inject_favicon(initial_content, 'analysis.html')
+    second = module.inject_favicon(first, 'analysis.html')
+    assert first == second
+    assert second.count('rel="icon"') == 1
