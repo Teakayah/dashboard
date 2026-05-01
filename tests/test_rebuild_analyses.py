@@ -3,6 +3,7 @@ from deployment.rebuild_analyses import (
     extract_emp_rate,
     extract_fed_debt,
     extract_prov_debt,
+    extract_pop_data,
     _clean,
     _inject_const,
     _read_csv
@@ -62,6 +63,22 @@ def create_debt_row(
         "Public sector components": component,
         "Display value": display,
         "Statement of operations and balance sheet": statement,
+    }
+
+
+def create_pop_row(
+    geo="Ontario",
+    ref_date="2023",
+    value="15000000",
+    gender="Total - gender",
+    age="All ages",
+):
+    return {
+        "GEO": geo,
+        "REF_DATE": ref_date,
+        "VALUE": value,
+        "Gender": gender,
+        "Age group": age,
     }
 
 
@@ -235,6 +252,79 @@ def test_extract_prov_debt_basic():
         "Quebec": [{"year": 2023, "value": 15.0}],
     }
 
+    assert result == expected
+
+
+def test_extract_pop_data_basic():
+    rows = [
+        # Valid row for Ontario 2023
+        create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),
+        # Valid row for Ontario 2024
+        create_pop_row(geo="Ontario", ref_date="2024", value="15300000"),
+        # Valid row for Ontario 2025
+        create_pop_row(geo="Ontario", ref_date="2025", value="15500000"),
+        # Valid row for Quebec 2023
+        create_pop_row(geo="Quebec", ref_date="2023", value="8500000"),
+        # Invalid rows that should be filtered out:
+        # Wrong gender
+        create_pop_row(gender="Males"),
+        # Wrong age group
+        create_pop_row(age="15 to 24 years"),
+        # Missing/invalid value
+        create_pop_row(value=".."),
+        create_pop_row(value="x"),
+        create_pop_row(value=""),
+    ]
+
+    result = extract_pop_data(rows)
+
+    expected = {
+        "Ontario": [
+            {"year": 2023, "pop": 15000000, "change": None, "pct": None},
+            {"year": 2024, "pop": 15300000, "change": 300000, "pct": 2.0},
+            {"year": 2025, "pop": 15500000, "change": 200000, "pct": 1.31},
+        ],
+        "Quebec": [{"year": 2023, "pop": 8500000, "change": None, "pct": None}],
+    }
+
+    assert result == expected
+
+
+def test_extract_pop_data_empty():
+    assert extract_pop_data([]) == {}
+
+
+def test_extract_pop_data_unordered_years():
+    rows = [
+        create_pop_row(geo="Ontario", ref_date="2025", value="16000000"),
+        create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),
+        create_pop_row(geo="Ontario", ref_date="2024", value="15500000"),
+    ]
+    result = extract_pop_data(rows)
+    expected = {
+        "Ontario": [
+            {"year": 2023, "pop": 15000000, "change": None, "pct": None},
+            {"year": 2024, "pop": 15500000, "change": 500000, "pct": 3.33},
+            {"year": 2025, "pop": 16000000, "change": 500000, "pct": 3.23},
+        ]
+    }
+    assert result == expected
+
+
+def test_extract_pop_data_missing_value():
+    rows = [
+        create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),
+        create_pop_row(geo="Ontario", ref_date="2024", value="x"),
+        create_pop_row(geo="Ontario", ref_date="2025", value="16000000"),
+    ]
+    result = extract_pop_data(rows)
+    expected = {
+        "Ontario": [
+            {"year": 2023, "pop": 15000000, "change": None, "pct": None},
+            # 2024 missing, so 2025 change calculates relative to 2023 (prev valid)
+            {"year": 2025, "pop": 16000000, "change": 1000000, "pct": 6.67},
+        ]
+    }
     assert result == expected
 
 
