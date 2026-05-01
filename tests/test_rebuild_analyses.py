@@ -3,6 +3,7 @@ from deployment.rebuild_analyses import (
     extract_emp_rate,
     extract_fed_debt,
     extract_prov_debt,
+    extract_nhpi,
     _clean,
     _inject_const,
     _read_csv
@@ -62,6 +63,21 @@ def create_debt_row(
         "Public sector components": component,
         "Display value": display,
         "Statement of operations and balance sheet": statement,
+    }
+
+
+def create_nhpi_row(
+    geo="Toronto, Ontario",
+    ref_date="2023-01",
+    value="100.0",
+    index_col="New housing price indexes",
+    measure="Total (house and land)",
+):
+    return {
+        "GEO": geo,
+        "REF_DATE": ref_date,
+        "VALUE": value,
+        index_col: measure,
     }
 
 
@@ -342,3 +358,79 @@ def test_read_csv_valid_file(tmp_path):
         {"col1": "val1", "col2": "val2"},
         {"col1": "val3", "col2": "val4"},
     ]
+
+
+def test_extract_nhpi_basic():
+    rows = [
+        create_nhpi_row(geo="Toronto", ref_date="2023-01", value="100.0", measure="Total (house and land)"),
+        create_nhpi_row(geo="Toronto", ref_date="2023-01", value="101.0", measure="House only"),
+        create_nhpi_row(geo="Toronto", ref_date="2023-01", value="102.0", measure="Land only"),
+        create_nhpi_row(geo="Montreal", ref_date="2023-01", value="110.0", measure="Total (house and land)"),
+    ]
+    result = extract_nhpi(rows)
+    expected = {
+        "Toronto": {
+            "Total (house and land)": [{"date": "2023-01", "value": 100.0}],
+            "House only": [{"date": "2023-01", "value": 101.0}],
+            "Land only": [{"date": "2023-01", "value": 102.0}],
+        },
+        "Montreal": {
+            "Total (house and land)": [{"date": "2023-01", "value": 110.0}],
+            "House only": [],
+            "Land only": [],
+        },
+    }
+    assert result == expected
+
+
+def test_extract_nhpi_empty():
+    assert extract_nhpi([]) == {}
+
+
+def test_extract_nhpi_missing_col(capsys):
+    rows = [{"GEO": "Toronto", "REF_DATE": "2023-01", "VALUE": "100.0"}]
+    result = extract_nhpi(rows)
+    assert result == {}
+    captured = capsys.readouterr()
+    assert "WARNING: could not find housing price index column" in captured.out
+
+
+def test_extract_nhpi_varying_col_name():
+    rows = [
+        create_nhpi_row(index_col="New housing price indexes", value="100.0"),
+    ]
+    result = extract_nhpi(rows)
+    assert "Toronto, Ontario" in result
+    assert result["Toronto, Ontario"]["Total (house and land)"] == [{"date": "2023-01", "value": 100.0}]
+
+    rows2 = [
+        create_nhpi_row(index_col="Some housing price index variant", value="105.0"),
+    ]
+    result2 = extract_nhpi(rows2)
+    assert result2["Toronto, Ontario"]["Total (house and land)"] == [{"date": "2023-01", "value": 105.0}]
+
+
+def test_extract_nhpi_sorting():
+    rows = [
+        create_nhpi_row(ref_date="2023-03", value="103.0"),
+        create_nhpi_row(ref_date="2023-01", value="101.0"),
+        create_nhpi_row(ref_date="2023-02", value="102.0"),
+    ]
+    result = extract_nhpi(rows)
+    dates = [r["date"] for r in result["Toronto, Ontario"]["Total (house and land)"]]
+    assert dates == ["2023-01", "2023-02", "2023-03"]
+
+
+def test_extract_nhpi_filtering():
+    rows = [
+        create_nhpi_row(measure="Total (house and land)", value="100.0"),
+        create_nhpi_row(measure="Invalid Measure", value="200.0"),
+        create_nhpi_row(measure="House only", value=".."),  # Should be filtered by _clean
+        create_nhpi_row(measure="Land only", value="102.0"),
+    ]
+    result = extract_nhpi(rows)
+    measures = result["Toronto, Ontario"]
+    assert len(measures["Total (house and land)"]) == 1
+    assert len(measures["House only"]) == 0
+    assert len(measures["Land only"]) == 1
+    assert "Invalid Measure" not in measures
