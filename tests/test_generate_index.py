@@ -92,3 +92,59 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
+
+def test_build_html_empty_analyses():
+    module = load_generate_index_module()
+    html_output = module.build_html([])
+
+    assert 'No analyses yet — drop an HTML file here' in html_output
+    assert '<div class="empty">No analyses found yet.' in html_output
+    assert 'A hub for data analysis visualizations and insights.' in html_output
+    assert 'og:description' in html_output
+
+
+def test_build_html_single_analysis():
+    module = load_generate_index_module()
+    analysis = {
+        'filename': 'single.html',
+        'title': 'Single Test Analysis',
+        'tags': ['test', 'single'],
+        'description': 'A test for a single analysis.',
+        'date': '2023-10-01'
+    }
+    html_output = module.build_html([analysis])
+
+    assert '1 analysis' in html_output
+    assert '1 analysises' not in html_output
+    assert 'Single Test Analysis' in html_output
+    assert 'A test for a single analysis.' in html_output
+    assert '<div class="empty">No analyses found yet.' not in html_output
+    # Check OG description
+    assert '1 analysis from various datasets and projects.' in html_output
+
+
+def test_build_html_multiple_analyses():
+    module = load_generate_index_module()
+    analyses = [
+        {
+            'filename': 'first.html',
+            'title': 'First Analysis',
+            'tags': ['test1'],
+            'description': 'Description one.',
+            'date': '2023-10-01'
+        },
+        {
+            'filename': 'second.html',
+            'title': 'Second Analysis',
+            'tags': ['test2'],
+            'description': 'Description two.',
+            'date': '2023-10-02'
+        }
+    ]
+    html_output = module.build_html(analyses)
+
+    assert '2 analysises' in html_output
+    assert 'First Analysis' in html_output
+    assert 'Second Analysis' in html_output
+    assert '<div class="empty">No analyses found yet.' not in html_output
+    assert '2 analysises from various datasets and projects.' in html_output
