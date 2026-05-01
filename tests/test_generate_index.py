@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
-
+import json
+import pytest
+from unittest.mock import patch
 
 def load_generate_index_module():
     path = Path(__file__).parent.parent / 'deployment' / 'generate_index.py'
@@ -9,7 +11,6 @@ def load_generate_index_module():
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
-
 
 def test_inject_responsive_default_adds_v4_marker_and_canvas_rules():
     module = load_generate_index_module()
@@ -21,7 +22,6 @@ def test_inject_responsive_default_adds_v4_marker_and_canvas_rules():
     assert '.grid canvas { display: block; width: 100% !important; }' in content
     assert '.grid .small-card canvas { height: 190px !important; }' in content
 
-
 def test_inject_responsive_is_idempotent():
     module = load_generate_index_module()
     initial_content = '<html><head></head><body></body></html>'
@@ -31,7 +31,6 @@ def test_inject_responsive_is_idempotent():
 
     assert first == second
     assert second.count('<!-- responsive-inject-v5 -->') == 1
-
 
 def test_inject_responsive_replaces_older_versions():
     module = load_generate_index_module()
@@ -51,7 +50,6 @@ def test_inject_responsive_replaces_older_versions():
     assert '<!-- responsive-inject-v3 -->' not in content
     assert 'window.oldResponsive = true' not in content
     assert content.count('<!-- responsive-inject-v5 -->') == 1
-
 
 def test_inject_functions_handle_missing_tags():
     module = load_generate_index_module()
@@ -73,7 +71,6 @@ def test_inject_functions_handle_missing_tags():
     assert res3 == content_no_tags
     assert isinstance(res3, str)
 
-
 def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, monkeypatch):
     module = load_generate_index_module()
     analysis = tmp_path / 'sample.html'
@@ -92,3 +89,27 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
+
+@patch('pathlib.Path.exists')
+def test_load_descriptions_missing_file(mock_exists):
+    mock_exists.return_value = False
+    module = load_generate_index_module()
+    assert module.load_descriptions() == {}
+
+@patch('pathlib.Path.exists')
+@patch('pathlib.Path.read_text')
+def test_load_descriptions_existing_file(mock_read_text, mock_exists):
+    mock_exists.return_value = True
+    mock_read_text.return_value = '{"test": "description"}'
+    module = load_generate_index_module()
+    assert module.load_descriptions() == {"test": "description"}
+    mock_read_text.assert_called_once_with(encoding='utf-8')
+
+@patch('pathlib.Path.exists')
+@patch('pathlib.Path.read_text')
+def test_load_descriptions_invalid_json(mock_read_text, mock_exists):
+    mock_exists.return_value = True
+    mock_read_text.return_value = '{"test": "description", }' # Invalid JSON
+    module = load_generate_index_module()
+    with pytest.raises(json.JSONDecodeError):
+        module.load_descriptions()
