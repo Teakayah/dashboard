@@ -24,3 +24,37 @@ def test_ollama_describe_error_handling(capsys):
 
         captured = capsys.readouterr()
         assert "[warn] Ollama unavailable for test.html: Connection refused" in captured.out
+
+def test_load_descriptions_exists():
+    module = load_generate_descriptions_module()
+
+    with patch('pathlib.Path.exists') as mock_exists, patch('pathlib.Path.read_text') as mock_read_text:
+        mock_exists.return_value = True
+        mock_read_text.return_value = '{"file1.html": "description 1", "file2.html": "description 2"}'
+
+        result = module.load_descriptions()
+
+        assert result == {"file1.html": "description 1", "file2.html": "description 2"}
+        mock_exists.assert_called_once()
+        mock_read_text.assert_called_once_with(encoding='utf-8')
+
+def test_load_descriptions_empty():
+    module = load_generate_descriptions_module()
+
+    with patch('pathlib.Path.exists') as mock_exists:
+        mock_exists.return_value = False
+
+        result = module.load_descriptions()
+
+        assert result == {}
+        mock_exists.assert_called_once()
+
+def test_save_descriptions():
+    module = load_generate_descriptions_module()
+
+    with patch('pathlib.Path.write_text') as mock_write_text:
+        descriptions = {"file1.html": "description 1", "file2.html": "description 2"}
+        module.save_descriptions(descriptions)
+
+        expected_json = '{\n  "file1.html": "description 1",\n  "file2.html": "description 2"\n}\n'
+        mock_write_text.assert_called_once_with(expected_json, encoding='utf-8')
