@@ -92,3 +92,26 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
+
+import json
+
+def test_load_descriptions_exists(tmp_path, monkeypatch):
+    module = load_generate_index_module()
+    descriptions = {"file1.html": "Description 1"}
+    desc_file = tmp_path / "descriptions.json"
+    desc_file.write_text(json.dumps(descriptions), encoding="utf-8")
+
+    monkeypatch.setattr(module, "DESCRIPTIONS_FILE", desc_file)
+
+    result = module.load_descriptions()
+    assert result == descriptions
+
+
+def test_load_descriptions_does_not_exist(tmp_path, monkeypatch):
+    module = load_generate_index_module()
+    desc_file = tmp_path / "descriptions.json"
+
+    monkeypatch.setattr(module, "DESCRIPTIONS_FILE", desc_file)
+
+    result = module.load_descriptions()
+    assert result == {}
