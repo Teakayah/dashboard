@@ -320,7 +320,7 @@ def build_card(analysis: dict, index: int) -> str:
 
 def build_html(analyses: list[dict]) -> str:
     count = len(analyses)
-    subtitle = f'{count} analysis{"" if count == 1 else "es"}' if count else 'No analyses yet — drop an HTML file here'
+    subtitle = f'{count} analys{"is" if count == 1 else "es"}' if count else 'No analyses yet — drop an HTML file here'
 
     cards_html = '\n'.join(build_card(a, i) for i, a in enumerate(analyses))
     empty_html = (
@@ -329,7 +329,7 @@ def build_html(analyses: list[dict]) -> str:
     )
 
     og_image_url = f'{SITE_URL}/previews/index.png'
-    og_desc = f'{count} analysis{"" if count == 1 else "es"} from various datasets and projects.' if count else 'A hub for data analysis visualizations and insights.'
+    og_desc = f'{count} analys{"is" if count == 1 else "es"} from various datasets and projects.' if count else 'A hub for data analysis visualizations and insights.'
 
     return f'''<!DOCTYPE html>
 <html lang="en">

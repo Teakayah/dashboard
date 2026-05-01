@@ -74,6 +74,60 @@ def test_inject_functions_handle_missing_tags():
     assert isinstance(res3, str)
 
 
+def test_build_html_empty():
+    module = load_generate_index_module()
+    html = module.build_html([])
+
+    assert 'No analyses yet — drop an HTML file here' in html
+    assert '<div class="empty">No analyses found yet.' in html
+    assert 'A hub for data analysis visualizations and insights.' in html
+
+
+def test_build_html_single_analysis():
+    module = load_generate_index_module()
+    analysis = {
+        'title': 'Test Analysis',
+        'filename': 'test.html',
+        'tags': ['test', 'single'],
+        'description': 'A single test analysis.',
+        'date': '2024-01-01',
+    }
+
+    html = module.build_html([analysis])
+
+    assert '1 analysis</div>' in html or '<div class="header-sub">1 analysis</div>' in html
+    assert '<div class="empty">No analyses found yet.' not in html
+    assert '1 analysis from various datasets and projects.' in html
+    assert 'Test Analysis' in html
+    assert 'test.html' in html
+
+
+def test_build_html_multiple_analyses():
+    module = load_generate_index_module()
+    analysis1 = {
+        'title': 'Test Analysis 1',
+        'filename': 'test1.html',
+        'tags': ['test1'],
+        'description': 'Test analysis one.',
+        'date': '2024-01-01',
+    }
+    analysis2 = {
+        'title': 'Test Analysis 2',
+        'filename': 'test2.html',
+        'tags': ['test2'],
+        'description': 'Test analysis two.',
+        'date': '2024-01-02',
+    }
+
+    html = module.build_html([analysis1, analysis2])
+
+    assert '2 analyses</div>' in html or '<div class="header-sub">2 analyses</div>' in html
+    assert '<div class="empty">No analyses found yet.' not in html
+    assert '2 analyses from various datasets and projects.' in html
+    assert 'Test Analysis 1' in html
+    assert 'Test Analysis 2' in html
+
+
 def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, monkeypatch):
     module = load_generate_index_module()
     analysis = tmp_path / 'sample.html'
