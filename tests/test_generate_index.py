@@ -92,3 +92,30 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
+
+def test_inject_back_link_happy_path():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body><p>Test</p></body></html>'
+
+    content = module.inject_back_link(initial_content, 'analysis.html')
+
+    assert module.BACK_LINK_MARKER in content
+    assert content == '<html><head></head><body>\n' + module.BACK_LINK_SNIPPET + '<p>Test</p></body></html>'
+
+def test_inject_back_link_idempotency():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body>\n' + module.BACK_LINK_SNIPPET + '<p>Test</p></body></html>'
+
+    content = module.inject_back_link(initial_content, 'analysis.html')
+
+    assert content == initial_content
+    assert content.count(module.BACK_LINK_MARKER) == 1
+
+def test_inject_back_link_attributes():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body class="custom-body" data-theme="dark"><p>Test</p></body></html>'
+
+    content = module.inject_back_link(initial_content, 'analysis.html')
+
+    assert module.BACK_LINK_MARKER in content
+    assert content == '<html><head></head><body class="custom-body" data-theme="dark">\n' + module.BACK_LINK_SNIPPET + '<p>Test</p></body></html>'
