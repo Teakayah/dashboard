@@ -92,3 +92,82 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
+
+def test_build_card_happy_path():
+    module = load_generate_index_module()
+    analysis = {
+        'title': 'Test Title',
+        'description': 'Test Description',
+        'tags': ['Tag1', 'Tag2'],
+        'date': '2023-10-01',
+        'filename': 'test.html'
+    }
+    index = 0
+    card_html = module.build_card(analysis, index)
+
+    assert 'href="test.html"' in card_html
+    assert f'--accent:{module.ACCENT_COLORS[0]}' in card_html
+    assert '<div class="card-title">Test Title</div>' in card_html
+    assert '<span class="badge">Tag1</span><span class="badge">Tag2</span>' in card_html
+    assert '<p class="card-desc">Test Description</p>' in card_html
+    assert '<span class="card-date">2023-10-01</span>' in card_html
+    assert '<span class="card-link">View analysis →</span>' in card_html
+
+def test_build_card_missing_optional_fields():
+    module = load_generate_index_module()
+    analysis = {
+        'title': 'Test Title',
+        'description': '',
+        'tags': [],
+        'date': None,
+        'filename': 'test.html'
+    }
+    index = 1
+    card_html = module.build_card(analysis, index)
+
+    assert 'href="test.html"' in card_html
+    assert f'--accent:{module.ACCENT_COLORS[1]}' in card_html
+    assert '<div class="card-title">Test Title</div>' in card_html
+    assert '<div class="badges"></div>' in card_html
+    assert '<p class="card-desc">' not in card_html
+    assert '<span class="card-date">' not in card_html
+
+def test_build_card_html_escaping():
+    module = load_generate_index_module()
+    analysis = {
+        'title': '<script>alert("title")</script>',
+        'description': '<script>alert("desc")</script>',
+        'tags': ['<tag>'],
+        'date': '<b>2023</b>',
+        'filename': '">test.html'
+    }
+    index = 0
+    card_html = module.build_card(analysis, index)
+
+    assert 'href="&quot;&gt;test.html"' in card_html
+    assert '&lt;script&gt;alert(&quot;title&quot;)&lt;/script&gt;' in card_html
+    assert '&lt;script&gt;alert(&quot;desc&quot;)&lt;/script&gt;' in card_html
+    assert '&lt;tag&gt;' in card_html
+    assert '&lt;b&gt;2023&lt;/b&gt;' in card_html
+    assert '<script>' not in card_html
+
+def test_build_card_color_cycling():
+    module = load_generate_index_module()
+    analysis = {
+        'title': 'Test',
+        'description': '',
+        'tags': [],
+        'date': '',
+        'filename': 'test.html'
+    }
+
+    num_colors = len(module.ACCENT_COLORS)
+
+    card_html_0 = module.build_card(analysis, 0)
+    assert f'--accent:{module.ACCENT_COLORS[0]}' in card_html_0
+
+    card_html_last = module.build_card(analysis, num_colors - 1)
+    assert f'--accent:{module.ACCENT_COLORS[-1]}' in card_html_last
+
+    card_html_wrap = module.build_card(analysis, num_colors)
+    assert f'--accent:{module.ACCENT_COLORS[0]}' in card_html_wrap
