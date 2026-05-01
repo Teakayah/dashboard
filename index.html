@@ -7,7 +7,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://teakayah.github.io/dashboard/">
   <meta property="og:title" content="DataDashboard">
-  <meta property="og:description" content="4 analysises from various datasets and projects.">
+  <meta property="og:description" content="3 analysises from various datasets and projects.">
   <meta property="og:image" content="https://teakayah.github.io/dashboard/previews/index.png">
   <meta property="twitter:card" content="summary_large_image">
   <link rel="alternate" type="application/atom+xml" title="DataDashboard feed" href="https://teakayah.github.io/dashboard/feed.xml">
@@ -25,100 +25,142 @@
     .search-bar input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79,142,247,0.15); }
     main { padding: 48px 32px 64px; max-width: 1200px; margin: 0 auto; }
     .grid-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
-    .grid-label::after { content: ""; height: 1px; background: var(--border); flex: 1; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
-    .card { display: flex; flex-direction: column; background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); border-top: 4px solid var(--accent, var(--primary)); text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s; }
-    .card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }
-    .card-title { font-size: 1.05rem; font-weight: 700; color: #1a1a2e; line-height: 1.4; margin-bottom: 8px; }
-    .badge { font-size: 0.65rem; font-weight: 700; color: var(--primary); background: rgba(79,142,247,0.1); border-radius: 6px; padding: 3px 8px; margin-right: 4px; }
-    .card-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
-    .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
-    .card-date { font-size: 0.72rem; color: #bbb; font-weight: 600; }
-    .card-date span { color: #999; }
-    .card-link { font-size: 0.8rem; font-weight: 700; color: var(--accent, var(--primary)); }
+    .grid-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px; }
+    
+    .card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--border); 
+      border-radius: 16px; 
+      padding: 24px; 
+      text-decoration: none; 
+      color: inherit; 
+      display: flex; 
+      flex-direction: column; 
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      box-shadow: var(--shadow);
+    }
+    .card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 12px 24px rgba(0,0,0,0.06); }
     .card.hidden { display: none; }
-    footer { text-align: center; font-size: 0.8rem; color: #bbb; padding: 0 32px 48px; }
-    footer a { color: #999; text-decoration: none; font-weight: 600; }
-    footer a:hover { color: var(--primary); }
-    @media (max-width: 600px) { header.hero { padding: 40px 20px 32px; } .grid { grid-template-columns: 1fr; } }
+    
+    .card-top { margin-bottom: 16px; }
+    .card-title { font-size: 1.15rem; font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 8px; }
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 20px; background: rgba(0,0,0,0.05); color: var(--text-muted); }
+    
+    .card-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    
+    .card-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); pt: 16px; margin-top: auto; padding-top: 16px; }
+    .card-date { font-size: 0.72rem; color: var(--text-dim); }
+    .card-date span { font-weight: 600; color: var(--text-muted); }
+    .card-link { font-size: 0.8rem; font-weight: 700; color: var(--primary); }
+
+    .empty { text-align: center; padding: 80px 0; color: var(--text-dim); }
+    
+    footer { text-align: center; padding: 48px; color: var(--text-dim); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: 64px; }
+
+    @media (max-width: 640px) {
+      header.hero { padding: 48px 24px 40px; }
+      header.hero h1 { font-size: 1.8rem; }
+      main { padding: 32px 20px; }
+      .grid { grid-template-columns: 1fr; gap: 20px; }
+    }
   </style>
 </head>
 <body>
-<header class="hero">
-  <h1>Data<span>Dashboard</span></h1>
-  <div class="header-sub">4 analysises</div>
-</header>
-<div class="search-bar">
-  <input id="search" type="search" placeholder="Search analyses and tools…" autocomplete="off">
-</div>
-<main>
-  <div class="grid-label">Available Analyses</div>
-  <div class="grid" id="grid">      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#4f8ef7">
+  <header class="hero">
+    <h1>Data<span>Dashboard</span></h1>
+    <p class="header-sub">3 analysises</p>
+  </header>
+
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search analyses, tags, or dates..." autocomplete="off">
+  </div>
+
+  <main>
+    <div class="grid-label">Available Analyses</div>
+    <div class="grid">
+            <a class="card" href="employment_rate_canada.html" style="--accent:#4f8ef7">
+        <div class="card-top">
+          <div class="card-title">Canadian Labour &amp; Fiscal Dashboard</div>
+          <div class="badges"><span class="badge">Economy</span></div>
+        </div>
+        
+        <div class="card-footer">
+          <div class="card-date">Last Updated: <span>2026-04-29</span></div>
+          <span class="card-link">Explore →</span>
+        </div>
+      </a>
+      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#2ecc71">
         <div class="card-top">
           <div class="card-title">NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</div>
-          <div class="badges"><span class="badge">Chart.js</span></div>
+          <div class="badges"></div>
         </div>
-        <p class="card-desc">Statistics Canada · Table 18-10-0205-01 · Base: December 2016 = 100</p>
+        
         <div class="card-footer">
-          <div class="card-date">Last Updated: <span>Apr 2026</span></div>
+          <div class="card-date">Last Updated: <span>2026-04-29</span></div>
           <span class="card-link">Explore →</span>
         </div>
       </a>
-      <a class="card" href="flood_risk_gatineau_ottawa.html" style="--accent:#ff6384">
+      <a class="card" href="flood_risk_gatineau_ottawa.html" style="--accent:#f39c12">
         <div class="card-top">
           <div class="card-title">Ottawa-Gatineau Flood Risk — Station 02KF005</div>
-          <div class="badges"><span class="badge">Chart.js</span></div>
+          <div class="badges"><span class="badge">Environment</span></div>
         </div>
-        <p class="card-desc">Ottawa River at Britannia (02KF005) &middot; Live &amp; Historical &middot; Water Survey of Canada</p>
+        
         <div class="card-footer">
-          <div class="card-date">Last Updated: <span>Apr 2026</span></div>
+          <div class="card-date">Last Updated: <span>2026-04-29</span></div>
           <span class="card-link">Explore →</span>
         </div>
       </a>
-      <a class="card" href="employment_rate_canada.html" style="--accent:#4bc0c0">
-        <div class="card-top">
-          <div class="card-title">Canadian Labour & Fiscal Dashboard</div>
-          <div class="badges"><span class="badge">Chart.js</span></div>
-        </div>
-        <p class="card-desc">Statistics Canada &mdash; Seasonally adjusted where applicable &middot; Total gender &middot; Provincial governments</p>
-        <div class="card-footer">
-          <div class="card-date">Last Updated: <span>Apr 2026</span></div>
-          <span class="card-link">Explore →</span>
-        </div>
-      </a>
-      <a class="card" href="dropzone.html" style="--accent:#ff9f40">
-        <div class="card-top">
-          <div class="card-title">Analytical Drop-Zone</div>
-          <div class="badges"><span class="badge">Chart.js</span><span class="badge">DuckDB</span><span class="badge">Grid.js</span></div>
-        </div>
-        <p class="card-desc">Local-first SQL analysis for CSV, JSON, and Parquet files using DuckDB-Wasm.</p>
-        <div class="card-footer">
-          <div class="card-date">Last Updated: <span>Apr 2026</span></div>
-          <span class="card-link">Explore →</span>
-        </div>
-      </a></div>
-  
-</main>
-<footer>
-  <a href="https://github.com/Teakayah/dashboard" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-  &nbsp;·&nbsp;
-  <a href="https://teakayah.github.io/dashboard/feed.xml">RSS Feed</a>
-</footer>
+    </div>
+    
+  </main>
+
+  <footer>
+    &copy; 2026 DataDashboard &middot; Built with Python &amp; DuckDB
+  </footer>
 <script>
   const input = document.getElementById('search');
   const cards = document.querySelectorAll('.card');
+
+  function highlight(text, query) {
+    if (!query) return text;
+    const regex = new RegExp(`(${query})`, 'gi');
+    return text.replace(regex, '<mark style="background: #ffeb3b; padding: 0 2px; border-radius: 2px; color: #000;">$1</mark>');
+  }
+
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
     cards.forEach(c => {
+      const titleEl = c.querySelector('.card-title');
+      const descEl = c.querySelector('.card-desc');
+
+      if (!c.dataset.origTitle) c.dataset.origTitle = titleEl.innerHTML;
+      if (descEl && !c.dataset.origDesc) c.dataset.origDesc = descEl.innerHTML;
+
       const text = c.textContent.toLowerCase();
-      c.classList.toggle('hidden', q !== '' && !text.includes(q));
+      const matches = q === '' || text.includes(q);
+      c.classList.toggle('hidden', !matches);
+
+      if (q !== '' && matches) {
+        titleEl.innerHTML = highlight(c.dataset.origTitle, q);
+        if (descEl) descEl.innerHTML = highlight(c.dataset.origDesc, q);
+      } else {
+        titleEl.innerHTML = c.dataset.origTitle || titleEl.innerHTML;
+        if (descEl) descEl.innerHTML = c.dataset.origDesc || (descEl ? descEl.innerHTML : '');
+      }
     });
   });
 </script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js');
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        console.log('SW registered:', reg);
+      }).catch(err => {
+        console.log('SW registration failed:', err);
+      });
     });
   }
 </script>
