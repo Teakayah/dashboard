@@ -74,6 +74,46 @@ def test_inject_functions_handle_missing_tags():
     assert isinstance(res3, str)
 
 
+def test_inject_og_tags_adds_og_block_with_extracted_title():
+    module = load_generate_index_module()
+    initial_content = '<html><head><title>My Awesome Analysis</title></head><body></body></html>'
+
+    content = module.inject_og_tags(initial_content, 'analysis.html', 'analysis')
+
+    assert '<!-- Open Graph / Social Sharing -->' in content
+    assert '<meta property="og:title" content="My Awesome Analysis">' in content
+    assert '<meta property="og:image" content="' + module.SITE_URL + '/previews/analysis.png">' in content
+
+
+def test_inject_og_tags_uses_stem_as_fallback_title():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body></body></html>'
+
+    content = module.inject_og_tags(initial_content, 'my_cool_analysis.html', 'my_cool_analysis')
+
+    assert '<meta property="og:title" content="My Cool Analysis">' in content
+
+
+def test_inject_og_tags_escapes_title_properly():
+    module = load_generate_index_module()
+    # Test unescaping first, then escaping, to avoid double-escaping bugs and handle HTML entities in the original title
+    initial_content = '<html><head><title>My &quot;Cool&quot; &lt;Analysis&gt;</title></head><body></body></html>'
+
+    content = module.inject_og_tags(initial_content, 'analysis.html', 'analysis')
+
+    assert '<meta property="og:title" content="My &quot;Cool&quot; &lt;Analysis&gt;">' in content
+
+
+def test_inject_og_tags_is_idempotent():
+    module = load_generate_index_module()
+    initial_content = '<html><head><meta property="og:image" content="already_here.png"></head><body></body></html>'
+
+    content = module.inject_og_tags(initial_content, 'analysis.html', 'analysis')
+
+    assert content == initial_content
+    assert content.count('og:image') == 1
+
+
 def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, monkeypatch):
     module = load_generate_index_module()
     analysis = tmp_path / 'sample.html'
