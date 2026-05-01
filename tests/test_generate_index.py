@@ -92,3 +92,28 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
+
+
+def test_inject_back_link_simple():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body><p>Test</p></body></html>'
+    content = module.inject_back_link(initial_content, 'analysis.html')
+    assert module.BACK_LINK_MARKER in content
+    assert content.startswith('<html><head></head><body>\n<!-- back-link-inject -->')
+
+
+def test_inject_back_link_attributes():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body class="my-class" id="main"><p>Test</p></body></html>'
+    content = module.inject_back_link(initial_content, 'analysis.html')
+    assert module.BACK_LINK_MARKER in content
+    assert content.startswith('<html><head></head><body class="my-class" id="main">\n<!-- back-link-inject -->')
+
+
+def test_inject_back_link_idempotent():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body><p>Test</p></body></html>'
+    first = module.inject_back_link(initial_content, 'analysis.html')
+    second = module.inject_back_link(first, 'analysis.html')
+    assert first == second
+    assert second.count(module.BACK_LINK_MARKER) == 1
