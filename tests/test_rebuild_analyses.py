@@ -1,6 +1,7 @@
 import pytest
 from deployment.rebuild_analyses import (
     extract_emp_rate,
+    extract_emp_jobs,
     extract_fed_debt,
     extract_prov_debt,
     _clean,
@@ -342,3 +343,79 @@ def test_read_csv_valid_file(tmp_path):
         {"col1": "val1", "col2": "val2"},
         {"col1": "val3", "col2": "val4"},
     ]
+
+
+def test_extract_emp_jobs_basic():
+    rows = [
+        # Valid row for Ontario 2023
+        create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
+        create_row(geo="Ontario", ref_date="2023-02", value="6100.0", char="Employment"),  # Average for 2023 should be 6050.0
+        # Valid row for Quebec 2023
+        create_row(geo="Quebec", ref_date="2023-01", value="4000.0", char="Employment"),
+        # Valid row for Ontario 2024
+        create_row(geo="Ontario", ref_date="2024-01", value="6200.0", char="Employment"),
+        # Valid row for Ontario 2025
+        create_row(geo="Ontario", ref_date="2025-01", value="6500.0", char="Employment"),
+
+        # Invalid rows that should be filtered out:
+        # Wrong characteristic
+        create_row(char="Employment rate"),
+        create_row(char="Unemployment"),
+        # Wrong gender
+        create_row(char="Employment", gender="Males"),
+        # Wrong age group
+        create_row(char="Employment", age="15 to 24 years"),
+        # Wrong statistic
+        create_row(char="Employment", stat="Standard error"),
+        # Wrong data type
+        create_row(char="Employment", dtype="Unadjusted"),
+        # Missing/invalid value
+        create_row(char="Employment", value=".."),
+        create_row(char="Employment", value="F"),
+        create_row(char="Employment", value=""),
+    ]
+
+    result = extract_emp_jobs(rows)
+
+    expected = {
+        "Ontario": [
+            {"year": 2023, "level": 6050.0, "change": None},
+            {"year": 2024, "level": 6200.0, "change": 150.0},
+            {"year": 2025, "level": 6500.0, "change": 300.0},
+        ],
+        "Quebec": [{"year": 2023, "level": 4000.0, "change": None}],
+    }
+
+    assert result == expected
+
+
+def test_extract_emp_jobs_empty():
+    assert extract_emp_jobs([]) == {}
+
+
+def test_extract_emp_jobs_unordered_years():
+    rows = [
+        create_row(geo="Ontario", ref_date="2025-01", value="6500.0", char="Employment"),
+        create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
+        create_row(geo="Ontario", ref_date="2024-01", value="6200.0", char="Employment"),
+    ]
+    result = extract_emp_jobs(rows)
+    expected = {
+        "Ontario": [
+            {"year": 2023, "level": 6000.0, "change": None},
+            {"year": 2024, "level": 6200.0, "change": 200.0},
+            {"year": 2025, "level": 6500.0, "change": 300.0},
+        ]
+    }
+    assert result == expected
+
+
+def test_extract_emp_jobs_missing_value():
+    rows = [
+        create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
+        create_row(geo="Ontario", ref_date="2023-02", value="x", char="Employment"),
+        create_row(geo="Ontario", ref_date="2023-03", value="..", char="Employment"),
+    ]
+    result = extract_emp_jobs(rows)
+    expected = {"Ontario": [{"year": 2023, "level": 6000.0, "change": None}]}
+    assert result == expected
