@@ -92,3 +92,31 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
+
+def test_inject_favicon_adds_favicon_when_missing():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body></body></html>'
+    content = module.inject_favicon(initial_content, 'analysis.html')
+
+    assert 'rel="icon"' in content
+    assert 'favicon.ico' in content
+    assert '<link rel="icon"' in content
+    assert content.endswith('</head><body></body></html>')
+
+def test_inject_favicon_skips_if_already_present():
+    module = load_generate_index_module()
+    # double quote
+    initial_content1 = '<html><head><link rel="icon" href="fav.ico"></head><body></body></html>'
+    content1 = module.inject_favicon(initial_content1, 'analysis.html')
+    assert content1 == initial_content1
+
+    # single quote
+    initial_content2 = "<html><head><link rel='icon' href='fav.ico'></head><body></body></html>"
+    content2 = module.inject_favicon(initial_content2, 'analysis.html')
+    assert content2 == initial_content2
+
+def test_inject_favicon_missing_tags():
+    module = load_generate_index_module()
+    initial_content = "<html><body>No head tag</body></html>"
+    content = module.inject_favicon(initial_content, 'analysis.html')
+    assert content == initial_content
