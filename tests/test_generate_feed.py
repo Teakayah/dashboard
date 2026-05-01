@@ -108,3 +108,58 @@ def test_atom_entry_escapes_url_and_id():
     assert '<link href="https://example.com/page?param=1&amp;other=&lt;script&gt;" />' in entry_xml
     assert '<id>https://example.com/page?param=1&amp;other=&lt;script&gt;</id>' in entry_xml
     assert 'https://example.com/page?param=1&other=<script>' not in entry_xml
+
+def test_build_feed_empty():
+    from unittest.mock import patch
+    from datetime import datetime, timezone
+
+    module = load_generate_feed_module()
+
+    with patch.object(module, 'datetime') as mock_dt:
+        mock_dt.now.return_value = datetime(2023, 10, 27, 10, 0, 0, tzinfo=timezone.utc)
+        xml = module.build_feed([])
+
+        assert '<?xml version="1.0" encoding="UTF-8"?>' in xml
+        assert '<updated>2023-10-27T10:00:00Z</updated>' in xml
+        assert '<entry>' not in xml
+
+def test_build_feed_with_entries():
+    module = load_generate_feed_module()
+
+    entries = [
+        {
+            'title': 'Entry 1',
+            'url': 'https://example.com/1',
+            'id': 'https://example.com/1',
+            'updated': '2023-10-25T10:00:00Z',
+            'summary': 'Summary 1',
+            'preview_url': 'https://example.com/1.png',
+        },
+        {
+            'title': 'Entry 2',
+            'url': 'https://example.com/2',
+            'id': 'https://example.com/2',
+            'updated': '2023-10-27T10:00:00Z',
+            'summary': 'Summary 2',
+            'preview_url': 'https://example.com/2.png',
+        },
+        {
+            'title': 'Entry 3',
+            'url': 'https://example.com/3',
+            'id': 'https://example.com/3',
+            'updated': '2023-10-26T10:00:00Z',
+            'summary': 'Summary 3',
+            'preview_url': 'https://example.com/3.png',
+        }
+    ]
+
+    xml = module.build_feed(entries)
+
+    # Check that feed_updated is the max of the updated timestamps
+    assert '<updated>2023-10-27T10:00:00Z</updated>' in xml
+
+    # Check that all entries are present
+    assert '<title>Entry 1</title>' in xml
+    assert '<title>Entry 2</title>' in xml
+    assert '<title>Entry 3</title>' in xml
+    assert xml.count('<entry>') == 3
