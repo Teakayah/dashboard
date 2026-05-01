@@ -92,3 +92,106 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
+
+def test_extract_meta_full_html(tmp_path, monkeypatch):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, '_git_date', lambda p: 'Jan 2024')
+    filepath = tmp_path / 'my_analysis.html'
+    content = '''
+    <html>
+      <head>
+        <title>My Cool Analysis</title>
+        <meta name="description" content="This is a cool analysis of data.">
+      </head>
+      <body>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.plot.ly/plotly.min.js"></script>
+      </body>
+    </html>
+    '''
+    meta = module.extract_meta(filepath, content)
+    assert meta['filename'] == 'my_analysis.html'
+    assert meta['title'] == 'My Cool Analysis'
+    assert meta['description'] == 'This is a cool analysis of data.'
+    assert 'Chart.js' in meta['tags']
+    assert 'Plotly' in meta['tags']
+    assert meta['date'] == 'Jan 2024'
+
+
+def test_extract_meta_no_title(tmp_path, monkeypatch):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, '_git_date', lambda p: 'Jan 2024')
+    filepath = tmp_path / 'my_cool_analysis.html'
+    content = '''
+    <html>
+      <head>
+        <meta name="description" content="Desc">
+      </head>
+      <body></body>
+    </html>
+    '''
+    meta = module.extract_meta(filepath, content)
+    assert meta['title'] == 'My Cool Analysis'
+
+
+def test_extract_meta_subtitle(tmp_path, monkeypatch):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, '_git_date', lambda p: 'Jan 2024')
+    filepath = tmp_path / 'analysis.html'
+    content = '''
+    <html>
+      <head><title>Title</title></head>
+      <body>
+        <h2 class="subtitle">This is the subtitle text.</h2>
+      </body>
+    </html>
+    '''
+    meta = module.extract_meta(filepath, content)
+    assert meta['description'] == 'This is the subtitle text.'
+
+
+def test_extract_meta_subtitle_truncation(tmp_path, monkeypatch):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, '_git_date', lambda p: 'Jan 2024')
+    filepath = tmp_path / 'analysis.html'
+    long_desc = "A" * 150
+    content = f'''
+    <html>
+      <head><title>Title</title></head>
+      <body>
+        <div class="subtitle">{long_desc}</div>
+      </body>
+    </html>
+    '''
+    meta = module.extract_meta(filepath, content)
+    assert len(meta['description']) == 118
+    assert meta['description'].endswith('…')
+    assert meta['description'].startswith("A" * 117)
+
+
+def test_extract_meta_descriptions_fallback(tmp_path, monkeypatch):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, '_git_date', lambda p: 'Jan 2024')
+    filepath = tmp_path / 'analysis.html'
+    content = '<html><head><title>Title</title></head><body></body></html>'
+    descriptions = {'analysis.html': 'Description from json.'}
+    meta = module.extract_meta(filepath, content, descriptions=descriptions)
+    assert meta['description'] == 'Description from json.'
+
+
+def test_extract_meta_html_unescape(tmp_path, monkeypatch):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, '_git_date', lambda p: 'Jan 2024')
+    filepath = tmp_path / 'analysis.html'
+    content = '''
+    <html>
+      <head>
+        <title>Cats &amp; Dogs</title>
+        <meta name="description" content="They are &lt;cute&gt;.">
+      </head>
+      <body></body>
+    </html>
+    '''
+    meta = module.extract_meta(filepath, content)
+    assert meta['title'] == 'Cats & Dogs'
+    assert meta['description'] == 'They are <cute>.'
