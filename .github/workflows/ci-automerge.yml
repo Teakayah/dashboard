@@ -49,12 +49,28 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout main
-          git merge origin/dev --no-ff -m "chore: auto-merge dev into main [skip ci]" || {
-            echo "Merge conflict detected — resolving by taking dev version for conflicted files"
-            git checkout --theirs -- .
-            git add -A
-            git commit --no-edit
-          }
+          if ! git merge origin/dev --no-ff -m "chore: auto-merge dev into main [skip ci]"; then
+            echo "Merge conflict detected."
+            
+            # Identify conflicted files
+            CONFLICTS=$(git diff --name-only --diff-filter=U)
+            echo "Conflicted files: $CONFLICTS"
+            
+            # Check if any non-generated file is conflicted
+            # (Anything NOT index.html, feed.xml, previews/ or *.html at root)
+            STRICT_CONFLICTS=$(echo "$CONFLICTS" | grep -vE '^(index\.html|feed\.xml|previews/|.*\.html|favicon\.ico)$' || true)
+            
+            if [ -n "$STRICT_CONFLICTS" ]; then
+              echo "CRITICAL: Conflict in source/test files: $STRICT_CONFLICTS"
+              echo "Manual merge required to prevent regression. Aborting CI."
+              exit 1
+            else
+              echo "Resolving conflicts in generated assets by taking 'dev' version."
+              git checkout --theirs -- .
+              git add -A
+              git commit --no-edit
+            fi
+          fi
 
       - name: Generate index.html + inject og tags
         run: python3 deployment/generate_index.py
@@ -74,7 +90,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html feed.xml previews/ *.html
+          git add index.html feed.xml previews/ *.html favicon.ico
           git diff --staged --quiet && echo "Nothing new to commit." || \
             git commit -m "chore: update index, feed, previews, og tags [skip ci]"
           git push origin main

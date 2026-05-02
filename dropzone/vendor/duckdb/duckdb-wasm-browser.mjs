@@ -1,0 +1,1 @@
+Couldn't find the requested file /dist/duckdb-wasm-browser.mjs in @duckdb/duckdb-wasm.
