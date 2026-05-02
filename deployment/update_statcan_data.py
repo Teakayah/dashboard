@@ -24,8 +24,12 @@ from datetime import date, datetime, timezone
 from io import BytesIO
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent
-SOURCE_DIR = ROOT / 'source' / 'Stat Can'
+# Import centralized configuration
+try:
+    from config import ROOT, TABLES, OUR_IDS
+except ImportError:
+    from deployment.config import ROOT, TABLES, OUR_IDS
+
 STATUS_FILE = ROOT / 'source' / '.update_result.json'
 
 # Lightweight metadata API — returns JSON list of changed table IDs, no CSV data
@@ -36,37 +40,6 @@ _DL_URL = 'https://www150.statcan.gc.ca/t1/tbl1/en/dtbl/downloadTbl/{pid}01'
 
 # Fall back to downloading everything if last check is older than this many days
 _MAX_LOOKBACK_DAYS = 60
-
-TABLES = [
-    {
-        'id': '10100015',
-        'path': SOURCE_DIR / 'Employment' / '10100015-eng',
-        'desc': 'Government operations & balance sheet (quarterly)',
-    },
-    {
-        'id': '10100017',
-        'path': SOURCE_DIR / 'Employment' / '10100017-eng',
-        'desc': 'Public sector operations (annual)',
-    },
-    {
-        'id': '14100287',
-        'path': SOURCE_DIR / 'Employment' / '14100287-eng',
-        'desc': 'Labour force survey (monthly)',
-    },
-    {
-        'id': '17100005',
-        'path': SOURCE_DIR / 'Employment' / '17100005-eng',
-        'desc': 'Population estimates (annual)',
-    },
-    {
-        'id': '18100205',
-        'path': SOURCE_DIR / 'Housing' / '18100205-eng',
-        'desc': 'New housing price index (monthly)',
-    },
-]
-
-# Quick lookup: our 8-digit IDs as a set for O(1) membership tests
-_OUR_IDS = {t['id'] for t in TABLES}
 
 
 # ── Phase 1: check ─────────────────────────────────────────────────────────────
@@ -109,7 +82,7 @@ def fetch_changed_since(since: date) -> Optional[set[str]]:
         return None
 
     changed = {_normalize_pid(item.get('productId', '')) for item in payload}
-    relevant = changed & _OUR_IDS
+    relevant = changed & OUR_IDS
     print(f'  Stats Canada reports {len(changed)} table(s) changed; '
           f'{len(relevant)} of ours: {sorted(relevant) or "none"}')
     return relevant
