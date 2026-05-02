@@ -119,7 +119,9 @@ async function handleFiles(files) {
             });
             
             const tableDiv = document.createElement('div');
-            tableDiv.innerHTML = `<strong>${file.name} (table: ${tableName}):</strong> `;
+            const strong = document.createElement('strong');
+            strong.textContent = `${file.name} (table: ${tableName}): `;
+            tableDiv.appendChild(strong);
             cols.forEach(c => tableDiv.appendChild(c));
             schemaDisplay.appendChild(tableDiv);
             
@@ -239,7 +241,15 @@ function createPreviewCard(title, renderFn) {
     const id = 'chart-' + Math.random().toString(36).substr(2, 9);
     const card = document.createElement('div');
     card.className = 'preview-card';
-    card.innerHTML = `<h3>${title}</h3><canvas id="${id}"></canvas>`;
+    
+    const h3 = document.createElement('h3');
+    h3.textContent = title;
+    card.appendChild(h3);
+    
+    const canvas = document.createElement('canvas');
+    canvas.id = id;
+    card.appendChild(canvas);
+    
     previewsContainer.appendChild(card);
     renderFn(id);
 }
