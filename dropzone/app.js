@@ -26,6 +26,8 @@ const runBtn = document.getElementById('run-query');
 const clearBtn = document.getElementById('clear-data');
 const downloadBtn = document.getElementById('download-csv');
 const copyJsonBtn = document.getElementById('copy-json');
+const loadSamplesBtn = document.getElementById('load-samples');
+const exportDbBtn = document.getElementById('export-db');
 const recipeSelect = document.getElementById('query-recipes');
 const schemaDisplay = document.getElementById('schema-display');
 const loadingOverlay = document.getElementById('loading');
@@ -37,6 +39,20 @@ const joinTableA = document.getElementById('join-table-a');
 const joinTableB = document.getElementById('join-table-b');
 const joinCol = document.getElementById('join-col');
 const generateJoinBtn = document.getElementById('generate-join');
+
+const SAMPLE_DATA = {
+    'employees.csv': `id,name,dept_id,salary,join_date
+1,Alice,101,85000,2022-01-15
+2,Bob,102,72000,2022-03-20
+3,Charlie,101,95000,2021-11-10
+4,David,103,64000,2023-02-05
+5,Eve,102,81000,2022-08-12`,
+    'departments.csv': `dept_id,dept_name,location
+101,Engineering,New York
+102,Marketing,Toronto
+103,Design,Vancouver
+104,Sales,Montreal`
+};
 
 async function init() {
     try {
@@ -532,6 +548,66 @@ copyJsonBtn.addEventListener('click', () => {
         copyJsonBtn.textContent = 'Copied!';
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
     });
+});
+
+loadSamplesBtn.addEventListener('click', async () => {
+    loadingOverlay.style.display = 'flex';
+    try {
+        for (const [name, content] of Object.entries(SAMPLE_DATA)) {
+            const tableName = name.replace('.csv', '');
+            await db.registerFileText(name, content);
+            await conn.query(`CREATE TABLE IF NOT EXISTS ${tableName} AS SELECT * FROM read_csv_auto('${name}')`);
+            loadedTables.add(tableName);
+        }
+        
+        schemaDisplay.innerHTML = '';
+        for (const table of loadedTables) {
+            await displayTableSchema(table);
+        }
+        
+        statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
+        updateJoinUI();
+        sqlInput.value = `SELECT * FROM employees JOIN departments ON employees.dept_id = departments.dept_id LIMIT 100`;
+        runBtn.disabled = false;
+        
+        const originalText = loadSamplesBtn.textContent;
+        loadSamplesBtn.textContent = 'Samples Loaded!';
+        setTimeout(() => { loadSamplesBtn.textContent = originalText; }, 2000);
+    } catch (err) {
+        console.error(err);
+        alert('Sample Loading Error: ' + err.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+});
+
+exportDbBtn.addEventListener('click', async () => {
+    loadingOverlay.style.display = 'flex';
+    try {
+        // We can't directly download the indexeddb file from here, 
+        // so we export to a temporary buffer and download.
+        const exportPath = 'duckdb_export.db';
+        await conn.query(`CHECKPOINT`); // Ensure all data is flushed
+        
+        // DuckDB-Wasm doesn't support 'EXPORT DATABASE' to a single file easily via SQL yet,
+        // but we can copy the internal DB file if we know its name.
+        // For indexeddb, it's safer to use the buffer if it was a file-backed DB.
+        // Since we used indexeddb:// path, we'll try a SQL export approach.
+        
+        const buffer = await db.copyFileToBuffer('indexeddb://duckdb');
+        const blob = new Blob([buffer], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `datadashboard_export_${new Date().getTime()}.db`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error(err);
+        alert('Database Export Error: ' + err.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
 });
 
 clearBtn.addEventListener('click', async () => {
