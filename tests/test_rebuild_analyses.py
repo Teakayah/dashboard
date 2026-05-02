@@ -1,9 +1,11 @@
 import pytest
 from deployment.rebuild_analyses import (
     extract_emp_rate,
+    extract_emp_jobs,
     extract_fed_debt,
     extract_prov_debt,
     extract_pop_data,
+    extract_nhpi,
     _clean,
     _inject_const,
     _read_csv
@@ -66,6 +68,37 @@ def create_debt_row(
     }
 
 
+def create_pop_row(
+    geo="Ontario",
+    ref_date="2023",
+    value="15000000",
+    gender="Total - gender",
+    age="All ages",
+):
+    return {
+        "GEO": geo,
+        "REF_DATE": ref_date,
+        "VALUE": value,
+        "Gender": gender,
+        "Age group": age,
+    }
+
+
+def create_nhpi_row(
+    geo="Toronto, Ontario",
+    ref_date="2023-01",
+    value="120.5",
+    measure="Total (house and land)",
+    idx_col_name="New housing price indexes",
+):
+    return {
+        "GEO": geo,
+        "REF_DATE": ref_date,
+        "VALUE": value,
+        idx_col_name: measure,
+    }
+
+
 def test_extract_fed_debt_basic():
     rows = [
         # Valid row for 2023
@@ -120,6 +153,43 @@ def test_extract_fed_debt_unordered_years():
         {"year": 2025, "value": 4000.0},
     ]
     assert result == expected
+
+
+def test_extract_emp_jobs_basic():
+    rows = [
+        # Valid row for Ontario 2023
+        create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
+        create_row(
+            geo="Ontario", ref_date="2023-02", value="6100.0", char="Employment"
+        ),  # Average for 2023 should be 6050.0
+        # Valid row for Quebec 2023
+        create_row(geo="Quebec", ref_date="2023-01", value="3000.0", char="Employment"),
+        # Valid row for Ontario 2024
+        create_row(geo="Ontario", ref_date="2024-01", value="6200.0", char="Employment"),
+        # Invalid rows that should be filtered out:
+        create_row(char="Employment rate"),  # Wrong characteristic
+        create_row(char="Employment", gender="Males"),
+        create_row(char="Employment", age="15 to 24 years"),
+        create_row(char="Employment", stat="Standard error"),
+        create_row(char="Employment", dtype="Unadjusted"),
+        create_row(char="Employment", value=".."),
+    ]
+
+    result = extract_emp_jobs(rows)
+
+    expected = {
+        "Ontario": [
+            {"year": 2023, "level": 6050.0, "change": None},
+            {"year": 2024, "level": 6200.0, "change": 150.0},
+        ],
+        "Quebec": [{"year": 2023, "level": 3000.0, "change": None}],
+    }
+
+    assert result == expected
+
+
+def test_extract_emp_jobs_empty():
+    assert extract_emp_jobs([]) == {}
 
 
 def test_extract_emp_rate_basic():
@@ -206,6 +276,89 @@ def test_extract_emp_rate_missing_value():
 )
 def test_clean_valid_floats(val, expected):
     assert _clean(val) == expected
+
+
+def test_extract_pop_data_basic():
+    rows = [
+        create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),
+        create_pop_row(geo="Quebec", ref_date="2023", value="8500000"),
+        create_pop_row(geo="Ontario", ref_date="2024", value="15500000"),
+        # Invalid rows
+        create_pop_row(gender="Males"),
+        create_pop_row(age="0 to 14 years"),
+        create_pop_row(value=".."),
+    ]
+
+    result = extract_pop_data(rows)
+
+    expected = {
+        "Ontario": [
+            {"year": 2023, "pop": 15000000, "change": None, "pct": None},
+            {"year": 2024, "pop": 15500000, "change": 500000, "pct": 3.33},
+        ],
+        "Quebec": [{"year": 2023, "pop": 8500000, "change": None, "pct": None}],
+    }
+
+    assert result == expected
+
+
+def test_extract_pop_data_empty():
+    assert extract_pop_data([]) == {}
+
+
+def test_extract_nhpi_basic():
+    rows = [
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-01", value="120.5", measure="Total (house and land)"),
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-02", value="121.0", measure="Total (house and land)"),
+        create_nhpi_row(geo="Vancouver, British Columbia", ref_date="2023-01", value="130.0", measure="Total (house and land)"),
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-01", value="110.0", measure="House only"),
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-01", value="140.0", measure="Land only"),
+        # Invalid rows
+        create_nhpi_row(measure="Wrong measure"),
+        create_nhpi_row(value=".."),
+    ]
+
+    result = extract_nhpi(rows)
+
+    expected = {
+        "Toronto, Ontario": {
+            "Total (house and land)": [
+                {"date": "2023-01", "value": 120.5},
+                {"date": "2023-02", "value": 121.0},
+            ],
+            "House only": [
+                {"date": "2023-01", "value": 110.0},
+            ],
+            "Land only": [
+                {"date": "2023-01", "value": 140.0},
+            ],
+        },
+        "Vancouver, British Columbia": {
+            "Total (house and land)": [
+                {"date": "2023-01", "value": 130.0},
+            ],
+            "House only": [],
+            "Land only": [],
+        },
+    }
+
+    assert result == expected
+
+
+def test_extract_nhpi_empty():
+    assert extract_nhpi([]) == {}
+
+
+def test_extract_nhpi_missing_idx_col(capsys):
+    # Pass rows that do not have any column containing 'housing price'
+    rows = [
+        {"GEO": "Toronto", "REF_DATE": "2023-01", "VALUE": "120.0", "Wrong Column": "Total (house and land)"}
+    ]
+    result = extract_nhpi(rows)
+    assert result == {}
+
+    captured = capsys.readouterr()
+    assert "WARNING: could not find housing price index column in 18100205." in captured.out
 
 
 def test_extract_prov_debt_basic():
