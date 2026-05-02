@@ -11,7 +11,7 @@ import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 ROOT = Path(__file__).parent.parent
 EXCLUDE = {'index.html'}
@@ -181,13 +181,20 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
     """
     preset = RESPONSIVE_PRESETS[preset_name]
 
+    # Matches and extracts previous responsive injection blocks to safely strip them.
+    # Breakdown:
+    #   \s*                                      : Optional whitespace before the block
+    #   <!-- responsive-inject(?:-v\d+)? -->     : Start marker, optionally with a version suffix like "-v5"
+    #   \s*<style>.*?</style>                    : The injected CSS styles (non-greedy match)
+    #   \s*<script>.*?</script>                  : The injected JavaScript block (non-greedy match)
+    #   (?:\s*<!-- /responsive-inject(?:-v\d+)? -->)? : Optional end marker for backwards compatibility
+    strip_regex = re.compile(
+        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
+        flags=re.DOTALL,
+    )
+
     if preset_name == 'none':
-        new_content = re.sub(
-            r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
-            '',
-            content,
-            flags=re.DOTALL,
-        )
+        new_content = strip_regex.sub('', content)
         if new_content != content:
             print(f'  Removed responsive enhancer from {filename}')
         return new_content
@@ -201,12 +208,7 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
         return content
 
     # Strip any older-version block, then inject the current preset.
-    new_content = re.sub(
-        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
-        '',
-        content,
-        flags=re.DOTALL,
-    )
+    new_content = strip_regex.sub('', content)
     final_content = re.sub(
         r'(<head[^>]*>)',
         r'\1\n' + snippet,
