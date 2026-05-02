@@ -333,12 +333,12 @@ def test_read_csv_empty_file(tmp_path):
 
 def test_read_csv_valid_file(tmp_path):
     valid_file = tmp_path / "valid.csv"
-    # Testing that it strips whitespace from headers and values,
+    # Testing that it strips whitespace from headers (but preserves values as they are now stripped on demand),
     # and properly associates headers with column values.
     valid_file.write_text(" col1 , col2 \n val1 , val2 \n val3 , val4 ")
 
     result = _read_csv(valid_file)
     assert result == [
-        {"col1": "val1", "col2": "val2"},
-        {"col1": "val3", "col2": "val4"},
+        {"col1": " val1 ", "col2": " val2 "},
+        {"col1": " val3 ", "col2": " val4 "},
     ]
