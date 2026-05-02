@@ -1,0 +1,3 @@
+## 2026-05-02 - Custom Drop Zones Require Manual Keyboard Support
+**Learning:** When building custom file drop zones using `div` elements, they lack native keyboard interactivity. Even if they accept click events, screen reader and keyboard-only users cannot focus or activate them without explicit `tabindex`, `role="button"`, and manual `keydown` event listeners for 'Enter' and 'Space' keys.
+**Action:** Always ensure custom interactive areas meant to act like buttons have `tabindex="0"`, `role="button"`, clear `:focus-visible` styles, and keyboard event handlers that trigger the same functionality as their click events.
