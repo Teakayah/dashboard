@@ -20,7 +20,7 @@ import sys
 import urllib.request
 from typing import Optional, Union
 import zipfile
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from io import BytesIO
 from pathlib import Path
 
