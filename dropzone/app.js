@@ -16,18 +16,27 @@ let db = null;
 let conn = null;
 let lastResult = null;
 let currentTableName = '';
-const loadedTables = new Set();
+let loadedTables = new Set();
 
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const sqlInput = document.getElementById('sql-input');
 const runBtn = document.getElementById('run-query');
+const clearBtn = document.getElementById('clear-data');
 const downloadBtn = document.getElementById('download-csv');
+const copyJsonBtn = document.getElementById('copy-json');
 const recipeSelect = document.getElementById('query-recipes');
 const schemaDisplay = document.getElementById('schema-display');
 const loadingOverlay = document.getElementById('loading');
 const previewsContainer = document.getElementById('instant-previews');
+
+// Join Assistant Elements
+const joinAssistant = document.getElementById('join-assistant');
+const joinTableA = document.getElementById('join-table-a');
+const joinTableB = document.getElementById('join-table-b');
+const joinCol = document.getElementById('join-col');
+const generateJoinBtn = document.getElementById('generate-join');
 
 async function init() {
     try {
@@ -40,15 +49,161 @@ async function init() {
         db = new duckdb.AsyncDuckDB(logger, worker);
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
         
+        // Persistent Storage with IndexedDB
+        statusEl.textContent = 'Opening persistent storage...';
+        await db.open({
+            path: 'indexeddb://duckdb',
+        });
+
         conn = await db.connect();
         statusEl.textContent = 'DuckDB Ready';
         
-        console.log('DuckDB-Wasm initialized');
+        console.log('DuckDB-Wasm initialized with IndexedDB');
+        
+        // Restore loaded tables
+        await restoreState();
     } catch (err) {
         console.error(err);
         statusEl.textContent = 'Error: ' + err.message;
     }
 }
+
+async function restoreState() {
+    try {
+        const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
+        const tables = tablesResult.toArray().map(r => r.table_name);
+        
+        if (tables.length > 0) {
+            loadedTables = new Set(tables);
+            currentTableName = tables[tables.length - 1];
+            statusEl.textContent = `Restored ${tables.length} table(s)`;
+            
+            schemaDisplay.innerHTML = '';
+            for (const table of tables) {
+                await displayTableSchema(table);
+            }
+            
+            sqlInput.value = `SELECT * FROM ${currentTableName} LIMIT 100`;
+            runBtn.disabled = false;
+            
+            updateJoinUI();
+        }
+    } catch (err) {
+        console.warn('Failed to restore state:', err);
+    }
+}
+
+async function displayTableSchema(tableName) {
+    const schema = await conn.query(`DESCRIBE ${tableName}`);
+    const cols = schema.toArray().map(r => {
+        const span = document.createElement('span');
+        span.className = 'clickable-col';
+        span.style.cursor = 'pointer';
+        span.style.textDecoration = 'underline';
+        span.style.marginRight = '8px';
+        span.style.color = 'var(--primary)';
+        span.textContent = `${r.column_name} (${r.column_type})`;
+        span.onclick = (e) => {
+            e.stopPropagation();
+            insertAtCursor(sqlInput, `"${r.column_name}"`);
+        };
+        return span;
+    });
+    
+    const tableDiv = document.createElement('div');
+    const strong = document.createElement('strong');
+    strong.textContent = `Table: ${tableName} `;
+    tableDiv.appendChild(strong);
+    cols.forEach(c => tableDiv.appendChild(c));
+    schemaDisplay.appendChild(tableDiv);
+}
+
+function updateJoinUI() {
+    if (loadedTables.size >= 2) {
+        joinAssistant.style.display = 'flex';
+        const tables = Array.from(loadedTables);
+        
+        const populateSelect = (select, options) => {
+            const currentVal = select.value;
+            select.innerHTML = '';
+            options.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                select.appendChild(opt);
+            });
+            if (options.includes(currentVal)) select.value = currentVal;
+        };
+
+        populateSelect(joinTableA, tables);
+        populateSelect(joinTableB, tables);
+        
+        // Ensure default different tables
+        if (joinTableA.value === joinTableB.value && tables.length > 1) {
+            joinTableB.selectedIndex = 1;
+        }
+        
+        updateJoinColumns();
+    } else {
+        joinAssistant.style.display = 'none';
+    }
+}
+
+async function updateJoinColumns() {
+    const tableA = joinTableA.value;
+    const tableB = joinTableB.value;
+    if (!tableA || !tableB) return;
+
+    try {
+        const schemaA = await conn.query(`DESCRIBE ${tableA}`);
+        const schemaB = await conn.query(`DESCRIBE ${tableB}`);
+        
+        const colsA = new Set(schemaA.toArray().map(r => r.column_name));
+        const colsB = schemaB.toArray().map(r => r.column_name);
+        
+        const sharedCols = colsB.filter(c => colsA.has(c));
+        
+        joinCol.innerHTML = '<option value="" disabled selected>Select Common Column...</option>';
+        sharedCols.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            joinCol.appendChild(opt);
+        });
+
+        if (sharedCols.length === 0) {
+            const opt = document.createElement('option');
+            opt.textContent = 'No shared columns found';
+            opt.disabled = true;
+            joinCol.appendChild(opt);
+        }
+    } catch (err) {
+        console.error('Error fetching columns for join:', err);
+    }
+}
+
+joinTableA.addEventListener('change', updateJoinColumns);
+joinTableB.addEventListener('change', updateJoinColumns);
+
+generateJoinBtn.addEventListener('click', () => {
+    const a = joinTableA.value;
+    const b = joinTableB.value;
+    const col = joinCol.value;
+    
+    if (!a || !b || !col) {
+        alert('Please select both tables and a common column.');
+        return;
+    }
+    
+    if (a === b) {
+        alert('Please select two different tables to join.');
+        return;
+    }
+
+    const sql = `SELECT *\nFROM ${a}\nJOIN ${b} ON ${a}."${col}" = ${b}."${col}"\nLIMIT 100`;
+    sqlInput.value = sql;
+    sqlInput.focus();
+});
 
 // Handle file drops
 dropZone.addEventListener('dragover', (e) => {
@@ -84,7 +239,6 @@ fileInput.addEventListener('change', () => {
 async function handleFiles(files) {
     loadingOverlay.style.display = 'flex';
     previewsContainer.innerHTML = '';
-    schemaDisplay.innerHTML = '';
     
     try {
         for (const file of files) {
@@ -110,29 +264,9 @@ async function handleFiles(files) {
             await conn.query(`DROP TABLE IF EXISTS ${tableName}`);
             await conn.query(query);
             
-            // Show schema with clickable columns
-            const schema = await conn.query(`DESCRIBE ${tableName}`);
-            const cols = schema.toArray().map(r => {
-                const span = document.createElement('span');
-                span.className = 'clickable-col';
-                span.style.cursor = 'pointer';
-                span.style.textDecoration = 'underline';
-                span.style.marginRight = '8px';
-                span.style.color = 'var(--primary)';
-                span.textContent = `${r.column_name} (${r.column_type})`;
-                span.onclick = (e) => {
-                    e.stopPropagation();
-                    insertAtCursor(sqlInput, `"${r.column_name}"`);
-                };
-                return span;
-            });
-            
-            const tableDiv = document.createElement('div');
-            const strong = document.createElement('strong');
-            strong.textContent = `${file.name} (table: ${tableName}): `;
-            tableDiv.appendChild(strong);
-            cols.forEach(c => tableDiv.appendChild(c));
-            schemaDisplay.appendChild(tableDiv);
+            // Show schema
+            if (loadedTables.size === 1) schemaDisplay.innerHTML = '';
+            await displayTableSchema(tableName);
             
             // Generate Previews
             await generateInstantCharts(tableName);
@@ -142,6 +276,7 @@ async function handleFiles(files) {
             runBtn.disabled = false;
         }
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
+        updateJoinUI();
     } catch (err) {
         console.error(err);
         alert('Error loading file: ' + err.message);
@@ -187,8 +322,40 @@ async function generateInstantCharts(tableName) {
         ['VARCHAR', 'TEXT', 'DATE', 'TIMESTAMP'].includes(c.column_type.toUpperCase())
     ).map(c => c.column_name);
 
+    const dateCols = columns.filter(c => 
+        ['DATE', 'TIMESTAMP', 'TIME'].includes(c.column_type.toUpperCase()) ||
+        c.column_name.toLowerCase().includes('date') || 
+        c.column_name.toLowerCase().includes('year')
+    ).map(c => c.column_name);
+
     if (numericCols.length === 0) return;
 
+    // 1. Time-Series Trend detection
+    if (dateCols.length > 0 && numericCols.length > 0) {
+        const dCol = dateCols[0];
+        const nCol = numericCols[0];
+        createPreviewCard(`Trend: ${nCol} over ${dCol}`, async (canvasId) => {
+            const data = await conn.query(`
+                SELECT "${dCol}" as date, AVG("${nCol}") as val 
+                FROM ${tableName} 
+                WHERE "${dCol}" IS NOT NULL AND "${nCol}" IS NOT NULL
+                GROUP BY 1 ORDER BY 1 ASC LIMIT 100
+            `);
+            const rows = data.toArray();
+            renderChart(canvasId, 'line', {
+                labels: rows.map(r => r.date),
+                datasets: [{
+                    label: `Avg ${nCol}`,
+                    data: rows.map(r => r.val),
+                    borderColor: '#4bc0c0',
+                    tension: 0.1,
+                    fill: false
+                }]
+            });
+        });
+    }
+
+    // 2. Correlation detection
     if (numericCols.length >= 2) {
         try {
             let bestPair = [numericCols[0], numericCols[1]];
@@ -222,10 +389,11 @@ async function generateInstantCharts(tableName) {
         } catch (e) { console.warn('Correlation check failed', e); }
     }
 
+    // 3. Category Distribution
     if (textCols.length > 0 && numericCols.length > 0) {
         const tCol = textCols[0];
         const nCol = numericCols[0];
-        createPreviewCard(`Avg ${nCol} by ${tCol}`, async (canvasId) => {
+        createPreviewCard(`Distribution: ${nCol} by ${tCol}`, async (canvasId) => {
             const data = await conn.query(`
                 SELECT "${tCol}" as label, AVG("${nCol}") as value 
                 FROM ${tableName} 
@@ -290,6 +458,7 @@ async function runQuery() {
         lastResult = await conn.query(sql);
         renderResults(lastResult);
         downloadBtn.disabled = false;
+        copyJsonBtn.disabled = false;
     } catch (err) {
         console.error(err);
         alert('Query Error: ' + err.message);
@@ -342,6 +511,55 @@ downloadBtn.addEventListener('click', async () => {
     } catch (err) {
         console.error(err);
         alert('Export Error: ' + err.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+});
+
+copyJsonBtn.addEventListener('click', () => {
+    if (!lastResult) return;
+    const data = lastResult.toArray().map(row => {
+        const obj = {};
+        for (const key of Object.keys(row)) {
+            const val = row[key];
+            obj[key] = typeof val === 'bigint' ? val.toString() : val;
+        }
+        return obj;
+    });
+    const json = JSON.stringify(data, null, 2);
+    navigator.clipboard.writeText(json).then(() => {
+        const originalText = copyJsonBtn.textContent;
+        copyJsonBtn.textContent = 'Copied!';
+        setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
+    });
+});
+
+clearBtn.addEventListener('click', async () => {
+    if (!confirm('This will permanently delete all loaded tables from your local storage. Continue?')) return;
+    
+    loadingOverlay.style.display = 'flex';
+    try {
+        const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
+        const tables = tablesResult.toArray().map(r => r.table_name);
+        
+        for (const table of tables) {
+            await conn.query(`DROP TABLE IF EXISTS "${table}"`);
+        }
+        
+        loadedTables.clear();
+        currentTableName = '';
+        schemaDisplay.innerHTML = '';
+        previewsContainer.innerHTML = '';
+        document.getElementById('results').innerHTML = '';
+        sqlInput.value = '';
+        runBtn.disabled = true;
+        downloadBtn.disabled = true;
+        copyJsonBtn.disabled = true;
+        joinAssistant.style.display = 'none';
+        statusEl.textContent = 'Storage cleared';
+    } catch (err) {
+        console.error(err);
+        alert('Clear Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }

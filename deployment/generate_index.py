@@ -13,32 +13,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-ROOT = Path(__file__).parent.parent
+# Import centralized configuration
+try:
+    from config import ROOT, SITE_URL, LIBRARY_PATTERNS, ACCENT_COLORS
+except ImportError:
+    from deployment.config import ROOT, SITE_URL, LIBRARY_PATTERNS, ACCENT_COLORS
+
 EXCLUDE = {'index.html'}
-SITE_URL = 'https://teakayah.github.io/dashboard'
-
-# Visualization library detection patterns for card badges
-LIBRARY_PATTERNS = {
-    'Chart.js': r'chart\.js|chart\.umd',
-    'D3.js': r'd3(?:\.v\d+)?(?:\.min)?\.js|cdn\.jsdelivr\.net/npm/d3@',
-    'Plotly': r'plotly(?:\.min)?\.js|cdn\.plot\.ly',
-    'Vega': r'vega(?:-lite)?(?:\.min)?\.js',
-    'DuckDB': r'duckdb',
-    'Grid.js': r'gridjs',
-}
-
-# Chart.js-inspired accent colors (top border on cards)
-ACCENT_COLORS = [
-    '#4f8ef7',  # blue
-    '#ff6384',  # pink/red
-    '#4bc0c0',  # teal
-    '#ff9f40',  # orange
-    '#9966ff',  # purple
-    '#36a2eb',  # sky blue
-    '#ffce56',  # yellow
-    '#2ecc71',  # green
-]
-
 
 DESCRIPTIONS_FILE = ROOT / 'descriptions.json'
 

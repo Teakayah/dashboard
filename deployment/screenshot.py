@@ -5,43 +5,67 @@ and save it to previews/{stem}.png.
 Called by GitHub Actions after the local HTTP server is started.
 """
 
+import argparse
 import socket
 import sys
 import time
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent
+# Import centralized configuration
+try:
+    from config import ROOT
+except ImportError:
+    from deployment.config import ROOT
+
 PORT = 8765
 
 
 def _git_commit_time(path: str) -> int:
     """Return the Unix timestamp of the last commit touching `path`, or 0."""
     result = subprocess.run(
-        ['git', 'log', '-1', '--format=%ct', '--', path],
+        ['git', 'log', '-1', '--format=%ci', '--', path],
         capture_output=True, text=True, cwd=str(ROOT),
     )
     stamp = result.stdout.strip()
-    return int(stamp) if stamp else 0
+    try:
+        return int(subprocess.run(['git', 'log', '-1', '--format=%ct', '--', path], 
+                                capture_output=True, text=True, cwd=str(ROOT)).stdout.strip())
+    except:
+        return 0
 
 
-def needs_screenshot(name: str) -> bool:
+def needs_screenshot(name: str, force: bool = False) -> bool:
     """Return True if the page's preview is missing or older than the page's last commit."""
+    if force:
+        return True
     preview = ROOT / 'previews' / f'{Path(name).stem}.png'
     if not preview.exists():
         return True
     html_ts = _git_commit_time(name)
-    png_ts = _git_commit_time(f'previews/{preview.name}')
+    # Check if the preview file exists on disk and get its mtime as fallback if not in git
+    preview_path = f'previews/{preview.name}'
+    png_ts = _git_commit_time(preview_path)
+    if png_ts == 0:
+        png_ts = int((ROOT / preview_path).stat().st_mtime)
+    
+    if html_ts == 0:
+        html_ts = int((ROOT / name).stat().st_mtime)
+        
     return html_ts > png_ts
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__.strip())
+    parser.add_argument('--force', action='store_true', help='Force regenerate all screenshots')
+    args = parser.parse_args()
+
     all_pages = sorted(p.name for p in ROOT.glob('*.html'))
     if not all_pages:
         print('No HTML files found — nothing to screenshot.')
         return
 
-    pages = [p for p in all_pages if needs_screenshot(p)]
+    pages = [p for p in all_pages if needs_screenshot(p, force=args.force)]
     skipped = [p for p in all_pages if p not in pages]
 
     if skipped:
@@ -84,13 +108,26 @@ def main():
             stem = Path(name).stem
             out = ROOT / 'previews' / f'{stem}.png'
             try:
-                page = browser.new_page(viewport={'width': 600, 'height': 315})
+                # Use a slightly larger viewport for better capture, then we could crop if needed
+                # but 600x315 is the OG standard
+                page = browser.new_page(viewport={'width': 800, 'height': 420})
                 page.goto(f'http://localhost:{PORT}/{name}')
+                
+                # Wait for any canvas or major content
                 try:
-                    page.wait_for_load_state('networkidle', timeout=8000)
+                    page.wait_for_selector('canvas, .grid, .container', timeout=10000)
+                    # Give charts a moment to animate
+                    page.wait_for_timeout(1000)
                 except Exception:
-                    pass  # CDN assets may be slow; screenshot whatever loaded
-                page.screenshot(path=str(out))
+                    pass
+                
+                # Capture the top of the page (which usually contains the main viz)
+                # and scale to 600x315
+                page.screenshot(path=str(out), clip={'x': 0, 'y': 0, 'width': 800, 'height': 420})
+                
+                # Note: Playwright doesn't have a built-in resize on capture, 
+                # so we capture 800x420 which is the same aspect ratio as 600x315.
+                
                 page.close()
                 print(f'  OK  previews/{stem}.png  ({out.stat().st_size} bytes)')
             except Exception as exc:

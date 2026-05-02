@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """
 Rebuild analysis HTML pages from Stats Canada CSV data.
-
-Reads the downloaded CSVs in source/Stat Can/ and injects updated
-data constants (const DATA / const RAW) into the analysis HTML files.
-
-Exit code: 0 = no HTML changed, 1 = one or more files updated.
+Uses a declarative extraction framework to process various tables.
 """
 
 import csv
@@ -14,15 +10,16 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
-
-ROOT = Path(__file__).parent.parent
-SRC = ROOT / "source" / "Stat Can"
+# Import centralized configuration
+try:
+    from config import ROOT, SRC, EXTRACTION_CONFIGS
+except ImportError:
+    from deployment.config import ROOT, SRC, EXTRACTION_CONFIGS
 
 
 # ── CSV helpers ────────────────────────────────────────────────────────────────
-
 
 def _read_csv(path: Path) -> list[dict]:
     """Read a Stats Canada CSV (UTF-8 BOM) into a list of row dicts."""
@@ -44,150 +41,103 @@ def _clean(val: str) -> Optional[float]:
         return None
 
 
-# ── Extractors for employment_rate_canada.html ────────────────────────────────
+# ── Generic Extraction Engine ──────────────────────────────────────────────────
 
+def extract_statcan_data(rows: list[dict], table_id: str, variant: Optional[str] = None) -> Any:
+    """Generic engine to filter and group StatCan data based on config."""
+    config = EXTRACTION_CONFIGS.get(table_id)
+    if not config:
+        return []
 
-def _extract_lfs_buckets(
-    rows: list[dict], char_name: str
-) -> dict[str, dict[int, list[float]]]:
-    """Helper to filter LFS table 14100287 data by characteristic and extract values."""
+    filters = config.get('default_filters', {}).copy()
+    if variant and 'variants' in config:
+        filters.update(config['variants'].get(variant, {}))
+
+    # Special handling for NHPI (18100205)
+    if table_id == '18100205':
+        return _extract_nhpi_logic(rows, config)
+
+    # General extraction logic for other tables
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
-        if (
-            row["Labour force characteristics"].strip() == char_name
-            and row["Gender"].strip() == "Total - Gender"
-            and row["Age group"].strip() == "15 years and over"
-            and row["Statistics"].strip() == "Estimate"
-            and row["Data type"].strip() == "Seasonally adjusted"
-        ):
+        if all(row.get(k, '').strip() == v for k, v in filters.items()):
             val = _clean(row["VALUE"])
             if val is not None:
-                year = int(row["REF_DATE"].strip()[:4])
-                buckets[row["GEO"].strip()][year].append(val)
+                # Handle different date formats
+                ref_date = row["REF_DATE"].strip()
+                try:
+                    year = int(ref_date[:4])
+                except (ValueError, IndexError):
+                    continue
+                
+                geo = row.get("GEO", "Canada").strip()
+                buckets[geo][year].append(val)
+
+    # Post-processing based on variant or table_id
+    if variant == 'empRate':
+        return {
+            geo: sorted(
+                [{"year": y, "value": round(sum(vs) / len(vs), 2)} for y, vs in yd.items()],
+                key=lambda r: r["year"],
+            )
+            for geo, yd in buckets.items()
+        }
+    
+    if variant == 'empJobs':
+        result = {}
+        for geo, yd in buckets.items():
+            series = []
+            prev = None
+            for year in sorted(yd):
+                level = round(sum(yd[year]) / len(yd[year]), 1)
+                change = round(level - prev, 1) if prev is not None else None
+                series.append({"year": year, "level": level, "change": change})
+                prev = level
+            result[geo] = series
+        return result
+
+    if table_id == '10100015':
+        # Federal debt is typically returned as a flat list for Canada
+        canada_data = buckets.get("Canada", {})
+        return sorted(
+            [
+                {"year": y, "value": round(sum(vs) / len(vs) / 1000, 1)}
+                for y, vs in canada_data.items()
+            ],
+            key=lambda r: r["year"],
+        )
+
+    if table_id == '10100017':
+        return {
+            geo: sorted(
+                [{"year": y, "value": round(sum(vs) / len(vs) / 1000, 1)} for y, vs in yd.items()],
+                key=lambda r: r["year"],
+            )
+            for geo, yd in buckets.items()
+        }
+
+    if table_id == '17100005':
+        result = {}
+        for geo, yd in buckets.items():
+            series = []
+            prev = None
+            for year in sorted(yd):
+                pop = int(sum(yd[year]) / len(yd[year])) # Usually 1 value per year
+                change = pop - prev if prev is not None else None
+                pct = round((pop - prev) / prev * 100, 2) if prev is not None else None
+                series.append({"year": year, "pop": pop, "change": change, "pct": pct})
+                prev = pop
+            result[geo] = series
+        return result
+
     return buckets
 
-
-def extract_emp_rate(rows: list[dict]) -> dict:
-    """Annual average employment rate (%) by province — table 14100287."""
-    buckets = _extract_lfs_buckets(rows, "Employment rate")
-
-    return {
-        geo: sorted(
-            [{"year": y, "value": round(sum(vs) / len(vs), 2)} for y, vs in yd.items()],
-            key=lambda r: r["year"],
-        )
-        for geo, yd in buckets.items()
-    }
-
-
-def extract_emp_jobs(rows: list[dict]) -> dict:
-    """Annual avg employed persons (thousands) + year-over-year change — table 14100287."""
-    buckets = _extract_lfs_buckets(rows, "Employment")
-
-    result = {}
-    for geo, yd in buckets.items():
-        series = []
-        prev = None
-        for year in sorted(yd):
-            level = round(sum(yd[year]) / len(yd[year]), 1)
-            change = round(level - prev, 1) if prev is not None else None
-            series.append({"year": year, "level": level, "change": change})
-            prev = level
-        result[geo] = series
-    return result
-
-
-def extract_fed_debt(rows: list[dict]) -> list[dict]:
-    """Annual average Federal government liabilities (billions $) — table 10100015."""
-    buckets: dict[int, list[float]] = defaultdict(list)
-    for row in rows:
-        if (
-            row["GEO"].strip() == "Canada"
-            and row["Government sectors"].strip() == "Federal government"
-            and row["Statement of government operations and balance sheet"].strip()
-            == "Liabilities"
-        ):
-            val = _clean(row["VALUE"])
-            if val is not None:
-                year = int(row["REF_DATE"].strip()[:4])
-                buckets[year].append(val)
-
-    return sorted(
-        [
-            {"year": y, "value": round(sum(vs) / len(vs) / 1000, 1)}
-            for y, vs in buckets.items()
-        ],
-        key=lambda r: r["year"],
-    )
-
-
-def extract_prov_debt(rows: list[dict]) -> dict:
-    """Provincial liabilities (billions $) — table 10100017, stocks."""
-    data: dict[str, dict[int, float]] = defaultdict(dict)
-    for row in rows:
-        if (
-            row["Public sector components"].strip() == "Provincial and territorial governments"
-            and row["Display value"].strip() == "Stocks"
-            and row["Statement of operations and balance sheet"].strip() == "Liabilities [63]"
-        ):
-            val = _clean(row["VALUE"])
-            if val is not None:
-                geo = row["GEO"].strip()
-                year = int(row["REF_DATE"].strip())
-                data[geo][year] = val
-
-    return {
-        geo: sorted(
-            [{"year": y, "value": round(v / 1000, 1)} for y, v in yd.items()],
-            key=lambda r: r["year"],
-        )
-        for geo, yd in data.items()
-    }
-
-
-def extract_pop_data(rows: list[dict]) -> dict:
-    """Annual population by province + year-over-year change — table 17100005."""
-    data: dict[str, dict[int, int]] = defaultdict(dict)
-    for row in rows:
-        if row["Gender"].strip() == "Total - gender" and row["Age group"].strip() == "All ages":
-            val = _clean(row["VALUE"])
-            if val is not None:
-                geo = row["GEO"].strip()
-                year = int(row["REF_DATE"].strip())
-                data[geo][year] = int(val)
-
-    result = {}
-    for geo, yd in data.items():
-        series = []
-        prev = None
-        for year in sorted(yd):
-            pop = yd[year]
-            change = pop - prev if prev is not None else None
-            pct = round((pop - prev) / prev * 100, 2) if prev is not None else None
-            series.append({"year": year, "pop": pop, "change": change, "pct": pct})
-            prev = pop
-        result[geo] = series
-    return result
-
-
-# ── Extractor for nhpi_big6_comparison.html ───────────────────────────────────
-
-
-def extract_nhpi(rows: list[dict]) -> dict:
-    """Monthly NHPI by city — table 18100205."""
-    measures = ["Total (house and land)", "House only", "Land only"]
-
-    # Locate the index column (name varies slightly across releases)
-    idx_col = (
-        next(
-            (k for k in rows[0] if "housing price" in k.lower()),
-            None,
-        )
-        if rows
-        else None
-    )
+def _extract_nhpi_logic(rows: list[dict], config: dict) -> dict:
+    """Specific logic for NHPI table which has multiple measures."""
+    measures = config.get('measures', [])
+    idx_col = next((k for k in rows[0] if "housing price" in k.lower()), None) if rows else None
+    
     if not idx_col:
-        print("  WARNING: could not find housing price index column in 18100205.")
         return {}
 
     buckets: dict[str, dict[str, dict[str, float]]] = defaultdict(
@@ -200,7 +150,7 @@ def extract_nhpi(rows: list[dict]) -> dict:
         val = _clean(row["VALUE"])
         if val is None:
             continue
-        date = row["REF_DATE"].strip()  # "1981-01"
+        date = row["REF_DATE"].strip()
         geo = row["GEO"].strip()
         buckets[geo][measure][date] = val
 
@@ -216,7 +166,6 @@ def extract_nhpi(rows: list[dict]) -> dict:
 
 
 # ── HTML injection helpers ────────────────────────────────────────────────────
-
 
 def _inject_const(html: str, var_name: str, new_value: object) -> tuple[str, bool]:
     """Replace `const VAR = {...};` (single-line or multiline) with new JSON value."""
@@ -237,39 +186,29 @@ def _inject_const(html: str, var_name: str, new_value: object) -> tuple[str, boo
 
 # ── Per-analysis rebuild functions ────────────────────────────────────────────
 
-
 def rebuild_employment(html_path: Path) -> bool:
     """Rebuild const DATA={...} in employment_rate_canada.html."""
     print(f"Rebuilding {html_path.name}...")
 
-    lfs_csv = SRC / "Employment" / "14100287-eng" / "14100287.csv"
-    gov_csv = SRC / "Employment" / "10100015-eng" / "10100015.csv"
-    prov_csv = SRC / "Employment" / "10100017-eng" / "10100017.csv"
-    pop_csv = SRC / "Employment" / "17100005-eng" / "17100005.csv"
+    csv_paths = {
+        'lfs': SRC / "Employment" / "14100287-eng" / "14100287.csv",
+        'gov': SRC / "Employment" / "10100015-eng" / "10100015.csv",
+        'prov': SRC / "Employment" / "10100017-eng" / "10100017.csv",
+        'pop': SRC / "Employment" / "17100005-eng" / "17100005.csv",
+    }
 
-    missing = [p for p in [lfs_csv, gov_csv, prov_csv, pop_csv] if not p.exists()]
+    missing = [p.name for p in csv_paths.values() if not p.exists()]
     if missing:
-        print(f"  SKIP — missing CSV(s): {[p.name for p in missing]}")
+        print(f"  SKIP — missing CSV(s): {missing}")
         return False
 
-    print("  Reading 14100287 (labour force)...")
-    lfs_rows = _read_csv(lfs_csv)
-
-    print("  Reading 10100015 (government finance)...")
-    gov_rows = _read_csv(gov_csv)
-
-    print("  Reading 10100017 (provincial operations)...")
-    prov_rows = _read_csv(prov_csv)
-
-    print("  Reading 17100005 (population)...")
-    pop_rows = _read_csv(pop_csv)
-
+    print("  Processing datasets...")
     new_data = {
-        "empRate": extract_emp_rate(lfs_rows),
-        "empJobs": extract_emp_jobs(lfs_rows),
-        "provDebt": extract_prov_debt(prov_rows),
-        "fedDebt": extract_fed_debt(gov_rows),
-        "popData": extract_pop_data(pop_rows),
+        "empRate": extract_statcan_data(_read_csv(csv_paths['lfs']), '14100287', 'empRate'),
+        "empJobs": extract_statcan_data(_read_csv(csv_paths['lfs']), '14100287', 'empJobs'),
+        "provDebt": extract_statcan_data(_read_csv(csv_paths['prov']), '10100017'),
+        "fedDebt": extract_statcan_data(_read_csv(csv_paths['gov']), '10100015'),
+        "popData": extract_statcan_data(_read_csv(csv_paths['pop']), '17100005'),
     }
 
     html = html_path.read_text(encoding="utf-8")
@@ -291,12 +230,10 @@ def rebuild_nhpi(html_path: Path) -> bool:
     nhpi_csv = SRC / "Housing" / "18100205-eng" / "18100205.csv"
     if not nhpi_csv.exists():
         print(f"  SKIP — {nhpi_csv.relative_to(ROOT)} not found.")
-        print("         Run update_statcan_data.py first to download table 18100205.")
         return False
 
     print("  Reading 18100205 (NHPI)...")
-    rows = _read_csv(nhpi_csv)
-    raw = extract_nhpi(rows)
+    raw = extract_statcan_data(_read_csv(nhpi_csv), '18100205')
 
     html = html_path.read_text(encoding="utf-8")
     new_html, changed = _inject_const(html, "RAW", raw)
