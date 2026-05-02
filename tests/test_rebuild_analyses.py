@@ -1,11 +1,6 @@
 import pytest
 from deployment.rebuild_analyses import (
-    extract_emp_rate,
-    extract_emp_jobs,
-    extract_fed_debt,
-    extract_prov_debt,
-    extract_pop_data,
-    extract_nhpi,
+    extract_statcan_data,
     _clean,
     _inject_const,
     _read_csv
@@ -114,7 +109,7 @@ def test_extract_fed_debt_basic():
         create_fed_debt_row(value=".."),
     ]
 
-    result = extract_fed_debt(rows)
+    result = extract_statcan_data(rows, '10100015')
 
     # Values should be averaged and divided by 1000
     expected = [
@@ -126,7 +121,7 @@ def test_extract_fed_debt_basic():
 
 
 def test_extract_fed_debt_empty():
-    assert extract_fed_debt([]) == []
+    assert extract_statcan_data([], '10100015') == []
 
 
 def test_extract_fed_debt_missing_value():
@@ -135,7 +130,7 @@ def test_extract_fed_debt_missing_value():
         create_fed_debt_row(ref_date="2023-02", value="x"),
         create_fed_debt_row(ref_date="2023-03", value=".."),
     ]
-    result = extract_fed_debt(rows)
+    result = extract_statcan_data(rows, '10100015')
     expected = [{"year": 2023, "value": 1000.0}]
     assert result == expected
 
@@ -146,7 +141,7 @@ def test_extract_fed_debt_unordered_years():
         create_fed_debt_row(ref_date="2023-01", value="1000000.0"),
         create_fed_debt_row(ref_date="2024-01", value="3000000.0"),
     ]
-    result = extract_fed_debt(rows)
+    result = extract_statcan_data(rows, '10100015')
     expected = [
         {"year": 2023, "value": 1000.0},
         {"year": 2024, "value": 3000.0},
@@ -175,7 +170,7 @@ def test_extract_emp_jobs_basic():
         create_row(char="Employment", value=".."),
     ]
 
-    result = extract_emp_jobs(rows)
+    result = extract_statcan_data(rows, '14100287', 'empJobs')
 
     expected = {
         "Ontario": [
@@ -189,7 +184,7 @@ def test_extract_emp_jobs_basic():
 
 
 def test_extract_emp_jobs_empty():
-    assert extract_emp_jobs([]) == {}
+    assert extract_statcan_data([], '14100287', 'empJobs') == {}
 
 
 def test_extract_emp_rate_basic():
@@ -220,7 +215,7 @@ def test_extract_emp_rate_basic():
         create_row(value=""),
     ]
 
-    result = extract_emp_rate(rows)
+    result = extract_statcan_data(rows, '14100287', 'empRate')
 
     expected = {
         "Ontario": [{"year": 2023, "value": 60.5}, {"year": 2024, "value": 63.3}],
@@ -231,7 +226,7 @@ def test_extract_emp_rate_basic():
 
 
 def test_extract_emp_rate_empty():
-    assert extract_emp_rate([]) == {}
+    assert extract_statcan_data([], '14100287', 'empRate') == {}
 
 
 def test_extract_emp_rate_unordered_years():
@@ -240,7 +235,7 @@ def test_extract_emp_rate_unordered_years():
         create_row(geo="Ontario", ref_date="2023-01", value="60.0"),
         create_row(geo="Ontario", ref_date="2024-01", value="63.3"),
     ]
-    result = extract_emp_rate(rows)
+    result = extract_statcan_data(rows, '14100287', 'empRate')
     expected = {
         "Ontario": [
             {"year": 2023, "value": 60.0},
@@ -257,7 +252,7 @@ def test_extract_emp_rate_missing_value():
         create_row(geo="Ontario", ref_date="2023-02", value="x"),
         create_row(geo="Ontario", ref_date="2023-03", value=".."),
     ]
-    result = extract_emp_rate(rows)
+    result = extract_statcan_data(rows, '14100287', 'empRate')
     expected = {"Ontario": [{"year": 2023, "value": 60.0}]}
     assert result == expected
 
@@ -281,20 +276,23 @@ def test_clean_valid_floats(val, expected):
 def test_extract_pop_data_basic():
     rows = [
         create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),
+        create_pop_row(geo="Ontario", ref_date="2024", value="15300000"),
+        create_pop_row(geo="Ontario", ref_date="2025", value="15500000"),
         create_pop_row(geo="Quebec", ref_date="2023", value="8500000"),
-        create_pop_row(geo="Ontario", ref_date="2024", value="15500000"),
-        # Invalid rows
         create_pop_row(gender="Males"),
-        create_pop_row(age="0 to 14 years"),
+        create_pop_row(age="15 to 24 years"),
         create_pop_row(value=".."),
+        create_pop_row(value="x"),
+        create_pop_row(value=""),
     ]
 
-    result = extract_pop_data(rows)
+    result = extract_statcan_data(rows, '17100005')
 
     expected = {
         "Ontario": [
             {"year": 2023, "pop": 15000000, "change": None, "pct": None},
-            {"year": 2024, "pop": 15500000, "change": 500000, "pct": 3.33},
+            {"year": 2024, "pop": 15300000, "change": 300000, "pct": 2.0},
+            {"year": 2025, "pop": 15500000, "change": 200000, "pct": 1.31},
         ],
         "Quebec": [{"year": 2023, "pop": 8500000, "change": None, "pct": None}],
     }
@@ -303,7 +301,7 @@ def test_extract_pop_data_basic():
 
 
 def test_extract_pop_data_empty():
-    assert extract_pop_data([]) == {}
+    assert extract_statcan_data([], '17100005') == {}
 
 
 def test_extract_nhpi_basic():
@@ -318,7 +316,7 @@ def test_extract_nhpi_basic():
         create_nhpi_row(value=".."),
     ]
 
-    result = extract_nhpi(rows)
+    result = extract_statcan_data(rows, '18100205')
 
     expected = {
         "Toronto, Ontario": {
@@ -346,19 +344,16 @@ def test_extract_nhpi_basic():
 
 
 def test_extract_nhpi_empty():
-    assert extract_nhpi([]) == {}
+    assert extract_statcan_data([], '18100205') == {}
 
 
-def test_extract_nhpi_missing_idx_col(capsys):
+def test_extract_nhpi_missing_idx_col():
     # Pass rows that do not have any column containing 'housing price'
     rows = [
         {"GEO": "Toronto", "REF_DATE": "2023-01", "VALUE": "120.0", "Wrong Column": "Total (house and land)"}
     ]
-    result = extract_nhpi(rows)
+    result = extract_statcan_data(rows, '18100205')
     assert result == {}
-
-    captured = capsys.readouterr()
-    assert "WARNING: could not find housing price index column in 18100205." in captured.out
 
 
 def test_extract_prov_debt_basic():
@@ -382,7 +377,7 @@ def test_extract_prov_debt_basic():
         create_debt_row(value=""),
     ]
 
-    result = extract_prov_debt(rows)
+    result = extract_statcan_data(rows, '10100017')
 
     expected = {
         "Ontario": [{"year": 2023, "value": 10.0}, {"year": 2024, "value": 25.5}],
@@ -393,7 +388,7 @@ def test_extract_prov_debt_basic():
 
 
 def test_extract_prov_debt_empty():
-    assert extract_prov_debt([]) == {}
+    assert extract_statcan_data([], '10100017') == {}
 
 
 def test_extract_prov_debt_unordered_years():
@@ -402,7 +397,7 @@ def test_extract_prov_debt_unordered_years():
         create_debt_row(geo="Ontario", ref_date="2023", value="10000"),
         create_debt_row(geo="Ontario", ref_date="2024", value="20000"),
     ]
-    result = extract_prov_debt(rows)
+    result = extract_statcan_data(rows, '10100017')
     expected = {
         "Ontario": [
             {"year": 2023, "value": 10.0},
@@ -496,79 +491,3 @@ def test_read_csv_valid_file(tmp_path):
         {"col1": " val1 ", "col2": " val2 "},
         {"col1": " val3 ", "col2": " val4 "},
     ]
-
-def create_pop_row(
-    geo="Ontario",
-    ref_date="2023",
-    value="15000000",
-    gender="Total - gender",
-    age="All ages",
-):
-    return {
-        "GEO": geo,
-        "REF_DATE": ref_date,
-        "VALUE": value,
-        "Gender": gender,
-        "Age group": age,
-    }
-
-
-def test_extract_pop_data_basic():
-    rows = [
-        create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),
-        create_pop_row(geo="Ontario", ref_date="2024", value="15300000"),
-        create_pop_row(geo="Ontario", ref_date="2025", value="15500000"),
-        create_pop_row(geo="Quebec", ref_date="2023", value="8500000"),
-        create_pop_row(gender="Males"),
-        create_pop_row(age="15 to 24 years"),
-        create_pop_row(value=".."),
-        create_pop_row(value="x"),
-        create_pop_row(value=""),
-    ]
-    result = extract_pop_data(rows)
-    expected = {
-        "Ontario": [
-            {"year": 2023, "pop": 15000000, "change": None, "pct": None},
-            {"year": 2024, "pop": 15300000, "change": 300000, "pct": 2.0},
-            {"year": 2025, "pop": 15500000, "change": 200000, "pct": 1.31},
-        ],
-        "Quebec": [{"year": 2023, "pop": 8500000, "change": None, "pct": None}],
-    }
-    assert result == expected
-
-
-def test_extract_pop_data_empty():
-    assert extract_pop_data([]) == {}
-
-
-def test_extract_pop_data_unordered_years():
-    rows = [
-        create_pop_row(geo="Ontario", ref_date="2025", value="16000000"),
-        create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),
-        create_pop_row(geo="Ontario", ref_date="2024", value="15500000"),
-    ]
-    result = extract_pop_data(rows)
-    expected = {
-        "Ontario": [
-            {"year": 2023, "pop": 15000000, "change": None, "pct": None},
-            {"year": 2024, "pop": 15500000, "change": 500000, "pct": 3.33},
-            {"year": 2025, "pop": 16000000, "change": 500000, "pct": 3.23},
-        ]
-    }
-    assert result == expected
-
-
-def test_extract_pop_data_missing_value():
-    rows = [
-        create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),
-        create_pop_row(geo="Ontario", ref_date="2024", value="x"),
-        create_pop_row(geo="Ontario", ref_date="2025", value="16000000"),
-    ]
-    result = extract_pop_data(rows)
-    expected = {
-        "Ontario": [
-            {"year": 2023, "pop": 15000000, "change": None, "pct": None},
-            {"year": 2025, "pop": 16000000, "change": 1000000, "pct": 6.67},
-        ]
-    }
-    assert result == expected

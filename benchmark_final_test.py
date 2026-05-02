@@ -2,14 +2,12 @@ import time
 import csv
 from pathlib import Path
 from collections import defaultdict
+import sys
+
+from typing import Optional, Union
 
 ROOT = Path('source') / 'Stat Can' / 'Employment'
 lfs_csv = ROOT / '14100287-eng' / '14100287.csv'
-gov_csv = ROOT / '10100015-eng' / '10100015.csv'
-prov_csv = ROOT / '10100017-eng' / '10100017.csv'
-pop_csv = ROOT / '17100005-eng' / '17100005.csv'
-
-from typing import Optional, Union
 
 def _clean(val: str) -> Optional[float]:
     v = val.strip()
@@ -61,16 +59,19 @@ def extract_emp_rate_opt(rows):
                 buckets[row['GEO']][year].append(val)
     return buckets
 
-if lfs_csv.exists():
-    start = time.time()
-for _ in range(10):
-    rows = _read_csv_orig(lfs_csv)
-    extract_emp_rate_reordered(rows)
-print("Orig Read + Reordered Loop:", time.time() - start)
+if __name__ == '__main__':
+    if not lfs_csv.exists():
+        print(f"SKIPPING BENCHMARK: {lfs_csv} not found.")
+        sys.exit(0)
 
-if lfs_csv.exists():
     start = time.time()
-for _ in range(10):
-    rows = _read_csv_stripped(lfs_csv)
-    extract_emp_rate_opt(rows)
-print("Stripped Read + Opt Loop:", time.time() - start)
+    for _ in range(10):
+        rows = _read_csv_orig(lfs_csv)
+        extract_emp_rate_reordered(rows)
+    print("Orig Read + Reordered Loop:", time.time() - start)
+
+    start = time.time()
+    for _ in range(10):
+        rows = _read_csv_stripped(lfs_csv)
+        extract_emp_rate_opt(rows)
+    print("Stripped Read + Opt Loop:", time.time() - start)
