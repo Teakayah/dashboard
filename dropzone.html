@@ -212,8 +212,13 @@
 
     <div class="container">
         <header class="drop-header">
-            <h1>Analytical Drop-Zone</h1>
-            <p>Drag & Drop CSV, JSON, or Parquet files to query them locally with SQL.</p>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h1>Analytical Drop-Zone</h1>
+                    <p>Drag & Drop CSV, JSON, or Parquet files to query them locally with SQL.</p>
+                </div>
+                <button id="load-samples" class="secondary" style="background-color: #6366f1;">Load Sample Datasets</button>
+            </div>
             <div id="status">Initializing DuckDB...</div>
         </header>
 
@@ -254,6 +259,7 @@
                 <button id="run-query" disabled>Run Query</button>
                 <button id="download-csv" class="secondary" disabled>Download Results as CSV</button>
                 <button id="copy-json" class="secondary" disabled>Copy JSON</button>
+                <button id="export-db" class="secondary" style="background-color: #8b5cf6;">Export Database (.db)</button>
             </div>
             <textarea id="sql-input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
             <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: -5px;">Tip: Click column names in the schema above to insert them into your query.</p>
@@ -294,5 +300,7 @@
       });
     }
   </script>
+
+  <script src="assets/analysis_utils.js"></script>
 </body>
 </html>

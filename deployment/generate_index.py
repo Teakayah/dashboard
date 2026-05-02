@@ -565,6 +565,19 @@ def build_html(analyses: list[dict]) -> str:
 '''
 
 
+def inject_analysis_tools(content: str, filename: str) -> str:
+    """Inject the Quick Insights toolbar into an analysis HTML file content."""
+    if 'assets/analysis_utils.js' in content:
+        return content
+
+    script_tag = f'\n  <script src="assets/analysis_utils.js"></script>'
+    # Insert just before </body>
+    new_content = re.sub(r'(</body>)', script_tag + r'\n\1', content, count=1, flags=re.IGNORECASE)
+    if new_content != content:
+        print(f'  Injected analysis tools into {filename}')
+    return new_content
+
+
 def main(argv: Optional[list[str]] = None):
     args = parse_args(argv)
     descriptions = load_descriptions()
@@ -592,6 +605,7 @@ def main(argv: Optional[list[str]] = None):
         new_content = inject_back_link(new_content, meta['filename'])
         new_content = inject_favicon(new_content, meta['filename'])
         new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
+        new_content = inject_analysis_tools(new_content, meta['filename'])
 
         if new_content != content:
             filepath.write_text(new_content, encoding='utf-8')
