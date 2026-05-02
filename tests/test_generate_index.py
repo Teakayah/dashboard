@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+from unittest.mock import patch
 
 
 def load_generate_index_module():
@@ -11,15 +12,15 @@ def load_generate_index_module():
     return module
 
 
-def test_inject_responsive_default_adds_v4_marker_and_canvas_rules():
+def test_inject_responsive_default_adds_v5_marker_and_dashboard_rules():
     module = load_generate_index_module()
     initial_content = '<html><head></head><body><div class="grid"></div></body></html>'
 
     content = module.inject_responsive(initial_content, 'analysis.html')
 
     assert '<!-- responsive-inject-v5 -->' in content
-    assert '.grid canvas { display: block; width: 100% !important; }' in content
-    assert '.grid .small-card canvas { height: 190px !important; }' in content
+    assert '.dashboard-container { display: flex; flex-direction: row; }' in content
+    assert 'window.Chart' in content
 
 
 def test_inject_responsive_is_idempotent():
@@ -63,8 +64,8 @@ def test_inject_functions_handle_missing_tags():
     assert isinstance(res1, str)
 
     content_no_body = "<html><head></head>No body here</html>"
-    # inject_unified_header expects <body>
-    res2 = module.inject_unified_header(content_no_body, "test.html")
+    # inject_back_link expects <body>
+    res2 = module.inject_back_link(content_no_body, "test.html")
     assert res2 == content_no_body
     assert isinstance(res2, str)
 
@@ -85,10 +86,12 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     monkeypatch.setattr(module, 'ROOT', tmp_path)
     monkeypatch.setattr(module, 'EXCLUDE', {'index.html'})
 
-    module.main(['--responsive-preset', 'none'])
+    # Mock _git_date to avoid subprocess calls during test
+    with patch.object(module, '_git_date', return_value='May 2026'):
+        module.main(['--responsive-preset', 'none'])
 
     content = analysis.read_text(encoding='utf-8')
     assert '<!-- responsive-inject-v5 -->' not in content
-    assert module.HEADER_MARKER in content
+    assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
