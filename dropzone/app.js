@@ -65,6 +65,15 @@ dropZone.addEventListener('drop', (e) => {
 });
 
 dropZone.addEventListener('click', () => fileInput.click());
+
+// Add keyboard support to trigger file dialog
+dropZone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault(); // Prevent page scroll for space
+        fileInput.click();
+    }
+});
+
 fileInput.addEventListener('change', () => {
     if (fileInput.files.length > 0) handleFiles(fileInput.files);
 });
