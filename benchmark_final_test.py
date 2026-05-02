@@ -61,13 +61,15 @@ def extract_emp_rate_opt(rows):
                 buckets[row['GEO']][year].append(val)
     return buckets
 
-start = time.time()
+if lfs_csv.exists():
+    start = time.time()
 for _ in range(10):
     rows = _read_csv_orig(lfs_csv)
     extract_emp_rate_reordered(rows)
 print("Orig Read + Reordered Loop:", time.time() - start)
 
-start = time.time()
+if lfs_csv.exists():
+    start = time.time()
 for _ in range(10):
     rows = _read_csv_stripped(lfs_csv)
     extract_emp_rate_opt(rows)
