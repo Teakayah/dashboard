@@ -11,6 +11,7 @@ import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 ROOT = Path(__file__).parent.parent
 EXCLUDE = {'index.html'}
@@ -22,6 +23,8 @@ LIBRARY_PATTERNS = {
     'D3.js': r'd3(?:\.v\d+)?(?:\.min)?\.js|cdn\.jsdelivr\.net/npm/d3@',
     'Plotly': r'plotly(?:\.min)?\.js|cdn\.plot\.ly',
     'Vega': r'vega(?:-lite)?(?:\.min)?\.js',
+    'DuckDB': r'duckdb',
+    'Grid.js': r'gridjs',
 }
 
 # Chart.js-inspired accent colors (top border on cards)
@@ -62,7 +65,7 @@ def _git_date(filepath: Path) -> str:
     return datetime.fromtimestamp(filepath.stat().st_mtime).strftime('%b %Y')
 
 
-def extract_meta(filepath: Path, content: str, descriptions: dict | None = None) -> dict:
+def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None) -> dict:
     """Extract title, description, and tags from an HTML file content.
 
     Falls back to pre-generated descriptions from descriptions.json when no
@@ -129,18 +132,17 @@ RESPONSIVE_PRESETS = {
   <!-- responsive-inject-v5 -->
   <style>
     @media (min-width: 769px) {
-      body { max-width: 1200px; margin: 0 auto; }
-      .panel > .card { height: 440px; }
-      .grid canvas { display: block; width: 100% !important; }
-      .grid .small-card canvas { height: 190px !important; }
+      .dashboard-container { display: flex; flex-direction: row; }
+      .sidebar { width: 300px; flex-shrink: 0; }
+      .main-content { flex-grow: 1; }
     }
   </style>
   <script>
-    (function () {
-      if (window.innerWidth < 769) return;
-      Object.defineProperty(window, 'Chart', {
-        configurable: true,
-        set: function (C) {
+    (function() {
+      // Small Chart.js hack for responsiveness
+      window.addEventListener('load', function() {
+        if (window.Chart) {
+          const C = window.Chart;
           Object.defineProperty(window, 'Chart', { configurable: true, writable: true, value: C });
           C.defaults.maintainAspectRatio = false;
         }
@@ -156,7 +158,7 @@ RESPONSIVE_PRESETS = {
 }
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.strip())
     parser.add_argument(
         '--responsive-preset',
@@ -178,13 +180,14 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
     """
     preset = RESPONSIVE_PRESETS[preset_name]
 
+    # Matches and extracts previous responsive injection blocks to safely strip them.
+    strip_regex = re.compile(
+        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
+        flags=re.DOTALL,
+    )
+
     if preset_name == 'none':
-        new_content = re.sub(
-            r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
-            '',
-            content,
-            flags=re.DOTALL,
-        )
+        new_content = strip_regex.sub('', content)
         if new_content != content:
             print(f'  Removed responsive enhancer from {filename}')
         return new_content
@@ -198,12 +201,7 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
         return content
 
     # Strip any older-version block, then inject the current preset.
-    new_content = re.sub(
-        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
-        '',
-        content,
-        flags=re.DOTALL,
-    )
+    new_content = strip_regex.sub('', content)
     final_content = re.sub(
         r'(<head[^>]*>)',
         r'\1\n' + snippet,
@@ -241,6 +239,21 @@ def inject_back_link(content: str, filename: str) -> str:
     )
     if new_content != content:
         print(f'  Injected back-link into {filename}')
+    return new_content
+
+
+
+def inject_favicon(content: str, filename: str) -> str:
+    """Inject favicon link into an analysis HTML file content if not already present."""
+    if 'rel="icon"' in content or "rel='icon'" in content:
+        return content  # already has one, leave it alone
+
+    favicon_link = f'\n  <link rel="icon" href="{SITE_URL}/favicon.ico" type="image/x-icon">'
+
+    # Insert just before </head>
+    new_content = re.sub(r'(</head>)', favicon_link + r'\n\1', content, count=1, flags=re.IGNORECASE)
+    if new_content != content:
+        print(f'  Injected favicon into {filename}')
     return new_content
 
 
@@ -299,8 +312,6 @@ def build_card(analysis: dict, index: int) -> str:
       </a>'''
 
 
-
-
 def build_html(analyses: list[dict]) -> str:
     count = len(analyses)
     subtitle = f'{count} analysis{"" if count == 1 else "es"}' if count else 'No analyses yet — drop an HTML file here'
@@ -320,6 +331,7 @@ def build_html(analyses: list[dict]) -> str:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DataDashboard</title>
+  <link rel="icon" href="{SITE_URL}/favicon.ico" type="image/x-icon">
 
   <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
@@ -572,7 +584,7 @@ def build_html(analyses: list[dict]) -> str:
 '''
 
 
-def main(argv: list[str] | None = None):
+def main(argv: Optional[list[str]] = None):
     args = parse_args(argv)
     descriptions = load_descriptions()
     analyses = []
@@ -597,6 +609,7 @@ def main(argv: list[str] | None = None):
         # Inject enhancements
         new_content = inject_responsive(content, meta['filename'], args.responsive_preset)
         new_content = inject_back_link(new_content, meta['filename'])
+        new_content = inject_favicon(new_content, meta['filename'])
         new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
 
         if new_content != content:

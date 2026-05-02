@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- responsive-inject-v4 -->
+  <!-- responsive-inject-v5 -->
   <style>
     @media (min-width: 769px) {
       body { max-width: 1200px; margin: 0 auto; }
@@ -22,7 +22,7 @@
       });
     })();
   </script>
-  <!-- /responsive-inject -->
+  <!-- /responsive-inject-v5 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Canadian Labour & Fiscal Dashboard</title>
@@ -64,9 +64,25 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
   <meta property="og:image:height" content="315">
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:image" content="https://teakayah.github.io/dashboard/previews/employment_rate_canada.png">
+
+  <link rel="icon" href="https://teakayah.github.io/dashboard/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="assets/theme.css">
+  <script src="assets/fullscreen.js"></script>
 </head>
 <body>
 <!-- back-link-inject --><div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:6px 0 2px;font-size:0.78rem;"><a href="https://teakayah.github.io/dashboard/" style="color:#4f8ef7;text-decoration:none;font-weight:600;">&#8592; DataDashboard</a></div>
+<!-- unified-header-inject -->
+<header class="unified-header">
+  <div class="back-link-box">
+    <a href="https://teakayah.github.io/dashboard/" style="font-weight:700; color:var(--primary); font-size:1.2rem;">DataDashboard</a>
+    <span style="opacity:0.3; margin: 0 4px;">/</span>
+    <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
+  </div>
+  <div class="nav-links">
+    <button class="share-btn" onclick="navigator.share({title: document.title, url: window.location.href})">Share</button>
+  </div>
+</header>
+
 
 <h1>Canadian Labour &amp; Fiscal Dashboard</h1>
 <p class="subtitle">Statistics Canada &mdash; Seasonally adjusted where applicable &middot; Total gender &middot; Provincial governments</p>
@@ -519,5 +535,33 @@ function popBuildSmall(){
 }
 popBuildSmall();
 </script>
+<!-- related-links-inject -->
+<section class="related-section">
+  <div class="related-label">Related Analyses</div>
+  <div class="related-grid">
+    <a href="flood_risk_gatineau_ottawa.html" class="related-link"><strong>Ottawa-Gatineau Flood Risk — Station 02KF005</strong><span>Apr 2026</span></a><a href="dropzone.html" class="related-link"><strong>Analytical Drop-Zone</strong><span>Apr 2026</span></a><a href="nhpi_big6_comparison.html" class="related-link"><strong>NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</strong><span>Apr 2026</span></a>
+  </div>
+</section>
+<style>
+  .related-section { padding: 40px 20px; border-top: 1px solid var(--border); background: #fafafa; margin-top: 60px; }
+  .related-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #999; margin-bottom: 16px; letter-spacing: 0.05em; text-align: center; }
+  .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
+  .related-link { display: flex; flex-direction: column; padding: 16px; background: #fff; border-radius: 10px; border: 1px solid var(--border); text-decoration: none; color: inherit; transition: transform 0.2s; }
+  .related-link:hover { transform: translateY(-3px); border-color: var(--primary); }
+  .related-link strong { font-size: 0.9rem; color: #1a1a2e; margin-bottom: 4px; }
+  .related-link span { font-size: 0.75rem; color: #bbb; }
+</style>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          console.log('SW registered:', reg);
+        }).catch(err => {
+          console.log('SW registration failed:', err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>

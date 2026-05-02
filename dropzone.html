@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- responsive-inject-v5 -->
+  <style>
+    @media (min-width: 769px) {
+      body { max-width: 1200px; margin: 0 auto; }
+      .panel > .card { height: 440px; }
+      .grid canvas { display: block; width: 100% !important; }
+      .grid .small-card canvas { height: 190px !important; }
+    }
+  </style>
+  <script>
+    (function () {
+      if (window.innerWidth < 769) return;
+      Object.defineProperty(window, 'Chart', {
+        configurable: true,
+        set: function (C) {
+          Object.defineProperty(window, 'Chart', { configurable: true, writable: true, value: C });
+          C.defaults.maintainAspectRatio = false;
+        }
+      });
+    })();
+  </script>
+  <!-- /responsive-inject-v5 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytical Drop-Zone</title>
+    <meta name="description" content="Local-first SQL analysis for CSV, JSON, and Parquet files using DuckDB-Wasm.">
+    <script type="importmap">
+    {
+      "imports": {
+        "apache-arrow": "https://cdn.jsdelivr.net/npm/apache-arrow@13.0.0/+esm"
+      }
+    }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="dropzone/vendor/gridjs/mermaid.min.css">
+    <link rel="icon" href="https://teakayah.github.io/dashboard/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="assets/theme.css">
+    <script src="assets/fullscreen.js"></script>
+    <style>
+        :root {
+            --primary: #4f8ef7;
+            --bg: #f5f5f2;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 1rem; gap: 1rem; overflow-x: hidden; }
+            .preview-section { grid-template-columns: 1fr; width: 100%; }
+        }
+        header.drop-header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1rem;
+        }
+        h1 { margin: 0; font-size: 1.875rem; }
+        .drop-zone {
+            border: 3px dashed var(--border);
+            border-radius: 0.75rem;
+            padding: 3rem;
+            text-align: center;
+            background: var(--card);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .drop-zone.drag-over {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        .drop-zone:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+        .preview-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: 1.5rem;
+        }
+        .preview-card {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .preview-card h3 {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .sql-console {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .console-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            resize: vertical;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        button.secondary {
+            background-color: #64748b;
+        }
+        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        .results-container {
+            background: var(--card);
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .schema-info {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        #status {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            background: #e2e8f0;
+            display: inline-block;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+        @media (max-width: 600px) {
+            .preview-section { grid-template-columns: 1fr; }
+            .container { padding: 1rem; }
+        }
+    </style>
+
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://teakayah.github.io/dashboard/dropzone.html">
+  <meta property="og:title" content="Dashboard - Analytical Drop-Zone">
+  <meta property="og:image" content="https://teakayah.github.io/dashboard/previews/dropzone.png">
+  <meta property="og:image:width" content="600">
+  <meta property="og:image:height" content="315">
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:image" content="https://teakayah.github.io/dashboard/previews/dropzone.png">
+
+  <link rel="icon" href="https://teakayah.github.io/dashboard/favicon.ico" type="image/x-icon">
+</head>
+<body>
+<!-- back-link-inject --><div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:6px 0 2px;font-size:0.78rem;"><a href="https://teakayah.github.io/dashboard/" style="color:#4f8ef7;text-decoration:none;font-weight:600;">&#8592; DataDashboard</a></div>
+<!-- unified-header-inject -->
+<header class="unified-header">
+  <div class="back-link-box">
+    <a href="https://teakayah.github.io/dashboard/" style="font-weight:700; color:var(--primary); font-size:1.2rem;">DataDashboard</a>
+    <span style="opacity:0.3; margin: 0 4px;">/</span>
+    <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
+  </div>
+  <div class="nav-links">
+    <button class="share-btn" onclick="navigator.share({title: document.title, url: window.location.href})">Share</button>
+  </div>
+</header>
+
+    <div class="container">
+        <header class="drop-header">
+            <h1>Analytical Drop-Zone</h1>
+            <p>Drag & Drop CSV, JSON, or Parquet files to query them locally with SQL.</p>
+            <div id="status">Initializing DuckDB...</div>
+        </header>
+
+        <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Drop files here or click to select">
+            <p>Drop files here or click to select</p>
+            <input type="file" id="file-input" style="display: none;" multiple>
+        </div>
+
+        <div id="instant-previews" class="preview-section"></div>
+
+        <div id="schema-display" class="schema-info"></div>
+
+        <div class="sql-console">
+            <div class="console-actions">
+                <select id="query-recipes" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.85rem; cursor: pointer;">
+                    <option value="" disabled selected>Query Recipes...</option>
+                    <option value="SELECT * FROM {{TABLE}} LIMIT 10">Show Top 10 Rows</option>
+                    <option value="SELECT count(*) FROM {{TABLE}}">Count Total Rows</option>
+                    <option value="SELECT * FROM {{TABLE}} ORDER BY 1 DESC LIMIT 100">Sort by First Column (Desc)</option>
+                    <option value="SELECT column_name, data_type FROM (DESCRIBE {{TABLE}})">Show Schema Details</option>
+                </select>
+                <div style="flex: 1"></div>
+                <button id="run-query" disabled>Run Query</button>
+                <button id="download-csv" class="secondary" disabled>Download Results as CSV</button>
+            </div>
+            <textarea id="sql-input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
+            <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: -5px;">Tip: Click column names in the schema above to insert them into your query.</p>
+        </div>
+
+        <div id="results" class="results-container"></div>
+    </div>
+
+    <div id="loading" class="loading-overlay">Processing...</div>
+
+    <script src="dropzone/vendor/gridjs/gridjs.js"></script>
+    <script type="module" src="dropzone/app.js"></script>
+<!-- related-links-inject -->
+<section class="related-section">
+  <div class="related-label">Related Analyses</div>
+  <div class="related-grid">
+    <a href="nhpi_big6_comparison.html" class="related-link"><strong>NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</strong><span>Apr 2026</span></a><a href="employment_rate_canada.html" class="related-link"><strong>Canadian Labour & Fiscal Dashboard</strong><span>Apr 2026</span></a><a href="flood_risk_gatineau_ottawa.html" class="related-link"><strong>Ottawa-Gatineau Flood Risk — Station 02KF005</strong><span>Apr 2026</span></a>
+  </div>
+</section>
+<style>
+  .related-section { padding: 40px 20px; border-top: 1px solid var(--border); background: #fafafa; margin-top: 60px; }
+  .related-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #999; margin-bottom: 16px; letter-spacing: 0.05em; text-align: center; }
+  .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
+  .related-link { display: flex; flex-direction: column; padding: 16px; background: #fff; border-radius: 10px; border: 1px solid var(--border); text-decoration: none; color: inherit; transition: transform 0.2s; }
+  .related-link:hover { transform: translateY(-3px); border-color: var(--primary); }
+  .related-link strong { font-size: 0.9rem; color: #1a1a2e; margin-bottom: 4px; }
+  .related-link span { font-size: 0.75rem; color: #bbb; }
+</style>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          console.log('SW registered:', reg);
+        }).catch(err => {
+          console.log('SW registration failed:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
