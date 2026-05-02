@@ -27,20 +27,19 @@ SRC = ROOT / "source" / "Stat Can"
 def _read_csv(path: Path) -> list[dict]:
     """Read a Stats Canada CSV (UTF-8 BOM) into a list of row dicts."""
     with open(path, encoding="utf-8-sig") as f:
-        reader = csv.reader(f)
-        try:
-            headers = [h.strip() for h in next(reader)]
-        except StopIteration:
-            return []
-        return [dict(zip(headers, (v.strip() for v in row))) for row in reader if row]
+        reader = csv.DictReader(f)
+        if reader.fieldnames:
+            reader.fieldnames = [h.strip() for h in reader.fieldnames]
+        return [row for row in reader if any(row.values())]
 
 
 def _clean(val: str) -> Optional[float]:
     """Return float or None for Stats Canada VALUE cells."""
-    if val in ("", "..", "F", "x", "E", "r", "p"):
+    v = val.strip()
+    if v in ("", "..", "F", "x", "E", "r", "p"):
         return None
     try:
-        return float(val)
+        return float(v)
     except ValueError:
         return None
 
@@ -55,16 +54,16 @@ def _extract_lfs_buckets(
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
         if (
-            row["Labour force characteristics"] == char_name
-            and row["Gender"] == "Total - Gender"
-            and row["Age group"] == "15 years and over"
-            and row["Statistics"] == "Estimate"
-            and row["Data type"] == "Seasonally adjusted"
+            row["Labour force characteristics"].strip() == char_name
+            and row["Gender"].strip() == "Total - Gender"
+            and row["Age group"].strip() == "15 years and over"
+            and row["Statistics"].strip() == "Estimate"
+            and row["Data type"].strip() == "Seasonally adjusted"
         ):
             val = _clean(row["VALUE"])
             if val is not None:
-                year = int(row["REF_DATE"][:4])
-                buckets[row["GEO"]][year].append(val)
+                year = int(row["REF_DATE"].strip()[:4])
+                buckets[row["GEO"].strip()][year].append(val)
     return buckets
 
 
@@ -103,14 +102,14 @@ def extract_fed_debt(rows: list[dict]) -> list[dict]:
     buckets: dict[int, list[float]] = defaultdict(list)
     for row in rows:
         if (
-            row["GEO"] == "Canada"
-            and row["Government sectors"] == "Federal government"
-            and row["Statement of government operations and balance sheet"]
+            row["GEO"].strip() == "Canada"
+            and row["Government sectors"].strip() == "Federal government"
+            and row["Statement of government operations and balance sheet"].strip()
             == "Liabilities"
         ):
             val = _clean(row["VALUE"])
             if val is not None:
-                year = int(row["REF_DATE"][:4])
+                year = int(row["REF_DATE"].strip()[:4])
                 buckets[year].append(val)
 
     return sorted(
@@ -127,14 +126,14 @@ def extract_prov_debt(rows: list[dict]) -> dict:
     data: dict[str, dict[int, float]] = defaultdict(dict)
     for row in rows:
         if (
-            row["Public sector components"] == "Provincial and territorial governments"
-            and row["Display value"] == "Stocks"
-            and row["Statement of operations and balance sheet"] == "Liabilities [63]"
+            row["Public sector components"].strip() == "Provincial and territorial governments"
+            and row["Display value"].strip() == "Stocks"
+            and row["Statement of operations and balance sheet"].strip() == "Liabilities [63]"
         ):
             val = _clean(row["VALUE"])
             if val is not None:
-                geo = row["GEO"]
-                year = int(row["REF_DATE"])
+                geo = row["GEO"].strip()
+                year = int(row["REF_DATE"].strip())
                 data[geo][year] = val
 
     return {
@@ -150,11 +149,11 @@ def extract_pop_data(rows: list[dict]) -> dict:
     """Annual population by province + year-over-year change — table 17100005."""
     data: dict[str, dict[int, int]] = defaultdict(dict)
     for row in rows:
-        if row["Gender"] == "Total - gender" and row["Age group"] == "All ages":
+        if row["Gender"].strip() == "Total - gender" and row["Age group"].strip() == "All ages":
             val = _clean(row["VALUE"])
             if val is not None:
-                geo = row["GEO"]
-                year = int(row["REF_DATE"])
+                geo = row["GEO"].strip()
+                year = int(row["REF_DATE"].strip())
                 data[geo][year] = int(val)
 
     result = {}
@@ -195,14 +194,14 @@ def extract_nhpi(rows: list[dict]) -> dict:
         lambda: {m: {} for m in measures}
     )
     for row in rows:
-        measure = row[idx_col]
+        measure = row[idx_col].strip()
         if measure not in measures:
             continue
         val = _clean(row["VALUE"])
         if val is None:
             continue
-        date = row["REF_DATE"]  # "1981-01"
-        geo = row["GEO"]
+        date = row["REF_DATE"].strip()  # "1981-01"
+        geo = row["GEO"].strip()
         buckets[geo][measure][date] = val
 
     result = {}
