@@ -11,7 +11,7 @@ import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 ROOT = Path(__file__).parent.parent
 EXCLUDE = {'index.html'}
