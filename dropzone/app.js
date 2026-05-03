@@ -94,7 +94,7 @@ async function restoreState() {
             currentTableName = tables[tables.length - 1];
             statusEl.textContent = `Restored ${tables.length} table(s)`;
             
-            schemaDisplay.innerHTML = '';
+            schemaDisplay.textContent = '';
             for (const table of tables) {
                 await displayTableSchema(table);
             }
@@ -141,7 +141,7 @@ function updateJoinUI() {
         
         const populateSelect = (select, options) => {
             const currentVal = select.value;
-            select.innerHTML = '';
+            select.textContent = '';
             options.forEach(t => {
                 const opt = document.createElement('option');
                 opt.value = t;
@@ -179,7 +179,14 @@ async function updateJoinColumns() {
         
         const sharedCols = colsB.filter(c => colsA.has(c));
         
-        joinCol.innerHTML = '<option value="" disabled selected>Select Common Column...</option>';
+        joinCol.textContent = '';
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = "";
+        defaultOpt.disabled = true;
+        defaultOpt.selected = true;
+        defaultOpt.textContent = "Select Common Column...";
+        joinCol.appendChild(defaultOpt);
+
         sharedCols.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c;
@@ -254,7 +261,7 @@ fileInput.addEventListener('change', () => {
 
 async function handleFiles(files) {
     loadingOverlay.style.display = 'flex';
-    previewsContainer.innerHTML = '';
+    previewsContainer.textContent = '';
     
     try {
         for (const file of files) {
@@ -281,7 +288,7 @@ async function handleFiles(files) {
             await conn.query(query);
             
             // Show schema
-            if (loadedTables.size === 1) schemaDisplay.innerHTML = '';
+            if (loadedTables.size === 1) schemaDisplay.textContent = '';
             await displayTableSchema(tableName);
             
             // Generate Previews
@@ -495,7 +502,7 @@ function renderResults(result) {
     
     const columns = result.schema.fields.map(f => f.name);
     const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = '';
+    resultsContainer.textContent = '';
     
     new gridjs.Grid({
         columns: columns,
@@ -560,7 +567,7 @@ loadSamplesBtn.addEventListener('click', async () => {
             loadedTables.add(tableName);
         }
         
-        schemaDisplay.innerHTML = '';
+        schemaDisplay.textContent = '';
         for (const table of loadedTables) {
             await displayTableSchema(table);
         }
@@ -624,9 +631,9 @@ clearBtn.addEventListener('click', async () => {
         
         loadedTables.clear();
         currentTableName = '';
-        schemaDisplay.innerHTML = '';
-        previewsContainer.innerHTML = '';
-        document.getElementById('results').innerHTML = '';
+        schemaDisplay.textContent = '';
+        previewsContainer.textContent = '';
+        document.getElementById('results').textContent = '';
         sqlInput.value = '';
         runBtn.disabled = true;
         downloadBtn.disabled = true;
