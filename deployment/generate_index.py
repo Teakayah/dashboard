@@ -163,8 +163,16 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
 
     # Matches and extracts previous responsive injection blocks to safely strip them.
     strip_regex = re.compile(
-        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
-        flags=re.DOTALL,
+        r'''
+        \s*                                     # Match any leading whitespace
+        <!--\ responsive-inject(?:-v\d+)?\ -->  # Opening marker with optional version (e.g. -v5)
+        \s*<style>.*?</style>                   # Match the injected CSS block non-greedily
+        \s*<script>.*?</script>                 # Match the injected JavaScript block non-greedily
+        (?:                                     # Optional non-capturing group for the closing marker
+            \s*<!--\ /responsive-inject(?:-v\d+)?\ -->
+        )?
+        ''',
+        flags=re.DOTALL | re.VERBOSE,
     )
 
     if preset_name == 'none':
@@ -570,7 +578,7 @@ def inject_analysis_tools(content: str, filename: str) -> str:
     if 'assets/analysis_utils.js' in content:
         return content
 
-    script_tag = f'\n  <script src="assets/analysis_utils.js"></script>'
+    script_tag = '\n  <script src="assets/analysis_utils.js"></script>'
     # Insert just before </body>
     new_content = re.sub(r'(</body>)', script_tag + r'\n\1', content, count=1, flags=re.IGNORECASE)
     if new_content != content:
