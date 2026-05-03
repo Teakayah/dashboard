@@ -529,7 +529,7 @@ def build_html(analyses: list[dict]) -> str:
 </header>
 
 <div class="search-bar">
-  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off">
+  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
 </div>
 
 <main>
