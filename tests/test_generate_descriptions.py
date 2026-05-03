@@ -221,7 +221,7 @@ def test_main_missing_file(tmp_path, capsys):
          patch.object(module, 'DESCRIPTIONS_FILE', desc_json_file), \
          patch('sys.argv', ['generate_descriptions.py', '--file', 'missing.html']), \
          patch.object(module, 'load_descriptions', return_value=initial_descriptions), \
-         patch.object(module, 'save_descriptions') as mock_save:
+         patch.object(module, 'save_descriptions'):
 
         module.main()
 
