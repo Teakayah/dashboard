@@ -1,5 +1,4 @@
 import importlib.util
-import subprocess
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 import pytest
@@ -142,7 +141,7 @@ def test_main_screenshot_failure():
 
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
          patch.object(module, 'needs_screenshot', return_value=True), \
-         patch('subprocess.Popen') as mock_popen, \
+         patch('subprocess.Popen'), \
          patch('socket.create_connection'), \
          patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
          patch('pathlib.Path.mkdir'), \
@@ -169,7 +168,7 @@ def test_main_timeout_waiting_for_load_state():
 
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
          patch.object(module, 'needs_screenshot', return_value=True), \
-         patch('subprocess.Popen') as mock_popen, \
+         patch('subprocess.Popen'), \
          patch('socket.create_connection'), \
          patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
          patch('pathlib.Path.mkdir'), \
