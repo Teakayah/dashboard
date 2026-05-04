@@ -234,11 +234,11 @@
         <div id="join-assistant" class="sql-console" style="display: none; border-left: 4px solid #4bc0c0;">
             <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #4bc0c0;">🔗 Join Assistant</div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <select id="join-table-a" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);"></select>
+                <select id="join-table-a" aria-label="First table to join" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);"></select>
                 <span>JOIN</span>
-                <select id="join-table-b" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);"></select>
+                <select id="join-table-b" aria-label="Second table to join" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);"></select>
                 <span>ON</span>
-                <select id="join-col" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
+                <select id="join-col" aria-label="Column to join on" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
                     <option value="" disabled selected>Select Column...</option>
                 </select>
                 <button id="generate-join" class="secondary" style="background-color: #4bc0c0;">Generate Join SQL</button>
@@ -247,7 +247,7 @@
 
         <div class="sql-console">
             <div class="console-actions">
-                <select id="query-recipes" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.85rem; cursor: pointer;">
+                <select id="query-recipes" aria-label="Select a query recipe" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.85rem; cursor: pointer;">
                     <option value="" disabled selected>Query Recipes...</option>
                     <option value="SELECT * FROM {{TABLE}} LIMIT 10">Show Top 10 Rows</option>
                     <option value="SELECT count(*) FROM {{TABLE}}">Count Total Rows</option>
@@ -261,7 +261,7 @@
                 <button id="copy-json" class="secondary" disabled>Copy JSON</button>
                 <button id="export-db" class="secondary" style="background-color: #8b5cf6;">Export Database (.db)</button>
             </div>
-            <textarea id="sql-input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
+            <textarea id="sql-input" aria-label="SQL query input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
             <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: -5px;">Tip: Click column names in the schema above to insert them into your query.</p>
         </div>
 
