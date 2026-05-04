@@ -4,6 +4,7 @@ Fetch latest flood risk data: hydrometric gauges and snowpack (SWE).
 Saves to source/.flood_data.json for injection into analysis HTML.
 """
 
+import concurrent.futures
 import json
 import urllib.request
 from datetime import datetime, timezone
@@ -72,17 +73,28 @@ def fetch_precip_data(climate_id):
 def main():
     print("Fetching flood risk data...")
 
-    # 1. Gauge data
+    # 1. Gauge data & 2. Precipitation
     gauges = {}
-    for s in STATIONS:
-        print(f"  Fetching {s['label']} ({s['id']})...")
-        data = fetch_gauge_data(s["id"])
-        if data:
-            gauges[s["id"]] = data
+    precip = None
 
-    # 2. Precipitation
-    print(f"  Fetching precipitation for station {PRECIP_STATION}...")
-    precip = fetch_precip_data(PRECIP_STATION)
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=len(STATIONS) + 1
+    ) as executor:
+        future_to_station = {}
+        for s in STATIONS:
+            print(f"  Fetching {s['label']} ({s['id']})...")
+            future_to_station[executor.submit(fetch_gauge_data, s["id"])] = s
+
+        print(f"  Fetching precipitation for station {PRECIP_STATION}...")
+        future_precip = executor.submit(fetch_precip_data, PRECIP_STATION)
+
+        for future in concurrent.futures.as_completed(future_to_station):
+            s = future_to_station[future]
+            data = future.result()
+            if data:
+                gauges[s["id"]] = data
+
+        precip = future_precip.result()
 
     # 3. SWE (Simulated for now, based on real 2024/2025 trends if available)
     swe = {
