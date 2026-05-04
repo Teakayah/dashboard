@@ -501,7 +501,7 @@ RATE_ORDER.forEach(function(g){
 
 // Pop small charts
 function popBuildSmall(){
-  var wrap=document.getElementById('pop-SW'); wrap.innerHTML='';
+  var wrap=document.getElementById('pop-SW'); wrap.textContent='';
   var caV=popGetData('Canada',popMetricCur);
   var yLabel=popMetricCur==='abs'?'Population':popMetricCur==='chg'?'Change (persons)':'Change (%)';
   var yCb=popMetricCur==='abs'
