@@ -21,6 +21,7 @@ except ImportError:
 
 # ── CSV helpers ────────────────────────────────────────────────────────────────
 
+
 def _read_csv(path: Path) -> list[dict]:
     """Read a Stats Canada CSV (UTF-8 BOM) into a list of row dicts."""
     with open(path, encoding="utf-8-sig") as f:
@@ -43,47 +44,70 @@ def _clean(val: str) -> Optional[float]:
 
 # ── Generic Extraction Engine ──────────────────────────────────────────────────
 
-def extract_statcan_data(rows: list[dict], table_id: str, variant: Optional[str] = None) -> Any:
+
+def extract_statcan_data(
+    rows: list[dict], table_id: str, variant: Optional[str] = None
+) -> Any:
     """Generic engine to filter and group StatCan data based on config."""
     config = EXTRACTION_CONFIGS.get(table_id)
     if not config:
         return []
 
-    filters = config.get('default_filters', {}).copy()
-    if variant and 'variants' in config:
-        filters.update(config['variants'].get(variant, {}))
-
     # Special handling for NHPI (18100205)
-    if table_id == '18100205':
+    if table_id == "18100205":
         return _extract_nhpi_logic(rows, config)
 
     # General extraction logic for other tables
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
+
+    filters = config.get('default_filters', {}).copy()
+    if variant and 'variants' in config:
+        filters.update(config['variants'].get(variant, {}))
+
+    # Heuristic: place highly selective variant filters first to maximize short-circuiting efficiency.
+    # We use dictionary updates to safely override defaults, then convert to list.
+    filter_items = list(filters.items())
+    filter_items.sort(key=lambda x: 0 if x[0] == 'Labour force characteristics' else 1)
+
     for row in rows:
-        if all(row.get(k, '').strip() == v for k, v in filters.items()):
+        match = True
+        for k, v in filter_items:
+            val = row.get(k, '')
+            # Avoid .strip() overhead unless necessary
+            if val != v and val.strip() != v:
+                match = False
+                break
+
+        if match:
             val = _clean(row["VALUE"])
             if val is not None:
                 # Handle different date formats
-                ref_date = row["REF_DATE"].strip()
-                try:
-                    year = int(ref_date[:4])
-                except (ValueError, IndexError):
-                    continue
-                
-                geo = row.get("GEO", "Canada").strip()
-                buckets[geo][year].append(val)
+                ref_date = row.get("REF_DATE", "")
+                if len(ref_date) >= 4:
+                    try:
+                        year = int(ref_date[:4])
+                    except ValueError:
+                        continue
+
+                    geo = row.get("GEO", "Canada")
+                    if geo != "Canada":
+                        geo = geo.strip()
+                    buckets[geo][year].append(val)
 
     # Post-processing based on variant or table_id
-    if variant == 'empRate':
+    if variant == "empRate":
         return {
             geo: sorted(
-                [{"year": y, "value": round(sum(vs) / len(vs), 2)} for y, vs in yd.items()],
+                [
+                    {"year": y, "value": round(sum(vs) / len(vs), 2)}
+                    for y, vs in yd.items()
+                ],
                 key=lambda r: r["year"],
             )
             for geo, yd in buckets.items()
         }
-    
-    if variant == 'empJobs':
+
+    if variant == "empJobs":
         result = {}
         for geo, yd in buckets.items():
             series = []
@@ -96,7 +120,7 @@ def extract_statcan_data(rows: list[dict], table_id: str, variant: Optional[str]
             result[geo] = series
         return result
 
-    if table_id == '10100015':
+    if table_id == "10100015":
         # Federal debt is typically returned as a flat list for Canada
         canada_data = buckets.get("Canada", {})
         return sorted(
@@ -107,22 +131,25 @@ def extract_statcan_data(rows: list[dict], table_id: str, variant: Optional[str]
             key=lambda r: r["year"],
         )
 
-    if table_id == '10100017':
+    if table_id == "10100017":
         return {
             geo: sorted(
-                [{"year": y, "value": round(sum(vs) / len(vs) / 1000, 1)} for y, vs in yd.items()],
+                [
+                    {"year": y, "value": round(sum(vs) / len(vs) / 1000, 1)}
+                    for y, vs in yd.items()
+                ],
                 key=lambda r: r["year"],
             )
             for geo, yd in buckets.items()
         }
 
-    if table_id == '17100005':
+    if table_id == "17100005":
         result = {}
         for geo, yd in buckets.items():
             series = []
             prev = None
             for year in sorted(yd):
-                pop = int(sum(yd[year]) / len(yd[year])) # Usually 1 value per year
+                pop = int(sum(yd[year]) / len(yd[year]))  # Usually 1 value per year
                 change = pop - prev if prev is not None else None
                 pct = round((pop - prev) / prev * 100, 2) if prev is not None else None
                 series.append({"year": year, "pop": pop, "change": change, "pct": pct})
@@ -132,11 +159,16 @@ def extract_statcan_data(rows: list[dict], table_id: str, variant: Optional[str]
 
     return buckets
 
+
 def _extract_nhpi_logic(rows: list[dict], config: dict) -> dict:
     """Specific logic for NHPI table which has multiple measures."""
-    measures = config.get('measures', [])
-    idx_col = next((k for k in rows[0] if "housing price" in k.lower()), None) if rows else None
-    
+    measures = config.get("measures", [])
+    idx_col = (
+        next((k for k in rows[0] if "housing price" in k.lower()), None)
+        if rows
+        else None
+    )
+
     if not idx_col:
         return {}
 
@@ -167,6 +199,7 @@ def _extract_nhpi_logic(rows: list[dict], config: dict) -> dict:
 
 # ── HTML injection helpers ────────────────────────────────────────────────────
 
+
 def _inject_const(html: str, var_name: str, new_value: object) -> tuple[str, bool]:
     """Replace `const VAR = {...};` (single-line or multiline) with new JSON value."""
     new_json = json.dumps(new_value, separators=(",", ":"), ensure_ascii=False)
@@ -186,15 +219,16 @@ def _inject_const(html: str, var_name: str, new_value: object) -> tuple[str, boo
 
 # ── Per-analysis rebuild functions ────────────────────────────────────────────
 
+
 def rebuild_employment(html_path: Path) -> bool:
     """Rebuild const DATA={...} in employment_rate_canada.html."""
     print(f"Rebuilding {html_path.name}...")
 
     csv_paths = {
-        'lfs': SRC / "Employment" / "14100287-eng" / "14100287.csv",
-        'gov': SRC / "Employment" / "10100015-eng" / "10100015.csv",
-        'prov': SRC / "Employment" / "10100017-eng" / "10100017.csv",
-        'pop': SRC / "Employment" / "17100005-eng" / "17100005.csv",
+        "lfs": SRC / "Employment" / "14100287-eng" / "14100287.csv",
+        "gov": SRC / "Employment" / "10100015-eng" / "10100015.csv",
+        "prov": SRC / "Employment" / "10100017-eng" / "10100017.csv",
+        "pop": SRC / "Employment" / "17100005-eng" / "17100005.csv",
     }
 
     missing = [p.name for p in csv_paths.values() if not p.exists()]
@@ -204,11 +238,15 @@ def rebuild_employment(html_path: Path) -> bool:
 
     print("  Processing datasets...")
     new_data = {
-        "empRate": extract_statcan_data(_read_csv(csv_paths['lfs']), '14100287', 'empRate'),
-        "empJobs": extract_statcan_data(_read_csv(csv_paths['lfs']), '14100287', 'empJobs'),
-        "provDebt": extract_statcan_data(_read_csv(csv_paths['prov']), '10100017'),
-        "fedDebt": extract_statcan_data(_read_csv(csv_paths['gov']), '10100015'),
-        "popData": extract_statcan_data(_read_csv(csv_paths['pop']), '17100005'),
+        "empRate": extract_statcan_data(
+            _read_csv(csv_paths["lfs"]), "14100287", "empRate"
+        ),
+        "empJobs": extract_statcan_data(
+            _read_csv(csv_paths["lfs"]), "14100287", "empJobs"
+        ),
+        "provDebt": extract_statcan_data(_read_csv(csv_paths["prov"]), "10100017"),
+        "fedDebt": extract_statcan_data(_read_csv(csv_paths["gov"]), "10100015"),
+        "popData": extract_statcan_data(_read_csv(csv_paths["pop"]), "17100005"),
     }
 
     html = html_path.read_text(encoding="utf-8")
@@ -233,7 +271,7 @@ def rebuild_nhpi(html_path: Path) -> bool:
         return False
 
     print("  Reading 18100205 (NHPI)...")
-    raw = extract_statcan_data(_read_csv(nhpi_csv), '18100205')
+    raw = extract_statcan_data(_read_csv(nhpi_csv), "18100205")
 
     html = html_path.read_text(encoding="utf-8")
     new_html, changed = _inject_const(html, "RAW", raw)

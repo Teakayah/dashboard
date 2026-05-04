@@ -48,7 +48,7 @@ def test_needs_screenshot_newer_preview():
 def test_main_no_html_files():
     module = load_screenshot_module()
     with patch('pathlib.Path.glob', return_value=[]):
-        module.main()
+        with patch('sys.argv', ['screenshot.py']): module.main()
 
 def test_main_all_uptodate():
     module = load_screenshot_module()
@@ -56,7 +56,7 @@ def test_main_all_uptodate():
     mock_p.name = 'test.html'
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
          patch.object(module, 'needs_screenshot', return_value=False):
-        module.main()
+        with patch('sys.argv', ['screenshot.py']): module.main()
 
 def test_main_playwright_missing():
     module = load_screenshot_module()
@@ -69,7 +69,7 @@ def test_main_playwright_missing():
          patch('socket.create_connection'), \
          patch.dict('sys.modules', {'playwright.sync_api': None}), \
          pytest.raises(SystemExit) as exc_info:
-        module.main()
+        with patch('sys.argv', ['screenshot.py']): module.main()
 
     assert 'Playwright is not installed' in str(exc_info.value)
     mock_popen.return_value.terminate.assert_called()
@@ -85,7 +85,7 @@ def test_main_server_fails_to_start():
          patch('socket.create_connection', side_effect=OSError), \
          patch('time.sleep'), \
          pytest.raises(SystemExit) as exc_info:
-        module.main()
+        with patch('sys.argv', ['screenshot.py']): module.main()
 
     assert 'HTTP server did not start' in str(exc_info.value)
     mock_popen.return_value.terminate.assert_called()
@@ -114,7 +114,7 @@ def test_main_success_flow():
          patch('pathlib.Path.stat') as mock_stat:
 
         mock_stat.return_value.st_size = 1024
-        module.main()
+        with patch('sys.argv', ['screenshot.py']): module.main()
 
     mock_browser.new_page.assert_called_once()
     mock_page.goto.assert_called_once()
@@ -147,7 +147,7 @@ def test_main_screenshot_failure():
          patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
          patch('pathlib.Path.mkdir'), \
          pytest.raises(SystemExit) as exc_info:
-        module.main()
+        with patch('sys.argv', ['screenshot.py']): module.main()
 
     assert 'Failed to screenshot: [\'test.html\']' in str(exc_info.value)
 
@@ -176,7 +176,7 @@ def test_main_timeout_waiting_for_load_state():
          patch('pathlib.Path.stat') as mock_stat:
 
         mock_stat.return_value.st_size = 1024
-        module.main()
+        with patch('sys.argv', ['screenshot.py']): module.main()
 
     mock_browser.new_page.assert_called_once()
     mock_page.goto.assert_called_once()
