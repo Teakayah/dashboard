@@ -51,11 +51,11 @@ def extract_emp_rate(rows: list[dict]) -> dict:
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
         if (
-            row["Labour force characteristics"] == "Employment rate"
-            and row["Gender"] == "Total - Gender"
+            row["Gender"] == "Total - Gender"
             and row["Age group"] == "15 years and over"
-            and row["Statistics"] == "Estimate"
+            and row["Labour force characteristics"] == "Employment rate"
             and row["Data type"] == "Seasonally adjusted"
+            and row["Statistics"] == "Estimate"
         ):
             val = _clean(row["VALUE"])
             if val is not None:
@@ -76,11 +76,11 @@ def extract_emp_jobs(rows: list[dict]) -> dict:
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
         if (
-            row["Labour force characteristics"] == "Employment"
-            and row["Gender"] == "Total - Gender"
+            row["Gender"] == "Total - Gender"
             and row["Age group"] == "15 years and over"
-            and row["Statistics"] == "Estimate"
+            and row["Labour force characteristics"] == "Employment"
             and row["Data type"] == "Seasonally adjusted"
+            and row["Statistics"] == "Estimate"
         ):
             val = _clean(row["VALUE"])
             if val is not None:
