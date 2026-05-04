@@ -69,6 +69,7 @@ async function init() {
         statusEl.textContent = 'Opening persistent storage...';
         await db.open({
             path: 'indexeddb://duckdb',
+            accessMode: duckdb.DuckDBAccessMode.READ_WRITE,
         });
 
         conn = await db.connect();
