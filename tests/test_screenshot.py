@@ -47,7 +47,7 @@ def test_needs_screenshot_newer_preview():
 
 def test_main_no_html_files():
     module = load_screenshot_module()
-    with patch('pathlib.Path.glob', return_value=[]):
+    with patch('pathlib.Path.glob', return_value=[]), patch('sys.argv', ['screenshot.py']):
         module.main()
 
 def test_main_all_uptodate():
@@ -55,7 +55,7 @@ def test_main_all_uptodate():
     mock_p = MagicMock()
     mock_p.name = 'test.html'
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
-         patch.object(module, 'needs_screenshot', return_value=False):
+         patch.object(module, 'needs_screenshot', return_value=False), patch('sys.argv', ['screenshot.py']):
         module.main()
 
 def test_main_playwright_missing():
@@ -68,6 +68,7 @@ def test_main_playwright_missing():
          patch('subprocess.Popen') as mock_popen, \
          patch('socket.create_connection'), \
          patch.dict('sys.modules', {'playwright.sync_api': None}), \
+         patch('sys.argv', ['screenshot.py']), \
          pytest.raises(SystemExit) as exc_info:
         module.main()
 
@@ -84,6 +85,7 @@ def test_main_server_fails_to_start():
          patch('subprocess.Popen') as mock_popen, \
          patch('socket.create_connection', side_effect=OSError), \
          patch('time.sleep'), \
+         patch('sys.argv', ['screenshot.py']), \
          pytest.raises(SystemExit) as exc_info:
         module.main()
 
@@ -111,7 +113,8 @@ def test_main_success_flow():
          patch('socket.create_connection'), \
          patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
          patch('pathlib.Path.mkdir'), \
-         patch('pathlib.Path.stat') as mock_stat:
+         patch('pathlib.Path.stat') as mock_stat, \
+         patch('sys.argv', ['screenshot.py']):
 
         mock_stat.return_value.st_size = 1024
         module.main()
@@ -146,6 +149,7 @@ def test_main_screenshot_failure():
          patch('socket.create_connection'), \
          patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
          patch('pathlib.Path.mkdir'), \
+         patch('sys.argv', ['screenshot.py']), \
          pytest.raises(SystemExit) as exc_info:
         module.main()
 
@@ -173,7 +177,8 @@ def test_main_timeout_waiting_for_load_state():
          patch('socket.create_connection'), \
          patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
          patch('pathlib.Path.mkdir'), \
-         patch('pathlib.Path.stat') as mock_stat:
+         patch('pathlib.Path.stat') as mock_stat, \
+         patch('sys.argv', ['screenshot.py']):
 
         mock_stat.return_value.st_size = 1024
         module.main()
