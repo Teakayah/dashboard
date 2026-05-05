@@ -86,8 +86,8 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     monkeypatch.setattr(module, 'ROOT', tmp_path)
     monkeypatch.setattr(module, 'EXCLUDE', {'index.html'})
 
-    # Mock _git_date to avoid subprocess calls during test
-    with patch.object(module, '_git_date', return_value='May 2026'):
+    # Mock _get_batched_git_dates to avoid subprocess calls during test
+    with patch.object(module, '_get_batched_git_dates', return_value={analysis: 'May 2026'}):
         module.main(['--responsive-preset', 'none'])
 
     content = analysis.read_text(encoding='utf-8')
