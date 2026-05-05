@@ -1,7 +1,7 @@
 
 import json
 from unittest.mock import patch, MagicMock
-from deployment.update_flood_data import fetch_gauge_data
+from deployment.update_flood_data import fetch_gauge_data, fetch_precip_data
 
 def test_fetch_gauge_data_success():
     station_id = "02KF005"
@@ -62,9 +62,6 @@ def test_fetch_gauge_data_error(capsys):
         captured = capsys.readouterr()
         assert f"Error fetching station {station_id}: Network timeout" in captured.out
 
-import json
-from deployment.update_flood_data import fetch_precip_data
-from unittest.mock import MagicMock
 
 def test_fetch_precip_data_success():
     climate_id = "6106000"

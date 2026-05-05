@@ -4,7 +4,7 @@ from pathlib import Path
 from collections import defaultdict
 import sys
 
-from typing import Optional, Union
+from typing import Optional
 
 ROOT = Path('source') / 'Stat Can' / 'Employment'
 lfs_csv = ROOT / '14100287-eng' / '14100287.csv'

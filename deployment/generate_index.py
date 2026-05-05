@@ -570,7 +570,7 @@ def inject_analysis_tools(content: str, filename: str) -> str:
     if 'assets/analysis_utils.js' in content:
         return content
 
-    script_tag = f'\n  <script src="assets/analysis_utils.js"></script>'
+    script_tag = '\n  <script src="assets/analysis_utils.js"></script>'
     # Insert just before </body>
     new_content = re.sub(r'(</body>)', script_tag + r'\n\1', content, count=1, flags=re.IGNORECASE)
     if new_content != content:
