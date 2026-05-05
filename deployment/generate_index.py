@@ -31,6 +31,37 @@ def load_descriptions() -> dict:
     return {}
 
 
+def _get_batched_git_dates(files: list[Path]) -> dict[Path, str]:
+    """Return 'Mon YYYY' for multiple files from git log."""
+    if not files:
+        return {}
+
+    dates = {}
+    try:
+        result = subprocess.run(
+            ['git', 'log', '--format=TS:%cI', '--name-only', '--'] + [f.name for f in files],
+            capture_output=True, text=True, cwd=str(ROOT), check=True
+        )
+
+        current_ts = None
+        file_names = {f.name: f for f in files}
+
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('TS:'):
+                current_ts = line[3:]
+            elif current_ts:
+                if line in file_names and file_names[line] not in dates:
+                    # Parse the ISO date and format it as 'Mon YYYY'
+                    dates[file_names[line]] = datetime.fromisoformat(current_ts).strftime('%b %Y')
+    except Exception:
+        pass
+
+    return dates
+
+
 def _git_date(filepath: Path) -> str:
     """Return 'Mon YYYY' from git log; fall back to mtime if the file isn't committed."""
     try:
@@ -46,7 +77,7 @@ def _git_date(filepath: Path) -> str:
     return datetime.fromtimestamp(filepath.stat().st_mtime).strftime('%b %Y')
 
 
-def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None) -> dict:
+def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None, git_date: Optional[str] = None) -> dict:
     """Extract title, description, and tags from an HTML file content.
 
     Falls back to pre-generated descriptions from descriptions.json when no
@@ -85,7 +116,7 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
             if re.search(pattern, content, re.IGNORECASE)]
 
     # Date from git log (CI-safe; mtime is always "now" after checkout)
-    date_str = _git_date(filepath)
+    date_str = git_date if git_date is not None else _git_date(filepath)
 
     return {
         'filename': filepath.name,
@@ -588,6 +619,8 @@ def main(argv: Optional[list[str]] = None):
     # Sort files by modification time before we potentially write back and alter their mtime
     html_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
 
+    git_dates = _get_batched_git_dates(html_files)
+
     for filepath in html_files:
         try:
             content = filepath.read_text(encoding='utf-8', errors='ignore')
@@ -597,7 +630,7 @@ def main(argv: Optional[list[str]] = None):
             continue
 
         # Extract meta
-        meta = extract_meta(filepath, content, descriptions=descriptions)
+        meta = extract_meta(filepath, content, descriptions=descriptions, git_date=git_dates.get(filepath))
         analyses.append(meta)
 
         # Inject enhancements
