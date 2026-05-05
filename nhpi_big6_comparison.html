@@ -137,8 +137,12 @@ const MAPS = {};
 D2_REGIONS.forEach(([r])=>{ if(RAW[r]?.[SERIES]) MAPS[r]=toMap(RAW[r][SERIES]); });
 
 function buildStats(){
-  const html=D2_REGIONS.map(([r,c])=>{
-    const m=MAPS[r]; if(!m) return '';
+  const statsEl = document.getElementById('d2stats');
+  if (!statsEl) return;
+  statsEl.textContent = '';
+
+  D2_REGIONS.forEach(([r,c])=>{
+    const m=MAPS[r]; if(!m) return;
     const datesWithVal=ALL_DATES.filter(d=>m[d]);
     const last=datesWithVal[datesWithVal.length-1];
     const v=m[last], vm=m[datesWithVal[datesWithVal.length-2]];
@@ -147,16 +151,44 @@ function buildStats(){
     const yoyv=vy?((v-vy)/vy*100).toFixed(1):null;
     const peak=Math.max(...datesWithVal.map(d=>m[d]));
     const fromPeak=((v-peak)/peak*100).toFixed(1);
-    return `<div class="stat">
-      <div class="stat-name"><span class="dot" style="background:${c}"></span>${r}</div>
-      <div class="stat-val">${v?.toFixed(1)}</div>
-      <div class="stat-sub">Jan 2026 · Peak: ${peak.toFixed(1)}</div>
-      ${yoyv!=null?`<div class="stat-yoy ${parseFloat(yoyv)>=0?'pos':'neg'}">${parseFloat(yoyv)>=0?'+':''}${yoyv}% YoY</div>`:''}
-      <div class="stat-yoy neg">From peak: ${fromPeak}%</div>
-    </div>`;
-  }).join('');
-  const statsEl = document.getElementById('d2stats');
-  if (statsEl) statsEl.innerHTML=html;
+
+    const statDiv = document.createElement('div');
+    statDiv.className = 'stat';
+
+    const statNameDiv = document.createElement('div');
+    statNameDiv.className = 'stat-name';
+    const dotSpan = document.createElement('span');
+    dotSpan.className = 'dot';
+    dotSpan.style.background = c;
+    statNameDiv.appendChild(dotSpan);
+    statNameDiv.appendChild(document.createTextNode(r));
+    statDiv.appendChild(statNameDiv);
+
+    const statValDiv = document.createElement('div');
+    statValDiv.className = 'stat-val';
+    statValDiv.textContent = v != null ? v.toFixed(1) : '';
+    statDiv.appendChild(statValDiv);
+
+    const statSubDiv = document.createElement('div');
+    statSubDiv.className = 'stat-sub';
+    statSubDiv.textContent = `Jan 2026 · Peak: ${peak.toFixed(1)}`;
+    statDiv.appendChild(statSubDiv);
+
+    if (yoyv != null) {
+      const yoyDiv = document.createElement('div');
+      const isPos = parseFloat(yoyv) >= 0;
+      yoyDiv.className = `stat-yoy ${isPos ? 'pos' : 'neg'}`;
+      yoyDiv.textContent = `${isPos ? '+' : ''}${yoyv}% YoY`;
+      statDiv.appendChild(yoyDiv);
+    }
+
+    const peakDiv = document.createElement('div');
+    peakDiv.className = 'stat-yoy neg';
+    peakDiv.textContent = `From peak: ${fromPeak}%`;
+    statDiv.appendChild(peakDiv);
+
+    statsEl.appendChild(statDiv);
+  });
 }
 
 let mainChart;
@@ -257,7 +289,7 @@ function buildPeakBar(){
 
 const appEl = document.getElementById('app');
 if (appEl) {
-appEl.innerHTML=`
+appEl.insertAdjacentHTML('afterbegin', `
   <div class="stats-grid" id="d2stats"></div>
   <div class="card">
     <h2>Total (House + Land) — Index Comparison</h2>
@@ -279,7 +311,7 @@ appEl.innerHTML=`
     <div class="chart-sm"><canvas id="d2rebased"></canvas></div>
     <p class="annotation">Relative growth since 2010.</p>
   </div>
-`;
+`);
 
 buildStats();
 buildMain('2010');
