@@ -137,9 +137,15 @@ const MAPS = {};
 D2_REGIONS.forEach(([r])=>{ if(RAW[r]?.[SERIES]) MAPS[r]=toMap(RAW[r][SERIES]); });
 
 function buildStats(){
-  const html=D2_REGIONS.map(([r,c])=>{
-    const m=MAPS[r]; if(!m) return '';
+  const statsEl = document.getElementById('d2stats');
+  if (!statsEl) return;
+  statsEl.textContent = '';
+
+  D2_REGIONS.forEach(([r,c])=>{
+    const m=MAPS[r]; if(!m) return;
     const datesWithVal=ALL_DATES.filter(d=>m[d]);
+    if(datesWithVal.length===0) return;
+
     const last=datesWithVal[datesWithVal.length-1];
     const v=m[last], vm=m[datesWithVal[datesWithVal.length-2]];
     const vy=datesWithVal.length>13?m[datesWithVal[datesWithVal.length-13]]:null;
@@ -147,16 +153,43 @@ function buildStats(){
     const yoyv=vy?((v-vy)/vy*100).toFixed(1):null;
     const peak=Math.max(...datesWithVal.map(d=>m[d]));
     const fromPeak=((v-peak)/peak*100).toFixed(1);
-    return `<div class="stat">
-      <div class="stat-name"><span class="dot" style="background:${c}"></span>${r}</div>
-      <div class="stat-val">${v?.toFixed(1)}</div>
-      <div class="stat-sub">Jan 2026 · Peak: ${peak.toFixed(1)}</div>
-      ${yoyv!=null?`<div class="stat-yoy ${parseFloat(yoyv)>=0?'pos':'neg'}">${parseFloat(yoyv)>=0?'+':''}${yoyv}% YoY</div>`:''}
-      <div class="stat-yoy neg">From peak: ${fromPeak}%</div>
-    </div>`;
-  }).join('');
-  const statsEl = document.getElementById('d2stats');
-  if (statsEl) statsEl.innerHTML=html;
+
+    const statDiv = document.createElement('div');
+    statDiv.className = 'stat';
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'stat-name';
+    const dotSpan = document.createElement('span');
+    dotSpan.className = 'dot';
+    dotSpan.style.background = c;
+    nameDiv.appendChild(dotSpan);
+    nameDiv.appendChild(document.createTextNode(r));
+    statDiv.appendChild(nameDiv);
+
+    const valDiv = document.createElement('div');
+    valDiv.className = 'stat-val';
+    valDiv.textContent = v ? v.toFixed(1) : '';
+    statDiv.appendChild(valDiv);
+
+    const subDiv = document.createElement('div');
+    subDiv.className = 'stat-sub';
+    subDiv.textContent = `Jan 2026 · Peak: ${peak.toFixed(1)}`;
+    statDiv.appendChild(subDiv);
+
+    if (yoyv != null) {
+      const yoyDiv = document.createElement('div');
+      yoyDiv.className = `stat-yoy ${parseFloat(yoyv) >= 0 ? 'pos' : 'neg'}`;
+      yoyDiv.textContent = `${parseFloat(yoyv) >= 0 ? '+' : ''}${yoyv}% YoY`;
+      statDiv.appendChild(yoyDiv);
+    }
+
+    const fromPeakDiv = document.createElement('div');
+    fromPeakDiv.className = 'stat-yoy neg';
+    fromPeakDiv.textContent = `From peak: ${fromPeak}%`;
+    statDiv.appendChild(fromPeakDiv);
+
+    statsEl.appendChild(statDiv);
+  });
 }
 
 let mainChart;
@@ -257,29 +290,89 @@ function buildPeakBar(){
 
 const appEl = document.getElementById('app');
 if (appEl) {
-appEl.innerHTML=`
-  <div class="stats-grid" id="d2stats"></div>
-  <div class="card">
-    <h2>Total (House + Land) — Index Comparison</h2>
-    <div class="controls">
-      <label>Range:</label>
-      <button onclick="setR('1981',this)">1981–2026</button>
-      <button onclick="setR('2000',this)">2000–2026</button>
-      <button class="active" onclick="setR('2010',this)">2010–2026</button>
-      <button onclick="setR('2018',this)">2018–2026</button>
-    </div>
-    <div class="chart-wrap"><canvas id="d2main"></canvas></div>
-  </div>
-  <div class="grid2">
-    <div class="card"><h2>Year-over-Year % Change</h2><div class="chart-sm"><canvas id="d2yoy"></canvas></div></div>
-    <div class="card"><h2>Correction from Peak (% drop)</h2><div class="chart-sm"><canvas id="d2peak"></canvas></div></div>
-  </div>
-  <div class="card">
-    <h2>Relative Growth — Rebased to Jan 2010</h2>
-    <div class="chart-sm"><canvas id="d2rebased"></canvas></div>
-    <p class="annotation">Relative growth since 2010.</p>
-  </div>
-`;
+
+  // Helper to create elements
+  function createElement(tag, className, textContent) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (textContent) el.textContent = textContent;
+    return el;
+  }
+
+  // Clear existing content safely
+  appEl.textContent = '';
+
+  const statsGrid = createElement('div', 'stats-grid');
+  statsGrid.id = 'd2stats';
+  appEl.appendChild(statsGrid);
+
+  // Card 1
+  const card1 = createElement('div', 'card');
+  const h2_1 = createElement('h2', null, 'Total (House + Land) — Index Comparison');
+  card1.appendChild(h2_1);
+
+  const controls = createElement('div', 'controls');
+  const label = createElement('label', null, 'Range:');
+  controls.appendChild(label);
+
+  const ranges = [
+    { year: '1981', text: '1981–2026' },
+    { year: '2000', text: '2000–2026' },
+    { year: '2010', text: '2010–2026', active: true },
+    { year: '2018', text: '2018–2026' }
+  ];
+  ranges.forEach(r => {
+    const btn = createElement('button', r.active ? 'active' : null, r.text);
+    btn.onclick = function() { setR(r.year, btn); };
+    controls.appendChild(btn);
+  });
+  card1.appendChild(controls);
+
+  const chartWrap1 = createElement('div', 'chart-wrap');
+  const canvasMain = createElement('canvas');
+  canvasMain.id = 'd2main';
+  chartWrap1.appendChild(canvasMain);
+  card1.appendChild(chartWrap1);
+  appEl.appendChild(card1);
+
+  // Grid 2
+  const grid2 = createElement('div', 'grid2');
+
+  const cardYoy = createElement('div', 'card');
+  const h2Yoy = createElement('h2', null, 'Year-over-Year % Change');
+  cardYoy.appendChild(h2Yoy);
+  const chartSmYoy = createElement('div', 'chart-sm');
+  const canvasYoy = createElement('canvas');
+  canvasYoy.id = 'd2yoy';
+  chartSmYoy.appendChild(canvasYoy);
+  cardYoy.appendChild(chartSmYoy);
+  grid2.appendChild(cardYoy);
+
+  const cardPeak = createElement('div', 'card');
+  const h2Peak = createElement('h2', null, 'Correction from Peak (% drop)');
+  cardPeak.appendChild(h2Peak);
+  const chartSmPeak = createElement('div', 'chart-sm');
+  const canvasPeak = createElement('canvas');
+  canvasPeak.id = 'd2peak';
+  chartSmPeak.appendChild(canvasPeak);
+  cardPeak.appendChild(chartSmPeak);
+  grid2.appendChild(cardPeak);
+
+  appEl.appendChild(grid2);
+
+  // Card 3
+  const card3 = createElement('div', 'card');
+  const h2_3 = createElement('h2', null, 'Relative Growth — Rebased to Jan 2010');
+  card3.appendChild(h2_3);
+  const chartSmRebased = createElement('div', 'chart-sm');
+  const canvasRebased = createElement('canvas');
+  canvasRebased.id = 'd2rebased';
+  chartSmRebased.appendChild(canvasRebased);
+  card3.appendChild(chartSmRebased);
+  const annotation = createElement('p', 'annotation', 'Relative growth since 2010.');
+  card3.appendChild(annotation);
+  appEl.appendChild(card3);
+
 
 buildStats();
 buildMain('2010');

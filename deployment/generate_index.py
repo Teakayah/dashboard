@@ -31,22 +31,40 @@ def load_descriptions() -> dict:
     return {}
 
 
-def _git_date(filepath: Path) -> str:
-    """Return 'Mon YYYY' from git log; fall back to mtime if the file isn't committed."""
+def get_git_dates_batched(files: list[Path]) -> dict[Path, str]:
+    """Return 'Mon YYYY' from git log for multiple files in a single call; fall back to mtime."""
+    if not files:
+        return {}
+    dates = {}
     try:
-        result = subprocess.run(
-            ['git', 'log', '-1', '--format=%ci', '--', str(filepath)],
-            capture_output=True, text=True, cwd=str(ROOT),
-        )
-        stamp = result.stdout.strip()
-        if stamp:
-            return datetime.fromisoformat(stamp).strftime('%b %Y')
+        # Use relative paths for git log
+        rel_paths = [str(f.relative_to(ROOT)) if f.is_absolute() else str(f) for f in files]
+        cmd = ['git', 'log', '--format=TS:%ci', '--name-only', '--'] + rel_paths
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+        current_ts = None
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if line.startswith('TS:'):
+                current_ts = line[3:]
+            elif line and current_ts:
+                p = ROOT / line
+                if p not in dates:
+                    try:
+                        dates[p] = datetime.fromisoformat(current_ts).strftime('%b %Y')
+                    except Exception:
+                        pass
     except Exception:
         pass
-    return datetime.fromtimestamp(filepath.stat().st_mtime).strftime('%b %Y')
+
+    # Fallback to mtime for files not in git or not returned
+    for f in files:
+        if f not in dates:
+            dates[f] = datetime.fromtimestamp(f.stat().st_mtime).strftime('%b %Y')
+
+    return dates
 
 
-def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None) -> dict:
+def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None, git_date: Optional[str] = None) -> dict:
     """Extract title, description, and tags from an HTML file content.
 
     Falls back to pre-generated descriptions from descriptions.json when no
@@ -84,25 +102,22 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
     tags = [name for name, pattern in LIBRARY_PATTERNS.items()
             if re.search(pattern, content, re.IGNORECASE)]
 
-    # Date from git log (CI-safe; mtime is always "now" after checkout)
-    date_str = _git_date(filepath)
-
     return {
         'filename': filepath.name,
         'title': title,
         'description': description,
         'tags': tags,
-        'date': date_str,
+        'date': git_date or '',
     }
 
 
-def _fallback(filepath: Path) -> dict:
+def _fallback(filepath: Path, date_str: str = "") -> dict:
     return {
         'filename': filepath.name,
         'title': filepath.stem.replace('_', ' ').title(),
         'description': '',
         'tags': [],
-        'date': '',
+        'date': date_str,
     }
 
 
@@ -163,8 +178,16 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
 
     # Matches and extracts previous responsive injection blocks to safely strip them.
     strip_regex = re.compile(
-        r'\s*<!-- responsive-inject(?:-v\d+)? -->\s*<style>.*?</style>\s*<script>.*?</script>(?:\s*<!-- /responsive-inject(?:-v\d+)? -->)?',
-        flags=re.DOTALL,
+        r'''
+        \s*                                     # Match any leading whitespace
+        <!--\ responsive-inject(?:-v\d+)?\ -->  # Opening marker with optional version (e.g. -v5)
+        \s*<style>.*?</style>                   # Match the injected CSS block non-greedily
+        \s*<script>.*?</script>                 # Match the injected JavaScript block non-greedily
+        (?:                                     # Optional non-capturing group for the closing marker
+            \s*<!--\ /responsive-inject(?:-v\d+)?\ -->
+        )?
+        ''',
+        flags=re.DOTALL | re.VERBOSE,
     )
 
     if preset_name == 'none':
@@ -529,7 +552,7 @@ def build_html(analyses: list[dict]) -> str:
 </header>
 
 <div class="search-bar">
-  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off">
+  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
 </div>
 
 <main>
@@ -570,7 +593,7 @@ def inject_analysis_tools(content: str, filename: str) -> str:
     if 'assets/analysis_utils.js' in content:
         return content
 
-    script_tag = f'\n  <script src="assets/analysis_utils.js"></script>'
+    script_tag = '\n  <script src="assets/analysis_utils.js"></script>'
     # Insert just before </body>
     new_content = re.sub(r'(</body>)', script_tag + r'\n\1', content, count=1, flags=re.IGNORECASE)
     if new_content != content:
@@ -588,16 +611,20 @@ def main(argv: Optional[list[str]] = None):
     # Sort files by modification time before we potentially write back and alter their mtime
     html_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
 
+    # Batch git date retrieval for all HTML files
+    git_dates = get_git_dates_batched(html_files)
+
     for filepath in html_files:
+        date_str = git_dates.get(filepath, "")
         try:
             content = filepath.read_text(encoding='utf-8', errors='ignore')
         except Exception:
             # Fallback for file read errors if any
-            analyses.append(_fallback(filepath))
+            analyses.append(_fallback(filepath, date_str))
             continue
 
         # Extract meta
-        meta = extract_meta(filepath, content, descriptions=descriptions)
+        meta = extract_meta(filepath, content, descriptions=descriptions, git_date=date_str)
         analyses.append(meta)
 
         # Inject enhancements

@@ -86,8 +86,8 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     monkeypatch.setattr(module, 'ROOT', tmp_path)
     monkeypatch.setattr(module, 'EXCLUDE', {'index.html'})
 
-    # Mock _git_date to avoid subprocess calls during test
-    with patch.object(module, '_git_date', return_value='May 2026'):
+    # Mock get_git_dates_batched to avoid subprocess calls during test
+    with patch.object(module, 'get_git_dates_batched', return_value={analysis: 'May 2026'}):
         module.main(['--responsive-preset', 'none'])
 
     content = analysis.read_text(encoding='utf-8')
@@ -95,3 +95,82 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
+
+
+def test_extract_meta_basic():
+    module = load_generate_index_module()
+    content = """
+    <html>
+    <head>
+        <title>Test Title</title>
+        <meta name="description" content="Test Description">
+    </head>
+    <body>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </body>
+    </html>
+    """
+    filepath = Path('test_file.html')
+    result = module.extract_meta(filepath, content, git_date='Jan 2023')
+
+    assert result['filename'] == 'test_file.html'
+    assert result['title'] == 'Test Title'
+    assert result['description'] == 'Test Description'
+    assert 'Chart.js' in result['tags']
+    assert result['date'] == 'Jan 2023'
+
+
+def test_extract_meta_fallback_subtitle_truncation():
+    module = load_generate_index_module()
+    long_subtitle = "This is a very long subtitle that should definitely exceed the one hundred and twenty character limit imposed by the extract meta function in order to test the truncation logic properly."
+    content = f"""
+    <html>
+    <head>
+        <title>Subtitle Test</title>
+    </head>
+    <body>
+        <h2 class="some-class subtitle extra-class">{long_subtitle}</h2>
+    </body>
+    </html>
+    """
+    filepath = Path('test_file.html')
+    result = module.extract_meta(filepath, content, git_date='Feb 2023')
+
+    assert result['title'] == 'Subtitle Test'
+    assert len(result['description']) == 118 # 117 chars + '…'
+    assert result['description'].endswith('…')
+    assert result['description'] == long_subtitle[:117] + '…'
+
+
+def test_extract_meta_fallback_descriptions_dict():
+    module = load_generate_index_module()
+    content = """
+    <html>
+    <head>
+        <title>Descriptions Dict Test</title>
+    </head>
+    <body>
+    </body>
+    </html>
+    """
+    filepath = Path('test_file.html')
+    descriptions = {'test_file.html': 'Description from dict'}
+    result = module.extract_meta(filepath, content, descriptions=descriptions, git_date='Mar 2023')
+
+    assert result['description'] == 'Description from dict'
+
+
+def test_extract_meta_fallback_stem_title():
+    module = load_generate_index_module()
+    content = """
+    <html>
+    <head>
+    </head>
+    <body>
+    </body>
+    </html>
+    """
+    filepath = Path('my_test_file.html')
+    result = module.extract_meta(filepath, content, git_date='Apr 2023')
+
+    assert result['title'] == 'My Test File'
