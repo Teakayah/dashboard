@@ -44,11 +44,13 @@ def test_needs_screenshot_newer_preview():
         with patch.object(module, '_git_commit_time', side_effect=[50, 100]):
             assert module.needs_screenshot('test_page.html') is False
 
+@patch('sys.argv', ['screenshot.py'])
 def test_main_no_html_files():
     module = load_screenshot_module()
     with patch('pathlib.Path.glob', return_value=[]):
         with patch("sys.argv", ["screenshot.py"]): module.main()
 
+@patch('sys.argv', ['screenshot.py'])
 def test_main_all_uptodate():
     module = load_screenshot_module()
     mock_p = MagicMock()
@@ -57,6 +59,7 @@ def test_main_all_uptodate():
          patch.object(module, 'needs_screenshot', return_value=False):
         with patch("sys.argv", ["screenshot.py"]): module.main()
 
+@patch('sys.argv', ['screenshot.py'])
 def test_main_playwright_missing():
     module = load_screenshot_module()
     mock_p = MagicMock()
@@ -73,6 +76,7 @@ def test_main_playwright_missing():
     assert 'Playwright is not installed' in str(exc_info.value)
     mock_popen.return_value.terminate.assert_called()
 
+@patch('sys.argv', ['screenshot.py'])
 def test_main_server_fails_to_start():
     module = load_screenshot_module()
     mock_p = MagicMock()
@@ -89,6 +93,7 @@ def test_main_server_fails_to_start():
     assert 'HTTP server did not start' in str(exc_info.value)
     mock_popen.return_value.terminate.assert_called()
 
+@patch('sys.argv', ['screenshot.py'])
 def test_main_success_flow():
     module = load_screenshot_module()
     mock_p = MagicMock()
@@ -123,6 +128,7 @@ def test_main_success_flow():
     mock_popen.return_value.terminate.assert_called()
     mock_popen.return_value.wait.assert_called()
 
+@patch('sys.argv', ['screenshot.py'])
 def test_main_screenshot_failure():
     module = load_screenshot_module()
     mock_p = MagicMock()
@@ -150,6 +156,7 @@ def test_main_screenshot_failure():
 
     assert 'Failed to screenshot: [\'test.html\']' in str(exc_info.value)
 
+@patch('sys.argv', ['screenshot.py'])
 def test_main_timeout_waiting_for_load_state():
     module = load_screenshot_module()
     mock_p = MagicMock()
