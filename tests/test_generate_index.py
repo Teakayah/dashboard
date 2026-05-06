@@ -54,6 +54,36 @@ def test_inject_responsive_replaces_older_versions():
     assert content.count('<!-- responsive-inject-v5 -->') == 1
 
 
+def test_inject_back_link_adds_snippet_after_body():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body><h1>Hello</h1></body></html>'
+    content = module.inject_back_link(initial_content, 'analysis.html')
+
+    assert module.BACK_LINK_MARKER in content
+    assert '&#8592; DataDashboard</a></div>' in content
+    assert content.startswith('<html><head></head><body>\n<!-- back-link-inject -->')
+
+
+def test_inject_back_link_with_body_attributes():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body class="main" data-id="123"><h1>Hello</h1></body></html>'
+    content = module.inject_back_link(initial_content, 'analysis.html')
+
+    assert module.BACK_LINK_MARKER in content
+    assert content.startswith('<html><head></head><body class="main" data-id="123">\n<!-- back-link-inject -->')
+
+
+def test_inject_back_link_is_idempotent():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body><h1>Hello</h1></body></html>'
+
+    first = module.inject_back_link(initial_content, 'analysis.html')
+    second = module.inject_back_link(first, 'analysis.html')
+
+    assert first == second
+    assert second.count(module.BACK_LINK_MARKER) == 1
+
+
 def test_inject_functions_handle_missing_tags():
     module = load_generate_index_module()
     content_no_tags = "<html><body>No head here</body></html>"
