@@ -111,8 +111,7 @@ def test_extract_meta_basic():
     </html>
     """
     filepath = Path('test_file.html')
-    with patch.object(module, '_git_date', return_value='Jan 2023'):
-        result = module.extract_meta(filepath, content)
+    result = module.extract_meta(filepath, content, git_date='Jan 2023')
 
     assert result['filename'] == 'test_file.html'
     assert result['title'] == 'Test Title'
@@ -135,8 +134,7 @@ def test_extract_meta_fallback_subtitle_truncation():
     </html>
     """
     filepath = Path('test_file.html')
-    with patch.object(module, '_git_date', return_value='Feb 2023'):
-        result = module.extract_meta(filepath, content)
+    result = module.extract_meta(filepath, content, git_date='Feb 2023')
 
     assert result['title'] == 'Subtitle Test'
     assert len(result['description']) == 118 # 117 chars + '…'
@@ -157,8 +155,7 @@ def test_extract_meta_fallback_descriptions_dict():
     """
     filepath = Path('test_file.html')
     descriptions = {'test_file.html': 'Description from dict'}
-    with patch.object(module, '_git_date', return_value='Mar 2023'):
-        result = module.extract_meta(filepath, content, descriptions=descriptions)
+    result = module.extract_meta(filepath, content, descriptions=descriptions, git_date='Mar 2023')
 
     assert result['description'] == 'Description from dict'
 
@@ -174,7 +171,6 @@ def test_extract_meta_fallback_stem_title():
     </html>
     """
     filepath = Path('my_test_file.html')
-    with patch.object(module, '_git_date', return_value='Apr 2023'):
-        result = module.extract_meta(filepath, content)
+    result = module.extract_meta(filepath, content, git_date='Apr 2023')
 
     assert result['title'] == 'My Test File'
