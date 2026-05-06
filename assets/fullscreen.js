@@ -11,13 +11,13 @@
 
       const btn = document.createElement('button');
       btn.className = 'fullscreen-btn';
-      btn.innerHTML = '⛶';
+      btn.textContent = '⛶';
       btn.title = 'Full Screen';
       container.appendChild(btn);
 
       btn.addEventListener('click', () => {
         const isFull = container.classList.toggle('chart-fullscreen');
-        btn.innerHTML = isFull ? '✕' : '⛶';
+        btn.textContent = isFull ? '✕' : '⛶';
         
         // Trigger resize event for Chart.js
         window.dispatchEvent(new Event('resize'));
