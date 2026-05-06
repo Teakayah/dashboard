@@ -176,6 +176,56 @@ def test_extract_meta_fallback_stem_title():
     assert result['title'] == 'My Test File'
 
 
+def test_extract_meta_html_unescape():
+    module = load_generate_index_module()
+    content = """
+    <html>
+    <head>
+        <title>Q&amp;A: The &lt;Best&gt; Year</title>
+        <meta name="description" content="A &quot;special&quot; &#39;report&#39;">
+    </head>
+    <body>
+    </body>
+    </html>
+    """
+    filepath = Path('test_file.html')
+    result = module.extract_meta(filepath, content)
+
+    assert result['title'] == 'Q&A: The <Best> Year'
+    assert result['description'] == 'A "special" \'report\''
+
+
+def test_extract_meta_subtitle_with_html_tags_and_newlines():
+    module = load_generate_index_module()
+    content = """
+    <html>
+    <head>
+        <title>Test Subtitle</title>
+    </head>
+    <body>
+        <h2 class="subtitle">
+            This   is
+            <b>a</b>   <i>subtitle</i>
+            with     newlines.
+        </h2>
+    </body>
+    </html>
+    """
+    filepath = Path('test_file.html')
+    result = module.extract_meta(filepath, content)
+
+    assert result['description'] == 'This is a subtitle with newlines.'
+
+
+def test_extract_meta_missing_git_date():
+    module = load_generate_index_module()
+    content = "<html><head><title>Test</title></head><body></body></html>"
+    filepath = Path('test_file.html')
+    result = module.extract_meta(filepath, content)
+
+    assert result['date'] == ''
+
+
 def test_get_git_dates_batched_empty_list():
     module = load_generate_index_module()
     assert module.get_git_dates_batched([]) == {}
