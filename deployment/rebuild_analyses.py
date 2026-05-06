@@ -248,12 +248,14 @@ def rebuild_employment(html_path: Path) -> bool:
         return False
 
     print("  Processing datasets...")
+    # Cache parsed rows for the large LFS CSV since multiple variants extract from it
+    lfs_rows = _read_csv(csv_paths["lfs"])
     new_data = {
         "empRate": extract_statcan_data(
-            _read_csv(csv_paths["lfs"]), "14100287", "empRate"
+            lfs_rows, "14100287", "empRate"
         ),
         "empJobs": extract_statcan_data(
-            _read_csv(csv_paths["lfs"]), "14100287", "empJobs"
+            lfs_rows, "14100287", "empJobs"
         ),
         "provDebt": extract_statcan_data(_read_csv(csv_paths["prov"]), "10100017"),
         "fedDebt": extract_statcan_data(_read_csv(csv_paths["gov"]), "10100015"),
