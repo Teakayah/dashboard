@@ -27,6 +27,36 @@ def _load_descriptions() -> dict:
     return {}
 
 
+def _get_batched_git_isos(files: list[Path]) -> dict[Path, str]:
+    """Return ISO 8601 timestamps for multiple files from git log."""
+    if not files:
+        return {}
+
+    dates = {}
+    try:
+        result = subprocess.run(
+            ['git', 'log', '--format=TS:%cI', '--name-only', '--'] + [f.name for f in files],
+            capture_output=True, text=True, cwd=str(ROOT), check=True
+        )
+
+        current_ts = None
+        file_names = {f.name: f for f in files}
+
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('TS:'):
+                current_ts = line[3:]
+            elif current_ts:
+                if line in file_names and file_names[line] not in dates:
+                    dates[file_names[line]] = current_ts
+    except Exception:
+        pass
+
+    return dates
+
+
 @lru_cache(maxsize=None)
 def _git_iso(filepath: Path) -> str:
     """Return ISO 8601 timestamp from git log; fall back to current time."""
@@ -74,7 +104,7 @@ def _extract_description(content: str, filename: str, descriptions: dict) -> str
     return descriptions.get(filename, '')
 
 
-def _build_entry(filepath: Path, descriptions: dict) -> dict:
+def _build_entry(filepath: Path, descriptions: dict, git_iso: str) -> dict:
     """Return a dict with all fields needed to render a feed <entry>."""
     try:
         content = filepath.read_text(encoding='utf-8', errors='ignore')
@@ -83,7 +113,7 @@ def _build_entry(filepath: Path, descriptions: dict) -> dict:
 
     title = _extract_title(content, filepath.stem)
     description = _extract_description(content, filepath.name, descriptions)
-    updated = _git_iso(filepath)
+    updated = git_iso
     stem = filepath.stem
     page_url = f'{SITE_URL}/{filepath.name}'
     preview_url = f'{SITE_URL}/previews/{stem}.png'
@@ -148,13 +178,17 @@ def build_feed(entries: list[dict]) -> str:
 def main() -> None:
     descriptions = _load_descriptions()
 
+    html_files_unsorted = [p for p in ROOT.glob('*.html') if p.name.lower() not in EXCLUDE]
+    git_isos = _get_batched_git_isos(html_files_unsorted)
+    fallback_time = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
     html_files = sorted(
-        (p for p in ROOT.glob('*.html') if p.name.lower() not in EXCLUDE),
-        key=lambda p: _git_iso(p),
+        html_files_unsorted,
+        key=lambda p: git_isos.get(p, fallback_time),
         reverse=True,
     )
 
-    entries = [_build_entry(f, descriptions) for f in html_files]
+    entries = [_build_entry(f, descriptions, git_isos.get(f, fallback_time)) for f in html_files]
 
     feed_xml = build_feed(entries)
     FEED_PATH.write_text(feed_xml, encoding='utf-8')

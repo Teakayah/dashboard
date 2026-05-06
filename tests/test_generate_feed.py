@@ -123,6 +123,39 @@ def test_load_descriptions_not_exists():
     with patch.object(module.Path, 'exists', return_value=False):
         assert module._load_descriptions() == {}
 
+def test_get_batched_git_isos_success():
+    module = load_generate_feed_module()
+
+    mock_result = MagicMock()
+    mock_result.stdout = "TS:2023-10-27T10:00:00+00:00\ntest.html\n"
+
+    mock_path = MagicMock(spec=Path)
+    mock_path.name = "test.html"
+
+    with patch('subprocess.run', return_value=mock_result):
+        result = module._get_batched_git_isos([mock_path])
+        assert result == {mock_path: "2023-10-27T10:00:00+00:00"}
+
+def test_get_batched_git_isos_fallback():
+    module = load_generate_feed_module()
+
+    mock_path = MagicMock(spec=Path)
+    mock_path.name = "test2.html"
+
+    with patch('subprocess.run', side_effect=Exception("Git error")):
+        result = module._get_batched_git_isos([mock_path])
+        assert result == {}
+
+def test_get_batched_git_isos_handles_git_failure():
+    module = load_generate_feed_module()
+
+    mock_path = MagicMock(spec=Path)
+    mock_path.name = "dummy.html"
+
+    with patch('subprocess.run', side_effect=Exception("git failed")):
+        result = module._get_batched_git_isos([mock_path])
+        assert result == {}
+
 def test_git_iso_success():
     module = load_generate_feed_module()
     module._git_iso.cache_clear()
@@ -133,25 +166,6 @@ def test_git_iso_success():
     with patch('subprocess.run', return_value=mock_result):
         assert module._git_iso(Path("test.html")) == "2023-10-27T10:00:00+00:00"
 
-def test_git_iso_fallback():
-    module = load_generate_feed_module()
-    module._git_iso.cache_clear()
-
-    with patch('subprocess.run', side_effect=Exception("Git error")):
-        iso_str = module._git_iso(Path("test2.html"))
-        assert "T" in iso_str and "Z" in iso_str
-
-def test_git_iso_handles_git_failure():
-    module = load_generate_feed_module()
-    # Clear cache since it is decorated with lru_cache
-    module._git_iso.cache_clear()
-
-    # Mock subprocess.run to raise an Exception
-    with patch('subprocess.run', side_effect=Exception("git failed")):
-        result = module._git_iso(Path('dummy.html'))
-        # It should fall back to current time formatted as ISO 8601 string
-        assert re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$', result)
-
 def test_build_entry_success():
     module = load_generate_feed_module()
     mock_path = MagicMock(spec=Path)
@@ -159,15 +173,14 @@ def test_build_entry_success():
     mock_path.name = "test_page.html"
     mock_path.read_text.return_value = '<html><head><title>Test Page</title></head><body></body></html>'
 
-    with patch.object(module, '_git_iso', return_value="2023-10-27T10:00:00Z"):
-        entry = module._build_entry(mock_path, {"test_page.html": "desc"})
+    entry = module._build_entry(mock_path, {"test_page.html": "desc"}, "2023-10-27T10:00:00Z")
 
-        assert entry['title'] == "Test Page"
-        assert entry['url'] == f"{module.SITE_URL}/test_page.html"
-        assert entry['id'] == f"{module.SITE_URL}/test_page.html"
-        assert entry['updated'] == "2023-10-27T10:00:00Z"
-        assert entry['summary'] == "desc"
-        assert entry['preview_url'] == f"{module.SITE_URL}/previews/test_page.png"
+    assert entry['title'] == "Test Page"
+    assert entry['url'] == f"{module.SITE_URL}/test_page.html"
+    assert entry['id'] == f"{module.SITE_URL}/test_page.html"
+    assert entry['updated'] == "2023-10-27T10:00:00Z"
+    assert entry['summary'] == "desc"
+    assert entry['preview_url'] == f"{module.SITE_URL}/previews/test_page.png"
 
 def test_build_entry_file_read_error():
     module = load_generate_feed_module()
@@ -176,9 +189,8 @@ def test_build_entry_file_read_error():
     mock_path.name = "test_page.html"
     mock_path.read_text.side_effect = Exception("Read error")
 
-    with patch.object(module, '_git_iso', return_value="2023-10-27T10:00:00Z"):
-        entry = module._build_entry(mock_path, {})
-        assert entry['title'] == "Test Page"  # fallback from stem
+    entry = module._build_entry(mock_path, {}, "2023-10-27T10:00:00Z")
+    assert entry['title'] == "Test Page"  # fallback from stem
 
 def test_build_feed_empty():
     module = load_generate_feed_module()
@@ -212,7 +224,7 @@ def test_main():
             mock_html.read_text.return_value = "<title>Test</title>"
             mock_glob.return_value = [mock_html]
 
-            with patch.object(module, '_git_iso', return_value="2023-10-27T10:00:00Z"):
+            with patch.object(module, '_get_batched_git_isos', return_value={mock_html: "2023-10-27T10:00:00Z"}):
                 with patch('pathlib.Path.write_text') as mock_write:
                     with patch('builtins.print'):
                         module.main()
