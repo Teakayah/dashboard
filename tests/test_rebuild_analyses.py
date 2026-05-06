@@ -190,6 +190,39 @@ def test_extract_emp_jobs_empty():
     assert extract_statcan_data([], '14100287', 'empJobs') == {}
 
 
+def test_extract_emp_jobs_unordered_years():
+    rows = [
+        create_row(geo="Ontario", ref_date="2025-01", value="6500.0", char="Employment"),
+        create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
+        create_row(geo="Ontario", ref_date="2024-01", value="6200.0", char="Employment"),
+    ]
+    result = extract_statcan_data(rows, '14100287', 'empJobs')
+    expected = {
+        "Ontario": [
+            {"year": 2023, "level": 6000.0, "change": None},
+            {"year": 2024, "level": 6200.0, "change": 200.0},
+            {"year": 2025, "level": 6500.0, "change": 300.0},
+        ]
+    }
+    assert result == expected
+
+
+def test_extract_emp_jobs_missing_value():
+    rows = [
+        create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
+        create_row(geo="Ontario", ref_date="2024-01", value="x", char="Employment"),
+        create_row(geo="Ontario", ref_date="2025-01", value="6500.0", char="Employment"),
+    ]
+    result = extract_statcan_data(rows, '14100287', 'empJobs')
+    expected = {
+        "Ontario": [
+            {"year": 2023, "level": 6000.0, "change": None},
+            {"year": 2025, "level": 6500.0, "change": 500.0},
+        ]
+    }
+    assert result == expected
+
+
 def test_extract_emp_rate_basic():
     rows = [
         # Valid row for Ontario 2023
