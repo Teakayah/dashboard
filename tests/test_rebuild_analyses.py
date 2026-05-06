@@ -1,10 +1,13 @@
 import pytest
+from unittest.mock import patch, MagicMock
 from deployment.rebuild_analyses import (
     extract_statcan_data,
     _clean,
     _inject_const,
-    _read_csv
+    _read_csv,
+    rebuild_employment
 )
+from pathlib import Path
 
 
 def create_row(
@@ -524,3 +527,69 @@ def test_extract_pop_data_missing_value():
         ]
     }
     assert result == expected
+
+
+@patch("pathlib.Path.exists")
+@patch("deployment.rebuild_analyses._read_csv")
+@patch("deployment.rebuild_analyses.extract_statcan_data")
+@patch("pathlib.Path.read_text")
+@patch("deployment.rebuild_analyses._inject_const")
+@patch("pathlib.Path.write_text")
+def test_rebuild_employment_success(
+    mock_write_text,
+    mock_inject_const,
+    mock_read_text,
+    mock_extract_statcan_data,
+    mock_read_csv,
+    mock_exists,
+):
+    mock_exists.return_value = True
+    mock_read_csv.return_value = [{"col": "val"}]
+    mock_extract_statcan_data.return_value = {"mock": "data"}
+    mock_read_text.return_value = "<html><body></body></html>"
+    mock_inject_const.return_value = ("<html><body>new data</body></html>", True)
+
+    html_path = Path("employment_rate_canada.html")
+    result = rebuild_employment(html_path)
+
+    assert result is True
+    mock_write_text.assert_called_once_with("<html><body>new data</body></html>", encoding="utf-8")
+
+
+@patch("pathlib.Path.exists")
+def test_rebuild_employment_missing_csv(mock_exists):
+    # Simulate missing files
+    mock_exists.return_value = False
+
+    html_path = Path("employment_rate_canada.html")
+    result = rebuild_employment(html_path)
+
+    assert result is False
+
+
+@patch("pathlib.Path.exists")
+@patch("deployment.rebuild_analyses._read_csv")
+@patch("deployment.rebuild_analyses.extract_statcan_data")
+@patch("pathlib.Path.read_text")
+@patch("deployment.rebuild_analyses._inject_const")
+@patch("pathlib.Path.write_text")
+def test_rebuild_employment_no_change(
+    mock_write_text,
+    mock_inject_const,
+    mock_read_text,
+    mock_extract_statcan_data,
+    mock_read_csv,
+    mock_exists,
+):
+    mock_exists.return_value = True
+    mock_read_csv.return_value = [{"col": "val"}]
+    mock_extract_statcan_data.return_value = {"mock": "data"}
+    mock_read_text.return_value = "<html><body></body></html>"
+    # Return unchanged indicator
+    mock_inject_const.return_value = ("<html><body></body></html>", False)
+
+    html_path = Path("employment_rate_canada.html")
+    result = rebuild_employment(html_path)
+
+    assert result is False
+    mock_write_text.assert_not_called()
