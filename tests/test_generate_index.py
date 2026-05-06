@@ -142,6 +142,79 @@ def test_extract_meta_fallback_subtitle_truncation():
     assert result['description'] == long_subtitle[:117] + '…'
 
 
+def test_extract_meta_html_entities():
+    module = load_generate_index_module()
+    content = """
+    <html>
+    <head>
+        <title>Tom &amp; Jerry</title>
+        <meta name="description" content="Cat &amp; Mouse">
+    </head>
+    <body></body>
+    </html>
+    """
+    filepath = Path('test_file.html')
+    result = module.extract_meta(filepath, content)
+
+    assert result['title'] == 'Tom & Jerry'
+    assert result['description'] == 'Cat & Mouse'
+
+
+def test_extract_meta_subtitle_nested_tags():
+    module = load_generate_index_module()
+    content = """
+    <html>
+    <head>
+        <title>Subtitle Test</title>
+    </head>
+    <body>
+        <h2 class="subtitle">
+            This <b>is</b> a test
+            <span>with newlines</span>
+        </h2>
+    </body>
+    </html>
+    """
+    filepath = Path('test_file.html')
+    result = module.extract_meta(filepath, content)
+
+    assert result['description'] == 'This is a test with newlines'
+
+
+def test_extract_meta_multiple_tags():
+    module = load_generate_index_module()
+    content = """
+    <html>
+    <head>
+        <title>Tags Test</title>
+    </head>
+    <body>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    </body>
+    </html>
+    """
+    filepath = Path('test_file.html')
+    result = module.extract_meta(filepath, content)
+
+    assert 'Chart.js' in result['tags']
+    assert 'Plotly' in result['tags']
+    assert len(result['tags']) == 2
+
+
+def test__fallback_function():
+    module = load_generate_index_module()
+    filepath = Path('some_test_file.html')
+
+    result = module._fallback(filepath, date_str='May 2024')
+
+    assert result['filename'] == 'some_test_file.html'
+    assert result['title'] == 'Some Test File'
+    assert result['description'] == ''
+    assert result['tags'] == []
+    assert result['date'] == 'May 2024'
+
+
 def test_extract_meta_fallback_descriptions_dict():
     module = load_generate_index_module()
     content = """
