@@ -64,17 +64,11 @@ async function init() {
         const logger = new duckdb.ConsoleLogger();
         db = new duckdb.AsyncDuckDB(logger, worker);
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-        
-        // Persistent Storage with IndexedDB
-        statusEl.textContent = 'Opening persistent storage...';
-        await db.open({
-            path: 'indexeddb://duckdb',
-        });
 
         conn = await db.connect();
         statusEl.textContent = 'DuckDB Ready';
-        
-        console.log('DuckDB-Wasm initialized with IndexedDB');
+
+        console.log('DuckDB-Wasm initialized');
         
         // Restore loaded tables
         await restoreState();
