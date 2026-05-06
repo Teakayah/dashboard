@@ -54,6 +54,34 @@ def test_inject_responsive_replaces_older_versions():
     assert content.count('<!-- responsive-inject-v5 -->') == 1
 
 
+def test_inject_back_link_adds_snippet():
+    module = load_generate_index_module()
+    content = "<html><head></head><body>\n<h1>Hello</h1>\n</body></html>"
+    result = module.inject_back_link(content, "test.html")
+
+    assert result != content
+    assert module.BACK_LINK_MARKER in result
+    assert "<body>\n<!-- back-link-inject -->" in result
+
+
+def test_inject_back_link_is_idempotent():
+    module = load_generate_index_module()
+    content = f"<html><head></head><body>\n{module.BACK_LINK_SNIPPET}\n<h1>Hello</h1>\n</body></html>"
+
+    result = module.inject_back_link(content, "test.html")
+    assert result == content
+
+
+def test_inject_back_link_handles_body_attributes():
+    module = load_generate_index_module()
+    content = '<html><head></head><body class="bg-gray-100" id="main">\n<h1>Hello</h1>\n</body></html>'
+    result = module.inject_back_link(content, "test.html")
+
+    assert result != content
+    assert module.BACK_LINK_MARKER in result
+    assert '<body class="bg-gray-100" id="main">\n<!-- back-link-inject -->' in result
+
+
 def test_inject_functions_handle_missing_tags():
     module = load_generate_index_module()
     content_no_tags = "<html><body>No head here</body></html>"
