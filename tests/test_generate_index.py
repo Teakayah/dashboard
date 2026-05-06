@@ -174,3 +174,58 @@ def test_extract_meta_fallback_stem_title():
     result = module.extract_meta(filepath, content, git_date='Apr 2023')
 
     assert result['title'] == 'My Test File'
+
+
+def test_get_git_dates_batched_empty_list():
+    module = load_generate_index_module()
+    assert module.get_git_dates_batched([]) == {}
+
+
+def test_get_git_dates_batched_success(monkeypatch, tmp_path):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+
+    file1 = tmp_path / 'file1.txt'
+    file1.touch()
+
+    class MockResult:
+        stdout = "TS:2023-01-15T10:00:00+00:00\nfile1.txt\n"
+
+    def mock_run(*args, **kwargs):
+        return MockResult()
+
+    monkeypatch.setattr(module.subprocess, 'run', mock_run)
+
+    dates = module.get_git_dates_batched([file1])
+    assert dates == {file1: 'Jan 2023'}
+
+
+def test_get_git_dates_batched_fallback_mtime(monkeypatch, tmp_path):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+
+    file1 = tmp_path / 'file2.txt'
+    file1.touch()
+
+    # Force exception in git log command
+    def mock_run(*args, **kwargs):
+        raise Exception("Git command failed")
+
+    monkeypatch.setattr(module.subprocess, 'run', mock_run)
+
+    dates = module.get_git_dates_batched([file1])
+    assert file1 in dates
+    assert isinstance(dates[file1], str)
+
+
+def test_load_descriptions_exists(monkeypatch, tmp_path):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'DESCRIPTIONS_FILE', tmp_path / 'descriptions.json')
+    (tmp_path / 'descriptions.json').write_text('{"file1.html": "description1"}', encoding='utf-8')
+    assert module.load_descriptions() == {"file1.html": "description1"}
+
+
+def test_load_descriptions_not_exists(monkeypatch, tmp_path):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'DESCRIPTIONS_FILE', tmp_path / 'descriptions_missing.json')
+    assert module.load_descriptions() == {}
