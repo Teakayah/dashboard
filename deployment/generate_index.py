@@ -37,7 +37,9 @@ def get_git_dates_batched(files: list[Path]) -> dict[Path, str]:
         return {}
     dates = {}
     try:
-        cmd = ['git', 'log', '--format=TS:%ci', '--name-only', '--'] + [str(f.relative_to(ROOT)) if f.is_absolute() else str(f) for f in files]
+        # Use relative paths for git log
+        rel_paths = [str(f.relative_to(ROOT)) if f.is_absolute() else str(f) for f in files]
+        cmd = ['git', 'log', '--format=TS:%ci', '--name-only', '--'] + rel_paths
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
         current_ts = None
         for line in result.stdout.splitlines():
@@ -62,7 +64,7 @@ def get_git_dates_batched(files: list[Path]) -> dict[Path, str]:
     return dates
 
 
-def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None, date_str: str = "") -> dict:
+def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None, git_date: Optional[str] = None) -> dict:
     """Extract title, description, and tags from an HTML file content.
 
     Falls back to pre-generated descriptions from descriptions.json when no
@@ -105,7 +107,7 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
         'title': title,
         'description': description,
         'tags': tags,
-        'date': date_str,
+        'date': git_date or '',
     }
 
 
@@ -622,7 +624,7 @@ def main(argv: Optional[list[str]] = None):
             continue
 
         # Extract meta
-        meta = extract_meta(filepath, content, descriptions=descriptions, date_str=date_str)
+        meta = extract_meta(filepath, content, descriptions=descriptions, git_date=date_str)
         analyses.append(meta)
 
         # Inject enhancements
