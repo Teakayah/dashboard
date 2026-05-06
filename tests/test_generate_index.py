@@ -229,3 +229,54 @@ def test_load_descriptions_not_exists(monkeypatch, tmp_path):
     module = load_generate_index_module()
     monkeypatch.setattr(module, 'DESCRIPTIONS_FILE', tmp_path / 'descriptions_missing.json')
     assert module.load_descriptions() == {}
+
+
+def test_build_html_empty():
+    module = load_generate_index_module()
+    html = module.build_html([])
+    assert '<div class="empty">No analyses found yet.' in html
+    assert '<div class="header-sub">No analyses yet — drop an HTML file here</div>' in html
+    assert 'from various datasets and projects' not in html
+
+
+def test_build_html_single_analysis():
+    module = load_generate_index_module()
+    analysis = {
+        'filename': 'single.html',
+        'title': 'Single Analysis',
+        'description': 'A test description',
+        'tags': ['test'],
+        'date': '2023-01-01',
+    }
+    html = module.build_html([analysis])
+    assert '<div class="empty">' not in html
+    assert '<div class="header-sub">1 analysis</div>' in html
+    assert 'content="1 analysis from various datasets and projects."' in html
+    assert 'Single Analysis' in html
+    assert 'single.html' in html
+
+
+def test_build_html_multiple_analyses():
+    module = load_generate_index_module()
+    analyses = [
+        {
+            'filename': 'first.html',
+            'title': 'First Analysis',
+            'description': 'Desc 1',
+            'tags': ['tag1'],
+            'date': '2023-01-01',
+        },
+        {
+            'filename': 'second.html',
+            'title': 'Second Analysis',
+            'description': 'Desc 2',
+            'tags': ['tag2'],
+            'date': '2023-01-02',
+        }
+    ]
+    html = module.build_html(analyses)
+    assert '<div class="empty">' not in html
+    assert '<div class="header-sub">2 analyses</div>' in html
+    assert 'content="2 analyses from various datasets and projects."' in html
+    assert 'First Analysis' in html
+    assert 'Second Analysis' in html
