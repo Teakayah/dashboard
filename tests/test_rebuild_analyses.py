@@ -491,3 +491,36 @@ def test_read_csv_valid_file(tmp_path):
         {"col1": " val1 ", "col2": " val2 "},
         {"col1": " val3 ", "col2": " val4 "},
     ]
+
+
+def test_extract_pop_data_unordered_years():
+    rows = [
+        create_pop_row(geo="Ontario", ref_date="2025", value="16000000"),
+        create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),
+        create_pop_row(geo="Ontario", ref_date="2024", value="15500000"),
+    ]
+    result = extract_statcan_data(rows, '17100005')
+    expected = {
+        "Ontario": [
+            {"year": 2023, "pop": 15000000, "change": None, "pct": None},
+            {"year": 2024, "pop": 15500000, "change": 500000, "pct": 3.33},
+            {"year": 2025, "pop": 16000000, "change": 500000, "pct": 3.23},
+        ]
+    }
+    assert result == expected
+
+
+def test_extract_pop_data_missing_value():
+    rows = [
+        create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),
+        create_pop_row(geo="Ontario", ref_date="2024", value="x"),
+        create_pop_row(geo="Ontario", ref_date="2025", value="16000000"),
+    ]
+    result = extract_statcan_data(rows, '17100005')
+    expected = {
+        "Ontario": [
+            {"year": 2023, "pop": 15000000, "change": None, "pct": None},
+            {"year": 2025, "pop": 16000000, "change": 1000000, "pct": 6.67},
+        ]
+    }
+    assert result == expected
