@@ -75,6 +75,48 @@ def test_inject_functions_handle_missing_tags():
     assert isinstance(res3, str)
 
 
+def test_inject_og_tags_adds_tags_with_extracted_title(monkeypatch):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'SITE_URL', 'https://testsite.com')
+    content = "<html><head><title>   Test Title   </title></head><body></body></html>"
+    res = module.inject_og_tags(content, "analysis.html", "analysis_stem")
+
+    assert '<meta property="og:title" content="Test Title">' in res
+    assert '<meta property="og:image" content="https://testsite.com/previews/analysis_stem.png">' in res
+    assert '<meta property="og:url" content="https://testsite.com/analysis.html">' in res
+    assert '<meta property="twitter:image" content="https://testsite.com/previews/analysis_stem.png">' in res
+
+
+def test_inject_og_tags_adds_tags_with_stem_fallback(monkeypatch):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'SITE_URL', 'https://testsite.com')
+    content = "<html><head></head><body></body></html>"
+    res = module.inject_og_tags(content, "analysis.html", "my_cool_analysis")
+
+    # Stem is formatted with `.replace('_', ' ').title()`
+    assert '<meta property="og:title" content="My Cool Analysis">' in res
+    assert '<meta property="og:image" content="https://testsite.com/previews/my_cool_analysis.png">' in res
+
+
+def test_inject_og_tags_leaves_existing_og_image_alone():
+    module = load_generate_index_module()
+    content = '<html><head><meta property="og:image" content="some_img.png"></head><body></body></html>'
+    res = module.inject_og_tags(content, "analysis.html", "analysis_stem")
+
+    assert res == content
+    assert '<!-- Open Graph / Social Sharing -->' not in res
+
+
+def test_inject_og_tags_escapes_title(monkeypatch):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'SITE_URL', 'https://testsite.com')
+    content = '<html><head><title>Title with "quotes" and <tags></title></head><body></body></html>'
+    res = module.inject_og_tags(content, "analysis.html", "analysis_stem")
+
+    # Title will have quotes escaped correctly as well as tags unescaped then escaped
+    assert '<meta property="og:title" content="Title with &quot;quotes&quot; and &lt;tags&gt;">' in res
+
+
 def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, monkeypatch):
     module = load_generate_index_module()
     analysis = tmp_path / 'sample.html'
