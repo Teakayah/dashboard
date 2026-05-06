@@ -64,29 +64,46 @@ def extract_statcan_data(
     if not config:
         return []
 
-    filters = config.get("default_filters", {}).copy()
-    if variant and "variants" in config:
-        filters.update(config["variants"].get(variant, {}))
-
     # Special handling for NHPI (18100205)
     if table_id == "18100205":
         return _extract_nhpi_logic(rows, config)
 
     # General extraction logic for other tables
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
+
+    filters = config.get('default_filters', {}).copy()
+    if variant and 'variants' in config:
+        filters.update(config['variants'].get(variant, {}))
+
+    # Heuristic: place highly selective variant filters first to maximize short-circuiting efficiency.
+    # We use dictionary updates to safely override defaults, then convert to list.
+    filter_items = list(filters.items())
+    filter_items.sort(key=lambda x: 0 if x[0] == 'Labour force characteristics' else 1)
+
     for row in rows:
-        if all(row.get(k, "").strip() == v for k, v in filters.items()):
+        match = True
+        for k, v in filter_items:
+            val = row.get(k, '')
+            # Avoid .strip() overhead unless necessary
+            if val != v and val.strip() != v:
+                match = False
+                break
+
+        if match:
             val = _clean(row["VALUE"])
             if val is not None:
                 # Handle different date formats
-                ref_date = row["REF_DATE"].strip()
-                try:
-                    year = int(ref_date[:4])
-                except (ValueError, IndexError):
-                    continue
+                ref_date = row.get("REF_DATE", "")
+                if len(ref_date) >= 4:
+                    try:
+                        year = int(ref_date[:4])
+                    except ValueError:
+                        continue
 
-                geo = row.get("GEO", "Canada").strip()
-                buckets[geo][year].append(val)
+                    geo = row.get("GEO", "Canada")
+                    if geo != "Canada":
+                        geo = geo.strip()
+                    buckets[geo][year].append(val)
 
     # Post-processing based on variant or table_id
     if variant == "empRate":
