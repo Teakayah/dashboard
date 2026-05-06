@@ -31,7 +31,13 @@ def _read_csv(path: Path) -> list[dict]:
 
 
 def _clean(val: str) -> Optional[float]:
-    """Return float or None for Stats Canada VALUE cells."""
+    """
+    Return float or None for Stats Canada VALUE cells.
+
+    Maps specific StatCan data symbols to None:
+    '..' (Not available), 'x' (Suppressed), 'F' (Unreliable),
+    'E' (Caution), 'r' (Revised), and 'p' (Preliminary).
+    """
     v = val.strip()
     if v in ("", "..", "F", "x", "E", "r", "p"):
         return None
