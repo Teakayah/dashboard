@@ -25,10 +25,12 @@ except ImportError:
 def _read_csv(path: Path) -> list[dict]:
     """Read a Stats Canada CSV (UTF-8 BOM) into a list of row dicts."""
     with open(path, encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        if reader.fieldnames:
-            reader.fieldnames = [h.strip() for h in reader.fieldnames]
-        return [row for row in reader if any(row.values())]
+        reader = csv.reader(f)
+        try:
+            headers = [h.strip() for h in next(reader)]
+        except StopIteration:
+            return []
+        return [dict(zip(headers, row)) for row in reader if any(row)]
 
 
 def _clean(val: str) -> Optional[float]:
