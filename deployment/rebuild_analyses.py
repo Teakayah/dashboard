@@ -25,10 +25,12 @@ except ImportError:
 def _read_csv(path: Path) -> list[dict]:
     """Read a Stats Canada CSV (UTF-8 BOM) into a list of row dicts."""
     with open(path, encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        if reader.fieldnames:
-            reader.fieldnames = [h.strip() for h in reader.fieldnames]
-        return [row for row in reader if any(row.values())]
+        reader = csv.reader(f)
+        try:
+            headers = [h.strip() for h in next(reader)]
+        except StopIteration:
+            return []
+        return [dict(zip(headers, row)) for row in reader if row]
 
 
 def _clean(val: str) -> Optional[float]:
@@ -71,19 +73,19 @@ def extract_statcan_data(
     # General extraction logic for other tables
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
 
-    filters = config.get('default_filters', {}).copy()
-    if variant and 'variants' in config:
-        filters.update(config['variants'].get(variant, {}))
+    filters = config.get("default_filters", {}).copy()
+    if variant and "variants" in config:
+        filters.update(config["variants"].get(variant, {}))
 
     # Heuristic: place highly selective variant filters first to maximize short-circuiting efficiency.
     # We use dictionary updates to safely override defaults, then convert to list.
     filter_items = list(filters.items())
-    filter_items.sort(key=lambda x: 0 if x[0] == 'Labour force characteristics' else 1)
+    filter_items.sort(key=lambda x: 0 if x[0] == "Labour force characteristics" else 1)
 
     for row in rows:
         match = True
         for k, v in filter_items:
-            val = row.get(k, '')
+            val = row.get(k, "")
             # Avoid .strip() overhead unless necessary
             if val != v and val.strip() != v:
                 match = False
@@ -251,12 +253,8 @@ def rebuild_employment(html_path: Path) -> bool:
     # Cache parsed rows for the large LFS CSV since multiple variants extract from it
     lfs_rows = _read_csv(csv_paths["lfs"])
     new_data = {
-        "empRate": extract_statcan_data(
-            lfs_rows, "14100287", "empRate"
-        ),
-        "empJobs": extract_statcan_data(
-            lfs_rows, "14100287", "empJobs"
-        ),
+        "empRate": extract_statcan_data(lfs_rows, "14100287", "empRate"),
+        "empJobs": extract_statcan_data(lfs_rows, "14100287", "empJobs"),
         "provDebt": extract_statcan_data(_read_csv(csv_paths["prov"]), "10100017"),
         "fedDebt": extract_statcan_data(_read_csv(csv_paths["gov"]), "10100015"),
         "popData": extract_statcan_data(_read_csv(csv_paths["pop"]), "17100005"),
