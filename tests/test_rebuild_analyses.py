@@ -192,32 +192,23 @@ def test_extract_emp_jobs_empty():
 
 def test_extract_emp_jobs_unordered_years():
     rows = [
-<<<<<<< HEAD
-        create_row(geo="Ontario", ref_date="2024-01", value="6200.0", char="Employment"),
-        create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
-        create_row(geo="Quebec", ref_date="2024-01", value="3100.0", char="Employment"),
-        create_row(geo="Quebec", ref_date="2023-01", value="3000.0", char="Employment"),
-=======
         create_row(geo="Ontario", ref_date="2025-01", value="6500.0", char="Employment"),
         create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
         create_row(geo="Ontario", ref_date="2024-01", value="6200.0", char="Employment"),
->>>>>>> origin/inspector/test-extract-emp-jobs-unordered-missing-15312848348499649462
+        create_row(geo="Quebec", ref_date="2024-01", value="3100.0", char="Employment"),
+        create_row(geo="Quebec", ref_date="2023-01", value="3000.0", char="Employment"),
     ]
     result = extract_statcan_data(rows, '14100287', 'empJobs')
     expected = {
         "Ontario": [
             {"year": 2023, "level": 6000.0, "change": None},
             {"year": 2024, "level": 6200.0, "change": 200.0},
-<<<<<<< HEAD
+            {"year": 2025, "level": 6500.0, "change": 300.0},
         ],
         "Quebec": [
             {"year": 2023, "level": 3000.0, "change": None},
             {"year": 2024, "level": 3100.0, "change": 100.0},
         ],
-=======
-            {"year": 2025, "level": 6500.0, "change": 300.0},
-        ]
->>>>>>> origin/inspector/test-extract-emp-jobs-unordered-missing-15312848348499649462
     }
     assert result == expected
 
@@ -225,25 +216,16 @@ def test_extract_emp_jobs_unordered_years():
 def test_extract_emp_jobs_missing_value():
     rows = [
         create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
-<<<<<<< HEAD
         create_row(geo="Ontario", ref_date="2023-02", value="..", char="Employment"),  # Invalid/missing value
-        create_row(geo="Ontario", ref_date="2024-01", value="6100.0", char="Employment"),
-=======
         create_row(geo="Ontario", ref_date="2024-01", value="x", char="Employment"),
         create_row(geo="Ontario", ref_date="2025-01", value="6500.0", char="Employment"),
->>>>>>> origin/inspector/test-extract-emp-jobs-unordered-missing-15312848348499649462
     ]
     result = extract_statcan_data(rows, '14100287', 'empJobs')
     expected = {
         "Ontario": [
             {"year": 2023, "level": 6000.0, "change": None},
-<<<<<<< HEAD
-            {"year": 2024, "level": 6100.0, "change": 100.0},
-        ],
-=======
             {"year": 2025, "level": 6500.0, "change": 500.0},
         ]
->>>>>>> origin/inspector/test-extract-emp-jobs-unordered-missing-15312848348499649462
     }
     assert result == expected
 
