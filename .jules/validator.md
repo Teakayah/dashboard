@@ -2,3 +2,7 @@
 Coverage Gap: The `get_git_dates_batched` and `load_descriptions` functions lacked testing.
 Learning: When writing tests for modules that import config or are dynamically loaded, using standard fixtures like `monkeypatch` and `tmp_path` provides isolation and prevents the tests from depending on external git behavior or touching disk assets.
 Assertion: Used `monkeypatch` and `tmp_path` to inject a mock root and create dummy files, enabling tests to verify behavior predictably without actually interacting with the codebase.
+## 2024-05-06 - Missing Test Coverage for main loop and table downloading
+Coverage Gap: `deployment/update_statcan_data.py` had missing coverage for the core `download_table` logic (which hits the StatCan zip URL) and the `main` script entrypoint which determines when downloads should run (first run vs phase checks vs diff checks).
+Learning: Testing a script entrypoint with multiple branches requires carefully patching its external state checks (like `_load_last_checked`, `fetch_changed_since`) as well as the IO effects (`_write_status`, `download_table`). Similarly, testing `zipfile.ZipFile` required mocking the response `.read()` to supply bytes that wouldn't crash `zipfile`'s header check when we expected success, but let it crash naturally for the failure test.
+Assertion: Used `unittest.mock.patch` systematically to set `mock_load.return_value` and test all paths of `main()` (first run, max lookback passed, api failure, no updates, partial updates) and injected dummy bytes for `download_table` tests.

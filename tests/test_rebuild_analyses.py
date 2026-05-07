@@ -593,3 +593,118 @@ def test_rebuild_employment_no_change(
 
     assert result is False
     mock_write_text.assert_not_called()
+
+from unittest.mock import patch, MagicMock
+
+@patch('deployment.rebuild_analyses.SRC')
+@patch('deployment.rebuild_analyses.extract_statcan_data')
+@patch('deployment.rebuild_analyses._read_csv')
+@patch('deployment.rebuild_analyses._inject_const')
+def test_rebuild_nhpi_success(mock_inject, mock_read, mock_extract, mock_src, tmp_path):
+    mock_html = tmp_path / "nhpi_test.html"
+    mock_html.write_text("dummy html")
+
+    mock_csv = MagicMock()
+    mock_csv.exists.return_value = True
+    # Setup mock_src to return mock_csv for the specific path chain
+    mock_src.__truediv__.return_value.__truediv__.return_value.__truediv__.return_value = mock_csv
+
+    mock_read.return_value = [{"some": "data"}]
+    mock_extract.return_value = {"extracted": "data"}
+    mock_inject.return_value = ("new html with raw", True)
+
+    from deployment.rebuild_analyses import rebuild_nhpi
+    result = rebuild_nhpi(mock_html)
+
+    assert result is True
+    assert mock_html.read_text() == "new html with raw"
+    mock_inject.assert_called_once_with("dummy html", "RAW", {"extracted": "data"})
+
+@patch('deployment.rebuild_analyses.SRC')
+def test_rebuild_nhpi_skip_missing_csv(mock_src, tmp_path):
+    mock_html = tmp_path / "nhpi_test.html"
+
+    mock_csv = MagicMock()
+    mock_csv.exists.return_value = False
+    mock_src.__truediv__.return_value.__truediv__.return_value.__truediv__.return_value = mock_csv
+
+    from deployment.rebuild_analyses import rebuild_nhpi
+    result = rebuild_nhpi(mock_html)
+
+    assert result is False
+
+
+@patch('deployment.rebuild_analyses.ROOT')
+@patch('deployment.rebuild_analyses._inject_const')
+def test_rebuild_flood_success(mock_inject, mock_root, tmp_path):
+    mock_html = tmp_path / "flood_test.html"
+    mock_html.write_text("dummy html")
+
+    mock_json = MagicMock()
+    mock_json.exists.return_value = True
+    mock_json.read_text.return_value = '{"flood": "data"}'
+    mock_root.__truediv__.return_value.__truediv__.return_value = mock_json
+
+    mock_inject.return_value = ("new html with flood data", True)
+
+    from deployment.rebuild_analyses import rebuild_flood
+    result = rebuild_flood(mock_html)
+
+    assert result is True
+    assert mock_html.read_text() == "new html with flood data"
+    mock_inject.assert_called_once_with("dummy html", "DATA", {"flood": "data"})
+
+@patch('deployment.rebuild_analyses.ROOT')
+def test_rebuild_flood_skip_missing_json(mock_root, tmp_path):
+    mock_html = tmp_path / "flood_test.html"
+
+    mock_json = MagicMock()
+    mock_json.exists.return_value = False
+    mock_root.__truediv__.return_value.__truediv__.return_value = mock_json
+
+    from deployment.rebuild_analyses import rebuild_flood
+    result = rebuild_flood(mock_html)
+
+    assert result is False
+
+
+@patch('deployment.rebuild_analyses.SRC')
+@patch('deployment.rebuild_analyses.extract_statcan_data')
+@patch('deployment.rebuild_analyses._read_csv')
+@patch('deployment.rebuild_analyses._inject_const')
+def test_rebuild_nhpi_no_change(mock_inject, mock_read, mock_extract, mock_src, tmp_path):
+    mock_html = tmp_path / "nhpi_test.html"
+    mock_html.write_text("dummy html")
+
+    mock_csv = MagicMock()
+    mock_csv.exists.return_value = True
+    mock_src.__truediv__.return_value.__truediv__.return_value.__truediv__.return_value = mock_csv
+
+    mock_read.return_value = [{"some": "data"}]
+    mock_extract.return_value = {"extracted": "data"}
+    mock_inject.return_value = ("dummy html", False)
+
+    from deployment.rebuild_analyses import rebuild_nhpi
+    result = rebuild_nhpi(mock_html)
+
+    assert result is False
+    assert mock_html.read_text() == "dummy html"
+
+@patch('deployment.rebuild_analyses.ROOT')
+@patch('deployment.rebuild_analyses._inject_const')
+def test_rebuild_flood_no_change(mock_inject, mock_root, tmp_path):
+    mock_html = tmp_path / "flood_test.html"
+    mock_html.write_text("dummy html")
+
+    mock_json = MagicMock()
+    mock_json.exists.return_value = True
+    mock_json.read_text.return_value = '{"flood": "data"}'
+    mock_root.__truediv__.return_value.__truediv__.return_value = mock_json
+
+    mock_inject.return_value = ("dummy html", False)
+
+    from deployment.rebuild_analyses import rebuild_flood
+    result = rebuild_flood(mock_html)
+
+    assert result is False
+    assert mock_html.read_text() == "dummy html"
