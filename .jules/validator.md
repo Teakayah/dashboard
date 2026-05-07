@@ -12,3 +12,8 @@ Assertion: Used `unittest.mock.patch` systematically to set `mock_load.return_va
 Coverage Gap: Missing tests for inject_back_link function.
 Learning: Ensure utility injection functions are well tested for expected cases and idempotency.
 Assertion: Added test_inject_back_link_adds_snippet and test_inject_back_link_is_idempotent.
+
+## 2024-05-18 - Improve inject_og_tags coverage in generate_index.py
+Coverage Gap: The `inject_og_tags` function in `deployment/generate_index.py` was completely untested, leaving social metadata generation (OG and Twitter properties) and html entity escaping vulnerable to undetected regressions.
+Learning: When verifying HTML metadata injection logic, standardizing assertions around string inclusion combined with parameterized mocked environments (e.g., using `monkeypatch` for constant settings) ensures reliable testing across potential site configuration changes and unhandled edge cases like missing `<title>` tags.
+Assertion: The test functions check specific metadata strings containing `<meta property="og:title" ...` ensuring correct formatting and safe entity escaping using `assert '<meta ...>' in res`.
