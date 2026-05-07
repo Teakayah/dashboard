@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from deployment.rebuild_analyses import (
     extract_statcan_data,
     _clean,

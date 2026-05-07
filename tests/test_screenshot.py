@@ -226,7 +226,7 @@ def test_main_wait_for_selector_exception():
 
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
          patch.object(module, 'needs_screenshot', return_value=True), \
-         patch('subprocess.Popen') as mock_popen, \
+         patch('subprocess.Popen') as _, \
          patch('socket.create_connection'), \
          patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
          patch('pathlib.Path.mkdir'), \
