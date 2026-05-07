@@ -13,3 +13,6 @@
 ## 2026-05-06 - Avoiding Duplicate CSV Parsing
 **Learning:** Parsing the exact same large CSV file (`14100287.csv`, typically ~100k-300k rows) multiple times sequentially (e.g. for extracting different tables/variants) incurs massive duplicate I/O and parsing overhead. Reading it twice effectively doubles the processing time.
 **Action:** When extracting multiple subsets (like `empRate` and `empJobs`) from the same underlying large CSV, read and parse the CSV into a single variable first (`rows = _read_csv(csv_path)`), then pass that cached representation to all subsequent extraction functions.
+## 2024-05-24 - Optimize CSV reading in rebuild_analyses.py
+**Learning:** When parsing large CSV datasets, using `csv.reader` with `dict(zip(headers, row))` is significantly faster than using `csv.DictReader`, and avoiding `.strip()` during the load phase provides major performance gains.
+**Action:** Always prefer `csv.reader` + `zip` for large files and defer `strip()` to specifically required fields downstream rather than blanketing it during load.
