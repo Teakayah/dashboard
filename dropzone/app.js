@@ -301,6 +301,14 @@ async function handleFiles(files) {
     }
 }
 
+/**
+ * Inserts a string into a text field at the user's current cursor position.
+ * Handles both modern browsers (selectionStart) and legacy IE (document.selection),
+ * falling back to appending the value if no cursor is found.
+ *
+ * @param {HTMLInputElement | HTMLTextAreaElement} myField - The input field to modify
+ * @param {string} myValue - The text to insert
+ */
 function insertAtCursor(myField, myValue) {
     if (document.selection) {
         myField.focus();
@@ -327,6 +335,16 @@ recipeSelect.addEventListener('change', () => {
     recipeSelect.selectedIndex = 0;
 });
 
+/**
+ * Automatically generates visualization previews for a given dataset table.
+ * Analyzes the table schema to identify date, numeric, and text columns,
+ * then runs heuristic SQL queries to detect and render:
+ *  1. Time-series trends (if date + numeric columns exist)
+ *  2. Highest correlation pairs (tests up to 10 pairs of numeric columns)
+ *  3. Category distributions (if text + numeric columns exist)
+ *
+ * @param {string} tableName - The name of the DuckDB table to analyze
+ */
 async function generateInstantCharts(tableName) {
     const schema = await conn.query(`DESCRIBE ${tableName}`);
     const columns = schema.toArray();
