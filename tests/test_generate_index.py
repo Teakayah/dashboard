@@ -334,3 +334,92 @@ def test_load_descriptions_not_exists(monkeypatch, tmp_path):
     module = load_generate_index_module()
     monkeypatch.setattr(module, 'DESCRIPTIONS_FILE', tmp_path / 'descriptions_missing.json')
     assert module.load_descriptions() == {}
+
+
+def test_build_html_empty_analyses():
+    module = load_generate_index_module()
+    html = module.build_html([])
+
+    assert 'No analyses found yet' in html
+    assert 'No analyses yet — drop an HTML file here' in html
+    assert 'class="card"' not in html
+    assert 'class="empty"' in html
+
+
+def test_build_html_with_analyses(monkeypatch):
+    module = load_generate_index_module()
+
+    # Mock SITE_URL and ACCENT_COLORS to ensure consistent output
+    monkeypatch.setattr(module, 'SITE_URL', 'https://example.com')
+    monkeypatch.setattr(module, 'ACCENT_COLORS', ['#ff0000', '#00ff00'])
+
+    analyses = [
+        {
+            'filename': 'analysis1.html',
+            'title': 'Analysis One',
+            'description': 'The first analysis description',
+            'tags': ['Chart.js', 'Stats'],
+            'date': 'Jan 2024'
+        },
+        {
+            'filename': 'analysis2.html',
+            'title': 'Analysis Two',
+            'description': '', # Test empty description
+            'tags': [], # Test empty tags
+            'date': '' # Test empty date
+        }
+    ]
+
+    html = module.build_html(analyses)
+
+    # Check subtitle
+    assert '2 analysises' in html
+    assert 'from various datasets and projects' in html
+
+    # Check empty state is NOT present
+    assert 'No analyses found yet' not in html
+    assert 'class="empty"' not in html
+
+    # Check Card 1 details
+    assert 'analysis1.html' in html
+    assert 'Analysis One' in html
+    assert 'The first analysis description' in html
+    assert 'Chart.js' in html
+    assert 'Stats' in html
+    assert 'Jan 2024' in html
+
+    # Check Card 2 details
+    assert 'analysis2.html' in html
+    assert 'Analysis Two' in html
+
+    # Count cards
+    assert html.count('class="card"') == 2
+
+
+def test_build_html_single_analysis(monkeypatch):
+    module = load_generate_index_module()
+
+    # Mock SITE_URL and ACCENT_COLORS
+    monkeypatch.setattr(module, 'SITE_URL', 'https://example.com')
+    monkeypatch.setattr(module, 'ACCENT_COLORS', ['#ff0000'])
+
+    analyses = [
+        {
+            'filename': 'single.html',
+            'title': 'Single Analysis',
+            'description': 'Only one',
+            'tags': ['DuckDB'],
+            'date': 'Feb 2024'
+        }
+    ]
+
+    html = module.build_html(analyses)
+
+    # Check singular subtitle
+    assert '1 analysis' in html
+    assert '1 analysis from various' in html
+
+    # Verify card exists
+    assert 'single.html' in html
+    assert 'Single Analysis' in html
+    assert html.count('class="card"') == 1
