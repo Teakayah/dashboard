@@ -85,9 +85,9 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
 
     # If no meta description, look for a subtitle element (common pattern in your files)
     if not description:
-        sub_match = re.search(r'class=["\'][^"\']*subtitle[^"\']*["\'][^>]*>(.*?)</[a-z]+>', content, re.IGNORECASE | re.DOTALL)
+        sub_match = re.search(r'<([a-zA-Z0-9]+)[^>]*class=["\'][^"\']*subtitle[^"\']*["\'][^>]*>(.*?)</\1>', content, re.IGNORECASE | re.DOTALL)
         if sub_match:
-            description = re.sub(r'<[^>]+>', '', sub_match.group(1)).strip()
+            description = re.sub(r'<[^>]+>', '', sub_match.group(2)).strip()
             description = re.sub(r'\s+', ' ', description)
             if len(description) > 120:
                 description = description[:117] + '…'
