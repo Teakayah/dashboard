@@ -13,3 +13,7 @@
 ## 2026-05-06 - Testing build_html plural logic
 **Learning:** The string logic for pluralization in `build_html` is flawed (`'2 analysises'`) but the test assertions must capture the actual current code behavior until we refactor it.
 **Action:** When adding tests for existing logic without an explicit refactor step, match the test assertion to the actual function output, even if it has grammatical issues.
+
+## 2024-05-24 - Missing Tests for `extract_emp_jobs`
+**Learning:** `extract_emp_jobs` logic is handled under the variant name `empJobs` in the central extraction engine `extract_statcan_data`. Testing this functionality directly requires using the variant rather than an isolated function.
+**Action:** When asked to test specific variants or specific functions in `rebuild_analyses.py`, always check if they are mapped inside `extract_statcan_data` and write the test specifically targeting the underlying extraction logic via the correct variant identifier.
