@@ -23,15 +23,10 @@ PORT = 8765
 
 def _git_commit_time(path: str) -> int:
     """Return the Unix timestamp of the last commit touching `path`, or 0."""
-    result = subprocess.run(
-        ['git', 'log', '-1', '--format=%ci', '--', path],
-        capture_output=True, text=True, cwd=str(ROOT),
-    )
-    stamp = result.stdout.strip()
     try:
         return int(subprocess.run(['git', 'log', '-1', '--format=%ct', '--', path], 
                                 capture_output=True, text=True, cwd=str(ROOT)).stdout.strip())
-    except:
+    except Exception:
         return 0
 
 
