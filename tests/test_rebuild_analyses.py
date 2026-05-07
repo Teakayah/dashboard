@@ -1,11 +1,15 @@
 import pytest
+import json
 from unittest.mock import patch, MagicMock
 from deployment.rebuild_analyses import (
     extract_statcan_data,
     _clean,
     _inject_const,
     _read_csv,
-    rebuild_employment
+    rebuild_employment,
+    rebuild_nhpi,
+    rebuild_flood,
+    main
 )
 from pathlib import Path
 
@@ -593,3 +597,199 @@ def test_rebuild_employment_no_change(
 
     assert result is False
     mock_write_text.assert_not_called()
+
+@patch("deployment.rebuild_analyses._inject_const")
+@patch("pathlib.Path.write_text")
+@patch("deployment.rebuild_analyses.extract_statcan_data")
+@patch("deployment.rebuild_analyses._read_csv")
+@patch("pathlib.Path.read_text")
+@patch("pathlib.Path.exists")
+def test_rebuild_nhpi_success(
+    mock_exists,
+    mock_read_text,
+    mock_read_csv,
+    mock_extract,
+    mock_write_text,
+    mock_inject,
+):
+    mock_exists.return_value = True
+    mock_read_csv.return_value = [{"col": "val"}]
+    mock_extract.return_value = {"mock": "nhpi"}
+    mock_read_text.return_value = "<html><body></body></html>"
+    mock_inject.return_value = ("<html><body>new nhpi data</body></html>", True)
+
+    html_path = Path("nhpi_big6_comparison.html")
+    result = rebuild_nhpi(html_path)
+
+    assert result is True
+    mock_write_text.assert_called_once_with("<html><body>new nhpi data</body></html>", encoding="utf-8")
+
+
+@patch("pathlib.Path.exists")
+def test_rebuild_nhpi_missing_csv(mock_exists):
+    mock_exists.return_value = False
+    html_path = Path("nhpi_big6_comparison.html")
+    result = rebuild_nhpi(html_path)
+    assert result is False
+
+
+@patch("deployment.rebuild_analyses._inject_const")
+@patch("pathlib.Path.write_text")
+@patch("deployment.rebuild_analyses.extract_statcan_data")
+@patch("deployment.rebuild_analyses._read_csv")
+@patch("pathlib.Path.read_text")
+@patch("pathlib.Path.exists")
+def test_rebuild_nhpi_no_change(
+    mock_exists,
+    mock_read_text,
+    mock_read_csv,
+    mock_extract,
+    mock_write_text,
+    mock_inject,
+):
+    mock_exists.return_value = True
+    mock_read_csv.return_value = [{"col": "val"}]
+    mock_extract.return_value = {"mock": "nhpi"}
+    mock_read_text.return_value = "<html><body></body></html>"
+    mock_inject.return_value = ("<html><body></body></html>", False)
+
+    html_path = Path("nhpi_big6_comparison.html")
+    result = rebuild_nhpi(html_path)
+
+    assert result is False
+    mock_write_text.assert_not_called()
+
+
+@patch("deployment.rebuild_analyses._inject_const")
+@patch("pathlib.Path.write_text")
+@patch("pathlib.Path.read_text")
+@patch("pathlib.Path.exists")
+def test_rebuild_flood_success(
+    mock_exists,
+    mock_read_text,
+    mock_write_text,
+    mock_inject,
+):
+    mock_exists.return_value = True
+    # Side effect: first read_text for json, second for html
+    mock_read_text.side_effect = ['{"mock": "flood"}', "<html><body></body></html>"]
+    mock_inject.return_value = ("<html><body>new flood data</body></html>", True)
+
+    html_path = Path("flood_risk_gatineau_ottawa.html")
+    result = rebuild_flood(html_path)
+
+    assert result is True
+    mock_write_text.assert_called_once_with("<html><body>new flood data</body></html>", encoding="utf-8")
+
+@patch("pathlib.Path.exists")
+def test_rebuild_flood_missing_json(mock_exists):
+    mock_exists.return_value = False
+    html_path = Path("flood_risk_gatineau_ottawa.html")
+    result = rebuild_flood(html_path)
+    assert result is False
+
+@patch("deployment.rebuild_analyses._inject_const")
+@patch("pathlib.Path.write_text")
+@patch("pathlib.Path.read_text")
+@patch("pathlib.Path.exists")
+def test_rebuild_flood_no_change(
+    mock_exists,
+    mock_read_text,
+    mock_write_text,
+    mock_inject,
+):
+    mock_exists.return_value = True
+    mock_read_text.side_effect = ['{"mock": "flood"}', "<html><body></body></html>"]
+    mock_inject.return_value = ("<html><body></body></html>", False)
+
+    html_path = Path("flood_risk_gatineau_ottawa.html")
+    result = rebuild_flood(html_path)
+
+    assert result is False
+    mock_write_text.assert_not_called()
+
+
+
+@patch("deployment.rebuild_analyses.REBUILDERS")
+@patch("pathlib.Path.exists")
+def test_main_success(mock_exists, mock_rebuilders):
+    mock_exists.return_value = True
+
+    mock_rebuild_fn = MagicMock()
+    mock_rebuild_fn.return_value = True
+
+    mock_rebuilders.items.return_value = [("test.html", mock_rebuild_fn)]
+
+    result = main()
+    assert result == 1
+    mock_rebuild_fn.assert_called_once()
+
+@patch("deployment.rebuild_analyses.REBUILDERS")
+@patch("pathlib.Path.exists")
+def test_main_no_changes(mock_exists, mock_rebuilders):
+    mock_exists.return_value = True
+
+    mock_rebuild_fn = MagicMock()
+    mock_rebuild_fn.return_value = False
+
+    mock_rebuilders.items.return_value = [("test.html", mock_rebuild_fn)]
+
+    result = main()
+    assert result == 0
+
+@patch("deployment.rebuild_analyses.REBUILDERS")
+@patch("pathlib.Path.exists")
+def test_main_missing_html(mock_exists, mock_rebuilders):
+    mock_exists.return_value = False
+
+    mock_rebuild_fn = MagicMock()
+
+    mock_rebuilders.items.return_value = [("test.html", mock_rebuild_fn)]
+
+    result = main()
+    assert result == 0
+    mock_rebuild_fn.assert_not_called()
+
+@patch("deployment.rebuild_analyses.REBUILDERS")
+@patch("pathlib.Path.exists")
+def test_main_exception(mock_exists, mock_rebuilders):
+    mock_exists.return_value = True
+
+    mock_rebuild_fn = MagicMock()
+    mock_rebuild_fn.side_effect = Exception("Test Error")
+
+    mock_rebuilders.items.return_value = [("test.html", mock_rebuild_fn)]
+
+    result = main()
+    assert result == 0
+    mock_rebuild_fn.assert_called_once()
+
+def test_extract_unknown_config():
+    rows = [{"GEO": "Canada", "REF_DATE": "2023", "VALUE": "100"}]
+    result = extract_statcan_data(rows, "99999999")
+    assert result == []
+
+def test_extract_invalid_date():
+    rows = [create_row(ref_date="abc")]
+    result = extract_statcan_data(rows, "14100287", "empRate")
+    assert result == {}
+
+
+def test_extract_no_variant():
+    # Provide rows that match a config with NO explicit post-processing branch
+    rows = [create_fed_debt_row()]
+    result = extract_statcan_data(rows, "9999", None) # if no config, returns []
+
+    # We need a table that has a config, but doesn't hit any post-processing `if`.
+    # Let's temporarily mock the config.
+    with patch("deployment.rebuild_analyses.EXTRACTION_CONFIGS", {"fake_table": {"default_filters": {}}}):
+        res = extract_statcan_data([{"REF_DATE": "2023", "VALUE": "100"}], "fake_table")
+        assert "Canada" in res
+        assert 2023 in res["Canada"]
+
+
+def test_extract_invalid_year_int():
+    # Provide a ref_date of length 4 but not castable to int
+    with patch("deployment.rebuild_analyses.EXTRACTION_CONFIGS", {"fake_table": {"default_filters": {}}}):
+        res = extract_statcan_data([{"REF_DATE": "abcd", "VALUE": "100"}], "fake_table")
+        assert res == {}
