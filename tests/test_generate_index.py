@@ -54,6 +54,38 @@ def test_inject_responsive_replaces_older_versions():
     assert content.count('<!-- responsive-inject-v5 -->') == 1
 
 
+def test_inject_back_link_adds_snippet():
+    module = load_generate_index_module()
+
+    # Normal body
+    content = '<html><head></head><body><h1>Test</h1></body></html>'
+    res = module.inject_back_link(content, 'test.html')
+    assert '<!-- back-link-inject -->' in res
+    assert res.startswith('<html><head></head><body>\n<!-- back-link-inject -->')
+
+    # Body with attributes
+    content = '<html><head></head><body class="my-class"><h1>Test</h1></body></html>'
+    res = module.inject_back_link(content, 'test.html')
+    assert '<!-- back-link-inject -->' in res
+    assert res.startswith('<html><head></head><body class="my-class">\n<!-- back-link-inject -->')
+
+    # Uppercase BODY
+    content = '<html><head></head><BODY><h1>Test</h1></BODY></html>'
+    res = module.inject_back_link(content, 'test.html')
+    assert '<!-- back-link-inject -->' in res
+    assert res.startswith('<html><head></head><BODY>\n<!-- back-link-inject -->')
+
+def test_inject_back_link_is_idempotent():
+    module = load_generate_index_module()
+    initial_content = '<html><head></head><body><h1>Test</h1></body></html>'
+
+    first = module.inject_back_link(initial_content, 'test.html')
+    second = module.inject_back_link(first, 'test.html')
+
+    assert first == second
+    assert second.count('<!-- back-link-inject -->') == 1
+
+
 def test_inject_functions_handle_missing_tags():
     module = load_generate_index_module()
     content_no_tags = "<html><body>No head here</body></html>"
