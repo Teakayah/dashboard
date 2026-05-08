@@ -26,11 +26,15 @@
     --bg: #0f172a;
     --card-bg: #1e293b;
     --text: #f8fafc;
-    --text-muted: #94a3b8;
-    --text-dim: #64748b;
+    --text-muted: #cbd5e1;
+    --text-dim: #94a3b8;
     --border: #334155;
     --border-dark: #475569;
     --shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  .sql-console p {
+    color: var(--text-muted) !important;
   }
   
   body {
@@ -65,14 +69,51 @@
   }
   
   /* Grid.js dark mode tweaks */
+  .gridjs-wrapper {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border) !important;
+  }
   .gridjs-td, .gridjs-th {
     background-color: var(--card-bg) !important;
     color: var(--text) !important;
     border-color: var(--border) !important;
   }
+  .gridjs-th {
+    background-color: #334155 !important; /* Slightly lighter header */
+    color: #f8fafc !important;
+  }
   .gridjs-footer {
     background-color: var(--card-bg) !important;
     border-top: 1px solid var(--border) !important;
+    color: var(--text-muted) !important;
+  }
+  .gridjs-search-input {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border-color: var(--border) !important;
+  }
+  .gridjs-search-input:focus {
+    border-color: var(--primary) !important;
+    outline: none !important;
+  }
+  .gridjs-pagination .gridjs-pages button {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+    border-color: var(--border) !important;
+  }
+  .gridjs-pagination .gridjs-pages button:hover {
+    background-color: #475569 !important;
+  }
+  .gridjs-pagination .gridjs-pages button:disabled,
+  .gridjs-pagination .gridjs-pages button[disabled] {
+    background-color: #1e293b !important;
+    color: #475569 !important;
+  }
+  .gridjs-summary {
+    color: var(--text-muted) !important;
+  }
+  .gridjs-loading-bar {
+    background-color: var(--primary) !important;
   }
 }
 
