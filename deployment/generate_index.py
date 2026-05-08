@@ -561,6 +561,7 @@ def build_html(analyses: list[dict]) -> str:
 {cards_html}
   </div>
   {empty_html}
+  <div id="no-results" class="empty hidden">No analyses found matching "<strong></strong>".</div>
 </main>
 
 <footer>
@@ -572,14 +573,31 @@ def build_html(analyses: list[dict]) -> str:
 <script>
   const input = document.getElementById('search');
   const cards = document.querySelectorAll('.card');
+  const noResults = document.getElementById('no-results');
+  const noResultsQuery = noResults.querySelector('strong');
+
   input.addEventListener('input', () => {{
     const q = input.value.trim().toLowerCase();
+    let visibleCount = 0;
+
     cards.forEach(c => {{
       const text = c.textContent.toLowerCase();
       const matches = q !== '' && text.includes(q);
-      c.classList.toggle('hidden', q !== '' && !matches);
+      const isHidden = q !== '' && !matches;
+      c.classList.toggle('hidden', isHidden);
       c.classList.toggle('match', matches);
+
+      if (!isHidden) {{
+        visibleCount++;
+      }}
     }});
+
+    if (visibleCount === 0 && q !== '') {{
+      noResultsQuery.textContent = input.value;
+      noResults.classList.remove('hidden');
+    }} else {{
+      noResults.classList.add('hidden');
+    }}
   }});
 </script>
 
