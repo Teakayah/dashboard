@@ -80,14 +80,32 @@ def extract_statcan_data(
     filter_items = list(filters.items())
     filter_items.sort(key=lambda x: 0 if x[0] == 'Labour force characteristics' else 1)
 
+    # Pre-calculate filter values and metadata for faster matching.
+    # val.strip() == v is only possible if v itself is clean.
+    optimized_filters = []
+    for k, v in filter_items:
+        v_len = len(v)
+        v_is_clean = v.strip() == v
+        optimized_filters.append((k, v, v_len, v_is_clean))
+
     for row in rows:
         match = True
-        for k, v in filter_items:
+        for k, v, v_len, v_is_clean in optimized_filters:
             val = row.get(k, '')
-            # Avoid .strip() overhead unless necessary
-            if val != v and val.strip() != v:
-                match = False
-                break
+            if val == v:
+                continue
+
+            # If we're here, val != v.
+            # Optimization: val.strip() == v can only be true if:
+            # 1. v has no surrounding whitespace
+            # 2. val is longer than v (since it must contain v + whitespace)
+            if v_is_clean and len(val) > v_len and val.strip() == v:
+                # Match! Memoize the stripped value to speed up subsequent passes.
+                row[k] = v
+                continue
+
+            match = False
+            break
 
         if match:
             val = _clean(row["VALUE"])

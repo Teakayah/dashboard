@@ -13,3 +13,6 @@
 ## 2026-05-06 - Avoiding Duplicate CSV Parsing
 **Learning:** Parsing the exact same large CSV file (`14100287.csv`, typically ~100k-300k rows) multiple times sequentially (e.g. for extracting different tables/variants) incurs massive duplicate I/O and parsing overhead. Reading it twice effectively doubles the processing time.
 **Action:** When extracting multiple subsets (like `empRate` and `empJobs`) from the same underlying large CSV, read and parse the CSV into a single variable first (`rows = _read_csv(csv_path)`), then pass that cached representation to all subsequent extraction functions.
+## 2025-05-14 - Optimizing String Strip Overhead in Tight Loops
+**Learning:** In heavily repeated loops (e.g., millions of rows), even "cheap" operations like `.strip()` add up. When matching against constants, we can short-circuit these calls using length comparisons and pre-calculating the "cleanness" of the target value. In-place memoization of the stripped value provides significant gains for multi-pass data processing.
+**Action:** Always look for ways to memoize cleaning operations in-place if the data structure is mutable and reused across multiple passes or functions.
