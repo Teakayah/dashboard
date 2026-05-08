@@ -71,6 +71,7 @@ async function init() {
         const logger = new duckdb.ConsoleLogger();
         db = new duckdb.AsyncDuckDB(logger, worker);
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+        await db.open({ path: 'indexeddb://duckdb', accessMode: duckdb.DuckDBAccessMode.READ_WRITE });
 
         conn = await db.connect();
         statusEl.textContent = 'DuckDB Ready';
@@ -100,7 +101,7 @@ async function restoreState() {
                 await displayTableSchema(table);
             }
             
-            sqlInput.value = `SELECT * FROM ${currentTableName} LIMIT 100`;
+            sqlInput.value = `SELECT * FROM "${currentTableName}" LIMIT 100`;
             runBtn.disabled = false;
             
             updateJoinUI();
@@ -193,8 +194,8 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaA = await conn.query(`DESCRIBE ${tableA}`);
-        const schemaB = await conn.query(`DESCRIBE ${tableB}`);
+        const schemaA = await conn.query(`DESCRIBE "${tableA}"`);
+        const schemaB = await conn.query(`DESCRIBE "${tableB}"`);
         
         const colsA = new Set(schemaA.toArray().map(r => r.column_name));
         const colsB = schemaB.toArray().map(r => r.column_name);
@@ -279,7 +280,7 @@ generateJoinBtn.addEventListener('click', () => {
         return;
     }
 
-    const sql = `SELECT *\nFROM ${a}\nJOIN ${b} ON ${a}."${col}" = ${b}."${col}"\nLIMIT 100`;
+    const sql = `SELECT *\nFROM "${a}"\nJOIN "${b}" ON "${a}"."${col}" = "${b}"."${col}"\nLIMIT 100`;
     sqlInput.value = sql;
     sqlInput.focus();
 });
@@ -415,7 +416,7 @@ async function handleFiles(files) {
             await generateInstantCharts(tableName);
             
             // Set default query
-            sqlInput.value = `SELECT * FROM ${tableName} LIMIT 100`;
+            sqlInput.value = `SELECT * FROM "${tableName}" LIMIT 100`;
             runBtn.disabled = false;
         }
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
@@ -730,7 +731,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
         updateJoinUI();
         updateChartBuilderUI();
-        sqlInput.value = `SELECT * FROM employees JOIN departments ON employees.dept_id = departments.dept_id LIMIT 100`;
+        sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
         runBtn.disabled = false;
         
         const originalText = loadSamplesBtn.textContent;
