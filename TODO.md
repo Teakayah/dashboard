@@ -10,6 +10,8 @@
 *   **Social Optimization**: Automatic Open Graph (OG) and Twitter card generation for all pages.
 *   **IndexedDB Persistence**: Implemented WASM persistence for DuckDB to make the Drop-Zone data persist across sessions.
 *   **Dynamic OG Images**: Robust screenshot engine with animation waiting for social previews.
+*   **User Onboarding**: Integrated sample datasets for instant feature demonstration.
+*   **Database Export**: Enabled DuckDB database export for local persistence.
 
 ### UX Polish & Interactivity
 *   **Interactive Search**: Dashboard search bar with real-time card filtering and matching.
@@ -22,7 +24,7 @@
 ### Engineering & Quality
 *   **Bolt Optimization**: High-throughput CSV parsing for large datasets.
 *   **Security Hardening**: Mitigated DOM-based XSS in the Analytical Drop-Zone.
-*   **Test Infrastructure**: Comprehensive test suite (161+ tests).
+*   **Test Infrastructure**: Comprehensive test suite (230+ tests).
 *   **Declarative Extraction**: Configuration-driven data engine in `rebuild_analyses.py`.
 *   **Centralized Config**: Single source of truth in `deployment/config.py`.
 
@@ -30,7 +32,8 @@
 
 ## Final Polishing 🎯
 
-*   **User Onboarding**: Load sample datasets to demonstrate features instantly.
-*   **Repository Organization**: Move utility scripts to `/scripts`. (Completed)
-*   **Database Export**: Allow users to download their persistent DuckDB file.
-*   **Visual PWA Polish**: Proper high-res icons for mobile installation.
+*   **Visual PWA Polish**: Completed (Added high-res 192x192, 512x512, and maskable icons).
+*   **Grammar Audit**: Completed (Fixed 'analysises' to 'analyses').
+*   **Performance Benchmarking**: Run `scripts/benchmark_final_test.py` on production-sized datasets.
+*   **Accessibility Audit**: Continuous monitoring of focus states and ARIA labels.
+

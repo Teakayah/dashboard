@@ -415,7 +415,7 @@ def test_build_html_with_analyses(monkeypatch):
     html = module.build_html(analyses)
 
     # Check subtitle
-    assert '2 analysises' in html
+    assert '2 analyses' in html
     assert 'from various datasets and projects' in html
 
     # Check empty state is NOT present
