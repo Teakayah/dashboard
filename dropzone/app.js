@@ -32,9 +32,38 @@ const recipeSelect = document.getElementById('query-recipes');
 const schemaDisplay = document.getElementById('schema-display');
 const loadingOverlay = document.getElementById('loading');
 const previewsContainer = document.getElementById('instant-previews');
+const remoteDeltaUrl = document.getElementById('remote-delta-url');
+const loadRemoteDeltaBtn = document.getElementById('load-remote-delta');
+
+loadRemoteDeltaBtn.addEventListener('click', async () => {
+    const url = remoteDeltaUrl.value.trim();
+    if (!url) return;
+
+    loadingOverlay.style.display = 'flex';
+    try {
+        const tableName = 'remote_delta_' + Math.random().toString(36).substr(2, 5);
+        // httpfs is required for remote URLs, DuckDB-Wasm usually autoloads it, 
+        // but we can ensure it's there if needed.
+
+        const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${url}')`;
+        await conn.query(query);
+
+        currentTableName = tableName;
+        loadedTables.add(tableName);
+        await onTableLoaded(tableName);
+
+        statusEl.textContent = `Loaded remote table: ${tableName}`;
+    } catch (err) {
+        console.error(err);
+        alert('Error loading remote Delta table: ' + err.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+});
 
 /**
  * Safely converts an Arrow table result into a plain array of JavaScript objects.
+...
  * This avoids DuckDB-Wasm Proxy trap errors (ownKeys) and handles BigInt serialization.
  *
  * @param {import('@duckdb/duckdb-wasm').Table} result
@@ -98,6 +127,10 @@ async function init() {
         await db.open({ path: 'indexeddb://duckdb', accessMode: duckdb.DuckDBAccessMode.READ_WRITE });
 
         conn = await db.connect();
+        
+        statusEl.textContent = 'Loading extensions...';
+        await conn.query('LOAD delta;');
+        
         statusEl.textContent = 'DuckDB Ready';
 
         console.log('DuckDB-Wasm initialized');
@@ -408,49 +441,102 @@ async function handleFiles(files) {
     previewsContainer.textContent = '';
     
     try {
+        // Group files by their relative path to detect Delta Lake tables
+        const fileGroups = {};
+        const standaloneFiles = [];
+
         for (const file of files) {
-            const tableName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
-            currentTableName = tableName;
-            loadedTables.add(tableName);
+            const relPath = file.webkitRelativePath || file.name;
+            const pathParts = relPath.split('/');
             
-            const buffer = await file.arrayBuffer();
-            await db.registerFileBuffer(file.name, new Uint8Array(buffer));
-            
-            let query = '';
-            const ext = file.name.split('.').pop().toLowerCase();
-            const escapedFileName = file.name.replace(/'/g, "''");
-            if (ext === 'parquet') {
-                query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_parquet('${escapedFileName}')`;
-            } else if (ext === 'csv') {
-                query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${escapedFileName}')`;
-            } else if (ext === 'json') {
-                query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${escapedFileName}')`;
+            if (pathParts.length > 1) {
+                const rootDir = pathParts[0];
+                if (!fileGroups[rootDir]) fileGroups[rootDir] = [];
+                fileGroups[rootDir].push(file);
             } else {
-                query = `CREATE TABLE "${tableName}" AS SELECT * FROM '${escapedFileName}'`;
+                standaloneFiles.push(file);
             }
-            
-            await conn.query(`DROP TABLE IF EXISTS "${tableName}"`);
-            await conn.query(query);
-            
-            // Show schema
-            if (loadedTables.size === 1) schemaDisplay.textContent = '';
-            await displayTableSchema(tableName);
-            
-            // Generate Previews
-            await generateInstantCharts(tableName);
-            
-            // Set default query
-            sqlInput.value = `SELECT * FROM "${tableName}" LIMIT 100`;
-            runBtn.disabled = false;
         }
+
+        // Process standalone files
+        for (const file of standaloneFiles) {
+            await processFile(file, file.name);
+        }
+
+        // Process directory groups (Potential Delta Lake or multi-part datasets)
+        for (const [dirName, dirFiles] of Object.entries(fileGroups)) {
+            const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
+            const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
+            
+            for (const file of dirFiles) {
+                const fullPath = file.webkitRelativePath || file.name;
+                const buffer = await file.arrayBuffer();
+                await db.registerFileBuffer(fullPath, new Uint8Array(buffer));
+            }
+
+            if (isDelta) {
+                currentTableName = tableName;
+                loadedTables.add(tableName);
+                const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${dirName}')`;
+                await conn.query(`DROP TABLE IF EXISTS "${tableName}"`);
+                await conn.query(query);
+                await onTableLoaded(tableName);
+            } else {
+                // If not delta, just treat as individual files (default behavior)
+                for (const file of dirFiles) {
+                    await processFile(file, file.webkitRelativePath || file.name);
+                }
+            }
+        }
+
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
         updateJoinUI();
     } catch (err) {
         console.error(err);
-        alert('Error loading file: ' + err.message);
+        alert('Error loading files: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
+}
+
+async function processFile(file, path) {
+    const tableName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
+    currentTableName = tableName;
+    loadedTables.add(tableName);
+    
+    const buffer = await file.arrayBuffer();
+    await db.registerFileBuffer(path, new Uint8Array(buffer));
+    
+    let query = '';
+    const ext = file.name.split('.').pop().toLowerCase();
+    const escapedPath = path.replace(/'/g, "''");
+    
+    if (ext === 'parquet') {
+        query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_parquet('${escapedPath}')`;
+    } else if (ext === 'csv') {
+        query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${escapedPath}')`;
+    } else if (ext === 'json') {
+        query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${escapedPath}')`;
+    } else {
+        query = `CREATE TABLE "${tableName}" AS SELECT * FROM '${escapedPath}'`;
+    }
+    
+    await conn.query(`DROP TABLE IF EXISTS "${tableName}"`);
+    await conn.query(query);
+    await onTableLoaded(tableName);
+}
+
+async function onTableLoaded(tableName) {
+    // Show schema
+    if (loadedTables.size === 1) schemaDisplay.textContent = '';
+    await displayTableSchema(tableName);
+    
+    // Generate Previews
+    await generateInstantCharts(tableName);
+    
+    // Set default query
+    sqlInput.value = `SELECT * FROM "${tableName}" LIMIT 100`;
+    runBtn.disabled = false;
 }
 
 function insertAtCursor(myField, myValue) {
