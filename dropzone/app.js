@@ -33,6 +33,30 @@ const schemaDisplay = document.getElementById('schema-display');
 const loadingOverlay = document.getElementById('loading');
 const previewsContainer = document.getElementById('instant-previews');
 
+/**
+ * Safely converts an Arrow table result into a plain array of JavaScript objects.
+ * This avoids DuckDB-Wasm Proxy trap errors (ownKeys) and handles BigInt serialization.
+ *
+ * @param {import('@duckdb/duckdb-wasm').Table} result
+ * @returns {Array<Object>}
+ */
+function getRows(result) {
+    if (!result || !result.schema) return [];
+    const fields = result.schema.fields.map(f => f.name);
+    const rows = [];
+    for (let i = 0; i < result.numRows; i++) {
+        const rowProxy = result.get(i);
+        const rowPlain = {};
+        for (const field of fields) {
+            const val = rowProxy[field];
+            // Cast BigInts to strings for UI/JSON compatibility
+            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+        }
+        rows.push(rowPlain);
+    }
+    return rows;
+}
+
 // Join Assistant Elements
 const joinAssistant = document.getElementById('join-assistant');
 const joinTableA = document.getElementById('join-table-a');
@@ -89,7 +113,7 @@ async function init() {
 async function restoreState() {
     try {
         const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
-        const tables = tablesResult.toArray().map(r => r.table_name);
+        const tables = getRows(tablesResult).map(r => r.table_name);
         
         if (tables.length > 0) {
             loadedTables = new Set(tables);
@@ -113,7 +137,7 @@ async function restoreState() {
 }
 
 async function displayTableSchema(tableName) {
-    const schema = await conn.query(`DESCRIBE "${tableName}"`);
+    const schemaResult = await conn.query(`DESCRIBE "${tableName}"`);
     const statsContainer = document.createElement('div');
     statsContainer.style.fontSize = '0.75rem';
     statsContainer.style.marginTop = '4px';
@@ -121,7 +145,7 @@ async function displayTableSchema(tableName) {
     statsContainer.style.fontStyle = 'italic';
     statsContainer.style.minHeight = '1.2em';
 
-    const cols = schema.toArray().map(r => {
+    const cols = getRows(schemaResult).map(r => {
         const span = document.createElement('span');
         span.className = 'clickable-col';
         span.style.cursor = 'pointer';
@@ -138,7 +162,7 @@ async function displayTableSchema(tableName) {
             try {
                 statsContainer.textContent = 'Calculating stats...';
                 const profilingResult = await conn.query(`SELECT MIN("${r.column_name}") as min_val, MAX("${r.column_name}") as max_val, COUNT("${r.column_name}") as count_val FROM "${tableName}"`);
-                const stats = profilingResult.toArray()[0];
+                const stats = getRows(profilingResult)[0];
                 statsContainer.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
             } catch (err) {
                 statsContainer.textContent = `Profiling failed: ${err.message}`;
@@ -194,11 +218,11 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaA = await conn.query(`DESCRIBE "${tableA}"`);
-        const schemaB = await conn.query(`DESCRIBE "${tableB}"`);
+        const schemaAResult = await conn.query(`DESCRIBE "${tableA}"`);
+        const schemaBResult = await conn.query(`DESCRIBE "${tableB}"`);
         
-        const colsA = new Set(schemaA.toArray().map(r => r.column_name));
-        const colsB = schemaB.toArray().map(r => r.column_name);
+        const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
+        const colsB = getRows(schemaBResult).map(r => r.column_name);
         
         const sharedCols = colsB.filter(c => colsA.has(c));
         
@@ -234,8 +258,8 @@ async function updateChartBuilderUI() {
     }
     chartBuilder.style.display = 'flex';
     try {
-        const schema = await conn.query(`DESCRIBE "${currentTableName}"`);
-        const cols = schema.toArray();
+        const schemaResult = await conn.query(`DESCRIBE "${currentTableName}"`);
+        const cols = getRows(schemaResult);
         
         const populateSelect = (select, cols, defaultMsg) => {
             select.textContent = '';
@@ -309,8 +333,8 @@ generateChartBtn.addEventListener('click', () => {
             // Show the generated SQL to the user in the console
             sqlInput.value = sql;
             
-            const data = await conn.query(sql);
-            const rows = data.toArray();
+            const result = await conn.query(sql);
+            const rows = getRows(result);
             
             let chartData = {};
             let chartOptions = {};
@@ -466,8 +490,8 @@ recipeSelect.addEventListener('change', () => {
  * @param {string} tableName - The name of the DuckDB table to analyze
  */
 async function generateInstantCharts(tableName) {
-    const schema = await conn.query(`DESCRIBE "${tableName}"`);
-    const columns = schema.toArray();
+    const schemaResult = await conn.query(`DESCRIBE "${tableName}"`);
+    const columns = getRows(schemaResult);
     const numericCols = columns.filter(c => 
         ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase())
     ).map(c => c.column_name);
@@ -489,13 +513,13 @@ async function generateInstantCharts(tableName) {
         const dCol = dateCols[0];
         const nCol = numericCols[0];
         createPreviewCard(`Trend: ${nCol} over ${dCol}`, async (canvasId) => {
-            const data = await conn.query(`
+            const result = await conn.query(`
                 SELECT "${dCol}" as date, AVG("${nCol}") as val 
                 FROM "${tableName}"
                 WHERE "${dCol}" IS NOT NULL AND "${nCol}" IS NOT NULL
                 GROUP BY 1 ORDER BY 1 ASC LIMIT 100
             `);
-            const rows = data.toArray();
+            const rows = getRows(result);
             renderChart(canvasId, 'line', {
                 labels: rows.map(r => r.date),
                 datasets: [{
@@ -520,7 +544,7 @@ async function generateInstantCharts(tableName) {
                     const c1 = numericCols[i];
                     const c2 = numericCols[j];
                     const corrResult = await conn.query(`SELECT corr("${c1}", "${c2}") as c FROM "${tableName}"`);
-                    const corr = Math.abs(corrResult.toArray()[0].c || 0);
+                    const corr = Math.abs(getRows(corrResult)[0].c || 0);
                     if (corr > maxCorr) {
                         maxCorr = corr;
                         bestPair = [c1, c2];
@@ -529,11 +553,12 @@ async function generateInstantCharts(tableName) {
             }
             
             createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, async (canvasId) => {
-                const data = await conn.query(`SELECT "${bestPair[0]}" as x, "${bestPair[1]}" as y FROM "${tableName}" WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
+                const result = await conn.query(`SELECT "${bestPair[0]}" as x, "${bestPair[1]}" as y FROM "${tableName}" WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
+                const rows = getRows(result);
                 renderChart(canvasId, 'scatter', {
                     datasets: [{
                         label: `${bestPair[0]} vs ${bestPair[1]}`,
-                        data: data.toArray().map(r => ({x: r.x, y: r.y})),
+                        data: rows.map(r => ({x: r.x, y: r.y})),
                         backgroundColor: '#4f8ef7'
                     }]
                 }, {
@@ -548,14 +573,14 @@ async function generateInstantCharts(tableName) {
         const tCol = textCols[0];
         const nCol = numericCols[0];
         createPreviewCard(`Distribution: ${nCol} by ${tCol}`, async (canvasId) => {
-            const data = await conn.query(`
+            const result = await conn.query(`
                 SELECT "${tCol}" as label, AVG("${nCol}") as value 
                 FROM "${tableName}"
                 GROUP BY 1 
                 ORDER BY value DESC 
                 LIMIT 10
             `);
-            const rows = data.toArray();
+            const rows = getRows(result);
             renderChart(canvasId, 'bar', {
                 labels: rows.map(r => r.label),
                 datasets: [{
@@ -633,7 +658,8 @@ async function runQuery() {
     
     loadingOverlay.style.display = 'flex';
     try {
-        lastResult = await conn.query(sql);
+        const result = await conn.query(sql);
+        lastResult = getRows(result);
         renderResults(lastResult);
         downloadBtn.disabled = false;
         copyJsonBtn.disabled = false;
@@ -649,27 +675,21 @@ async function runQuery() {
  * Renders the SQL query result table in the UI using Grid.js.
  * Transforms DuckDB-Wasm result formats into plain arrays of objects suitable for visualization.
  *
- * @param {import('@duckdb/duckdb-wasm').Table} result - The Arrow table result from a DuckDB query
+ * @param {Array<Object>} rows - The plain array of row objects
  */
-function renderResults(result) {
-    const fields = result.schema.fields.map(f => f.name);
-    const data = result.toArray().map(row => {
-        const obj = {};
-        for (const key of fields) {
-            const val = row[key];
-            // Workaround: Grid.js and standard JSON serialization (JSON.stringify) crash on BigInt values.
-            // We cast BigInts to strings here so that UI components can render them safely.
-            obj[key] = typeof val === 'bigint' ? val.toString() : val;
-        }
-        return obj;
-    });
-
+function renderResults(rows) {
+    if (rows.length === 0) {
+        document.getElementById('results').textContent = 'No results';
+        return;
+    }
+    const columns = Object.keys(rows[0]);
     const resultsContainer = document.getElementById('results');
     resultsContainer.textContent = '';
-
+    
     new gridjs.Grid({
-        columns: fields,
-        data: data.map(row => fields.map(col => row[col])),        pagination: { limit: 10 },
+        columns: columns,
+        data: rows.map(row => columns.map(col => row[col])),
+        pagination: { limit: 10 },
         sort: true,
         search: true,
         resizable: true,
@@ -678,7 +698,7 @@ function renderResults(result) {
 }
 
 downloadBtn.addEventListener('click', async () => {
-    if (!lastResult) return;
+    if (!lastResult || lastResult.length === 0) return;
     loadingOverlay.style.display = 'flex';
     try {
         const csvPath = 'export.csv';
@@ -703,16 +723,7 @@ downloadBtn.addEventListener('click', async () => {
 
 copyJsonBtn.addEventListener('click', () => {
     if (!lastResult) return;
-    const fields = lastResult.schema.fields.map(f => f.name);
-    const data = lastResult.toArray().map(row => {
-        const obj = {};
-        for (const key of fields) {
-            const val = row[key];
-            obj[key] = typeof val === 'bigint' ? val.toString() : val;
-        }
-        return obj;
-    });
-    const json = JSON.stringify(data, null, 2);
+    const json = JSON.stringify(lastResult, null, 2);
     navigator.clipboard.writeText(json).then(() => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
@@ -788,7 +799,7 @@ clearBtn.addEventListener('click', async () => {
     loadingOverlay.style.display = 'flex';
     try {
         const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
-        const tables = tablesResult.toArray().map(r => r.table_name);
+        const tables = getRows(tablesResult).map(r => r.table_name);
         
         for (const table of tables) {
             await conn.query(`DROP TABLE IF EXISTS "${table}"`);
