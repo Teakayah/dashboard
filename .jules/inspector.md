@@ -15,8 +15,8 @@
 **Action:** Refactored the logic to use the correct English pluralization (`'analyses'`) and updated corresponding test assertions.
 
 ## 2026-05-08 - Relative paths for DuckDB-Wasm bundles
-**Learning:** Absolute paths in `MANUAL_BUNDLES` (e.g., `/dropzone/vendor/...`) cause 404 errors when a site is hosted in a subdirectory (like GitHub Pages' `/dashboard/`).
-**Action:** Always use relative paths (`./vendor/...`) in `app.js` to ensure assets are correctly located relative to the script's origin across all hosting environments.
+**Learning:** Simple relative paths (e.g., `./vendor/...`) in `MANUAL_BUNDLES` are resolved relative to the **page URL** (the HTML file), not the **script URL**. This causes failures if the HTML and JS files are in different directories (e.g., `ROOT/dropzone.html` vs `ROOT/dropzone/app.js`).
+**Action:** Use `new URL('./path/to/asset', import.meta.url).href` to robustly resolve assets relative to the module script itself, ensuring they are found regardless of where the HTML page is located.
 
 ## 2024-05-24 - Missing Tests for `extract_emp_jobs`
 **Learning:** `extract_emp_jobs` logic is handled under the variant name `empJobs` in the central extraction engine `extract_statcan_data`. Testing this functionality directly requires using the variant rather than an isolated function.
