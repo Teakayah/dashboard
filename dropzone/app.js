@@ -652,9 +652,10 @@ async function runQuery() {
  * @param {import('@duckdb/duckdb-wasm').Table} result - The Arrow table result from a DuckDB query
  */
 function renderResults(result) {
+    const fields = result.schema.fields.map(f => f.name);
     const data = result.toArray().map(row => {
         const obj = {};
-        for (const key of Object.keys(row)) {
+        for (const key of fields) {
             const val = row[key];
             // Workaround: Grid.js and standard JSON serialization (JSON.stringify) crash on BigInt values.
             // We cast BigInts to strings here so that UI components can render them safely.
@@ -662,15 +663,13 @@ function renderResults(result) {
         }
         return obj;
     });
-    
-    const columns = result.schema.fields.map(f => f.name);
+
     const resultsContainer = document.getElementById('results');
     resultsContainer.textContent = '';
-    
+
     new gridjs.Grid({
-        columns: columns,
-        data: data.map(row => columns.map(col => row[col])),
-        pagination: { limit: 10 },
+        columns: fields,
+        data: data.map(row => fields.map(col => row[col])),        pagination: { limit: 10 },
         sort: true,
         search: true,
         resizable: true,
@@ -704,9 +703,10 @@ downloadBtn.addEventListener('click', async () => {
 
 copyJsonBtn.addEventListener('click', () => {
     if (!lastResult) return;
+    const fields = lastResult.schema.fields.map(f => f.name);
     const data = lastResult.toArray().map(row => {
         const obj = {};
-        for (const key of Object.keys(row)) {
+        for (const key of fields) {
             const val = row[key];
             obj[key] = typeof val === 'bigint' ? val.toString() : val;
         }
