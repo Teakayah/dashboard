@@ -3,12 +3,12 @@ import * as duckdb from './vendor/duckdb/duckdb-browser.mjs';
 // DuckDB-Wasm manual bundle configuration.
 const MANUAL_BUNDLES = {
     mvp: {
-        mainModule: './vendor/duckdb/duckdb-mvp.wasm',
-        mainWorker: './vendor/duckdb/duckdb-browser-mvp.worker.js',
+        mainModule: new URL('./vendor/duckdb/duckdb-mvp.wasm', import.meta.url).href,
+        mainWorker: new URL('./vendor/duckdb/duckdb-browser-mvp.worker.js', import.meta.url).href,
     },
     eh: {
-        mainModule: './vendor/duckdb/duckdb-eh.wasm',
-        mainWorker: './vendor/duckdb/duckdb-browser-eh.worker.js',
+        mainModule: new URL('./vendor/duckdb/duckdb-eh.wasm', import.meta.url).href,
+        mainWorker: new URL('./vendor/duckdb/duckdb-browser-eh.worker.js', import.meta.url).href,
     },
 };
 
