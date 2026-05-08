@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 
 from deployment.update_statcan_data import fetch_changed_since, _get_end_period, _normalize_pid, _load_last_checked
@@ -233,7 +233,6 @@ def test_write_status_success(tmp_path):
         assert status['tables'] == tables
         assert status['last_checked_date'] == today.isoformat()
 
-from datetime import timedelta
 @patch('deployment.update_statcan_data._load_last_checked')
 @patch('deployment.update_statcan_data.TABLES', [{'id': '123', 'desc': 'T'}])
 def test_main_first_run(mock_load, capsys):
