@@ -379,6 +379,25 @@ def test_clean_valid_floats(val, expected):
     assert _clean(val) == expected
 
 
+def test_inject_insight():
+    from deployment.rebuild_analyses import _inject_insight
+    html = "<html><body><!-- insight-inject --><!-- /insight-inject --></body></html>"
+    insight = "Test Insight"
+    res, changed = _inject_insight(html, insight)
+    assert changed
+    assert '<div class="insight-badge">Test Insight</div>' in res
+    assert "<!-- insight-inject -->" in res
+    assert "<!-- /insight-inject -->" in res
+
+
+def test_inject_insight_no_markers():
+    from deployment.rebuild_analyses import _inject_insight
+    html = "<html><body>No markers here</body></html>"
+    res, changed = _inject_insight(html, "Test")
+    assert not changed
+    assert res == html
+
+
 def test_extract_pop_data_basic():
     rows = [
         create_pop_row(geo="Ontario", ref_date="2023", value="15000000"),

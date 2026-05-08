@@ -245,6 +245,26 @@
             </div>
         </div>
 
+        <div id="chart-builder" class="sql-console" style="display: none; border-left: 4px solid #ff9f40;">
+            <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #ff9f40;">📊 Visual Chart Builder</div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <select id="chart-type" aria-label="Chart Type" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                    <option value="bar">Bar Chart</option>
+                    <option value="line">Line Chart</option>
+                    <option value="scatter">Scatter Plot</option>
+                </select>
+                <span>X-Axis:</span>
+                <select id="chart-x-col" aria-label="X-Axis Column" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
+                    <option value="" disabled selected>Select Column...</option>
+                </select>
+                <span>Y-Axis (Aggregated):</span>
+                <select id="chart-y-col" aria-label="Y-Axis Column" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
+                    <option value="" disabled selected>Select Column...</option>
+                </select>
+                <button id="generate-chart" class="secondary" style="background-color: #ff9f40;">Generate Chart SQL</button>
+            </div>
+        </div>
+
         <div class="sql-console">
             <div class="console-actions">
                 <select id="query-recipes" aria-label="Select a query recipe" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.85rem; cursor: pointer;">
