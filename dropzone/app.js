@@ -104,7 +104,7 @@ async function restoreState() {
 }
 
 async function displayTableSchema(tableName) {
-    const schema = await conn.query(`DESCRIBE ${tableName}`);
+    const schema = await conn.query(`DESCRIBE "${tableName}"`);
     const cols = schema.toArray().map(r => {
         const span = document.createElement('span');
         span.className = 'clickable-col';
@@ -267,17 +267,18 @@ async function handleFiles(files) {
             
             let query = '';
             const ext = file.name.split('.').pop().toLowerCase();
+            const escapedFileName = file.name.replace(/'/g, "''");
             if (ext === 'parquet') {
-                query = `CREATE TABLE ${tableName} AS SELECT * FROM read_parquet('${file.name}')`;
+                query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_parquet('${escapedFileName}')`;
             } else if (ext === 'csv') {
-                query = `CREATE TABLE ${tableName} AS SELECT * FROM read_csv_auto('${file.name}')`;
+                query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${escapedFileName}')`;
             } else if (ext === 'json') {
-                query = `CREATE TABLE ${tableName} AS SELECT * FROM read_json_auto('${file.name}')`;
+                query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${escapedFileName}')`;
             } else {
-                query = `CREATE TABLE ${tableName} AS SELECT * FROM '${file.name}'`;
+                query = `CREATE TABLE "${tableName}" AS SELECT * FROM '${escapedFileName}'`;
             }
             
-            await conn.query(`DROP TABLE IF EXISTS ${tableName}`);
+            await conn.query(`DROP TABLE IF EXISTS "${tableName}"`);
             await conn.query(query);
             
             // Show schema
@@ -328,7 +329,7 @@ recipeSelect.addEventListener('change', () => {
 });
 
 async function generateInstantCharts(tableName) {
-    const schema = await conn.query(`DESCRIBE ${tableName}`);
+    const schema = await conn.query(`DESCRIBE "${tableName}"`);
     const columns = schema.toArray();
     const numericCols = columns.filter(c => 
         ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase())
@@ -353,7 +354,7 @@ async function generateInstantCharts(tableName) {
         createPreviewCard(`Trend: ${nCol} over ${dCol}`, async (canvasId) => {
             const data = await conn.query(`
                 SELECT "${dCol}" as date, AVG("${nCol}") as val 
-                FROM ${tableName} 
+                FROM "${tableName}"
                 WHERE "${dCol}" IS NOT NULL AND "${nCol}" IS NOT NULL
                 GROUP BY 1 ORDER BY 1 ASC LIMIT 100
             `);
@@ -381,7 +382,7 @@ async function generateInstantCharts(tableName) {
                 for (let j = i + 1; j < Math.min(numericCols.length, 5); j++) {
                     const c1 = numericCols[i];
                     const c2 = numericCols[j];
-                    const corrResult = await conn.query(`SELECT corr("${c1}", "${c2}") as c FROM ${tableName}`);
+                    const corrResult = await conn.query(`SELECT corr("${c1}", "${c2}") as c FROM "${tableName}"`);
                     const corr = Math.abs(corrResult.toArray()[0].c || 0);
                     if (corr > maxCorr) {
                         maxCorr = corr;
@@ -391,7 +392,7 @@ async function generateInstantCharts(tableName) {
             }
             
             createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, async (canvasId) => {
-                const data = await conn.query(`SELECT "${bestPair[0]}" as x, "${bestPair[1]}" as y FROM ${tableName} WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
+                const data = await conn.query(`SELECT "${bestPair[0]}" as x, "${bestPair[1]}" as y FROM "${tableName}" WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
                 renderChart(canvasId, 'scatter', {
                     datasets: [{
                         label: `${bestPair[0]} vs ${bestPair[1]}`,
@@ -412,7 +413,7 @@ async function generateInstantCharts(tableName) {
         createPreviewCard(`Distribution: ${nCol} by ${tCol}`, async (canvasId) => {
             const data = await conn.query(`
                 SELECT "${tCol}" as label, AVG("${nCol}") as value 
-                FROM ${tableName} 
+                FROM "${tableName}"
                 GROUP BY 1 
                 ORDER BY value DESC 
                 LIMIT 10
@@ -556,7 +557,8 @@ loadSamplesBtn.addEventListener('click', async () => {
         for (const [name, content] of Object.entries(SAMPLE_DATA)) {
             const tableName = name.replace('.csv', '');
             await db.registerFileText(name, content);
-            await conn.query(`CREATE TABLE IF NOT EXISTS ${tableName} AS SELECT * FROM read_csv_auto('${name}')`);
+            const escapedName = name.replace(/'/g, "''");
+            await conn.query(`CREATE TABLE IF NOT EXISTS "${tableName}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
             loadedTables.add(tableName);
         }
         
