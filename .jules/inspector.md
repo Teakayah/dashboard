@@ -14,6 +14,10 @@
 **Learning:** The string logic for pluralization in `build_html` was previously flawed (`'2 analysises'`).
 **Action:** Refactored the logic to use the correct English pluralization (`'analyses'`) and updated corresponding test assertions.
 
+## 2026-05-08 - DuckDB-Wasm Proxy Trap Duplicate Entries Error
+**Learning:** Iterating over keys using `Object.keys(row)` on DuckDB-Wasm row proxies can trigger an `ownKeys on proxy: trap returned duplicate entries` error in some environments.
+**Action:** Avoid dynamic key iteration on row proxies. Instead, always use the explicit field names from the result schema (`result.schema.fields`) to access data in a loop.
+
 ## 2026-05-08 - Relative paths for DuckDB-Wasm bundles
 **Learning:** Simple relative paths (e.g., `./vendor/...`) in `MANUAL_BUNDLES` are resolved relative to the **page URL** (the HTML file), not the **script URL**. This causes failures if the HTML and JS files are in different directories (e.g., `ROOT/dropzone.html` vs `ROOT/dropzone/app.js`).
 **Action:** Use `new URL('./path/to/asset', import.meta.url).href` to robustly resolve assets relative to the module script itself, ensuring they are found regardless of where the HTML page is located.
