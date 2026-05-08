@@ -16,3 +16,7 @@
 ## 2024-05-24 - Optimize CSV reading in rebuild_analyses.py
 **Learning:** When parsing large CSV datasets, using `csv.reader` with `dict(zip(headers, row))` is significantly faster than using `csv.DictReader`, and avoiding `.strip()` during the load phase provides major performance gains.
 **Action:** Always prefer `csv.reader` + `zip` for large files and defer `strip()` to specifically required fields downstream rather than blanketing it during load.
+
+## 2026-05-06 - CSV DictReader Optimization with Backward Compatibility
+**Learning:** When optimizing large CSV parsing by replacing `csv.DictReader` with `csv.reader` in Python, standard `zip()` will silently truncate missing column values if a row is shorter than the header list. To preserve the exact `restval=None` backwards compatibility of `DictReader`, use `dict(itertools.zip_longest(headers, row))`. Additionally, when injecting import statements during script patching, always ensure they are placed *below* the script shebang (`#!/usr/bin/env python3`) and any module-level docstrings to prevent breaking executable scripts.
+**Action:** When migrating from `DictReader` to `reader` + zip, always use `zip_longest` from `itertools` for safe padding. Verify new import placement in executable Python scripts.
