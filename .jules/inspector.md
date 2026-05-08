@@ -21,3 +21,7 @@
 ## 2025-02-28 - Test `empJobs` variant extraction logic
 **Learning:** The codebase uses a generic, centralized extraction engine (`extract_statcan_data`) for various Statistics Canada tables and variants, including `empJobs`. When a user requests tests for `extract_emp_jobs`, you should map this to testing the `empJobs` variant of `extract_statcan_data` instead of looking for an isolated function named `extract_emp_jobs`.
 **Action:** When asked to write tests for data extraction logic, first locate the function or the routing logic responsible for it. Use existing test helpers (like `create_row` in `test_rebuild_analyses.py`) to easily simulate the standardized input format required by the generic extraction engine.
+
+## 2024-05-25 - Improve coverage for generic statcan extraction and script entrypoint
+**Learning:** Functions like `extract_statcan_data` often have complex routing logic based on `table_id` with specific edge cases (invalid dates, no config, memoization optimizations) that lack explicit test coverage, leading to blind spots. Additionally, standalone script entrypoints (`if __name__ == "__main__":`) are frequently missed by test runners but can be covered safely using `runpy.run_path` alongside proper mocking of `sys.argv` and `sys.exit`.
+**Action:** Always identify uncovered branches in generic routing functions and ensure they are tested. When encountering untested script entrypoints, use `runpy.run_path` with appropriate mocks to simulate direct execution without causing the test runner to exit prematurely.

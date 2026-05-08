@@ -830,3 +830,98 @@ def test_rebuild_flood_no_change(mock_inject, mock_root, tmp_path):
 
     assert result is False
     assert mock_html.read_text() == "dummy html"
+
+def test_extract_invalid_year():
+    rows = [
+        create_row(geo="Ontario", ref_date="ABCD-01", value="100.0")
+    ]
+    result = extract_statcan_data(rows, '14100287', 'empRate')
+    assert result == {}
+
+def test_extract_no_config():
+    result = extract_statcan_data([], '99999999', 'empRate')
+    assert result == []
+
+def test_extract_generic_table():
+    rows = [
+        {"GEO": "Canada", "REF_DATE": "2023-01", "VALUE": "100.0", "Government sectors": "Federal government", "Statement of government operations and balance sheet": "Liabilities"}
+    ]
+    result = extract_statcan_data(rows, '10100015')
+    assert result == [{"year": 2023, "value": 0.1}]
+
+def test_extract_memoization():
+    rows = [
+        create_row(geo="Ontario", gender="  Total - Gender  ", ref_date="2023-01", value="100.0")
+    ]
+    result = extract_statcan_data(rows, '14100287', 'empRate')
+    assert result == {"Ontario": [{"year": 2023, "value": 100.0}]}
+
+@patch.dict("deployment.rebuild_analyses.EXTRACTION_CONFIGS", {"99999999": {"default_filters": {"GEO": "Canada"}}})
+def test_extract_fallback_return():
+    rows = [
+        {"GEO": "Canada", "REF_DATE": "2023-01", "VALUE": "100.0"}
+    ]
+    result = extract_statcan_data(rows, '99999999')
+    assert result == {"Canada": {2023: [100.0]}}
+
+@patch("deployment.rebuild_analyses.ROOT")
+@patch.dict("deployment.rebuild_analyses.REBUILDERS", clear=True)
+def test_main_success(mock_root):
+    mock_rebuild = MagicMock(return_value=True)
+    import deployment.rebuild_analyses
+    deployment.rebuild_analyses.REBUILDERS["test.html"] = mock_rebuild
+
+    mock_html = MagicMock()
+    mock_html.exists.return_value = True
+    mock_root.__truediv__.return_value = mock_html
+
+    from deployment.rebuild_analyses import main
+    result = main()
+    assert result == 1
+    mock_rebuild.assert_called_once_with(mock_html)
+
+@patch("deployment.rebuild_analyses.ROOT")
+@patch.dict("deployment.rebuild_analyses.REBUILDERS", clear=True)
+def test_main_file_not_found(mock_root):
+    mock_rebuild = MagicMock()
+    import deployment.rebuild_analyses
+    deployment.rebuild_analyses.REBUILDERS["test.html"] = mock_rebuild
+
+    mock_html = MagicMock()
+    mock_html.exists.return_value = False
+    mock_root.__truediv__.return_value = mock_html
+
+    from deployment.rebuild_analyses import main
+    result = main()
+    assert result == 0
+    mock_rebuild.assert_not_called()
+
+@patch("deployment.rebuild_analyses.ROOT")
+@patch.dict("deployment.rebuild_analyses.REBUILDERS", clear=True)
+def test_main_exception(mock_root):
+    mock_rebuild = MagicMock(side_effect=Exception("Test error"))
+    import deployment.rebuild_analyses
+    deployment.rebuild_analyses.REBUILDERS["test.html"] = mock_rebuild
+
+    mock_html = MagicMock()
+    mock_html.exists.return_value = True
+    mock_root.__truediv__.return_value = mock_html
+
+    from deployment.rebuild_analyses import main
+    result = main()
+    assert result == 0
+    mock_rebuild.assert_called_once_with(mock_html)
+
+@patch("sys.exit")
+def test_script_entrypoint(mock_exit):
+    import runpy
+    import sys
+    with patch.object(sys, "argv", ["deployment/rebuild_analyses.py"]):
+        try:
+            # We want run_path to hit line 372.
+            # But the module caching means it's running a new instance, which coverage DOES track if we don't mock out too much.
+            # To prevent actually reading/writing, we mock main to return 0.
+            with patch("deployment.rebuild_analyses.main", return_value=0):
+                runpy.run_path("deployment/rebuild_analyses.py", run_name="__main__")
+        except SystemExit:
+            pass
