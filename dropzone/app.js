@@ -483,11 +483,19 @@ async function runQuery() {
     }
 }
 
+/**
+ * Renders the SQL query result table in the UI using Grid.js.
+ * Transforms DuckDB-Wasm result formats into plain arrays of objects suitable for visualization.
+ *
+ * @param {import('@duckdb/duckdb-wasm').Table} result - The Arrow table result from a DuckDB query
+ */
 function renderResults(result) {
     const data = result.toArray().map(row => {
         const obj = {};
         for (const key of Object.keys(row)) {
             const val = row[key];
+            // Workaround: Grid.js and standard JSON serialization (JSON.stringify) crash on BigInt values.
+            // We cast BigInts to strings here so that UI components can render them safely.
             obj[key] = typeof val === 'bigint' ? val.toString() : val;
         }
         return obj;
