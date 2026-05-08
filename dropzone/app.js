@@ -3,12 +3,12 @@ import * as duckdb from './vendor/duckdb/duckdb-browser.mjs';
 // DuckDB-Wasm manual bundle configuration.
 const MANUAL_BUNDLES = {
     mvp: {
-        mainModule: '/dropzone/vendor/duckdb/duckdb-mvp.wasm',
-        mainWorker: '/dropzone/vendor/duckdb/duckdb-browser-mvp.worker.js',
+        mainModule: './vendor/duckdb/duckdb-mvp.wasm',
+        mainWorker: './vendor/duckdb/duckdb-browser-mvp.worker.js',
     },
     eh: {
-        mainModule: '/dropzone/vendor/duckdb/duckdb-eh.wasm',
-        mainWorker: '/dropzone/vendor/duckdb/duckdb-browser-eh.worker.js',
+        mainModule: './vendor/duckdb/duckdb-eh.wasm',
+        mainWorker: './vendor/duckdb/duckdb-browser-eh.worker.js',
     },
 };
 
