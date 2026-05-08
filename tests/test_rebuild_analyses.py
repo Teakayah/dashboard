@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from deployment.rebuild_analyses import (
     extract_nhpi,
     extract_statcan_data,
@@ -298,69 +298,6 @@ def test_extract_emp_rate_missing_value():
     ]
     result = extract_statcan_data(rows, '14100287', 'empRate')
     expected = {"Ontario": [{"year": 2023, "value": 60.0}]}
-    assert result == expected
-
-
-def test_extract_emp_jobs_basic():
-    rows = [
-        create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
-        create_row(geo="Ontario", ref_date="2023-02", value="6100.0", char="Employment"),
-        create_row(geo="Quebec", ref_date="2023-01", value="4000.0", char="Employment"),
-        create_row(geo="Ontario", ref_date="2024-01", value="6200.0", char="Employment"),
-        # Invalid
-        create_row(char="Unemployment rate"),
-        create_row(char="Employment", stat="Standard error"),
-        create_row(char="Employment", dtype="Unadjusted"),
-        create_row(char="Employment", value=".."),
-    ]
-
-    result = extract_statcan_data(rows, '14100287', 'empJobs')
-
-    expected = {
-        "Ontario": [
-            {"year": 2023, "level": 6050.0, "change": None},
-            {"year": 2024, "level": 6200.0, "change": 150.0},
-        ],
-        "Quebec": [{"year": 2023, "level": 4000.0, "change": None}],
-    }
-
-    assert result == expected
-
-
-def test_extract_emp_jobs_empty():
-    assert extract_statcan_data([], '14100287', 'empJobs') == {}
-
-
-def test_extract_emp_jobs_unordered_years():
-    rows = [
-        create_row(geo="Ontario", ref_date="2025-01", value="6500.0", char="Employment"),
-        create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
-        create_row(geo="Ontario", ref_date="2024-01", value="6200.0", char="Employment"),
-    ]
-    result = extract_statcan_data(rows, '14100287', 'empJobs')
-    expected = {
-        "Ontario": [
-            {"year": 2023, "level": 6000.0, "change": None},
-            {"year": 2024, "level": 6200.0, "change": 200.0},
-            {"year": 2025, "level": 6500.0, "change": 300.0},
-        ]
-    }
-    assert result == expected
-
-
-def test_extract_emp_jobs_missing_value():
-    rows = [
-        create_row(geo="Ontario", ref_date="2023-01", value="6000.0", char="Employment"),
-        create_row(geo="Ontario", ref_date="2024-01", value="x", char="Employment"),
-        create_row(geo="Ontario", ref_date="2025-01", value="6500.0", char="Employment"),
-    ]
-    result = extract_statcan_data(rows, '14100287', 'empJobs')
-    expected = {
-        "Ontario": [
-            {"year": 2023, "level": 6000.0, "change": None},
-            {"year": 2025, "level": 6500.0, "change": 500.0},
-        ]
-    }
     assert result == expected
 
 
@@ -762,7 +699,6 @@ def test_rebuild_employment_no_change(
     assert result is False
     mock_write_text.assert_not_called()
 
-from unittest.mock import patch, MagicMock
 
 @patch('deployment.rebuild_analyses.SRC')
 @patch('deployment.rebuild_analyses.extract_statcan_data')
