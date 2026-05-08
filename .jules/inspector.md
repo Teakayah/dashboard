@@ -15,8 +15,8 @@
 **Action:** Refactored the logic to use the correct English pluralization (`'analyses'`) and updated corresponding test assertions.
 
 ## 2026-05-08 - DuckDB-Wasm Proxy Trap Duplicate Entries Error
-**Learning:** Iterating over keys using `Object.keys(row)` on DuckDB-Wasm row proxies can trigger an `ownKeys on proxy: trap returned duplicate entries` error in some environments.
-**Action:** Avoid dynamic key iteration on row proxies. Instead, always use the explicit field names from the result schema (`result.schema.fields`) to access data in a loop.
+**Learning:** Iterating over row proxies or using `result.toArray()` can trigger an `ownKeys on proxy: trap returned duplicate entries` error in some browser environments. This is often linked to internal Apache Arrow optimizations during serialization or dynamic key iteration.
+**Action:** Avoid `result.toArray()` entirely. Use a robust `getRows(result)` helper that iterates using explicit indices (`result.get(i)`) and maps values to a plain object using schema-derived field names. This bypasses the proxy traps and ensures stable BigInt serialization.
 
 ## 2026-05-08 - Relative paths for DuckDB-Wasm bundles
 **Learning:** Simple relative paths (e.g., `./vendor/...`) in `MANUAL_BUNDLES` are resolved relative to the **page URL** (the HTML file), not the **script URL**. This causes failures if the HTML and JS files are in different directories (e.g., `ROOT/dropzone.html` vs `ROOT/dropzone/app.js`).
