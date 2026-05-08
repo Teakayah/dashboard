@@ -66,7 +66,7 @@ def extract_statcan_data(
 
     # Special handling for NHPI (18100205)
     if table_id == "18100205":
-        return _extract_nhpi_logic(rows, config)
+        return extract_nhpi(rows)
 
     # General extraction logic for other tables
     buckets: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
@@ -189,9 +189,9 @@ def extract_statcan_data(
     return buckets
 
 
-def _extract_nhpi_logic(rows: list[dict], config: dict) -> dict:
-    """Specific logic for NHPI table which has multiple measures."""
-    measures = config.get("measures", [])
+def extract_nhpi(rows: list[dict]) -> dict:
+    """Monthly NHPI by city — table 18100205."""
+    measures = ["Total (house and land)", "House only", "Land only"]
     idx_col = (
         next((k for k in rows[0] if "housing price" in k.lower()), None)
         if rows

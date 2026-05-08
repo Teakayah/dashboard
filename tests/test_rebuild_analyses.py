@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import patch
 from deployment.rebuild_analyses import (
+    extract_nhpi,
     extract_statcan_data,
     _clean,
     _inject_const,
@@ -441,7 +442,7 @@ def test_extract_nhpi_basic():
         create_nhpi_row(value=".."),
     ]
 
-    result = extract_statcan_data(rows, '18100205')
+    result = extract_nhpi(rows)
 
     expected = {
         "Toronto, Ontario": {
@@ -469,7 +470,7 @@ def test_extract_nhpi_basic():
 
 
 def test_extract_nhpi_empty():
-    assert extract_statcan_data([], '18100205') == {}
+    assert extract_nhpi([]) == {}
 
 
 def test_extract_nhpi_missing_idx_col():
@@ -477,8 +478,53 @@ def test_extract_nhpi_missing_idx_col():
     rows = [
         {"GEO": "Toronto", "REF_DATE": "2023-01", "VALUE": "120.0", "Wrong Column": "Total (house and land)"}
     ]
-    result = extract_statcan_data(rows, '18100205')
+    result = extract_nhpi(rows)
     assert result == {}
+
+
+
+def test_extract_nhpi_missing_value():
+    rows = [
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-01", value="120.5", measure="Total (house and land)"),
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-02", value="..", measure="Total (house and land)"),
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-03", value="121.5", measure="Total (house and land)"),
+    ]
+
+    result = extract_nhpi(rows)
+
+    expected = [
+        {"date": "2023-01", "value": 120.5},
+        {"date": "2023-03", "value": 121.5},
+    ]
+
+    assert result["Toronto, Ontario"]["Total (house and land)"] == expected
+
+
+def test_extract_nhpi_unordered_dates():
+    rows = [
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-03", value="121.5", measure="Total (house and land)"),
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-01", value="120.5", measure="Total (house and land)"),
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-02", value="121.0", measure="Total (house and land)"),
+    ]
+
+    result = extract_nhpi(rows)
+
+    expected = [
+        {"date": "2023-01", "value": 120.5},
+        {"date": "2023-02", "value": 121.0},
+        {"date": "2023-03", "value": 121.5},
+    ]
+
+    assert result["Toronto, Ontario"]["Total (house and land)"] == expected
+
+
+def test_extract_nhpi_wrong_measure():
+    rows = [
+        create_nhpi_row(geo="Toronto, Ontario", ref_date="2023-01", value="120.5", measure="Apartment only"),
+    ]
+    result = extract_nhpi(rows)
+    assert result == {}
+
 
 
 def test_extract_prov_debt_basic():
