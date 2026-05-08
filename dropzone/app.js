@@ -40,6 +40,13 @@ const joinTableB = document.getElementById('join-table-b');
 const joinCol = document.getElementById('join-col');
 const generateJoinBtn = document.getElementById('generate-join');
 
+// Chart Builder Elements
+const chartBuilder = document.getElementById('chart-builder');
+const chartType = document.getElementById('chart-type');
+const chartXCol = document.getElementById('chart-x-col');
+const chartYCol = document.getElementById('chart-y-col');
+const generateChartBtn = document.getElementById('generate-chart');
+
 const SAMPLE_DATA = {
     'employees.csv': `id,name,dept_id,salary,join_date
 1,Alice,101,85000,2022-01-15
@@ -97,6 +104,7 @@ async function restoreState() {
             runBtn.disabled = false;
             
             updateJoinUI();
+            updateChartBuilderUI();
         }
     } catch (err) {
         console.warn('Failed to restore state:', err);
@@ -105,6 +113,13 @@ async function restoreState() {
 
 async function displayTableSchema(tableName) {
     const schema = await conn.query(`DESCRIBE "${tableName}"`);
+    const statsContainer = document.createElement('div');
+    statsContainer.style.fontSize = '0.75rem';
+    statsContainer.style.marginTop = '4px';
+    statsContainer.style.color = '#666';
+    statsContainer.style.fontStyle = 'italic';
+    statsContainer.style.minHeight = '1.2em';
+
     const cols = schema.toArray().map(r => {
         const span = document.createElement('span');
         span.className = 'clickable-col';
@@ -113,18 +128,31 @@ async function displayTableSchema(tableName) {
         span.style.marginRight = '8px';
         span.style.color = 'var(--primary)';
         span.textContent = `${r.column_name} (${r.column_type})`;
-        span.onclick = (e) => {
+        
+        span.onclick = async (e) => {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${r.column_name}"`);
+            
+            // Profiling logic
+            try {
+                statsContainer.textContent = 'Calculating stats...';
+                const profilingResult = await conn.query(`SELECT MIN("${r.column_name}") as min_val, MAX("${r.column_name}") as max_val, COUNT("${r.column_name}") as count_val FROM "${tableName}"`);
+                const stats = profilingResult.toArray()[0];
+                statsContainer.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
+            } catch (err) {
+                statsContainer.textContent = `Profiling failed: ${err.message}`;
+            }
         };
         return span;
     });
     
     const tableDiv = document.createElement('div');
+    tableDiv.style.marginBottom = '12px';
     const strong = document.createElement('strong');
     strong.textContent = `Table: ${tableName} `;
     tableDiv.appendChild(strong);
     cols.forEach(c => tableDiv.appendChild(c));
+    tableDiv.appendChild(statsContainer);
     schemaDisplay.appendChild(tableDiv);
 }
 
@@ -198,6 +226,41 @@ async function updateJoinColumns() {
     }
 }
 
+async function updateChartBuilderUI() {
+    if (!currentTableName) {
+        chartBuilder.style.display = 'none';
+        return;
+    }
+    chartBuilder.style.display = 'flex';
+    try {
+        const schema = await conn.query(`DESCRIBE "${currentTableName}"`);
+        const cols = schema.toArray();
+        
+        const populateSelect = (select, cols, defaultMsg) => {
+            select.textContent = '';
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.disabled = true;
+            defaultOpt.selected = true;
+            defaultOpt.textContent = defaultMsg;
+            select.appendChild(defaultOpt);
+            cols.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.column_name;
+                opt.textContent = `${c.column_name} (${c.column_type})`;
+                select.appendChild(opt);
+            });
+        };
+
+        const numericCols = cols.filter(c => ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase()));
+        
+        populateSelect(chartXCol, cols, 'Select X-Axis...');
+        populateSelect(chartYCol, numericCols, 'Select Y-Axis (Numeric)...');
+    } catch (err) {
+        console.error('Error updating chart builder UI:', err);
+    }
+}
+
 joinTableA.addEventListener('change', updateJoinColumns);
 joinTableB.addEventListener('change', updateJoinColumns);
 
@@ -219,6 +282,69 @@ generateJoinBtn.addEventListener('click', () => {
     const sql = `SELECT *\nFROM ${a}\nJOIN ${b} ON ${a}."${col}" = ${b}."${col}"\nLIMIT 100`;
     sqlInput.value = sql;
     sqlInput.focus();
+});
+
+generateChartBtn.addEventListener('click', () => {
+    const type = chartType.value;
+    const xCol = chartXCol.value;
+    const yCol = chartYCol.value;
+    
+    if (!xCol || !yCol) {
+        alert('Please select both X and Y axes.');
+        return;
+    }
+
+    const title = `Custom ${type.toUpperCase()}: ${yCol} vs ${xCol}`;
+    
+    createPreviewCard(title, async (canvasId) => {
+        try {
+            let sql = '';
+            if (type === 'scatter') {
+                sql = `SELECT "${xCol}" as x, "${yCol}" as y\nFROM "${currentTableName}"\nWHERE "${xCol}" IS NOT NULL AND "${yCol}" IS NOT NULL\nLIMIT 500`;
+            } else {
+                sql = `SELECT "${xCol}" as label, AVG("${yCol}") as value\nFROM "${currentTableName}"\nWHERE "${xCol}" IS NOT NULL AND "${yCol}" IS NOT NULL\nGROUP BY 1\nORDER BY 1 ASC\nLIMIT 100`;
+            }
+            
+            // Show the generated SQL to the user in the console
+            sqlInput.value = sql;
+            
+            const data = await conn.query(sql);
+            const rows = data.toArray();
+            
+            let chartData = {};
+            let chartOptions = {};
+            
+            if (type === 'scatter') {
+                chartData = {
+                    datasets: [{
+                        label: `${xCol} vs ${yCol}`,
+                        data: rows.map(r => ({x: r.x, y: r.y})),
+                        backgroundColor: '#ff9f40'
+                    }]
+                };
+                chartOptions = {
+                    scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }
+                };
+            } else {
+                chartData = {
+                    labels: rows.map(r => r.label),
+                    datasets: [{
+                        label: (type === 'line' ? `Avg ${yCol}` : `Average ${yCol}`),
+                        data: rows.map(r => r.value),
+                        backgroundColor: (type === 'line' ? 'transparent' : '#ff9f40'),
+                        borderColor: '#ff9f40',
+                        tension: 0.1,
+                        fill: (type === 'bar')
+                    }]
+                };
+            }
+            
+            renderChart(canvasId, type, chartData, chartOptions);
+        } catch (e) {
+            console.error('Custom chart error', e);
+            alert('Error generating chart: ' + e.message);
+        }
+    });
 });
 
 // Handle file drops
@@ -445,10 +571,34 @@ function createPreviewCard(title, renderFn) {
     const id = 'chart-' + Math.random().toString(36).substr(2, 9);
     const card = document.createElement('div');
     card.className = 'preview-card';
+    card.style.position = 'relative';
     
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.marginBottom = '10px';
+
     const h3 = document.createElement('h3');
     h3.textContent = title;
-    card.appendChild(h3);
+    h3.style.margin = '0';
+    header.appendChild(h3);
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.textContent = '💾 PNG';
+    downloadBtn.style.padding = '2px 6px';
+    downloadBtn.style.fontSize = '0.7rem';
+    downloadBtn.onclick = () => {
+        const canvas = document.getElementById(id);
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png';
+        a.click();
+    };
+    header.appendChild(downloadBtn);
+    
+    card.appendChild(header);
     
     const canvas = document.createElement('canvas');
     canvas.id = id;
@@ -579,6 +729,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
         updateJoinUI();
+        updateChartBuilderUI();
         sqlInput.value = `SELECT * FROM employees JOIN departments ON employees.dept_id = departments.dept_id LIMIT 100`;
         runBtn.disabled = false;
         
@@ -644,6 +795,7 @@ clearBtn.addEventListener('click', async () => {
         downloadBtn.disabled = true;
         copyJsonBtn.disabled = true;
         joinAssistant.style.display = 'none';
+        updateChartBuilderUI();
         statusEl.textContent = 'Storage cleared';
     } catch (err) {
         console.error(err);

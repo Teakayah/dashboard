@@ -246,6 +246,14 @@ def _inject_const(html: str, var_name: str, new_value: object) -> tuple[str, boo
     return new_html, n > 0 and new_html != html
 
 
+def _inject_insight(html: str, insight: str) -> tuple[str, bool]:
+    """Replace content between <!-- insight-inject --> markers."""
+    pattern = r"<!-- insight-inject -->.*?<!-- /insight-inject -->"
+    replacement = f'<!-- insight-inject --><div class="insight-badge">{insight}</div><!-- /insight-inject -->'
+    new_html, n = re.subn(pattern, replacement, html, flags=re.DOTALL)
+    return new_html, n > 0 and new_html != html
+
+
 # ── Per-analysis rebuild functions ────────────────────────────────────────────
 
 
@@ -281,14 +289,33 @@ def rebuild_employment(html_path: Path) -> bool:
     }
 
     html = html_path.read_text(encoding="utf-8")
-    new_html, changed = _inject_const(html, "DATA", new_data)
+    new_html, changed_const = _inject_const(html, "DATA", new_data)
 
-    if not changed:
-        print("  No change in DATA.")
+    # Generate insight summary
+    insight = ""
+    try:
+        canada_jobs = new_data.get("empJobs", {}).get("Canada", [])
+        if canada_jobs:
+            latest = canada_jobs[-1]
+            year = latest["year"]
+            change = latest["change"]
+            if change is not None:
+                verb = "grew by" if change >= 0 else "decreased by"
+                insight = f"<strong>Insight:</strong> In {year}, employment in Canada {verb} {abs(change)}k persons."
+    except Exception as e:
+        print(f"  Warning: Failed to generate insight: {e}")
+
+    if insight:
+        new_html, changed_insight = _inject_insight(new_html, insight)
+    else:
+        changed_insight = False
+
+    if not (changed_const or changed_insight):
+        print("  No change in DATA or insight.")
         return False
 
     html_path.write_text(new_html, encoding="utf-8")
-    print(f"  DATA updated in {html_path.name}")
+    print(f"  Updated DATA and insight in {html_path.name}")
     return True
 
 
