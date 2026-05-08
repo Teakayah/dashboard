@@ -7,7 +7,11 @@ window.DataDashboard = window.DataDashboard || {};
 
 window.DataDashboard.utils = {
     /**
-     * Calculate compound or simple growth between two points.
+     * Calculates the percentage growth between the first and last data points in a series.
+     * Useful for determining the overall trend of a time-series metric.
+     *
+     * @param {Array<{x: string|number, y: number}>} data - The normalized data array. Requires at least 2 points.
+     * @returns {number|null} The growth as a percentage, or null if insufficient data or starting value is 0.
      */
     calculateGrowth: function(data) {
         if (!data || data.length < 2) return null;
@@ -18,7 +22,11 @@ window.DataDashboard.utils = {
     },
 
     /**
-     * Find outliers using 1.5 * IQR method.
+     * Identifies statistical outliers in a dataset using the 1.5 * Interquartile Range (IQR) method.
+     * This helps pinpoint anomalous spikes or drops in data visualizations.
+     *
+     * @param {Array<{x: string|number, y: number}>} data - The normalized data array. Requires at least 4 points.
+     * @returns {Array<{x: string|number, y: number}>} An array of the outlier data points.
      */
     findOutliers: function(data) {
         if (!data || data.length < 4) return [];
@@ -32,7 +40,11 @@ window.DataDashboard.utils = {
     },
 
     /**
-     * Generate a statistical summary.
+     * Generates a basic statistical summary (average, min, max, count) for a data series.
+     * Provides quick context for users without requiring them to inspect the raw dataset.
+     *
+     * @param {Array<{x: string|number, y: number}>} data - The normalized data array.
+     * @returns {{avg: number, max: number, min: number, count: number}|null} The summary statistics, or null if no data.
      */
     getSummary: function(data) {
         if (!data || data.length === 0) return null;
@@ -108,6 +120,15 @@ window.DataDashboard.ui = {
         document.body.appendChild(toolbar);
     },
 
+    /**
+     * Heuristically searches global state (`window.DATA` or `window.RAW`) for the active time-series data
+     * and normalizes it into a standard `{x, y}` format required by the utility functions.
+     *
+     * This normalization is necessary because different pages use varying object shapes
+     * (e.g., `{year, value}`, `{date, pop}`, `{date, level}`).
+     *
+     * @returns {Array<{x: string|number, y: number}>|null} The normalized data series, or null if no valid series is found.
+     */
     getActiveData: function() {
         // Attempt to find data from common global variables
         const source = window.DATA || window.RAW;
