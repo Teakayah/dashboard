@@ -9,3 +9,7 @@ Action: To apply this next time I can run ruff check --select F401,F841 to verif
 ## 2025-05-18 - Safe DOM Manipulation
 **Learning:** Found multiple usages of `.innerHTML` for DOM manipulation (clearing, injecting raw strings, and setting single options) which violate best security practices for preventing DOM-based XSS.
 **Action:** Replaced `.innerHTML` assignments with safer methods: `.textContent = ''` for clearing elements, `.textContent` for updating text, and used `document.createElement()`, `className`, `.textContent`, and `appendChild()` for constructing new DOM nodes (e.g., in `nhpi_big6_comparison.html` and `dropzone/app.js`). Applied across all frontend files.
+
+## 2026-05-07 - Secure CDN Imports
+**Learning:** External CDN imports were missing Subresource Integrity (SRI) hashes and `crossorigin="anonymous"` attributes, and were sometimes unversioned, which poses a security risk if the CDN is compromised.
+**Action:** Pinned CDN imports to specific versions and added SRI hashes (`integrity="..."`) and `crossorigin="anonymous"` attributes to prevent malicious code injection via compromised third-party resources.
