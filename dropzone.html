@@ -215,16 +215,25 @@
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                     <h1>Analytical Drop-Zone</h1>
-                    <p>Drag & Drop CSV, JSON, or Parquet files to query them locally with SQL.</p>
+                    <p>Drag & Drop CSV, JSON, Parquet, or Delta Lake files to query them locally with SQL.</p>
                 </div>
                 <button id="load-samples" class="secondary" style="background-color: #6366f1;">Load Sample Datasets</button>
             </div>
             <div id="status">Initializing DuckDB...</div>
         </header>
 
-        <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Drop files here or click to select">
-            <p>Drop files here or click to select</p>
-            <input type="file" id="file-input" style="display: none;" multiple>
+        <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Drop files or folders here or click to select">
+            <p>Drop files or folders here or click to select</p>
+            <input type="file" id="file-input" style="display: none;" multiple webkitdirectory>
+        </div>
+
+        <div class="sql-console" style="border-left: 4px solid #8b5cf6;">
+            <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #8b5cf6;">🌐 Remote Delta Table</div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <input type="text" id="remote-delta-url" placeholder="https://my-bucket.s3.amazonaws.com/delta-table" style="flex: 1; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                <button id="load-remote-delta" class="secondary" style="background-color: #8b5cf6;">Load Remote Table</button>
+            </div>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">Supports HTTP and S3 URLs. Ensure CORS is enabled for remote buckets.</p>
         </div>
 
         <div id="instant-previews" class="preview-section"></div>
