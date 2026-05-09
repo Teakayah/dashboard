@@ -17,3 +17,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-06 - Document DuckDB-Wasm BigInt serialization workaround
 **Learning:** DuckDB-Wasm queries returning values of type `bigint` (e.g., INT64 or HUGEINT) crash standard JSON serialization (`JSON.stringify`) and UI components like Grid.js.
 **Action:** When working with DuckDB-Wasm results in the frontend, always document the necessity of safely converting `bigint` values to strings (e.g., `typeof val === 'bigint' ? val.toString() : val`) before passing them to the UI or serializing them, to clarify this important workaround.
+
+## 2026-05-06 - Document DuckDB File Handling logic in dropzone
+**Learning:** `handleFiles` in `dropzone/app.js` groups files by directory to support Delta Lake multi-part datasets (which have a `_delta_log` directory) because HTML file inputs flatten directories. `processFile` then infers the correct DuckDB import function (`read_parquet`, `read_csv_auto`, `read_json_auto`) dynamically based on the file extension.
+**Action:** When working on file ingestion logic for DuckDB-Wasm in the browser, always document how flattened directory structures are reconstructed for multi-part datasets and how parsing functions are dynamically mapped to extensions.
