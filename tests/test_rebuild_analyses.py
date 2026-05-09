@@ -662,6 +662,123 @@ def test_rebuild_employment_success(
 
 
 @patch("pathlib.Path.exists")
+@patch("deployment.rebuild_analyses._read_csv")
+@patch("deployment.rebuild_analyses.extract_statcan_data")
+@patch("pathlib.Path.read_text")
+@patch("deployment.rebuild_analyses._inject_const")
+@patch("deployment.rebuild_analyses._inject_insight")
+@patch("pathlib.Path.write_text")
+def test_rebuild_employment_insight_grew(
+    mock_write_text,
+    mock_inject_insight,
+    mock_inject_const,
+    mock_read_text,
+    mock_extract_statcan_data,
+    mock_read_csv,
+    mock_exists,
+):
+    mock_exists.return_value = True
+    mock_read_csv.return_value = [{"col": "val"}]
+
+    def mock_extract(rows, table_id, variant=None):
+        if variant == "empJobs":
+            return {"Canada": [{"year": 2024, "change": 150}]}
+        return {"mock": "data"}
+    mock_extract_statcan_data.side_effect = mock_extract
+
+    mock_read_text.return_value = "<html><body></body></html>"
+    # No change to const, but insight changed
+    mock_inject_const.return_value = ("<html><body></body></html>", False)
+    mock_inject_insight.return_value = ("<html><body>insight</body></html>", True)
+
+    html_path = Path("employment_rate_canada.html")
+    result = rebuild_employment(html_path)
+
+    assert result is True
+    mock_inject_insight.assert_called_once_with(
+        "<html><body></body></html>",
+        "<strong>Insight:</strong> In 2024, employment in Canada grew by 150k persons."
+    )
+    mock_write_text.assert_called_once_with("<html><body>insight</body></html>", encoding="utf-8")
+
+
+@patch("pathlib.Path.exists")
+@patch("deployment.rebuild_analyses._read_csv")
+@patch("deployment.rebuild_analyses.extract_statcan_data")
+@patch("pathlib.Path.read_text")
+@patch("deployment.rebuild_analyses._inject_const")
+@patch("deployment.rebuild_analyses._inject_insight")
+@patch("pathlib.Path.write_text")
+def test_rebuild_employment_insight_decreased(
+    mock_write_text,
+    mock_inject_insight,
+    mock_inject_const,
+    mock_read_text,
+    mock_extract_statcan_data,
+    mock_read_csv,
+    mock_exists,
+):
+    mock_exists.return_value = True
+    mock_read_csv.return_value = [{"col": "val"}]
+
+    def mock_extract(rows, table_id, variant=None):
+        if variant == "empJobs":
+            return {"Canada": [{"year": 2024, "change": -50}]}
+        return {"mock": "data"}
+    mock_extract_statcan_data.side_effect = mock_extract
+
+    mock_read_text.return_value = "<html><body></body></html>"
+    mock_inject_const.return_value = ("<html><body></body></html>", False)
+    mock_inject_insight.return_value = ("<html><body>insight</body></html>", True)
+
+    html_path = Path("employment_rate_canada.html")
+    result = rebuild_employment(html_path)
+
+    assert result is True
+    mock_inject_insight.assert_called_once_with(
+        "<html><body></body></html>",
+        "<strong>Insight:</strong> In 2024, employment in Canada decreased by 50k persons."
+    )
+
+
+@patch("pathlib.Path.exists")
+@patch("deployment.rebuild_analyses._read_csv")
+@patch("deployment.rebuild_analyses.extract_statcan_data")
+@patch("pathlib.Path.read_text")
+@patch("deployment.rebuild_analyses._inject_const")
+@patch("pathlib.Path.write_text")
+def test_rebuild_employment_insight_exception(
+    mock_write_text,
+    mock_inject_const,
+    mock_read_text,
+    mock_extract_statcan_data,
+    mock_read_csv,
+    mock_exists,
+    capsys
+):
+    mock_exists.return_value = True
+    mock_read_csv.return_value = [{"col": "val"}]
+    # Trigger an exception by making 'change' missing
+
+    def mock_extract(rows, table_id, variant=None):
+        if variant == "empJobs":
+            return {"Canada": [{"year": 2024}]} # missing 'change'
+        return {"mock": "data"}
+    mock_extract_statcan_data.side_effect = mock_extract
+
+    mock_read_text.return_value = "<html><body></body></html>"
+    # No const change, exception in insight -> False overall
+    mock_inject_const.return_value = ("<html><body></body></html>", False)
+
+    html_path = Path("employment_rate_canada.html")
+    result = rebuild_employment(html_path)
+
+    assert result is False
+    captured = capsys.readouterr()
+    assert "Warning: Failed to generate insight:" in captured.out
+
+
+@patch("pathlib.Path.exists")
 def test_rebuild_employment_missing_csv(mock_exists):
     # Simulate missing files
     mock_exists.return_value = False
@@ -912,6 +1029,15 @@ def test_extract_statcan_data_missing_config():
     from deployment.rebuild_analyses import extract_statcan_data
     result = extract_statcan_data([{"VALUE": "100"}], "99999999")
     assert result == []
+
+@patch('deployment.rebuild_analyses.extract_nhpi')
+def test_extract_statcan_data_nhpi(mock_extract_nhpi):
+    from deployment.rebuild_analyses import extract_statcan_data
+    mock_extract_nhpi.return_value = {"nhpi": "data"}
+    rows = [{"REF_DATE": "2020-01", "GEO": "Canada"}]
+    res = extract_statcan_data(rows, "18100205")
+    mock_extract_nhpi.assert_called_once_with(rows)
+    assert res == {"nhpi": "data"}
 
 def test_extract_statcan_data_strip_optimization():
     from deployment.rebuild_analyses import extract_statcan_data

@@ -45,7 +45,8 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         // httpfs is required for remote URLs, DuckDB-Wasm usually autoloads it, 
         // but we can ensure it's there if needed.
 
-        const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${url}')`;
+        const escapedUrl = url.replace(/'/g, "''");
+        const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${escapedUrl}')`;
         await conn.query(query);
 
         currentTableName = tableName;
@@ -185,9 +186,14 @@ async function displayTableSchema(tableName) {
         span.style.textDecoration = 'underline';
         span.style.marginRight = '8px';
         span.style.color = 'var(--primary)';
+        span.style.borderRadius = '4px';
+        span.style.padding = '2px 4px';
         span.textContent = `${r.column_name} (${r.column_type})`;
+        span.tabIndex = 0;
+        span.setAttribute('role', 'button');
+        span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
-        span.onclick = async (e) => {
+        const triggerAction = async (e) => {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${r.column_name}"`);
             
@@ -201,6 +207,15 @@ async function displayTableSchema(tableName) {
                 statsContainer.textContent = `Profiling failed: ${err.message}`;
             }
         };
+
+        span.onclick = triggerAction;
+        span.onkeydown = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                triggerAction(e);
+            }
+        };
+
         return span;
     });
     
@@ -436,6 +451,16 @@ fileInput.addEventListener('change', () => {
     if (fileInput.files.length > 0) handleFiles(fileInput.files);
 });
 
+/**
+ * Processes dropped or selected files, grouping them to detect complex dataset structures like Delta Lake.
+ *
+ * Delta Lake datasets consist of a directory containing Parquet files and a `_delta_log` directory.
+ * Standard HTML file inputs and Drag & Drop APIs flatten these into a list of files.
+ * This function groups files by their root directory name. If a group contains a `_delta_log`,
+ * it loads them as a unified Delta table; otherwise, it processes them as standalone files.
+ *
+ * @param {FileList|Array<File>} files - The files selected or dropped by the user.
+ */
 async function handleFiles(files) {
     loadingOverlay.style.display = 'flex';
     previewsContainer.textContent = '';
@@ -477,7 +502,8 @@ async function handleFiles(files) {
             if (isDelta) {
                 currentTableName = tableName;
                 loadedTables.add(tableName);
-                const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${dirName}')`;
+                const escapedDirName = dirName.replace(/'/g, "''");
+                const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${escapedDirName}')`;
                 await conn.query(`DROP TABLE IF EXISTS "${tableName}"`);
                 await conn.query(query);
                 await onTableLoaded(tableName);
@@ -499,6 +525,15 @@ async function handleFiles(files) {
     }
 }
 
+/**
+ * Loads a single file into DuckDB-Wasm and registers it as a table.
+ *
+ * Automatically selects the appropriate DuckDB read function (`read_parquet`, `read_csv_auto`,
+ * `read_json_auto`) based on the file extension to ensure optimal parsing and schema inference.
+ *
+ * @param {File} file - The file object to load.
+ * @param {string} path - The internal path to register the file buffer under in DuckDB.
+ */
 async function processFile(file, path) {
     const tableName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
     currentTableName = tableName;
