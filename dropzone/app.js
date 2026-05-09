@@ -45,7 +45,8 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         // httpfs is required for remote URLs, DuckDB-Wasm usually autoloads it, 
         // but we can ensure it's there if needed.
 
-        const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${url}')`;
+        const escapedUrl = url.replace(/'/g, "''");
+        const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${escapedUrl}')`;
         await conn.query(query);
 
         currentTableName = tableName;
@@ -477,7 +478,8 @@ async function handleFiles(files) {
             if (isDelta) {
                 currentTableName = tableName;
                 loadedTables.add(tableName);
-                const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${dirName}')`;
+                const escapedDirName = dirName.replace(/'/g, "''");
+                const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${escapedDirName}')`;
                 await conn.query(`DROP TABLE IF EXISTS "${tableName}"`);
                 await conn.query(query);
                 await onTableLoaded(tableName);
