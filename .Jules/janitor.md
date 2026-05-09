@@ -14,3 +14,7 @@ Action: To apply this next time I can run ruff check --select F401,F841 to verif
 ## 2025-05-19 - Duplicate tests and improperly placed module imports
 **Learning:** Found duplicate test function definitions and improperly placed module-level imports causing linters to complain and creating potential edge case test overrides.
 **Action:** Ensured to run linters consistently to catch duplicate blocks and ensure imports are cleanly placed at the top of python files.
+
+## 2025-05-19 - Python Linter Errors
+**Learning:** Found an unused import (`PIL.ImageFont`), unused variables in test files, and module-level imports placed mid-file. The project uses `ruff` to identify these kinds of codebase hygiene issues.
+**Action:** Used `ruff check .` to identify these code smells and `ruff check . --fix` to safely resolve some of them. Manually reorganized module-level imports to be placed at the top of the file to comply with standard Python practices and `E402`.
