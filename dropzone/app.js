@@ -185,9 +185,14 @@ async function displayTableSchema(tableName) {
         span.style.textDecoration = 'underline';
         span.style.marginRight = '8px';
         span.style.color = 'var(--primary)';
+        span.style.borderRadius = '4px';
+        span.style.padding = '2px 4px';
         span.textContent = `${r.column_name} (${r.column_type})`;
+        span.tabIndex = 0;
+        span.setAttribute('role', 'button');
+        span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
-        span.onclick = async (e) => {
+        const triggerAction = async (e) => {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${r.column_name}"`);
             
@@ -201,6 +206,15 @@ async function displayTableSchema(tableName) {
                 statsContainer.textContent = `Profiling failed: ${err.message}`;
             }
         };
+
+        span.onclick = triggerAction;
+        span.onkeydown = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                triggerAction(e);
+            }
+        };
+
         return span;
     });
     
