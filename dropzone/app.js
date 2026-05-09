@@ -436,6 +436,16 @@ fileInput.addEventListener('change', () => {
     if (fileInput.files.length > 0) handleFiles(fileInput.files);
 });
 
+/**
+ * Processes dropped or selected files, grouping them to detect complex dataset structures like Delta Lake.
+ *
+ * Delta Lake datasets consist of a directory containing Parquet files and a `_delta_log` directory.
+ * Standard HTML file inputs and Drag & Drop APIs flatten these into a list of files.
+ * This function groups files by their root directory name. If a group contains a `_delta_log`,
+ * it loads them as a unified Delta table; otherwise, it processes them as standalone files.
+ *
+ * @param {FileList|Array<File>} files - The files selected or dropped by the user.
+ */
 async function handleFiles(files) {
     loadingOverlay.style.display = 'flex';
     previewsContainer.textContent = '';
@@ -499,6 +509,15 @@ async function handleFiles(files) {
     }
 }
 
+/**
+ * Loads a single file into DuckDB-Wasm and registers it as a table.
+ *
+ * Automatically selects the appropriate DuckDB read function (`read_parquet`, `read_csv_auto`,
+ * `read_json_auto`) based on the file extension to ensure optimal parsing and schema inference.
+ *
+ * @param {File} file - The file object to load.
+ * @param {string} path - The internal path to register the file buffer under in DuckDB.
+ */
 async function processFile(file, path) {
     const tableName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
     currentTableName = tableName;
