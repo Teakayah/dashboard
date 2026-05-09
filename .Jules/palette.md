@@ -7,3 +7,6 @@
 ## 2026-05-15 - Interactive Elements Hidden by Opacity Require Focus Visibility
 **Learning:** Interactive elements (like the fullscreen button) that are hidden via `opacity: 0` until hovered are inaccessible to keyboard-only users who cannot "hover" to see them when they tab to the element.
 **Action:** Always add a `:focus-visible` selector that sets `opacity: 1` and a clear outline when relying on hover states to reveal interactive controls.
+## 2026-05-16 - Explicit ARIA Labels for Injected Action Elements
+**Learning:** Dynamically injected elements meant to serve as interactive buttons (e.g., clicking a column name to insert it into a SQL editor) often lack the semantic context that screen readers rely on. Without an explicit `aria-label`, a screen reader user only hears the text content (e.g., "id (INTEGER)"), not the action it performs.
+**Action:** Always add an explicit `aria-label` describing the full action (e.g., "Insert column id into SQL editor") to dynamically generated interactive spans or divs to clarify their purpose for assistive technologies.
