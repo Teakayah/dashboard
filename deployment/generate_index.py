@@ -576,7 +576,15 @@ def build_html(analyses: list[dict]) -> str:
   const noResults = document.getElementById('no-results');
   const noResultsQuery = noResults.querySelector('strong');
 
-  input.addEventListener('input', () => {{
+  function debounce(func, wait) {{
+    let timeout;
+    return function(...args) {{
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    }};
+  }}
+
+  input.addEventListener('input', debounce(() => {{
     const q = input.value.trim().toLowerCase();
     let visibleCount = 0;
 
@@ -598,7 +606,7 @@ def build_html(analyses: list[dict]) -> str:
     }} else {{
       noResults.classList.add('hidden');
     }}
-  }});
+  }}, 250));
 </script>
 
 </body>
