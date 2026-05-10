@@ -1,7 +1,7 @@
 
 import json
-from unittest.mock import patch, MagicMock
-from deployment.update_flood_data import fetch_gauge_data, fetch_precip_data
+from unittest.mock import patch, MagicMock, mock_open
+from deployment.update_flood_data import fetch_gauge_data, fetch_precip_data, main
 
 def test_fetch_gauge_data_success():
     station_id = "02KF005"
@@ -88,8 +88,6 @@ def test_fetch_precip_data_success():
         assert result["total_7d"] == 7.0
         assert result["latest_date"] == "2024-05-05"
         mock_urlopen.assert_called_once()
-from unittest.mock import patch, MagicMock, mock_open
-from deployment.update_flood_data import main, fetch_precip_data
 
 def test_fetch_precip_data_no_features():
     climate_id = "6106000"
@@ -118,7 +116,7 @@ def test_fetch_precip_data_error(capsys):
         mock_urlopen.assert_called_once()
 
         captured = capsys.readouterr()
-        assert f"Error fetching precip data: Network timeout" in captured.out
+        assert "Error fetching precip data: Network timeout" in captured.out
 
 @patch('deployment.update_flood_data.fetch_gauge_data')
 @patch('deployment.update_flood_data.fetch_precip_data')
@@ -170,7 +168,7 @@ def test_main_partial_failure(mock_fetch_precip, mock_fetch_gauge):
 def test_main_cli(capsys):
     import sys
 
-    with patch('deployment.update_flood_data.main', return_value=None) as mock_main:
+    with patch('deployment.update_flood_data.main', return_value=None):
         with patch.object(sys, 'argv', ['update_flood_data.py']):
             # Re-importing allows the __main__ block to run if coverage doesn't catch it
             # since it's already imported, we use importlib to reload
