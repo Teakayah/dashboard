@@ -123,9 +123,9 @@ def _fallback(filepath: Path, date_str: str = "") -> dict:
 
 RESPONSIVE_PRESETS = {
     'default': {
-        'marker': '<!-- responsive-inject-v5 -->',
+        'marker': '<!-- responsive-inject-v6 -->',
         'snippet': '''\
-  <!-- responsive-inject-v5 -->
+  <!-- responsive-inject-v6 -->
   <style>
     @media (min-width: 769px) {
       .dashboard-container { display: flex; flex-direction: row; }
@@ -136,16 +136,20 @@ RESPONSIVE_PRESETS = {
   <script>
     (function() {
       // Small Chart.js hack for responsiveness
-      window.addEventListener('load', function() {
-        if (window.Chart) {
-          const C = window.Chart;
-          Object.defineProperty(window, 'Chart', { configurable: true, writable: true, value: C });
-          C.defaults.maintainAspectRatio = false;
-        }
+      let _Chart;
+      Object.defineProperty(window, 'Chart', {
+        get: function() { return _Chart; },
+        set: function(val) {
+          if (val && val.defaults) {
+            val.defaults.maintainAspectRatio = false;
+          }
+          _Chart = val;
+        },
+        configurable: true
       });
     })();
   </script>
-  <!-- /responsive-inject-v5 -->''',
+  <!-- /responsive-inject-v6 -->''',
     },
     'none': {
         'marker': None,
