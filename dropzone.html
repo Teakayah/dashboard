@@ -216,7 +216,7 @@
         <div class="sql-console" style="border-left: 4px solid #8b5cf6;">
             <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #8b5cf6;">🌐 Remote Delta Table</div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <input type="text" id="remote-delta-url" placeholder="https://my-bucket.s3.amazonaws.com/delta-table" style="flex: 1; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                <input type="text" id="remote-delta-url" aria-label="Remote Delta Table URL" placeholder="https://my-bucket.s3.amazonaws.com/delta-table" style="flex: 1; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
                 <button id="load-remote-delta" class="secondary" style="background-color: #8b5cf6;">Load Remote Table</button>
             </div>
             <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">Supports HTTP and S3 URLs. Ensure CORS is enabled for remote buckets.</p>
@@ -271,9 +271,9 @@
                 </select>
                 <div style="flex: 1"></div>
                 <button id="clear-data" class="secondary" style="background-color: #ef4444;">Clear All Data</button>
-                <button id="run-query" disabled>Run Query</button>
-                <button id="download-csv" class="secondary" disabled>Download Results as CSV</button>
-                <button id="copy-json" class="secondary" disabled>Copy JSON</button>
+                <button id="run-query" disabled title="Requires a valid query">Run Query</button>
+                <button id="download-csv" class="secondary" disabled title="Requires query results">Download Results as CSV</button>
+                <button id="copy-json" class="secondary" disabled title="Requires query results">Copy JSON</button>
                 <button id="export-db" class="secondary" style="background-color: #8b5cf6;">Export Database (.db)</button>
             </div>
             <textarea id="sql-input" aria-label="SQL query input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
