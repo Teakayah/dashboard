@@ -85,6 +85,12 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
 
     # If no meta description, look for a subtitle element (common pattern in your files)
     if not description:
+        # Regex breakdown:
+        # <([a-zA-Z0-9]+)   - Group 1: Captures the HTML tag name (e.g., div, span, p)
+        # [^>]*class=...    - Ensures the tag has a class attribute containing 'subtitle'
+        # >(.*?)</\1>       - Group 2: Non-greedily captures the inner content.
+        #                     The \1 backreference dynamically matches the exact closing tag
+        #                     captured in Group 1, preventing premature matches if inner tags exist.
         sub_match = re.search(r'<([a-zA-Z0-9]+)[^>]*class=["\'][^"\']*subtitle[^"\']*["\'][^>]*>(.*?)</\1>', content, re.IGNORECASE | re.DOTALL)
         if sub_match:
             description = re.sub(r'<[^>]+>', '', sub_match.group(2)).strip()
