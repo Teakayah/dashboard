@@ -21,3 +21,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-06 - Document DuckDB File Handling logic in dropzone
 **Learning:** `handleFiles` in `dropzone/app.js` groups files by directory to support Delta Lake multi-part datasets (which have a `_delta_log` directory) because HTML file inputs flatten directories. `processFile` then infers the correct DuckDB import function (`read_parquet`, `read_csv_auto`, `read_json_auto`) dynamically based on the file extension.
 **Action:** When working on file ingestion logic for DuckDB-Wasm in the browser, always document how flattened directory structures are reconstructed for multi-part datasets and how parsing functions are dynamically mapped to extensions.
+
+## 2026-05-06 - Safe HTML Tag Extraction with Regex Backreferences
+**Learning:** Extracting content from dynamically named HTML tags (e.g., matching a class name but not knowing if it's a `div`, `span`, or `p`) using regex can lead to premature matching if there are nested tags and a generic `</[a-z]+>` closing tag pattern is used.
+**Action:** When extracting tag contents using regex, always capture the opening tag name in a group (e.g., `([a-zA-Z0-9]+)`) and use a backreference (like `\1`) in the closing tag pattern (e.g., `</\1>`). This ensures the regex dynamically matches the exact closing tag corresponding to the opening one, preventing issues with inner elements.
