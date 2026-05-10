@@ -62,15 +62,11 @@ def test_index_search_filters_cards(page: Page):
 
     # Type a string that matches nothing → all cards hidden
     search.fill('xyzzznotarealanything')
-    page.wait_for_timeout(100)
-    visible = page.locator('.card:not(.hidden)').count()
-    assert visible == 0, 'Search filter did not hide non-matching cards'
+    expect(page.locator('.card:not(.hidden)')).to_have_count(0)
 
     # Clear → cards reappear
     search.fill('')
-    page.wait_for_timeout(100)
-    visible = page.locator('.card:not(.hidden)').count()
-    assert visible == total, 'Clearing search did not restore all cards'
+    expect(page.locator('.card:not(.hidden)')).to_have_count(total)
 
 
 def test_index_search_finds_match(page: Page):
@@ -79,7 +75,7 @@ def test_index_search_finds_match(page: Page):
     first_title = page.locator('.card-title').first.inner_text()
     keyword = first_title.split()[0]  # first word of the title
     page.locator('#search').fill(keyword)
-    page.wait_for_timeout(100)
+    expect(page.locator('.card.match').first).to_be_visible(timeout=1000)
     visible = page.locator('.card:not(.hidden)').count()
     assert visible >= 1, f'Search for {keyword!r} hid all cards'
 
