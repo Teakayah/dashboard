@@ -54,6 +54,10 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         await onTableLoaded(tableName);
 
         statusEl.textContent = `Loaded remote table: ${tableName}`;
+
+        const originalText = loadRemoteDeltaBtn.textContent;
+        loadRemoteDeltaBtn.textContent = 'Table Loaded!';
+        setTimeout(() => { loadRemoteDeltaBtn.textContent = originalText; }, 2000);
     } catch (err) {
         console.error(err);
         alert('Error loading remote Delta table: ' + err.message);
@@ -161,6 +165,7 @@ async function restoreState() {
             
             sqlInput.value = `SELECT * FROM "${currentTableName}" LIMIT 100`;
             runBtn.disabled = false;
+            runBtn.title = '';
             
             updateJoinUI();
             updateChartBuilderUI();
@@ -572,6 +577,7 @@ async function onTableLoaded(tableName) {
     // Set default query
     sqlInput.value = `SELECT * FROM "${tableName}" LIMIT 100`;
     runBtn.disabled = false;
+    runBtn.title = '';
 }
 
 function insertAtCursor(myField, myValue) {
@@ -783,7 +789,9 @@ async function runQuery() {
         lastResult = getRows(result);
         renderResults(lastResult);
         downloadBtn.disabled = false;
+        downloadBtn.title = '';
         copyJsonBtn.disabled = false;
+        copyJsonBtn.title = '';
     } catch (err) {
         console.error(err);
         alert('Query Error: ' + err.message);
@@ -873,6 +881,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         updateChartBuilderUI();
         sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
         runBtn.disabled = false;
+        runBtn.title = '';
         
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
@@ -933,8 +942,11 @@ clearBtn.addEventListener('click', async () => {
         document.getElementById('results').textContent = '';
         sqlInput.value = '';
         runBtn.disabled = true;
+        runBtn.title = 'Requires a valid query';
         downloadBtn.disabled = true;
+        downloadBtn.title = 'Requires query results';
         copyJsonBtn.disabled = true;
+        copyJsonBtn.title = 'Requires query results';
         joinAssistant.style.display = 'none';
         updateChartBuilderUI();
         statusEl.textContent = 'Storage cleared';

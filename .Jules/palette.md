@@ -10,3 +10,6 @@
 ## 2026-05-16 - Explicit ARIA Labels for Injected Action Elements
 **Learning:** Dynamically injected elements meant to serve as interactive buttons (e.g., clicking a column name to insert it into a SQL editor) often lack the semantic context that screen readers rely on. Without an explicit `aria-label`, a screen reader user only hears the text content (e.g., "id (INTEGER)"), not the action it performs.
 **Action:** Always add an explicit `aria-label` describing the full action (e.g., "Insert column id into SQL editor") to dynamically generated interactive spans or divs to clarify their purpose for assistive technologies.
+## 2026-05-18 - Managing Dynamic Tooltips for Disabled States
+**Learning:** Adding `title` tooltips to `disabled` buttons improves accessibility by explaining why an action is unavailable. However, if the tooltip isn't dynamically cleared when the button becomes enabled, users see outdated/confusing explanations (e.g., "Requires a valid query" appearing on an enabled "Run Query" button).
+**Action:** When adding explanatory tooltips to disabled buttons, always pair the `title` attribute management with the JS logic that toggles the `disabled` property. Clear the `title` (or set it to the normal action description) when `disabled = false`, and restore the explanation when `disabled = true`.
