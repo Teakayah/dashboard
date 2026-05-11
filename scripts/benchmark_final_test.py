@@ -8,9 +8,6 @@ import sys
 
 ROOT = Path('source') / 'Stat Can' / 'Employment'
 lfs_csv = ROOT / '14100287-eng' / '14100287.csv'
-gov_csv = ROOT / '10100015-eng' / '10100015.csv'
-prov_csv = ROOT / '10100017-eng' / '10100017.csv'
-pop_csv = ROOT / '17100005-eng' / '17100005.csv'
 
 
 def _clean(val: str) -> Optional[float]:
