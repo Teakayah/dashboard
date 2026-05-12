@@ -182,6 +182,28 @@ def test_download_table_success(mock_urlopen, mock_zipfile, mock_get_end_period,
     }
 
 @patch('deployment.update_statcan_data._get_end_period')
+@patch('zipfile.ZipFile')
+@patch('urllib.request.urlopen')
+def test_download_table_no_change(mock_urlopen, mock_zipfile, mock_get_end_period, tmp_path):
+    from deployment.update_statcan_data import download_table
+    table = {'id': '12345678', 'desc': 'Test Table', 'path': tmp_path / '12345678'}
+    mock_get_end_period.side_effect = ['2023-01', '2023-01']
+
+    mock_resp = MagicMock()
+    mock_resp.read.return_value = b"dummy zip data"
+    mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+    result = download_table(table)
+
+    assert result == {
+        'id': '12345678',
+        'desc': 'Test Table',
+        'prev_end': '2023-01',
+        'new_end': '2023-01',
+        'updated': False
+    }
+
+@patch('deployment.update_statcan_data._get_end_period')
 @patch('urllib.request.urlopen')
 def test_download_table_bad_zip(mock_urlopen, mock_get_end_period, tmp_path):
     from deployment.update_statcan_data import download_table
