@@ -14,3 +14,6 @@ Action: To apply this next time I can run ruff check --select F401,F841 to verif
 ## 2025-05-19 - Duplicate tests and improperly placed module imports
 **Learning:** Found duplicate test function definitions and improperly placed module-level imports causing linters to complain and creating potential edge case test overrides.
 **Action:** Ensured to run linters consistently to catch duplicate blocks and ensure imports are cleanly placed at the top of python files.
+## 2025-05-19 - Cleanup Unused Variables
+Learning: Identified several unused variables, including `TABLE_MAP` in `deployment/config.py`, test CSV paths in `scripts/benchmark_final_test.py`, and `BASE_URL` in `tests/conftest.py`. Linters and vultures can identify some, but careful manual review is required for global config unused maps/variables.
+Action: To apply this next time, I can use vulture to find unused variables globally and delete them if confirmed they are not imported by any metaprogramming/reflection magic.
