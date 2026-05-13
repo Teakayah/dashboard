@@ -85,13 +85,21 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
 
     # If no meta description, look for a subtitle element (common pattern in your files)
     if not description:
-        # Regex breakdown:
-        # <([a-zA-Z0-9]+)   - Group 1: Captures the HTML tag name (e.g., div, span, p)
-        # [^>]*class=...    - Ensures the tag has a class attribute containing 'subtitle'
-        # >(.*?)</\1>       - Group 2: Non-greedily captures the inner content.
-        #                     The \1 backreference dynamically matches the exact closing tag
-        #                     captured in Group 1, preventing premature matches if inner tags exist.
-        sub_match = re.search(r'<([a-zA-Z0-9]+)[^>]*class=["\'][^"\']*subtitle[^"\']*["\'][^>]*>(.*?)</\1>', content, re.IGNORECASE | re.DOTALL)
+        # Extract subtitle if exists
+        # Uses a regex backreference (\1) to ensure the closing tag matches the opening tag name
+        # captured in Group 1, preventing premature matches if inner tags exist.
+        sub_regex = re.compile(
+            r'''
+            <([a-zA-Z0-9]+)                         # Group 1: Match the opening tag name (e.g., div, span, p)
+            [^>]*                                   # Match any attributes before the class attribute
+            class=["\'][^"\']*subtitle[^"\']*["\']  # Match the class attribute containing 'subtitle'
+            [^>]*>                                  # Match any attributes after the class attribute and close opening tag
+            (.*?)                                   # Group 2: Match the inner content of the subtitle
+            </\1>                                   # Use backreference \1 to close the exact tag opened in Group 1
+            ''',
+            re.IGNORECASE | re.DOTALL | re.VERBOSE
+        )
+        sub_match = sub_regex.search(content)
         if sub_match:
             description = re.sub(r'<[^>]+>', '', sub_match.group(2)).strip()
             description = re.sub(r'\s+', ' ', description)
