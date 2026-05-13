@@ -40,6 +40,11 @@ A modern, interactive hub for navigating and conducting data analysis. This proj
     ```bash
     pip install -r requirements.txt
     ```
+3.  Configure environment variables (required for AI descriptions):
+    ```bash
+    cp .env.example .env
+    ```
+    *(Note: If you do not have Ollama installed locally, you can skip this and use `python3 deployment/refresh.py --no-descriptions` when updating data).*
 
 ### Usage
 *   **View Dashboard**: Open `index.html` in any modern browser.
