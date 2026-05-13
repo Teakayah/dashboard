@@ -25,3 +25,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-06 - Safe HTML Tag Extraction with Regex Backreferences
 **Learning:** Extracting content from dynamically named HTML tags (e.g., matching a class name but not knowing if it's a `div`, `span`, or `p`) using regex can lead to premature matching if there are nested tags and a generic `</[a-z]+>` closing tag pattern is used.
 **Action:** When extracting tag contents using regex, always capture the opening tag name in a group (e.g., `([a-zA-Z0-9]+)`) and use a backreference (like `\1`) in the closing tag pattern (e.g., `</\1>`). This ensures the regex dynamically matches the exact closing tag corresponding to the opening one, preventing issues with inner elements.
+
+## 2025-05-14 - Document Ollama requirement in README
+**Learning:** `deployment/refresh.py` calls `generate_descriptions.py`, which immediately exits if the `.env` file does not exist or lacks `OLLAMA_URL` and `OLLAMA_MODEL` variables. Without an explicit setup step in the README, developers running the default data update pipeline out of the box will encounter confusing errors or fail-fast exits.
+**Action:** When adding scripts that require specific `.env` configurations (especially local AI tooling like Ollama) to a standard developer pipeline, always document the `.env.example` setup explicitly in the project's 'Installation' instructions to prevent onboarding friction.
