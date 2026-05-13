@@ -13,3 +13,6 @@
 ## 2026-05-18 - Managing Dynamic Tooltips for Disabled States
 **Learning:** Adding `title` tooltips to `disabled` buttons improves accessibility by explaining why an action is unavailable. However, if the tooltip isn't dynamically cleared when the button becomes enabled, users see outdated/confusing explanations (e.g., "Requires a valid query" appearing on an enabled "Run Query" button).
 **Action:** When adding explanatory tooltips to disabled buttons, always pair the `title` attribute management with the JS logic that toggles the `disabled` property. Clear the `title` (or set it to the normal action description) when `disabled = false`, and restore the explanation when `disabled = true`.
+## 2026-05-19 - Dispatching Events for Programmatic Input Changes
+**Learning:** When building vanilla JavaScript UIs, changing an input's value programmatically (e.g., `sqlInput.value = '...'`) does not natively fire the `input` or `change` events. This causes reactive UI state (like disabling/enabling a submit button based on the input's length) to become out of sync.
+**Action:** When adding real-time validation via `input` event listeners, always audit the codebase for programmatic assignments to that element's `.value` and explicitly append `.dispatchEvent(new Event('input'))` after them to ensure UI consistency.
