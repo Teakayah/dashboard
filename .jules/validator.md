@@ -30,3 +30,7 @@ Assertion: Used `side_effect` with custom inner functions on the `mock_extract_s
 Coverage Gap: The UI test for filtering index cards (`test_index_search_filters_cards`) randomly failed due to relying on a hardcoded `page.wait_for_timeout(100)` while the source code debounce is set to 250ms.
 Learning: It was failing because arbitrary timeouts in UI tests are brittle, especially when testing components with explicit delays like debounced search inputs. Using hardcoded waits leads to flaky tests across different environments.
 Assertion: Always use Playwright's built-in auto-retrying assertions like `expect(locator).to_have_count(expected_count)` or `expect(locator).to_be_visible()` instead of arbitrary sleeps. This guarantees tests are resilient to timing variations and execute as fast as possible.
+## 2026-05-13 - Mocking Orchestrator Subprocesses
+**Coverage Gap:** `deployment/refresh.py` had 0% coverage and orchestrates git commands and external scripts.
+**Learning:** For a pipeline orchestrator script that relies extensively on `subprocess.run` to call git commands and scripts, we must use side effects and mock file system states instead of actually running the deployment steps during tests to prevent creating a dirty git state or mutating tracking files (like `feed.xml` or `index.html`).
+**Assertion:** We mock `subprocess.run`, return simulated data via mocked `pathlib.Path.read_text`, use `call()` objects inside `mock_run.assert_has_calls` for verifying ordered execution, and check proper `sys.exit` code logic on failed steps.
