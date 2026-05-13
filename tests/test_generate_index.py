@@ -12,15 +12,15 @@ def load_generate_index_module():
     return module
 
 
-def test_inject_responsive_default_adds_v5_marker_and_dashboard_rules():
+def test_inject_responsive_default_adds_v6_marker_and_dashboard_rules():
     module = load_generate_index_module()
     initial_content = '<html><head></head><body><div class="grid"></div></body></html>'
 
     content = module.inject_responsive(initial_content, 'analysis.html')
 
-    assert '<!-- responsive-inject-v5 -->' in content
+    assert '<!-- responsive-inject-v6 -->' in content
     assert '.dashboard-container { display: flex; flex-direction: row; }' in content
-    assert 'window.Chart' in content
+    assert 'Object.defineProperty(window, \'Chart\'' in content
 
 
 def test_inject_responsive_is_idempotent():
@@ -31,7 +31,7 @@ def test_inject_responsive_is_idempotent():
     second = module.inject_responsive(first, 'analysis.html')
 
     assert first == second
-    assert second.count('<!-- responsive-inject-v5 -->') == 1
+    assert second.count('<!-- responsive-inject-v6 -->') == 1
 
 
 def test_inject_responsive_replaces_older_versions():
@@ -51,7 +51,7 @@ def test_inject_responsive_replaces_older_versions():
 
     assert '<!-- responsive-inject-v3 -->' not in content
     assert 'window.oldResponsive = true' not in content
-    assert content.count('<!-- responsive-inject-v5 -->') == 1
+    assert content.count('<!-- responsive-inject-v6 -->') == 1
 
 
 def test_inject_back_link_adds_snippet():
@@ -165,7 +165,7 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
         module.main(['--responsive-preset', 'none'])
 
     content = analysis.read_text(encoding='utf-8')
-    assert '<!-- responsive-inject-v5 -->' not in content
+    assert '<!-- responsive-inject-v6 -->' not in content
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
@@ -180,7 +180,7 @@ def test_extract_meta_basic():
         <meta name="description" content="Test Description">
     </head>
     <body>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js" integrity="sha384-mock" crossorigin="anonymous"></script>
     </body>
     </html>
     """
@@ -263,8 +263,8 @@ def test_extract_meta_multiple_tags():
         <title>Tags Test</title>
     </head>
     <body>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js" integrity="sha384-mock" crossorigin="anonymous"></script>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js" integrity="sha384-mock2" crossorigin="anonymous"></script>
     </body>
     </html>
     """

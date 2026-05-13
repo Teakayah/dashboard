@@ -14,3 +14,7 @@ Action: To apply this next time I can run ruff check --select F401,F841 to verif
 ## 2025-05-19 - Duplicate tests and improperly placed module imports
 **Learning:** Found duplicate test function definitions and improperly placed module-level imports causing linters to complain and creating potential edge case test overrides.
 **Action:** Ensured to run linters consistently to catch duplicate blocks and ensure imports are cleanly placed at the top of python files.
+
+## 2026-05-18 - Robust Chart.js Object.defineProperty Override
+Learning: An `Object.defineProperty` trap for `window.Chart` implemented within a `window.addEventListener('load', ...)` can miss early initialization if Chart.js is loaded synchronously or executed prior to the `load` event.
+Action: Implement `Object.defineProperty` globally and immediately using both `get` and `set` accessors. The `set` logic applies the modifications (e.g. `maintainAspectRatio = false`) to the target class and then stores it in a closure variable.
