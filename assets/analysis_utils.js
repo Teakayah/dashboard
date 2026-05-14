@@ -48,12 +48,20 @@ window.DataDashboard.utils = {
      */
     getSummary: function(data) {
         if (!data || data.length === 0) return null;
-        const values = data.map(d => d.y);
-        const sum = values.reduce((a, b) => a + b, 0);
-        const avg = sum / values.length;
-        const max = Math.max(...values);
-        const min = Math.min(...values);
-        return { avg, max, min, count: values.length };
+        // ⚡ Bolt Optimization: Use a single O(N) iterative loop instead of Array.reduce
+        // and Math.max(...array) spread syntax. This significantly improves performance
+        // and avoids RangeError stack size limits on datasets > ~120,000 items.
+        let sum = 0;
+        let min = Infinity;
+        let max = -Infinity;
+        for (let i = 0; i < data.length; i++) {
+            const y = data[i].y;
+            sum += y;
+            if (y < min) min = y;
+            if (y > max) max = y;
+        }
+        const avg = sum / data.length;
+        return { avg, max, min, count: data.length };
     }
 };
 
