@@ -39,7 +39,6 @@ TABLES = [
 ]
 
 OUR_IDS = {t['id'] for t in TABLES}
-TABLE_MAP = {t['id']: t for t in TABLES}
 
 # --- Extraction Rules ---
 # These define how to process specific StatCan tables into JSON.
