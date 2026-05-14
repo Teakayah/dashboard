@@ -1,4 +1,11 @@
 (function() {
+  /**
+   * Initializes fullscreen functionality for all Chart.js canvas elements on the page.
+   * Wraps isolated canvases in a `.chart-container`, injects a toggle button, and handles the
+   * fullscreen CSS state alongside forcing a Chart.js resize event.
+   *
+   * This ensures charts automatically resize and remain visible when entering/exiting fullscreen mode.
+   */
   function initFullscreen() {
     const canvases = document.querySelectorAll('canvas');
     canvases.forEach(canvas => {
