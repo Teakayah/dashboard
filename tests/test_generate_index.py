@@ -465,3 +465,22 @@ def test_build_html_single_analysis(monkeypatch):
     assert 'single.html' in html
     assert 'Single Analysis' in html
     assert html.count('class="card"') == 1
+
+def test_inject_favicon():
+    module = load_generate_index_module()
+
+    # Test 1: Inject favicon successfully
+    content_no_favicon = "<html><head><title>Test</title></head><body></body></html>"
+    result = module.inject_favicon(content_no_favicon, "test.html")
+    assert '<link rel="icon" href="' in result
+    assert result != content_no_favicon
+    assert '</head>' in result
+
+    # Test 2: Return early if favicon already exists
+    content_with_favicon = '<html><head><link rel="icon" href="/favicon.ico"></head><body></body></html>'
+    result2 = module.inject_favicon(content_with_favicon, "test.html")
+    assert result2 == content_with_favicon
+
+    content_with_single_quotes = "<html><head><link rel='icon' href='/favicon.ico'></head><body></body></html>"
+    result3 = module.inject_favicon(content_with_single_quotes, "test.html")
+    assert result3 == content_with_single_quotes
