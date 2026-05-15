@@ -48,12 +48,17 @@ window.DataDashboard.utils = {
      */
     getSummary: function(data) {
         if (!data || data.length === 0) return null;
-        const values = data.map(d => d.y);
-        const sum = values.reduce((a, b) => a + b, 0);
-        const avg = sum / values.length;
-        const max = Math.max(...values);
-        const min = Math.min(...values);
-        return { avg, max, min, count: values.length };
+        let sum = 0;
+        let max = -Infinity;
+        let min = Infinity;
+        for (let i = 0; i < data.length; i++) {
+            const val = data[i].y;
+            sum += val;
+            if (val > max) max = val;
+            if (val < min) min = val;
+        }
+        const avg = sum / data.length;
+        return { avg, max, min, count: data.length };
     }
 };
 
