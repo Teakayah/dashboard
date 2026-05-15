@@ -105,6 +105,13 @@ const chartXCol = document.getElementById('chart-x-col');
 const chartYCol = document.getElementById('chart-y-col');
 const generateChartBtn = document.getElementById('generate-chart');
 
+// Dynamic UI state for SQL input
+sqlInput.addEventListener('input', () => {
+    const hasQuery = sqlInput.value.trim().length > 0;
+    runBtn.disabled = !hasQuery;
+    runBtn.title = hasQuery ? '' : 'Requires a valid query';
+});
+
 const SAMPLE_DATA = {
     'employees.csv': `id,name,dept_id,salary,join_date
 1,Alice,101,85000,2022-01-15
@@ -164,8 +171,7 @@ async function restoreState() {
             }
             
             sqlInput.value = `SELECT * FROM "${currentTableName}" LIMIT 100`;
-            runBtn.disabled = false;
-            runBtn.title = '';
+            sqlInput.dispatchEvent(new Event('input'));
             
             updateJoinUI();
             updateChartBuilderUI();
@@ -359,6 +365,7 @@ generateJoinBtn.addEventListener('click', () => {
 
     const sql = `SELECT *\nFROM "${a}"\nJOIN "${b}" ON "${a}"."${col}" = "${b}"."${col}"\nLIMIT 100`;
     sqlInput.value = sql;
+    sqlInput.dispatchEvent(new Event('input'));
     sqlInput.focus();
 });
 
@@ -385,6 +392,7 @@ generateChartBtn.addEventListener('click', () => {
             
             // Show the generated SQL to the user in the console
             sqlInput.value = sql;
+            sqlInput.dispatchEvent(new Event('input'));
             
             const result = await conn.query(sql);
             const rows = getRows(result);
@@ -576,8 +584,7 @@ async function onTableLoaded(tableName) {
     
     // Set default query
     sqlInput.value = `SELECT * FROM "${tableName}" LIMIT 100`;
-    runBtn.disabled = false;
-    runBtn.title = '';
+    sqlInput.dispatchEvent(new Event('input'));
 }
 
 function insertAtCursor(myField, myValue) {
@@ -603,6 +610,7 @@ recipeSelect.addEventListener('change', () => {
     if (!currentTableName) return;
     const recipe = recipeSelect.value.replace(/{{TABLE}}/g, currentTableName);
     sqlInput.value = recipe;
+    sqlInput.dispatchEvent(new Event('input'));
     recipeSelect.selectedIndex = 0;
 });
 
@@ -880,8 +888,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         updateJoinUI();
         updateChartBuilderUI();
         sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
-        runBtn.disabled = false;
-        runBtn.title = '';
+        sqlInput.dispatchEvent(new Event('input'));
         
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
@@ -941,8 +948,7 @@ clearBtn.addEventListener('click', async () => {
         previewsContainer.textContent = '';
         document.getElementById('results').textContent = '';
         sqlInput.value = '';
-        runBtn.disabled = true;
-        runBtn.title = 'Requires a valid query';
+        sqlInput.dispatchEvent(new Event('input'));
         downloadBtn.disabled = true;
         downloadBtn.title = 'Requires query results';
         copyJsonBtn.disabled = true;
