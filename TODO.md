@@ -143,11 +143,11 @@ Recent history shows long sequences of merges from `palette/…`, `validator/…
 Current tests cover Python deployment scripts. None of the **front-end** is tested. Build out:
 
 ### 4.1 Front-end unit / integration
-- [ ] **DuckDB init** — Playwright: `dropzone.html` reaches `DuckDB Ready` within 15 s on a clean profile.
-- [ ] **Sample load** — click "Load Sample Datasets", verify `employees` and `departments` tables appear in schema display, verify the auto-populated JOIN SQL runs.
-- [ ] **File drop** — drop a small CSV via Playwright file input, verify the preview cards render and the schema is shown.
-- [ ] **Persistence** — load samples, reload page, verify `restoreState()` rehydrates the schema.
-- [ ] **Clear data** — verify confirm dialog and that IndexedDB is actually wiped.
+- [x] **DuckDB init** — Playwright: `test_duckdb_init_reaches_ready` in `tests/test_dropzone.py`.
+- [x] **Sample load** — `test_load_samples_creates_both_tables` + `test_load_samples_populates_sql_input`.
+- [x] **File drop** — `test_csv_file_loads_and_shows_schema` via `set_input_files`.
+- [x] **Persistence** — `test_persistence_across_reload` rehydrates schema after full reload.
+- [x] **Clear data** — `test_clear_data_wipes_schema` accepts confirm dialog and asserts empty schema.
 - [ ] **CSV/JSON export** — execute a query, click Download/Copy, verify resulting payload.
 - [ ] **Service worker** — verify cache version increments invalidate old assets.
 
