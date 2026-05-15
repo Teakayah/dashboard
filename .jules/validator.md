@@ -30,3 +30,7 @@ Assertion: Used `side_effect` with custom inner functions on the `mock_extract_s
 Coverage Gap: The UI test for filtering index cards (`test_index_search_filters_cards`) randomly failed due to relying on a hardcoded `page.wait_for_timeout(100)` while the source code debounce is set to 250ms.
 Learning: It was failing because arbitrary timeouts in UI tests are brittle, especially when testing components with explicit delays like debounced search inputs. Using hardcoded waits leads to flaky tests across different environments.
 Assertion: Always use Playwright's built-in auto-retrying assertions like `expect(locator).to_have_count(expected_count)` or `expect(locator).to_be_visible()` instead of arbitrary sleeps. This guarantees tests are resilient to timing variations and execute as fast as possible.
+## 2025-05-15 - Testing dynamic script execution
+Coverage Gap: The deployment orchestrator script `deployment/refresh.py` had zero test coverage.
+Learning: Testing a standalone script module without an explicit function wrapper (`def main()`) requires using `runpy.run_path` as `__main__` to run the top-level scope correctly. It is also important to properly simulate system exiting mechanisms using `@patch('sys.exit', side_effect=SystemExit)`.
+Assertion: Use `runpy.run_path(SCRIPT_PATH, run_name='__main__')` to test standalone scripts within `pytest.raises(SystemExit)` blocks to capture early exits seamlessly.
