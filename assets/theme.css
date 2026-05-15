@@ -3,13 +3,13 @@
   --bg: #f5f5f2;
   --card-bg: #ffffff;
   --text: #1e293b;
-  --text-muted: #64748b;
-  --text-dim: #94a3b8;
+  --text-muted: #4b5563;
+  --text-dim: #64748b;
   --border: #e2e8f0;
   --border-dark: #cbd5e1;
   --header-bg: #1a1a2e;
   --header-text: #ffffff;
-  --header-muted: rgba(255, 255, 255, 0.45);
+  --header-muted: rgba(255, 255, 255, 0.75);
   --accent-blue: #4f8ef7;
   --accent-red: #ff6384;
   --accent-teal: #4bc0c0;
