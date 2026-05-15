@@ -29,3 +29,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2025-05-14 - Document Ollama requirement in README
 **Learning:** `deployment/refresh.py` calls `generate_descriptions.py`, which immediately exits if the `.env` file does not exist or lacks `OLLAMA_URL` and `OLLAMA_MODEL` variables. Without an explicit setup step in the README, developers running the default data update pipeline out of the box will encounter confusing errors or fail-fast exits.
 **Action:** When adding scripts that require specific `.env` configurations (especially local AI tooling like Ollama) to a standard developer pipeline, always document the `.env.example` setup explicitly in the project's 'Installation' instructions to prevent onboarding friction.
+## 2024-05-18 - [Regex Clarity via re.VERBOSE]
+**Learning:** In Python files like `deployment/generate_index.py`, single-line complex regular expressions can be hard to read and understand, increasing the cognitive load for developers.
+**Action:** Use `re.compile(..., flags=re.VERBOSE)` and structure complex regexes into multi-line strings, allowing for detailed inline comments for each capture group to greatly improve clarity.
