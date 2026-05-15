@@ -86,6 +86,39 @@ def test_inject_back_link_is_idempotent():
     assert second.count('<!-- back-link-inject -->') == 1
 
 
+def test_inject_favicon_adds_link(monkeypatch):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'SITE_URL', 'https://testsite.com')
+    content = "<html><head><title>Test</title></head><body></body></html>"
+
+    res = module.inject_favicon(content, "test.html")
+    assert '<link rel="icon" href="https://testsite.com/favicon.ico"' in res
+    assert res.endswith('</head><body></body></html>')
+
+def test_inject_favicon_is_idempotent():
+    module = load_generate_index_module()
+    content_already_has_favicon1 = '<html><head><link rel="icon" href="/favicon.ico"></head><body></body></html>'
+    res1 = module.inject_favicon(content_already_has_favicon1, "test.html")
+    assert res1 == content_already_has_favicon1
+
+    content_already_has_favicon2 = "<html><head><link rel='icon' href='/favicon.ico'></head><body></body></html>"
+    res2 = module.inject_favicon(content_already_has_favicon2, "test.html")
+    assert res2 == content_already_has_favicon2
+
+def test_inject_analysis_tools_adds_script():
+    module = load_generate_index_module()
+    content = "<html><head><title>Test</title></head><body><p>Content</p></body></html>"
+
+    res = module.inject_analysis_tools(content, "test.html")
+    assert '<script src="assets/analysis_utils.js"></script>' in res
+    assert res.endswith('</body></html>')
+
+def test_inject_analysis_tools_is_idempotent():
+    module = load_generate_index_module()
+    content_already_has_tools = '<html><body><script src="assets/analysis_utils.js"></script></body></html>'
+    res = module.inject_analysis_tools(content_already_has_tools, "test.html")
+    assert res == content_already_has_tools
+
 def test_inject_functions_handle_missing_tags():
     module = load_generate_index_module()
     content_no_tags = "<html><body>No head here</body></html>"
@@ -105,6 +138,16 @@ def test_inject_functions_handle_missing_tags():
     res3 = module.inject_og_tags(content_no_tags, "test.html", "test")
     assert res3 == content_no_tags
     assert isinstance(res3, str)
+
+    # inject_favicon expects </head>
+    res4 = module.inject_favicon(content_no_tags, "test.html")
+    assert res4 == content_no_tags
+    assert isinstance(res4, str)
+
+    # inject_analysis_tools expects </body>
+    res5 = module.inject_analysis_tools(content_no_body, "test.html")
+    assert res5 == content_no_body
+    assert isinstance(res5, str)
 
 
 def test_inject_og_tags_adds_tags_with_extracted_title(monkeypatch):
