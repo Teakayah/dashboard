@@ -39,6 +39,11 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
     const url = remoteDeltaUrl.value.trim();
     if (!url) return;
 
+    if (!window.deltaSupported) {
+        alert('Delta Lake support is not available in this browser environment. Please use CSV, JSON, or Parquet files instead.');
+        return;
+    }
+
     loadingOverlay.style.display = 'flex';
     try {
         const tableName = 'remote_delta_' + Math.random().toString(36).substr(2, 5);
@@ -134,7 +139,15 @@ async function init() {
         conn = await db.connect();
         
         statusEl.textContent = 'Loading extensions...';
-        await conn.query('LOAD delta;');
+        let deltaSupported = true;
+        try {
+            // DuckDB-Wasm v0.9.1 might not support the 'delta' extension on all platforms
+            await conn.query('LOAD delta;');
+        } catch (e) {
+            console.warn('Delta extension not supported in this environment:', e.message);
+            deltaSupported = false;
+        }
+        window.deltaSupported = deltaSupported;
         
         statusEl.textContent = 'DuckDB Ready';
 
@@ -506,6 +519,10 @@ async function handleFiles(files) {
             }
 
             if (isDelta) {
+                if (!window.deltaSupported) {
+                    alert(`Delta Lake table detected in folder "${dirName}", but support is missing in this browser. Skipping.`);
+                    continue;
+                }
                 currentTableName = tableName;
                 loadedTables.add(tableName);
                 const escapedDirName = dirName.replace(/'/g, "''");
