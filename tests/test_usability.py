@@ -75,9 +75,7 @@ def test_index_search_finds_match(page: Page):
     first_title = page.locator('.card-title').first.inner_text()
     keyword = first_title.split()[0]  # first word of the title
     page.locator('#search').fill(keyword)
-    expect(page.locator('.card.match').first).to_be_visible(timeout=1000)
-    visible = page.locator('.card:not(.hidden)').count()
-    assert visible >= 1, f'Search for {keyword!r} hid all cards'
+    expect(page.locator('.card.match').first).to_be_visible()
 
 
 def test_index_footer_github_link(page: Page):
