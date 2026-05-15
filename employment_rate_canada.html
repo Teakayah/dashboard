@@ -1,28 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- responsive-inject-v5 -->
+  <!-- responsive-inject-v6 -->
   <style>
     @media (min-width: 769px) {
-      body { max-width: 1200px; margin: 0 auto; }
-      .panel > .card { height: 440px; }
-      .grid canvas { display: block; width: 100% !important; }
-      .grid .small-card canvas { height: 190px !important; }
+      .dashboard-container { display: flex; flex-direction: row; }
+      .sidebar { width: 300px; flex-shrink: 0; }
+      .main-content { flex-grow: 1; }
     }
   </style>
   <script>
-    (function () {
-      if (window.innerWidth < 769) return;
+    (function() {
+      // Small Chart.js hack for responsiveness
+      let _Chart;
       Object.defineProperty(window, 'Chart', {
-        configurable: true,
-        set: function (C) {
-          Object.defineProperty(window, 'Chart', { configurable: true, writable: true, value: C });
-          C.defaults.maintainAspectRatio = false;
-        }
+        get: function() { return _Chart; },
+        set: function(val) {
+          if (val && val.defaults) {
+            val.defaults.maintainAspectRatio = false;
+          }
+          _Chart = val;
+        },
+        configurable: true
       });
     })();
   </script>
-  <!-- /responsive-inject-v5 -->
+  <!-- /responsive-inject-v6 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Canadian Labour & Fiscal Dashboard</title>

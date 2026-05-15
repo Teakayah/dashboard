@@ -39,6 +39,11 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
     const url = remoteDeltaUrl.value.trim();
     if (!url) return;
 
+    if (!window.deltaSupported) {
+        alert('Delta Lake support is not available in this browser environment. Please use CSV, JSON, or Parquet files instead.');
+        return;
+    }
+
     loadingOverlay.style.display = 'flex';
     try {
         const tableName = 'remote_delta_' + Math.random().toString(36).substr(2, 5);
@@ -134,7 +139,15 @@ async function init() {
         conn = await db.connect();
         
         statusEl.textContent = 'Loading extensions...';
-        await conn.query('LOAD delta;');
+        let deltaSupported = true;
+        try {
+            // DuckDB-Wasm v0.9.1 might not support the 'delta' extension on all platforms
+            await conn.query('LOAD delta;');
+        } catch (e) {
+            console.warn('Delta extension not supported in this environment:', e.message);
+            deltaSupported = false;
+        }
+        window.deltaSupported = deltaSupported;
         
         statusEl.textContent = 'DuckDB Ready';
 
@@ -164,8 +177,7 @@ async function restoreState() {
             }
             
             sqlInput.value = `SELECT * FROM "${currentTableName}" LIMIT 100`;
-            runBtn.disabled = false;
-            runBtn.title = '';
+            sqlInput.dispatchEvent(new Event('input'));
             
             updateJoinUI();
             updateChartBuilderUI();
@@ -359,6 +371,7 @@ generateJoinBtn.addEventListener('click', () => {
 
     const sql = `SELECT *\nFROM "${a}"\nJOIN "${b}" ON "${a}"."${col}" = "${b}"."${col}"\nLIMIT 100`;
     sqlInput.value = sql;
+    sqlInput.dispatchEvent(new Event('input'));
     sqlInput.focus();
 });
 
@@ -385,6 +398,7 @@ generateChartBtn.addEventListener('click', () => {
             
             // Show the generated SQL to the user in the console
             sqlInput.value = sql;
+            sqlInput.dispatchEvent(new Event('input'));
             
             const result = await conn.query(sql);
             const rows = getRows(result);
@@ -505,6 +519,10 @@ async function handleFiles(files) {
             }
 
             if (isDelta) {
+                if (!window.deltaSupported) {
+                    alert(`Delta Lake table detected in folder "${dirName}", but support is missing in this browser. Skipping.`);
+                    continue;
+                }
                 currentTableName = tableName;
                 loadedTables.add(tableName);
                 const escapedDirName = dirName.replace(/'/g, "''");
@@ -576,8 +594,7 @@ async function onTableLoaded(tableName) {
     
     // Set default query
     sqlInput.value = `SELECT * FROM "${tableName}" LIMIT 100`;
-    runBtn.disabled = false;
-    runBtn.title = '';
+    sqlInput.dispatchEvent(new Event('input'));
 }
 
 function insertAtCursor(myField, myValue) {
@@ -597,12 +614,14 @@ function insertAtCursor(myField, myValue) {
         myField.value += myValue;
     }
     myField.focus();
+    myField.dispatchEvent(new Event('input'));
 }
 
 recipeSelect.addEventListener('change', () => {
     if (!currentTableName) return;
     const recipe = recipeSelect.value.replace(/{{TABLE}}/g, currentTableName);
     sqlInput.value = recipe;
+    sqlInput.dispatchEvent(new Event('input'));
     recipeSelect.selectedIndex = 0;
 });
 
@@ -777,6 +796,16 @@ function renderChart(id, type, data, options = {}) {
     });
 }
 
+sqlInput.addEventListener('input', () => {
+    if (sqlInput.value.trim().length > 0) {
+        runBtn.disabled = false;
+        runBtn.title = '';
+    } else {
+        runBtn.disabled = true;
+        runBtn.title = 'Requires a valid query';
+    }
+});
+
 runBtn.addEventListener('click', runQuery);
 
 async function runQuery() {
@@ -880,8 +909,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         updateJoinUI();
         updateChartBuilderUI();
         sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
-        runBtn.disabled = false;
-        runBtn.title = '';
+        sqlInput.dispatchEvent(new Event('input'));
         
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
@@ -941,8 +969,7 @@ clearBtn.addEventListener('click', async () => {
         previewsContainer.textContent = '';
         document.getElementById('results').textContent = '';
         sqlInput.value = '';
-        runBtn.disabled = true;
-        runBtn.title = 'Requires a valid query';
+        sqlInput.dispatchEvent(new Event('input'));
         downloadBtn.disabled = true;
         downloadBtn.title = 'Requires query results';
         copyJsonBtn.disabled = true;
