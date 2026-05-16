@@ -12,13 +12,14 @@ def load_generate_index_module():
     return module
 
 
-def test_inject_responsive_default_adds_v6_marker_and_dashboard_rules():
+def test_inject_responsive_default_adds_marker_and_dashboard_rules():
     module = load_generate_index_module()
     initial_content = '<html><head></head><body><div class="grid"></div></body></html>'
 
     content = module.inject_responsive(initial_content, 'analysis.html')
+    expected_marker = module.RESPONSIVE_PRESETS['default']['marker']
 
-    assert '<!-- responsive-inject-v6 -->' in content
+    assert expected_marker in content
     assert '.dashboard-container { display: flex; flex-direction: row; }' in content
     assert 'Object.defineProperty(window, \'Chart\'' in content
 
@@ -31,7 +32,8 @@ def test_inject_responsive_is_idempotent():
     second = module.inject_responsive(first, 'analysis.html')
 
     assert first == second
-    assert second.count('<!-- responsive-inject-v6 -->') == 1
+    expected_marker = module.RESPONSIVE_PRESETS['default']['marker']
+    assert second.count(expected_marker) == 1
 
 
 def test_inject_responsive_replaces_older_versions():
@@ -51,7 +53,8 @@ def test_inject_responsive_replaces_older_versions():
 
     assert '<!-- responsive-inject-v3 -->' not in content
     assert 'window.oldResponsive = true' not in content
-    assert content.count('<!-- responsive-inject-v6 -->') == 1
+    expected_marker = module.RESPONSIVE_PRESETS['default']['marker']
+    assert content.count(expected_marker) == 1
 
 
 def test_inject_back_link_adds_snippet():
@@ -175,7 +178,8 @@ def test_inject_functions_handle_missing_tags():
 
 def test_inject_responsive_returns_early_if_marker_present():
     module = load_generate_index_module()
-    content = "<html><head><!-- responsive-inject-v5 --></head><body></body></html>"
+    marker = module.RESPONSIVE_PRESETS['default']['marker']
+    content = f"<html><head>{marker}</head><body></body></html>"
     res = module.inject_responsive(content, "test.html")
     assert res == content
     assert isinstance(res, str)
@@ -239,7 +243,8 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
         module.main(['--responsive-preset', 'none'])
 
     content = analysis.read_text(encoding='utf-8')
-    assert '<!-- responsive-inject-v6 -->' not in content
+    expected_marker = module.RESPONSIVE_PRESETS['default']['marker']
+    assert expected_marker not in content
     assert module.BACK_LINK_MARKER in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
