@@ -3,6 +3,7 @@ from http.server import SimpleHTTPRequestHandler, HTTPServer
 import threading
 
 import pytest
+from playwright.sync_api import Browser, Page
 
 REPO_ROOT = Path(__file__).parent.parent
 PORT = 8765
@@ -37,6 +38,19 @@ def local_server():
     yield server
     server.shutdown()
     server.server_close()
+
+
+@pytest.fixture()
+def dz(browser: Browser) -> Page:
+    """Fresh browser context for Drop-Zone tests — clean IndexedDB, no stale SW."""
+    ctx = browser.new_context(
+        service_workers='block',
+        permissions=['clipboard-read', 'clipboard-write'],
+    )
+    pg = ctx.new_page()
+    yield pg
+    ctx.close()
+
 
 
 def pytest_configure(config):

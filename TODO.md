@@ -152,7 +152,7 @@ Current tests cover Python deployment scripts. None of the **front-end** is test
 - [ ] **Service worker** — verify cache version increments invalidate old assets.
 
 ### 4.2 Visual / accessibility
-- [ ] Pa11y or axe-core CI step (see §2.3).
+- [x] axe-core WCAG 2.1 AA CI step — `tests/test_accessibility.py` injects axe-core and fails on critical/serious violations across all pages.
 - [ ] Playwright screenshot regression for `index.html` light + dark, and each analysis page light + dark.
 - [ ] Keyboard-only navigation test: Tab through the dashboard, verify focus rings are visible and order is logical.
 
