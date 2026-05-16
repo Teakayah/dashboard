@@ -597,6 +597,17 @@ async function onTableLoaded(tableName) {
     sqlInput.dispatchEvent(new Event('input'));
 }
 
+/**
+ * Inserts a string value at the current cursor position within an input or textarea field.
+ *
+ * Why the `dispatchEvent` at the end?
+ * Programmatic assignments (like `myField.value += ...`) do NOT natively trigger 'input' or 'change'
+ * events. We must explicitly dispatch a synthetic 'input' event to ensure that any reactive DOM listeners
+ * (such as our debounced search or SQL query listeners) are properly notified of the updated value.
+ *
+ * @param {HTMLInputElement|HTMLTextAreaElement} myField - The target input element.
+ * @param {string} myValue - The text to insert.
+ */
 function insertAtCursor(myField, myValue) {
     if (document.selection) {
         myField.focus();
