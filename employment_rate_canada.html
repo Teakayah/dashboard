@@ -54,6 +54,8 @@ button.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
 .small-card{background:#fff;border-radius:10px;padding:12px 11px 8px;box-shadow:0 1px 5px rgba(0,0,0,0.06)}
 .small-card h3{font-size:0.79rem;font-weight:700;margin-bottom:7px}
+.small-card .chart-container{height:140px;overflow:hidden}
+.small-card canvas{height:140px !important;display:block !important}
 select{padding:5px 10px;border-radius:6px;border:1px solid #ccc;font-size:0.8rem;background:#fff}
 footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:italic}
 </style>
@@ -91,11 +93,11 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
 <p class="subtitle">Statistics Canada &mdash; Seasonally adjusted where applicable &middot; Total gender &middot; Provincial governments</p>
 <!-- insight-inject --><!-- /insight-inject -->
 
-<div class="tabs">
-  <div class="tab active"  onclick="showTab('rate')">📈 Employment Rate</div>
-  <div class="tab"         onclick="showTab('jobs')">👷 Jobs Created</div>
-  <div class="tab"         onclick="showTab('debt')">💰 Government Debt</div>
-  <div class="tab"         onclick="showTab('pop')">🧑‍🤝‍🧑 Population</div>
+<div class="tabs" role="tablist">
+  <div class="tab active"  role="tab" tabindex="0" onclick="showTab('rate')">📈 Employment Rate</div>
+  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('jobs')">👷 Jobs Created</div>
+  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('debt')">💰 Government Debt</div>
+  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('pop')">🧑‍🤝‍🧑 Population</div>
 </div>
 
 <!-- ══ TAB 1: Employment Rate ═══════════════════════════════════════════════ -->
@@ -266,7 +268,7 @@ RATE_ORDER.forEach(function(g){
       {label:'Canada',data:caV,borderColor:'#ccc',borderWidth:1.4,pointRadius:0,tension:0.3,spanGaps:true},
       {label:g,data:xy(DATA.empRate[g],'value'),borderColor:COLORS[g],borderWidth:2,pointRadius:0,tension:0.3,spanGaps:true,
        fill:{target:0,above:COLORS[g]+'33',below:'rgba(170,20,20,0.12)'}}
-    ]},options:{responsive:true,parsing:false,interaction:{mode:'index',intersect:false},
+    ]},options:{responsive:true,maintainAspectRatio:false,parsing:false,interaction:{mode:'index',intersect:false},
       plugins:{legend:{display:false},tooltip:{callbacks:{title:function(c){return'Year: '+c[0].parsed.x;},
         label:function(c){return' '+c.dataset.label+': '+(c.parsed.y!==null?c.parsed.y.toFixed(1)+'%':'n/a');}}}},
       scales:{x:{type:'linear',min:1976,max:2025,ticks:{stepSize:10,callback:function(v){return v;},font:{size:8}},grid:{color:'#f5f5f5'}},
@@ -319,7 +321,7 @@ function jobsSetGeo(g){buildJobsBar(g);}
       datasets:[{data:d.map(function(r){return r.change;}),
         backgroundColor:d.map(function(r){return r.change>=0?col+'bb':'rgba(200,40,40,0.65)';}),
         borderWidth:0,borderRadius:1}]},
-      options:{responsive:true,plugins:{legend:{display:false},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
         tooltip:{callbacks:{label:function(c){return' '+(c.parsed.y>=0?'+':'')+c.parsed.y.toFixed(0)+'K';}}}},
         scales:{x:{ticks:{font:{size:7},maxRotation:45},grid:{display:false}},
           y:{ticks:{callback:function(v){return v+'K';},font:{size:7}},grid:{color:'#f5f5f5'}}}}
@@ -403,7 +405,7 @@ debtProvGeos.forEach(function(g){
     label:'Federal',data:(DATA.fedDebt||[]).map(function(d){return{x:d.year,y:d.value};}),
     borderColor:COLORS['Federal'],backgroundColor:COLORS['Federal']+'22',fill:true,
     borderWidth:2,pointRadius:3,tension:0.3}]},
-    options:{responsive:true,parsing:false,interaction:{mode:'index',intersect:false},
+    options:{responsive:true,maintainAspectRatio:false,parsing:false,interaction:{mode:'index',intersect:false},
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return' '+fmtB(c.parsed.y);}}}},
       scales:{x:{type:'linear',min:1990,max:2025,ticks:{stepSize:5,callback:function(v){return v;},font:{size:8}},grid:{color:'#f5f5f5'}},
         y:{min:0,ticks:{callback:function(v){return'$'+v+'B';},font:{size:8}},grid:{color:'#f5f5f5'}}}}
@@ -417,7 +419,7 @@ debtProvGeos.forEach(function(g){
       label:g,data:d.map(function(r){return{x:r.year,y:r.value};}),
       borderColor:COLORS[g]||'#aaa',backgroundColor:(COLORS[g]||'#aaa')+'22',fill:true,
       borderWidth:2,pointRadius:3,tension:0.3}]},
-      options:{responsive:true,parsing:false,interaction:{mode:'index',intersect:false},
+      options:{responsive:true,maintainAspectRatio:false,parsing:false,interaction:{mode:'index',intersect:false},
         plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return' '+fmtB(c.parsed.y);}}}},
         scales:{x:{type:'linear',min:2007,max:2024,ticks:{stepSize:4,callback:function(v){return v;},font:{size:8}},grid:{color:'#f5f5f5'}},
           y:{min:0,ticks:{callback:function(v){return'$'+v+'B';},font:{size:8}},grid:{color:'#f5f5f5'}}}}
@@ -525,7 +527,7 @@ function popBuildSmall(){
          borderWidth:1.8,fill:provV.some(function(d){return d.y<0;})?false:true,
          pointRadius:0,tension:0.3,spanGaps:true}];
     new Chart(cv.getContext('2d'),{type:'line',data:{datasets:ds},
-      options:{responsive:true,parsing:false,interaction:{mode:'index',intersect:false},
+      options:{responsive:true,maintainAspectRatio:false,parsing:false,interaction:{mode:'index',intersect:false},
         plugins:{legend:{display:false},tooltip:{callbacks:{
           title:function(c){return'Year: '+c[0].parsed.x;},
           label:function(c){
