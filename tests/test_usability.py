@@ -261,16 +261,27 @@ def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
     except Exception:
         pass
 
+    # Disable animations on all existing Chart instances and future ones
+    page.evaluate("""
+        if (window.Chart) {
+            Chart.defaults.animation = false;
+            Object.values(Chart.instances).forEach(function(c) {
+                c.options.animation = false;
+            });
+        }
+    """)
+
     def assert_height_stable(toggle_selector: str):
         page.locator(toggle_selector).click()
-        # Poll until height stops changing (Chart.js animations can take 1-3s in CI)
+        # Poll until height stops changing; Chart.js resize callbacks can chain
+        # across many rAF cycles when canvases first become visible.
         prev_h = None
         stable_count = 0
-        for _ in range(50):  # up to 10s total
+        for _ in range(40):  # up to 8s total
             h = page.evaluate('document.documentElement.scrollHeight')
             if prev_h is not None and abs(h - prev_h) <= 4:
                 stable_count += 1
-                if stable_count >= 3:  # stable for 600ms
+                if stable_count >= 4:  # stable for 800ms
                     return
             else:
                 stable_count = 0
@@ -282,8 +293,10 @@ def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
 
     assert_height_stable('#rate-btnS')
     page.locator('.tab', has_text='Government Debt').click()
+    page.wait_for_timeout(300)
     assert_height_stable('#debt-btnS')
     page.locator('.tab', has_text='Population').click()
+    page.wait_for_timeout(300)
     assert_height_stable('#pop-btnS')
 
 
