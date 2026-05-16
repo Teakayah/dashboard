@@ -77,7 +77,7 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
 <!-- unified-header-inject -->
 <header class="unified-header">
   <div class="back-link-box">
-    <a href="https://teakayah.github.io/dashboard/" style="font-weight:700; color:var(--primary); font-size:1.2rem;">DataDashboard</a>
+    <a href="https://teakayah.github.io/dashboard/" style="font-weight:700; color:const(--primary); font-size:1.2rem;">DataDashboard</a>
     <span style="opacity:0.3; margin: 0 4px;">/</span>
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
@@ -202,8 +202,8 @@ function showTab(id){
 
 // ── Recession plugin ──────────────────────────────────────────────────────────
 Chart.register({id:'rec',beforeDraw:function(ch){
-  var sc=ch.scales; if(!sc.x) return;
-  var ctx=ch.ctx,ca=ch.chartArea;
+  const sc=ch.scales; if(!sc.x) return;
+  const ctx=ch.ctx,ca=ch.chartArea;
   ctx.save(); ctx.fillStyle='rgba(170,20,20,0.07)';
   RECESSIONS.forEach(function(r){
     ctx.fillRect(sc.x.getPixelForValue(r[0]),ca.top,
@@ -218,7 +218,7 @@ function fmtB(v){return v!==null&&v!==undefined?'$'+v.toFixed(1)+'B':'n/a';}
 // ══════════════════════════════════════════════════════════════════════════════
 // TAB 1 – Employment Rate
 // ══════════════════════════════════════════════════════════════════════════════
-var rateVis=new Set(RATE_ORDER);
+const rateVis=new Set(RATE_ORDER);
 function rateDS(geos){
   return RATE_ORDER.filter(function(g){return geos.indexOf(g)>=0;}).map(function(g){
     return{label:g,data:xy(DATA.empRate[g],'value'),
@@ -226,7 +226,7 @@ function rateDS(geos){
       pointRadius:0,pointHoverRadius:5,tension:0.3,spanGaps:true};
   });
 }
-var rateChart=new Chart(document.getElementById('rateMain').getContext('2d'),{
+const rateChart=new Chart(document.getElementById('rateMain').getContext('2d'),{
   type:'line',data:{datasets:rateDS(RATE_ORDER)},
   options:{responsive:true,parsing:false,interaction:{mode:'index',intersect:false},
     plugins:{
@@ -245,7 +245,7 @@ function rateView(v){
   document.getElementById('rate-btnS').classList.toggle('active',v==='small');
 }
 RATE_ORDER.forEach(function(g){
-  var c=document.createElement('div');
+  const c=document.createElement('div');
   c.className='chip on';c.textContent=CHIP[g]||g;c.title=g;
   c.style.borderColor=COLORS[g];c.style.color=COLORS[g];c.style.background=COLORS[g]+'18';
   c.onclick=function(){
@@ -255,13 +255,13 @@ RATE_ORDER.forEach(function(g){
   document.getElementById('rate-chips').appendChild(c);
 });
 (function(){
-  var wrap=document.getElementById('rate-SW');
-  var caV=xy(DATA.empRate['Canada'],'value');
+  const wrap=document.getElementById('rate-SW');
+  const caV=xy(DATA.empRate['Canada'],'value');
   RATE_ORDER.forEach(function(g){
     if(g==='Canada') return;
-    var div=document.createElement('div');div.className='small-card';div.style.borderTop='3px solid '+COLORS[g];
-    var h3=document.createElement('h3');h3.textContent=g;h3.style.color=COLORS[g];
-    var cv=document.createElement('canvas');div.appendChild(h3);div.appendChild(cv);wrap.appendChild(div);
+    const div=document.createElement('div');div.className='small-card';div.style.borderTop='3px solid '+COLORS[g];
+    const h3=document.createElement('h3');h3.textContent=g;h3.style.color=COLORS[g];
+    const cv=document.createElement('canvas');div.appendChild(h3);div.appendChild(cv);wrap.appendChild(div);
     new Chart(cv.getContext('2d'),{type:'line',data:{datasets:[
       {label:'Canada',data:caV,borderColor:'#ccc',borderWidth:1.4,pointRadius:0,tension:0.3,spanGaps:true},
       {label:g,data:xy(DATA.empRate[g],'value'),borderColor:COLORS[g],borderWidth:2,pointRadius:0,tension:0.3,spanGaps:true,
@@ -278,13 +278,13 @@ RATE_ORDER.forEach(function(g){
 // ══════════════════════════════════════════════════════════════════════════════
 // TAB 2 – Jobs Created
 // ══════════════════════════════════════════════════════════════════════════════
-var jobsGeos=['Canada'].concat(PROV.filter(function(g){return DATA.empJobs[g];}));
-var jobsBarChart=null;
-var sel=document.getElementById('jobs-geo');
-jobsGeos.forEach(function(g){var o=document.createElement('option');o.value=g;o.textContent=g;sel.appendChild(o);});
+const jobsGeos=['Canada'].concat(PROV.filter(function(g){return DATA.empJobs[g];}));
+const jobsBarChart=null;
+const sel=document.getElementById('jobs-geo');
+jobsGeos.forEach(function(g){const o=document.createElement('option');o.value=g;o.textContent=g;sel.appendChild(o);});
 function buildJobsBar(geo){
-  var d=(DATA.empJobs[geo]||[]).filter(function(r){return r.change!==null;});
-  var col=COLORS[geo]||'#4a90d9';
+  const d=(DATA.empJobs[geo]||[]).filter(function(r){return r.change!==null;});
+  const col=COLORS[geo]||'#4a90d9';
   if(jobsBarChart)jobsBarChart.destroy();
   jobsBarChart=new Chart(document.getElementById('jobsBar').getContext('2d'),{
     type:'bar',
@@ -296,7 +296,7 @@ function buildJobsBar(geo){
     options:{responsive:true,plugins:{legend:{display:false},
       title:{display:true,text:geo+' — Year-over-year change in employment (thousands of persons)',font:{size:12,weight:'bold'},color:'#1a1a2e',padding:{bottom:10}},
       tooltip:{callbacks:{label:function(c){
-        var v=c.parsed.y,row=d[c.dataIndex];
+        const v=c.parsed.y,row=d[c.dataIndex];
         return[' Change: '+(v>=0?'+':'')+v.toFixed(0)+'K jobs',' Total: '+row.level.toFixed(0)+'K'];
       }}}},
       scales:{x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}},
@@ -307,13 +307,13 @@ function buildJobsBar(geo){
 buildJobsBar('Canada');
 function jobsSetGeo(g){buildJobsBar(g);}
 (function(){
-  var wrap=document.getElementById('jobs-SW');
+  const wrap=document.getElementById('jobs-SW');
   PROV.filter(function(g){return DATA.empJobs[g];}).forEach(function(geo){
-    var d=(DATA.empJobs[geo]||[]).filter(function(r){return r.change!==null;});
-    var col=COLORS[geo]||'#aaa';
-    var div=document.createElement('div');div.className='small-card';div.style.borderTop='3px solid '+col;
-    var h3=document.createElement('h3');h3.textContent=geo+' (K jobs YoY)';h3.style.color=col;
-    var cv=document.createElement('canvas');div.appendChild(h3);div.appendChild(cv);wrap.appendChild(div);
+    const d=(DATA.empJobs[geo]||[]).filter(function(r){return r.change!==null;});
+    const col=COLORS[geo]||'#aaa';
+    const div=document.createElement('div');div.className='small-card';div.style.borderTop='3px solid '+col;
+    const h3=document.createElement('h3');h3.textContent=geo+' (K jobs YoY)';h3.style.color=col;
+    const cv=document.createElement('canvas');div.appendChild(h3);div.appendChild(cv);wrap.appendChild(div);
     new Chart(cv.getContext('2d'),{type:'bar',data:{
       labels:d.map(function(r){return r.year;}),
       datasets:[{data:d.map(function(r){return r.change;}),
@@ -330,16 +330,16 @@ function jobsSetGeo(g){buildJobsBar(g);}
 // ══════════════════════════════════════════════════════════════════════════════
 // TAB 3 – Government Debt
 // ══════════════════════════════════════════════════════════════════════════════
-var debtProvGeos=PROV.filter(function(g){return DATA.provDebt[g];});
+const debtProvGeos=PROV.filter(function(g){return DATA.provDebt[g];});
 debtProvGeos.sort(function(a,b){
-  var mA=Math.max.apply(null,(DATA.provDebt[a]||[]).map(function(d){return d.value||0;}));
-  var mB=Math.max.apply(null,(DATA.provDebt[b]||[]).map(function(d){return d.value||0;}));
+  const mA=Math.max.apply(null,(DATA.provDebt[a]||[]).map(function(d){return d.value||0;}));
+  const mB=Math.max.apply(null,(DATA.provDebt[b]||[]).map(function(d){return d.value||0;}));
   return mB-mA;
 });
-var debtVis=new Set(debtProvGeos.concat(['Federal']));
+const debtVis=new Set(debtProvGeos.concat(['Federal']));
 
 function debtDS(geos){
-  var ds=[];
+  const ds=[];
   // Federal line
   if(geos.indexOf('Federal')>=0){
     ds.push({label:'Federal',data:(DATA.fedDebt||[]).map(function(d){return{x:d.year,y:d.value};}),
@@ -352,7 +352,7 @@ function debtDS(geos){
   });
   return ds;
 }
-var debtChart=new Chart(document.getElementById('debtMain').getContext('2d'),{
+const debtChart=new Chart(document.getElementById('debtMain').getContext('2d'),{
   type:'line',data:{datasets:debtDS(Array.from(debtVis))},
   options:{responsive:true,parsing:false,interaction:{mode:'index',intersect:false},
     plugins:{
@@ -373,7 +373,7 @@ function debtView(v){
 }
 // Federal chip
 (function(){
-  var c=document.createElement('div');
+  const c=document.createElement('div');
   c.className='chip on';c.textContent='Federal';c.title='Federal government liabilities';
   c.style.borderColor=COLORS['Federal'];c.style.color=COLORS['Federal'];c.style.background=COLORS['Federal']+'18';
   c.onclick=function(){
@@ -383,7 +383,7 @@ function debtView(v){
   document.getElementById('debt-chips').appendChild(c);
 })();
 debtProvGeos.forEach(function(g){
-  var c=document.createElement('div');
+  const c=document.createElement('div');
   c.className='chip on';c.textContent=CHIP[g]||g;c.title=g;
   c.style.borderColor=COLORS[g];c.style.color=COLORS[g];c.style.background=COLORS[g]+'18';
   c.onclick=function(){
@@ -394,11 +394,11 @@ debtProvGeos.forEach(function(g){
 });
 // Federal note on small charts
 (function(){
-  var wrap=document.getElementById('debt-SW');
+  const wrap=document.getElementById('debt-SW');
   // Federal first
-  var fedDiv=document.createElement('div');fedDiv.className='small-card';fedDiv.style.borderTop='3px dashed '+COLORS['Federal'];
-  var fedH=document.createElement('h3');fedH.textContent='Federal Government';fedH.style.color=COLORS['Federal'];
-  var fedCv=document.createElement('canvas');fedDiv.appendChild(fedH);fedDiv.appendChild(fedCv);wrap.appendChild(fedDiv);
+  const fedDiv=document.createElement('div');fedDiv.className='small-card';fedDiv.style.borderTop='3px dashed '+COLORS['Federal'];
+  const fedH=document.createElement('h3');fedH.textContent='Federal Government';fedH.style.color=COLORS['Federal'];
+  const fedCv=document.createElement('canvas');fedDiv.appendChild(fedH);fedDiv.appendChild(fedCv);wrap.appendChild(fedDiv);
   new Chart(fedCv.getContext('2d'),{type:'line',data:{datasets:[{
     label:'Federal',data:(DATA.fedDebt||[]).map(function(d){return{x:d.year,y:d.value};}),
     borderColor:COLORS['Federal'],backgroundColor:COLORS['Federal']+'22',fill:true,
@@ -409,10 +409,10 @@ debtProvGeos.forEach(function(g){
         y:{min:0,ticks:{callback:function(v){return'$'+v+'B';},font:{size:8}},grid:{color:'#f5f5f5'}}}}
   });
   debtProvGeos.forEach(function(g){
-    var d=DATA.provDebt[g]||[];
-    var div=document.createElement('div');div.className='small-card';div.style.borderTop='3px solid '+(COLORS[g]||'#aaa');
-    var h3=document.createElement('h3');h3.textContent=g;h3.style.color=COLORS[g]||'#aaa';
-    var cv=document.createElement('canvas');div.appendChild(h3);div.appendChild(cv);wrap.appendChild(div);
+    const d=DATA.provDebt[g]||[];
+    const div=document.createElement('div');div.className='small-card';div.style.borderTop='3px solid '+(COLORS[g]||'#aaa');
+    const h3=document.createElement('h3');h3.textContent=g;h3.style.color=COLORS[g]||'#aaa';
+    const cv=document.createElement('canvas');div.appendChild(h3);div.appendChild(cv);wrap.appendChild(div);
     new Chart(cv.getContext('2d'),{type:'line',data:{datasets:[{
       label:g,data:d.map(function(r){return{x:r.year,y:r.value};}),
       borderColor:COLORS[g]||'#aaa',backgroundColor:(COLORS[g]||'#aaa')+'22',fill:true,
@@ -428,33 +428,33 @@ debtProvGeos.forEach(function(g){
 // ══════════════════════════════════════════════════════════════════════════════
 // TAB 4 – Population
 // ══════════════════════════════════════════════════════════════════════════════
-var popMetricCur='abs';
-var popViewCur='overlay';
-var popVis=new Set(RATE_ORDER);
-var popChart=null;
+const popMetricCur='abs';
+const popViewCur='overlay';
+const popVis=new Set(RATE_ORDER);
+const popChart=null;
 
 function popGetData(geo,metric){
-  var d=DATA.popData[geo]||[];
+  const d=DATA.popData[geo]||[];
   return d.map(function(r){
-    var y=metric==='abs'?r.pop:metric==='chg'?r.change:r.pct;
+    const y=metric==='abs'?r.pop:metric==='chg'?r.change:r.pct;
     return{x:r.year,y:y};
   });
 }
 
 function popBuildMain(){
-  var geos=RATE_ORDER.filter(function(g){return popVis.has(g);});
-  var datasets=geos.map(function(g){
+  const geos=RATE_ORDER.filter(function(g){return popVis.has(g);});
+  const datasets=geos.map(function(g){
     return{label:g,data:popGetData(g,popMetricCur),
       borderColor:COLORS[g]||'#aaa',borderWidth:g==='Canada'?3:1.6,
       pointRadius:0,pointHoverRadius:5,tension:0.3,spanGaps:true};
   });
-  var yLabel=popMetricCur==='abs'?'Population':popMetricCur==='chg'?'Annual change (persons)':'Annual change (%)';
-  var yCb=popMetricCur==='abs'
+  const yLabel=popMetricCur==='abs'?'Population':popMetricCur==='chg'?'Annual change (persons)':'Annual change (%)';
+  const yCb=popMetricCur==='abs'
     ?function(v){return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v;}
     :popMetricCur==='chg'
       ?function(v){return(v>=0?'+':'')+Math.round(v/1000)+'K';}
       :function(v){return(v!==null?(v>=0?'+':'')+v.toFixed(2)+'%':'');};
-  var ttCb=popMetricCur==='abs'
+  const ttCb=popMetricCur==='abs'
     ?function(c){return' '+c.dataset.label+': '+(c.parsed.y!==null?(c.parsed.y/1e6).toFixed(3)+'M':'n/a');}
     :popMetricCur==='chg'
       ?function(c){return' '+c.dataset.label+': '+(c.parsed.y!==null?(c.parsed.y>=0?'+':'')+Math.round(c.parsed.y).toLocaleString():'n/a');}
@@ -466,7 +466,7 @@ function popBuildMain(){
       plugins:{
         legend:{position:'bottom',labels:{boxWidth:13,font:{size:10},padding:10}},
         tooltip:{callbacks:{label:ttCb},itemSort:function(a,b){
-          var ay=a.parsed.y||0,by=b.parsed.y||0;return by-ay;}}
+          const ay=a.parsed.y||0,by=b.parsed.y||0;return by-ay;}}
       },
       scales:{x:{type:'linear',min:1971,max:2025,ticks:{stepSize:5,callback:function(v){return v;}},grid:{color:'#f0f0f0'}},
         y:{ticks:{callback:yCb},grid:{color:'#f0f0f0'},
@@ -493,7 +493,7 @@ function popView(v){
 
 // Pop chips
 RATE_ORDER.forEach(function(g){
-  var c=document.createElement('div');
+  const c=document.createElement('div');
   c.className='chip on';c.textContent=CHIP[g]||g;c.title=g;
   c.style.borderColor=COLORS[g];c.style.color=COLORS[g];c.style.background=COLORS[g]+'18';
   c.onclick=function(){
@@ -505,20 +505,20 @@ RATE_ORDER.forEach(function(g){
 
 // Pop small charts
 function popBuildSmall(){
-  var wrap=document.getElementById('pop-SW'); wrap.textContent='';
-  var caV=popGetData('Canada',popMetricCur);
-  var yLabel=popMetricCur==='abs'?'Population':popMetricCur==='chg'?'Change (persons)':'Change (%)';
-  var yCb=popMetricCur==='abs'
+  const wrap=document.getElementById('pop-SW'); wrap.textContent='';
+  const caV=popGetData('Canada',popMetricCur);
+  const yLabel=popMetricCur==='abs'?'Population':popMetricCur==='chg'?'Change (persons)':'Change (%)';
+  const yCb=popMetricCur==='abs'
     ?function(v){return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v;}
     :popMetricCur==='chg'?function(v){return Math.round(v/1000)+'K';}
     :function(v){return v!==null?v.toFixed(1)+'%':'';};
   RATE_ORDER.forEach(function(g){
     if(g==='Canada') return;
-    var div=document.createElement('div');div.className='small-card';div.style.borderTop='3px solid '+COLORS[g];
-    var h3=document.createElement('h3');h3.textContent=g;h3.style.color=COLORS[g];
-    var cv=document.createElement('canvas');div.appendChild(h3);div.appendChild(cv);wrap.appendChild(div);
-    var provV=popGetData(g,popMetricCur);
-    var ds=popMetricCur==='abs'
+    const div=document.createElement('div');div.className='small-card';div.style.borderTop='3px solid '+COLORS[g];
+    const h3=document.createElement('h3');h3.textContent=g;h3.style.color=COLORS[g];
+    const cv=document.createElement('canvas');div.appendChild(h3);div.appendChild(cv);wrap.appendChild(div);
+    const provV=popGetData(g,popMetricCur);
+    const ds=popMetricCur==='abs'
       ?[{label:'Canada',data:caV,borderColor:'#ccc',borderWidth:1.3,pointRadius:0,tension:0.3,spanGaps:true},
         {label:g,data:provV,borderColor:COLORS[g],borderWidth:1.8,pointRadius:0,tension:0.3,spanGaps:true}]
       :[{label:g,data:provV,borderColor:COLORS[g],backgroundColor:COLORS[g]+'33',
@@ -529,7 +529,7 @@ function popBuildSmall(){
         plugins:{legend:{display:false},tooltip:{callbacks:{
           title:function(c){return'Year: '+c[0].parsed.x;},
           label:function(c){
-            var v=c.parsed.y;if(v===null)return' n/a';
+            const v=c.parsed.y;if(v===null)return' n/a';
             return' '+c.dataset.label+': '+(popMetricCur==='abs'?(v/1e6).toFixed(3)+'M':popMetricCur==='chg'?Math.round(v).toLocaleString():v.toFixed(2)+'%');
           }}}},
         scales:{x:{type:'linear',min:1971,max:2025,ticks:{stepSize:10,callback:function(v){return v;},font:{size:8}},grid:{color:'#f5f5f5'}},

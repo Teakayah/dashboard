@@ -175,7 +175,7 @@ def test_inject_functions_handle_missing_tags():
 
 def test_inject_responsive_returns_early_if_marker_present():
     module = load_generate_index_module()
-    content = "<html><head><!-- responsive-inject-v5 --></head><body></body></html>"
+    content = "<html><head><!-- responsive-inject-v6 --></head><body></body></html>"
     res = module.inject_responsive(content, "test.html")
     assert res == content
     assert isinstance(res, str)
