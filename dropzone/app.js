@@ -931,6 +931,7 @@ loadSamplesBtn.addEventListener('click', async () => {
             const escapedName = name.replace(/'/g, "''");
             await conn.query(`CREATE TABLE IF NOT EXISTS "${tableName}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
             loadedTables.add(tableName);
+            currentTableName = tableName;
         }
         
         schemaDisplay.textContent = '';

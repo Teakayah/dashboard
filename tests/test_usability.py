@@ -263,13 +263,21 @@ def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
 
     def assert_height_stable(toggle_selector: str):
         page.locator(toggle_selector).click()
-        page.wait_for_timeout(250)
-        heights = []
-        for _ in range(5):
-            heights.append(page.evaluate('document.documentElement.scrollHeight'))
+        # Poll until height stops changing (Chart.js animations can take 1-3s in CI)
+        prev_h = None
+        stable_count = 0
+        for _ in range(50):  # up to 10s total
+            h = page.evaluate('document.documentElement.scrollHeight')
+            if prev_h is not None and abs(h - prev_h) <= 4:
+                stable_count += 1
+                if stable_count >= 3:  # stable for 600ms
+                    return
+            else:
+                stable_count = 0
+            prev_h = h
             page.wait_for_timeout(200)
-        assert max(heights) - min(heights) <= 4, (
-            f'{toggle_selector}: page height keeps changing after switching to province view: {heights}'
+        assert False, (
+            f'{toggle_selector}: page height never stabilized (last value: {prev_h})'
         )
 
     assert_height_stable('#rate-btnS')

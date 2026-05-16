@@ -194,6 +194,35 @@ def test_inject_responsive_returns_early_if_marker_present():
     assert isinstance(res, str)
 
 
+def test_strip_analysis_utils_removes_tag():
+    module = load_generate_index_module()
+    content = '<html><head><script src="assets/analysis_utils.js"></script></head><body></body></html>'
+    res = module.strip_analysis_utils(content, 'test.html')
+    assert 'analysis_utils.js' not in res
+    assert '<head>' in res
+
+
+def test_strip_analysis_utils_is_idempotent():
+    module = load_generate_index_module()
+    content = '<html><head><script src="assets/analysis_utils.js"></script></head><body></body></html>'
+    first = module.strip_analysis_utils(content, 'test.html')
+    second = module.strip_analysis_utils(first, 'test.html')
+    assert first == second
+
+
+def test_strip_analysis_utils_no_op_when_absent():
+    module = load_generate_index_module()
+    content = '<html><head></head><body><p>No utils here</p></body></html>'
+    assert module.strip_analysis_utils(content, 'test.html') == content
+
+
+def test_strip_analysis_utils_handles_single_quotes():
+    module = load_generate_index_module()
+    content = "<html><head><script src='assets/analysis_utils.js'></script></head><body></body></html>"
+    res = module.strip_analysis_utils(content, 'test.html')
+    assert 'analysis_utils.js' not in res
+
+
 def test_inject_og_tags_adds_tags_with_extracted_title(monkeypatch):
     module = load_generate_index_module()
     monkeypatch.setattr(module, 'SITE_URL', 'https://testsite.com')
