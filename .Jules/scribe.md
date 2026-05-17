@@ -29,3 +29,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2025-05-14 - Document Ollama requirement in README
 **Learning:** `deployment/refresh.py` calls `generate_descriptions.py`, which immediately exits if the `.env` file does not exist or lacks `OLLAMA_URL` and `OLLAMA_MODEL` variables. Without an explicit setup step in the README, developers running the default data update pipeline out of the box will encounter confusing errors or fail-fast exits.
 **Action:** When adding scripts that require specific `.env` configurations (especially local AI tooling like Ollama) to a standard developer pipeline, always document the `.env.example` setup explicitly in the project's 'Installation' instructions to prevent onboarding friction.
+
+## 2025-03-01 - Outdated Dependencies Setup Failure
+**Learning:** The project relies on `playwright==0.7.2` in `requirements.txt`, which may fail to install in some modern environments, blocking new contributors from running any tests (even non-UI ones).
+**Action:** Always document manual fallback installation instructions for core testing tools (`pytest pytest-cov requests pandas beautifulsoup4`) in the README to ensure developers can quickly bootstrap the project and run non-UI tests when full dependency installation fails.

@@ -40,6 +40,7 @@ A modern, interactive hub for navigating and conducting data analysis. This proj
     ```bash
     pip install -r requirements.txt
     ```
+    *(Note: If `playwright==0.7.2` fails to install, you can manually install core dependencies to run non-UI tests: `pip install pytest pytest-cov requests pandas beautifulsoup4`)*
 3.  Configure environment variables (required for AI descriptions):
     ```bash
     cp .env.example .env
