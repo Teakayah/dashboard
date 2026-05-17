@@ -30,3 +30,7 @@ Assertion: Used `side_effect` with custom inner functions on the `mock_extract_s
 Coverage Gap: The UI test for filtering index cards (`test_index_search_filters_cards`) randomly failed due to relying on a hardcoded `page.wait_for_timeout(100)` while the source code debounce is set to 250ms.
 Learning: It was failing because arbitrary timeouts in UI tests are brittle, especially when testing components with explicit delays like debounced search inputs. Using hardcoded waits leads to flaky tests across different environments.
 Assertion: Always use Playwright's built-in auto-retrying assertions like `expect(locator).to_have_count(expected_count)` or `expect(locator).to_be_visible()` instead of arbitrary sleeps. This guarantees tests are resilient to timing variations and execute as fast as possible.
+## 2025-05-19 - Removed hardcoded marker version strings in test_generate_index.py
+Coverage Gap: The testing file `tests/test_generate_index.py` contained hardcoded strings mimicking versions from prior presets, such as `<!-- responsive-inject-v6 -->` and `<!-- responsive-inject-v5 -->`.
+Learning: Because these test assertions were tightly coupled to specific string values rather than the source truth of the preset constants, any bumping of the injection version string (e.g. from v6 to v7) across the codebase would break test coverage unexpectedly.
+Assertion: Dynamically pull expected marker constants (e.g., `module.RESPONSIVE_PRESETS['default']['marker']`) during tests so assertions continue correctly tracking changes to the upstream code.
