@@ -279,9 +279,9 @@ def test_flood_history_chart_renders(page: Page):
     page.wait_for_timeout(TAB_TIMEOUT)
 
     height = page.evaluate(
-        "document.getElementById('comparisonChart')?.offsetHeight ?? 0"
+        "document.getElementById('historyChart')?.offsetHeight ?? 0"
     )
-    assert height > 0, 'comparisonChart canvas has zero height on history tab'
+    assert height > 0, 'historyChart canvas has zero height on history tab'
 
 
 def test_flood_snowpack_chart_renders(page: Page):
