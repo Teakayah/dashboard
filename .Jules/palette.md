@@ -16,3 +16,6 @@
 ## 2026-05-19 - Dispatching Events for Programmatic Input Changes
 **Learning:** When building vanilla JavaScript UIs, changing an input's value programmatically (e.g., `sqlInput.value = '...'`) does not natively fire the `input` or `change` events. This causes reactive UI state (like disabling/enabling a submit button based on the input's length) to become out of sync.
 **Action:** When adding real-time validation via `input` event listeners, always audit the codebase for programmatic assignments to that element's `.value` and explicitly append `.dispatchEvent(new Event('input'))` after them to ensure UI consistency.
+## 2024-05-18 - Improved keyboard accessibility for column injection in dropzone
+**Learning:** In the dropzone's schema viewer, column names were represented as `<span>` elements with `role="button"` to allow clicking them to insert the column into the SQL editor. However, without proper focus-visible styles and a live region to announce the action, keyboard users could not easily tell which element was focused or that the column name was successfully added to the query editor.
+**Action:** Always provide explicit `:focus-visible` styles (e.g. `outline`) for custom elements with `role="button"`, and ensure that any non-visual resulting actions update a live region or dispatch events so the user receives feedback.

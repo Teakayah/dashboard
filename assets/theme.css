@@ -236,3 +236,4 @@ body {
     padding: 10px 16px;
   }
 }
+.clickable-col:hover { opacity: 0.8; } .clickable-col:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

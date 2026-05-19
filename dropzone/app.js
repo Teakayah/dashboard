@@ -242,10 +242,15 @@ async function displayTableSchema(tableName) {
         span.tabIndex = 0;
         span.setAttribute('role', 'button');
         span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
+        span.setAttribute('aria-pressed', 'false');
         
         const triggerAction = async (e) => {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${r.column_name}"`);
+            span.setAttribute('aria-pressed', 'true');
+            setTimeout(() => span.setAttribute('aria-pressed', 'false'), 1000);
+            sqlInput.dispatchEvent(new Event('input'));
+            statusEl.textContent = `Inserted column ${r.column_name} into SQL editor`;
             
             // Profiling logic
             try {
