@@ -30,3 +30,7 @@ Assertion: Used `side_effect` with custom inner functions on the `mock_extract_s
 Coverage Gap: The UI test for filtering index cards (`test_index_search_filters_cards`) randomly failed due to relying on a hardcoded `page.wait_for_timeout(100)` while the source code debounce is set to 250ms.
 Learning: It was failing because arbitrary timeouts in UI tests are brittle, especially when testing components with explicit delays like debounced search inputs. Using hardcoded waits leads to flaky tests across different environments.
 Assertion: Always use Playwright's built-in auto-retrying assertions like `expect(locator).to_have_count(expected_count)` or `expect(locator).to_be_visible()` instead of arbitrary sleeps. This guarantees tests are resilient to timing variations and execute as fast as possible.
+## 2026-05-19 - test_benchmark_final_test.py
+Coverage Gap: Uncovered function `extract_emp_rate_reordered` in `scripts/benchmark_final_test.py` handling list of dicts.
+Learning: `extract_emp_rate_reordered` heavily relies on stripping values before checking conditions. The tests needed to verify these spacing anomalies didn't cause failures.
+Assertion: Tested happy path with padded and unpadded whitespace, ignored branches on all attributes, and None returns from `_clean`.
