@@ -43,7 +43,11 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout main
+          # The pre-merge generate/rebuild steps dirty generated .html files
+          # (dropzone.html, employment_rate_canada.html, etc.) in the worktree.
+          # These live on main only and are regenerated below after the merge,
+          # so discard them here to let the branch switch succeed.
+          git checkout -f main
           if ! git merge origin/integration --no-ff -m "chore: auto-merge integration into main [skip ci]"; then
             echo "Merge conflict detected."
             
