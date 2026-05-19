@@ -72,9 +72,10 @@
   <link rel="icon" href="https://teakayah.github.io/dashboard/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="assets/theme.css">
   <script src="assets/fullscreen.js"></script>
+
+  <style data-contrast-fix>body{background:var(--bg)!important;color:var(--text)!important}.subtitle,.note,.empty,.tab:not(.active),.related-label,.card-date{color:var(--text-muted,#4b5563)!important}.related-link span,footer,footer a{color:var(--text-muted,#4b5563)!important}</style>
 </head>
 <body>
-<!-- back-link-inject --><div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:6px 0 2px;font-size:0.78rem;"><a href="https://teakayah.github.io/dashboard/" style="color:#4f8ef7;text-decoration:none;font-weight:600;">&#8592; DataDashboard</a></div>
 <!-- unified-header-inject -->
 <header class="unified-header">
   <div class="back-link-box">
@@ -83,7 +84,7 @@
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
   <div class="nav-links">
-    <button class="share-btn" onclick="navigator.share({title: document.title, url: window.location.href})">Share</button>
+    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:document.title,url:window.location.href})}else if(navigator.clipboard){navigator.clipboard.writeText(window.location.href)}">Share</button>
   </div>
 </header>
 
@@ -420,6 +421,6 @@ function setR(y,btn){
     }
   </script>
 
-  <script src="assets/analysis_utils.js"></script>
+  
 </body>
 </html>

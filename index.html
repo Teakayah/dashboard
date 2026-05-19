@@ -51,7 +51,7 @@
     }
     .header-sub {
       font-size: 0.82rem;
-      color: rgba(255,255,255,0.45);
+      color: rgba(255,255,255,0.75);
     }
 
     /* ── Search ─────────────────────────────────────────────── */
@@ -76,7 +76,7 @@
       border-color: #4f8ef7;
       box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
     }
-    .search-bar input::placeholder { color: #aaa; }
+    .search-bar input::placeholder { color: #6b7280; }
 
     /* ── Grid ───────────────────────────────────────────────── */
     main {
@@ -87,7 +87,7 @@
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #999;
+      color: #4b5563;
       margin-bottom: 14px;
     }
     .grid {
@@ -162,7 +162,7 @@
     }
     .card-date {
       font-size: 0.72rem;
-      color: #bbb;
+      color: #4b5563;
       font-weight: 600;
     }
     .card-link {
@@ -174,7 +174,7 @@
     /* ── Empty state ─────────────────────────────────────────── */
     .empty {
       font-size: 0.88rem;
-      color: #999;
+      color: #4b5563;
       padding: 40px 0;
       text-align: center;
       line-height: 1.7;
@@ -200,7 +200,7 @@
     footer {
       text-align: center;
       font-size: 0.7rem;
-      color: #bbb;
+      color: #4b5563;
       padding: 0 32px 28px;
     }
 
@@ -227,18 +227,7 @@
 <main>
   <div class="grid-label">Analyses</div>
   <div class="grid" id="grid">
-      <a class="card" href="dropzone.html" style="--accent:#4f8ef7">
-        <div class="card-top">
-          <div class="card-title">Analytical Drop-Zone</div>
-          <div class="badges"><span class="badge">Chart.js</span><span class="badge">DuckDB</span><span class="badge">Grid.js</span></div>
-        </div>
-        <p class="card-desc">Local-first SQL analysis for CSV, JSON, and Parquet files using DuckDB-Wasm.</p>
-        <div class="card-footer">
-          <span class="card-date">May 2026</span>
-          <span class="card-link">View analysis →</span>
-        </div>
-      </a>
-      <a class="card" href="employment_rate_canada.html" style="--accent:#ff6384">
+      <a class="card" href="employment_rate_canada.html" style="--accent:#4f8ef7">
         <div class="card-top">
           <div class="card-title">Canadian Labour &amp; Fiscal Dashboard</div>
           <div class="badges"><span class="badge">Chart.js</span></div>
@@ -249,23 +238,34 @@
           <span class="card-link">View analysis →</span>
         </div>
       </a>
-      <a class="card" href="flood_risk_gatineau_ottawa.html" style="--accent:#4bc0c0">
+      <a class="card" href="dropzone.html" style="--accent:#ff6384">
         <div class="card-top">
-          <div class="card-title">Ottawa-Gatineau Flood Risk — Station 02KF005</div>
-          <div class="badges"><span class="badge">Chart.js</span></div>
+          <div class="card-title">Analytical Drop-Zone</div>
+          <div class="badges"><span class="badge">Chart.js</span><span class="badge">DuckDB</span><span class="badge">Grid.js</span></div>
         </div>
-        <p class="card-desc">Ottawa River at Britannia (02KF005) · Live &amp; Historical · Water Survey of Canada</p>
+        <p class="card-desc">Local-first SQL analysis for CSV, JSON, and Parquet files using DuckDB-Wasm.</p>
         <div class="card-footer">
           <span class="card-date">May 2026</span>
           <span class="card-link">View analysis →</span>
         </div>
       </a>
-      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#ff9f40">
+      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#4bc0c0">
         <div class="card-top">
           <div class="card-title">NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</div>
           <div class="badges"><span class="badge">Chart.js</span></div>
         </div>
         <p class="card-desc">Statistics Canada · Table 18-10-0205-01 · Base: December 2016 = 100</p>
+        <div class="card-footer">
+          <span class="card-date">May 2026</span>
+          <span class="card-link">View analysis →</span>
+        </div>
+      </a>
+      <a class="card" href="flood_risk_gatineau_ottawa.html" style="--accent:#ff9f40">
+        <div class="card-top">
+          <div class="card-title">Ottawa-Gatineau Flood Risk — Station 02KF005</div>
+          <div class="badges"><span class="badge">Chart.js</span></div>
+        </div>
+        <p class="card-desc">Ottawa River at Britannia (02KF005) · Live &amp; Historical · Water Survey of Canada</p>
         <div class="card-footer">
           <span class="card-date">May 2026</span>
           <span class="card-link">View analysis →</span>
@@ -277,9 +277,9 @@
 </main>
 
 <footer>
-  Auto-generated · <a href="https://github.com/Teakayah/dashboard" style="color:#bbb" target="_blank" rel="noopener noreferrer">Teakayah/dashboard</a>
+  Auto-generated · <a href="https://github.com/Teakayah/dashboard" style="color:#4b5563" target="_blank" rel="noopener noreferrer">Teakayah/dashboard</a>
   &nbsp;·&nbsp;
-  <a href="https://teakayah.github.io/dashboard/feed.xml" style="color:#bbb" title="Subscribe via RSS/Atom">&#x2605; RSS feed</a>
+  <a href="https://teakayah.github.io/dashboard/feed.xml" style="color:#4b5563" title="Subscribe via RSS/Atom">&#x2605; RSS feed</a>
 </footer>
 
 <script>
