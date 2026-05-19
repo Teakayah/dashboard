@@ -934,16 +934,21 @@ loadSamplesBtn.addEventListener('click', async () => {
             currentTableName = tableName;
         }
         
+        // Populate the example SQL before the async schema render loop, so any
+        // test (or user) waiting on schema-display to mention a table can rely on
+        // sqlInput already being settled. Otherwise this write races with the
+        // next user/test action and can clobber it.
+        sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
+        sqlInput.dispatchEvent(new Event('input'));
+
         schemaDisplay.textContent = '';
         for (const table of loadedTables) {
             await displayTableSchema(table);
         }
-        
+
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
         updateJoinUI();
         updateChartBuilderUI();
-        sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
-        sqlInput.dispatchEvent(new Event('input'));
         
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
