@@ -168,9 +168,9 @@ Current tests cover Python deployment scripts. None of the **front-end** is test
 
 ## 5. Documentation / messaging (P2)
 
-- [ ] `Readme.md` → `README.md`, and add a "Known Issues" section pointing here.
+- [x] `Readme.md` → `README.md`, and add a "Known Issues" section pointing here.
 - [ ] Replace the "230+ tests" / "✅ Done" wording — that's the source of the credibility hit. Be honest about what works and what doesn't.
-- [ ] Document the dual-branch workflow (`integration` → PR → `main`) for outside contributors.
+- [x] Document the dual-branch workflow (`integration` → PR → `main`) for outside contributors.
 - [ ] Add a one-line description for each analysis page explaining the data source and known caveats.
 
 ---

@@ -59,3 +59,17 @@ pytest
 
 ---
 *Built with Python & DuckDB · Auto-generated via GitHub Actions*
+
+## 🤝 Contributing
+
+We use a dual-branch workflow:
+*   **`main`**: The deployed production branch. Contains generated artifacts (HTML, XML, PNGs). **Do not commit to this branch directly.**
+*   **`integration`**: The target branch for all human and AI-agent Pull Requests.
+
+To contribute:
+1.  Branch off of `integration`.
+2.  Make your changes (remember to edit source files in `deployment/` or `source/`, not generated output).
+3.  Submit a PR targeting `integration`.
+4.  Once merged to `integration`, CI will automatically build the site and deploy to `main`.
+
+**Known Issues:** Before proposing changes, please check [`TODO.md`](TODO.md) to ensure you are not regressing any critical bugs (like DuckDB-Wasm initialization or accessibility contrast).

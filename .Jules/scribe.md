@@ -29,3 +29,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2025-05-14 - Document Ollama requirement in README
 **Learning:** `deployment/refresh.py` calls `generate_descriptions.py`, which immediately exits if the `.env` file does not exist or lacks `OLLAMA_URL` and `OLLAMA_MODEL` variables. Without an explicit setup step in the README, developers running the default data update pipeline out of the box will encounter confusing errors or fail-fast exits.
 **Action:** When adding scripts that require specific `.env` configurations (especially local AI tooling like Ollama) to a standard developer pipeline, always document the `.env.example` setup explicitly in the project's 'Installation' instructions to prevent onboarding friction.
+
+## 2026-05-19 - Documenting Dual-Branch CI Workflows
+**Learning:** In repositories where a CI pipeline builds and commits generated artifacts (like HTML/XML/PNGs) directly to the production branch (`main`), external contributors often unknowingly commit changes to those generated files instead of the source code.
+**Action:** Always explicitly document the dual-branch strategy (e.g., `integration` vs `main`) and the "do not commit generated files" rule in the `README.md`'s Contributing section to prevent dirty git states and blocked pull requests from confused contributors.
