@@ -1094,3 +1094,14 @@ def test_script_entrypoint(mock_exit):
         except SystemExit:
             pass
             pass
+
+def test_extract_statcan_data_invalid_value():
+    from deployment.rebuild_analyses import extract_statcan_data
+    from deployment.config import EXTRACTION_CONFIGS
+
+    # Need to match ALL default filters for 17100005 to process VALUE
+    row = {"REF_DATE": "2025", "GEO": "Ontario", "VALUE": "invalid"}
+    row.update(EXTRACTION_CONFIGS["17100005"]["default_filters"])
+
+    result = extract_statcan_data([row], '17100005')
+    assert result == {}

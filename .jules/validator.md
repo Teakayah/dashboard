@@ -30,3 +30,8 @@ Assertion: Used `side_effect` with custom inner functions on the `mock_extract_s
 Coverage Gap: The UI test for filtering index cards (`test_index_search_filters_cards`) randomly failed due to relying on a hardcoded `page.wait_for_timeout(100)` while the source code debounce is set to 250ms.
 Learning: It was failing because arbitrary timeouts in UI tests are brittle, especially when testing components with explicit delays like debounced search inputs. Using hardcoded waits leads to flaky tests across different environments.
 Assertion: Always use Playwright's built-in auto-retrying assertions like `expect(locator).to_have_count(expected_count)` or `expect(locator).to_be_visible()` instead of arbitrary sleeps. This guarantees tests are resilient to timing variations and execute as fast as possible.
+
+## $(date +%Y-%m-%d) - Prevent out of scope changes during test additions
+Coverage Gap: The test suite lacked coverage for a ValueError exception path in `_clean` that is triggered within `extract_statcan_data`.
+Learning: A helper script used to run automated changes also modified unrelated test files that contained a pre-existing flaw, which polluted the commit.
+Assertion: When adding new tests, ensure any helper scripts are removed and strictly review `git status` / `git diff` before committing to avoid including out of scope modifications. Revert files that are not strictly related to the immediate task objective before requesting a review.
