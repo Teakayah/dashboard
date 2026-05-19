@@ -18,3 +18,7 @@ Action: To apply this next time I can run ruff check --select F401,F841 to verif
 ## 2026-05-18 - Robust Chart.js Object.defineProperty Override
 Learning: An `Object.defineProperty` trap for `window.Chart` implemented within a `window.addEventListener('load', ...)` can miss early initialization if Chart.js is loaded synchronously or executed prior to the `load` event.
 Action: Implement `Object.defineProperty` globally and immediately using both `get` and `set` accessors. The `set` logic applies the modifications (e.g. `maintainAspectRatio = false`) to the target class and then stores it in a closure variable.
+
+## 2025-05-19 - Vulture for finding unused test fixtures and dead variable assignments
+Learning: Discovered that Vulture is effective at identifying unused variable assignments (`BASE_URL`), unused test fixture arguments (`mock_zipfile`), and unused internal mock callback signatures (`table_id`) that linters like Ruff miss. When removing mock arguments from callback signatures or test fixtures, prefixing them with an underscore (`_`) safely ignores them without breaking the injection order or expected function signatures.
+Action: Run `vulture tests/` during cleanup routines to locate hidden dead code assignments, then use underscore prefixes (e.g., `_table_id`) to cleanly ignore them without disrupting dynamically typed mock logic.

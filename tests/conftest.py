@@ -7,7 +7,6 @@ from playwright.sync_api import Browser, Page
 
 REPO_ROOT = Path(__file__).parent.parent
 PORT = 8765
-BASE_URL = f'http://localhost:{PORT}'
 
 
 class WasmHandler(SimpleHTTPRequestHandler):

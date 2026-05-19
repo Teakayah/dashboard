@@ -680,7 +680,7 @@ def test_rebuild_employment_insight_grew(
     mock_exists.return_value = True
     mock_read_csv.return_value = [{"col": "val"}]
 
-    def mock_extract(rows, table_id, variant=None):
+    def mock_extract(rows, _table_id, variant=None):
         if variant == "empJobs":
             return {"Canada": [{"year": 2024, "change": 150}]}
         return {"mock": "data"}
@@ -721,7 +721,7 @@ def test_rebuild_employment_insight_decreased(
     mock_exists.return_value = True
     mock_read_csv.return_value = [{"col": "val"}]
 
-    def mock_extract(rows, table_id, variant=None):
+    def mock_extract(rows, _table_id, variant=None):
         if variant == "empJobs":
             return {"Canada": [{"year": 2024, "change": -50}]}
         return {"mock": "data"}
@@ -760,7 +760,7 @@ def test_rebuild_employment_insight_exception(
     mock_read_csv.return_value = [{"col": "val"}]
     # Trigger an exception by making 'change' missing
 
-    def mock_extract(rows, table_id, variant=None):
+    def mock_extract(rows, _table_id, variant=None):
         if variant == "empJobs":
             return {"Canada": [{"year": 2024}]} # missing 'change'
         return {"mock": "data"}
