@@ -54,36 +54,30 @@ def test_inject_responsive_replaces_older_versions():
     assert content.count('<!-- responsive-inject-v6 -->') == 1
 
 
-def test_inject_back_link_adds_snippet():
+def test_strip_back_link_removes_existing():
     module = load_generate_index_module()
+    snippet = ('<!-- back-link-inject -->'
+               '<div style="x"><a href="/">&#8592; DataDashboard</a></div>')
+    content = f'<html><body>\n{snippet}\n<h1>Test</h1></body></html>'
+    res = module.strip_back_link(content, 'test.html')
+    assert '<!-- back-link-inject -->' not in res
+    assert '<h1>Test</h1>' in res
 
-    # Normal body
-    content = '<html><head></head><body><h1>Test</h1></body></html>'
-    res = module.inject_back_link(content, 'test.html')
-    assert '<!-- back-link-inject -->' in res
-    assert res.startswith('<html><head></head><body>\n<!-- back-link-inject -->')
 
-    # Body with attributes
-    content = '<html><head></head><body class="my-class"><h1>Test</h1></body></html>'
-    res = module.inject_back_link(content, 'test.html')
-    assert '<!-- back-link-inject -->' in res
-    assert res.startswith('<html><head></head><body class="my-class">\n<!-- back-link-inject -->')
-
-    # Uppercase BODY
-    content = '<html><head></head><BODY><h1>Test</h1></BODY></html>'
-    res = module.inject_back_link(content, 'test.html')
-    assert '<!-- back-link-inject -->' in res
-    assert res.startswith('<html><head></head><BODY>\n<!-- back-link-inject -->')
-
-def test_inject_back_link_is_idempotent():
+def test_strip_back_link_no_op_when_absent():
     module = load_generate_index_module()
-    initial_content = '<html><head></head><body><h1>Test</h1></body></html>'
+    content = '<html><body><h1>Test</h1></body></html>'
+    assert module.strip_back_link(content, 'test.html') == content
 
-    first = module.inject_back_link(initial_content, 'test.html')
-    second = module.inject_back_link(first, 'test.html')
 
+def test_strip_back_link_is_idempotent():
+    module = load_generate_index_module()
+    snippet = ('<!-- back-link-inject -->'
+               '<div style="x"><a href="/">&#8592; DataDashboard</a></div>')
+    content = f'<html><body>\n{snippet}\n<h1>Test</h1></body></html>'
+    first = module.strip_back_link(content, 'test.html')
+    second = module.strip_back_link(first, 'test.html')
     assert first == second
-    assert second.count('<!-- back-link-inject -->') == 1
 
 
 def test_inject_favicon_adds_link(monkeypatch):
@@ -121,25 +115,49 @@ def test_inject_favicon_is_idempotent(monkeypatch):
     assert fourth == third_content
 
 
-def test_inject_analysis_tools_adds_script():
+def test_inject_share_fix_replaces_unsafe_handler():
     module = load_generate_index_module()
 
-    # Normal body
-    content = '<html><head></head><body><h1>Test</h1></body></html>'
-    res = module.inject_analysis_tools(content, 'test.html')
-    assert '<script src="assets/analysis_utils.js"></script>' in res
-    assert res.endswith('<script src="assets/analysis_utils.js"></script>\n</body></html>')
+    unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
+    content = f'<html><body><button {unsafe}>Share</button></body></html>'
+    res = module.inject_share_fix(content, 'test.html')
+    assert unsafe not in res
+    assert 'navigator.share' in res
+    assert 'navigator.clipboard' in res
 
 
-def test_inject_analysis_tools_is_idempotent():
+def test_inject_share_fix_is_idempotent():
     module = load_generate_index_module()
-    initial_content = '<html><head></head><body><h1>Test</h1></body></html>'
 
-    first = module.inject_analysis_tools(initial_content, 'test.html')
-    second = module.inject_analysis_tools(first, 'test.html')
-
+    unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
+    content = f'<html><body><button {unsafe}>Share</button></body></html>'
+    first = module.inject_share_fix(content, 'test.html')
+    second = module.inject_share_fix(first, 'test.html')
     assert first == second
-    assert second.count('assets/analysis_utils.js') == 1
+
+
+def test_inject_share_fix_no_op_when_absent():
+    module = load_generate_index_module()
+    content = '<html><body><p>No share button here</p></body></html>'
+    assert module.inject_share_fix(content, 'test.html') == content
+
+
+def test_inject_contrast_fix_adds_style():
+    module = load_generate_index_module()
+    content = '<html><head></head><body><p>Hello</p></body></html>'
+    res = module.inject_contrast_fix(content, 'test.html')
+    assert 'data-contrast-fix' in res
+    assert 'var(--bg)' in res
+    assert 'var(--text)' in res
+
+
+def test_inject_contrast_fix_is_idempotent():
+    module = load_generate_index_module()
+    content = '<html><head></head><body><p>Hello</p></body></html>'
+    first = module.inject_contrast_fix(content, 'test.html')
+    second = module.inject_contrast_fix(first, 'test.html')
+    assert first == second
+    assert second.count('data-contrast-fix') == 1
 
 
 def test_inject_functions_handle_missing_tags():
@@ -152,8 +170,8 @@ def test_inject_functions_handle_missing_tags():
     assert isinstance(res1, str)
 
     content_no_body = "<html><head></head>No body here</html>"
-    # inject_back_link expects <body>
-    res2 = module.inject_back_link(content_no_body, "test.html")
+    # strip_back_link is a no-op when marker is absent
+    res2 = module.strip_back_link(content_no_body, "test.html")
     assert res2 == content_no_body
     assert isinstance(res2, str)
 
@@ -167,18 +185,42 @@ def test_inject_functions_handle_missing_tags():
     assert res4 == content_no_tags
     assert isinstance(res4, str)
 
-    # inject_analysis_tools expects </body>
-    res5 = module.inject_analysis_tools(content_no_body, "test.html")
-    assert res5 == content_no_body
-    assert isinstance(res5, str)
-
 
 def test_inject_responsive_returns_early_if_marker_present():
     module = load_generate_index_module()
-    content = "<html><head><!-- responsive-inject-v5 --></head><body></body></html>"
+    content = "<html><head><!-- responsive-inject-v6 --></head><body></body></html>"
     res = module.inject_responsive(content, "test.html")
     assert res == content
     assert isinstance(res, str)
+
+
+def test_strip_analysis_utils_removes_tag():
+    module = load_generate_index_module()
+    content = '<html><head><script src="assets/analysis_utils.js"></script></head><body></body></html>'
+    res = module.strip_analysis_utils(content, 'test.html')
+    assert 'analysis_utils.js' not in res
+    assert '<head>' in res
+
+
+def test_strip_analysis_utils_is_idempotent():
+    module = load_generate_index_module()
+    content = '<html><head><script src="assets/analysis_utils.js"></script></head><body></body></html>'
+    first = module.strip_analysis_utils(content, 'test.html')
+    second = module.strip_analysis_utils(first, 'test.html')
+    assert first == second
+
+
+def test_strip_analysis_utils_no_op_when_absent():
+    module = load_generate_index_module()
+    content = '<html><head></head><body><p>No utils here</p></body></html>'
+    assert module.strip_analysis_utils(content, 'test.html') == content
+
+
+def test_strip_analysis_utils_handles_single_quotes():
+    module = load_generate_index_module()
+    content = "<html><head><script src='assets/analysis_utils.js'></script></head><body></body></html>"
+    res = module.strip_analysis_utils(content, 'test.html')
+    assert 'analysis_utils.js' not in res
 
 
 def test_inject_og_tags_adds_tags_with_extracted_title(monkeypatch):
@@ -240,7 +282,7 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
 
     content = analysis.read_text(encoding='utf-8')
     assert '<!-- responsive-inject-v6 -->' not in content
-    assert module.BACK_LINK_MARKER in content
+    assert module.BACK_LINK_MARKER not in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
 
