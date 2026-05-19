@@ -230,29 +230,20 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
 
 BACK_LINK_MARKER = '<!-- back-link-inject -->'
 
-BACK_LINK_SNIPPET = (
-    '<!-- back-link-inject -->'
-    '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;'
-    'padding:6px 0 2px;font-size:0.78rem;">'
-    f'<a href="{SITE_URL}/" style="color:#4f8ef7;text-decoration:none;font-weight:600;">'
-    '&#8592; DataDashboard</a></div>'
-)
 
-
-def inject_back_link(content: str, filename: str) -> str:
-    """Inject a 'back to homepage' link right after <body> in an analysis file content."""
-    if BACK_LINK_MARKER in content:
+def strip_back_link(content: str, filename: str) -> str:
+    """Remove the legacy arrow back-link div; the unified header is the canonical nav."""
+    if BACK_LINK_MARKER not in content:
         return content
-
     new_content = re.sub(
-        r'(<body[^>]*>)',
-        r'\1\n' + BACK_LINK_SNIPPET,
+        r'\n?<!-- back-link-inject -->(?:<div[^>]*>.*?</div>)?',
+        '',
         content,
         count=1,
-        flags=re.IGNORECASE,
+        flags=re.DOTALL,
     )
     if new_content != content:
-        print(f'  Injected back-link into {filename}')
+        print(f'  Stripped legacy back-link from {filename}')
     return new_content
 
 
@@ -392,7 +383,7 @@ def build_html(analyses: list[dict]) -> str:
     }}
     .header-sub {{
       font-size: 0.82rem;
-      color: rgba(255,255,255,0.45);
+      color: rgba(255,255,255,0.75);
     }}
 
     /* ── Search ─────────────────────────────────────────────── */
@@ -417,7 +408,7 @@ def build_html(analyses: list[dict]) -> str:
       border-color: #4f8ef7;
       box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
     }}
-    .search-bar input::placeholder {{ color: #aaa; }}
+    .search-bar input::placeholder {{ color: #6b7280; }}
 
     /* ── Grid ───────────────────────────────────────────────── */
     main {{
@@ -428,7 +419,7 @@ def build_html(analyses: list[dict]) -> str:
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #999;
+      color: #4b5563;
       margin-bottom: 14px;
     }}
     .grid {{
@@ -503,7 +494,7 @@ def build_html(analyses: list[dict]) -> str:
     }}
     .card-date {{
       font-size: 0.72rem;
-      color: #bbb;
+      color: #4b5563;
       font-weight: 600;
     }}
     .card-link {{
@@ -515,7 +506,7 @@ def build_html(analyses: list[dict]) -> str:
     /* ── Empty state ─────────────────────────────────────────── */
     .empty {{
       font-size: 0.88rem;
-      color: #999;
+      color: #4b5563;
       padding: 40px 0;
       text-align: center;
       line-height: 1.7;
@@ -541,7 +532,7 @@ def build_html(analyses: list[dict]) -> str:
     footer {{
       text-align: center;
       font-size: 0.7rem;
-      color: #bbb;
+      color: #4b5563;
       padding: 0 32px 28px;
     }}
 
@@ -575,9 +566,9 @@ def build_html(analyses: list[dict]) -> str:
 </main>
 
 <footer>
-  Auto-generated · <a href="https://github.com/Teakayah/dashboard" style="color:#bbb" target="_blank" rel="noopener noreferrer">Teakayah/dashboard</a>
+  Auto-generated · <a href="https://github.com/Teakayah/dashboard" style="color:#4b5563" target="_blank" rel="noopener noreferrer">Teakayah/dashboard</a>
   &nbsp;·&nbsp;
-  <a href="{SITE_URL}/feed.xml" style="color:#bbb" title="Subscribe via RSS/Atom">&#x2605; RSS feed</a>
+  <a href="{SITE_URL}/feed.xml" style="color:#4b5563" title="Subscribe via RSS/Atom">&#x2605; RSS feed</a>
 </footer>
 
 <script>
@@ -624,16 +615,49 @@ def build_html(analyses: list[dict]) -> str:
 '''
 
 
-def inject_analysis_tools(content: str, filename: str) -> str:
-    """Inject the Quick Insights toolbar into an analysis HTML file content."""
-    if 'assets/analysis_utils.js' in content:
-        return content
+CONTRAST_FIX_MARKER = 'data-contrast-fix'
 
-    script_tag = '\n  <script src="assets/analysis_utils.js"></script>'
-    # Insert just before </body>
-    new_content = re.sub(r'(</body>)', script_tag + r'\n\1', content, count=1, flags=re.IGNORECASE)
+CONTRAST_FIX_STYLE = (
+    '\n  <style data-contrast-fix>'
+    'body{background:var(--bg)!important;color:var(--text)!important}'
+    '.subtitle,.note,.empty,.tab:not(.active),.related-label,.card-date'
+    '{color:var(--text-muted,#4b5563)!important}'
+    '.related-link span,footer,footer a{color:var(--text-muted,#4b5563)!important}'
+    '</style>'
+)
+
+
+def inject_contrast_fix(content: str, filename: str) -> str:
+    """Inject a CSS override that fixes dark-mode body colours and WCAG AA contrast failures."""
+    if CONTRAST_FIX_MARKER in content:
+        return content
+    new_content = re.sub(r'(</head>)', CONTRAST_FIX_STYLE + r'\n\1', content, count=1, flags=re.IGNORECASE)
     if new_content != content:
-        print(f'  Injected analysis tools into {filename}')
+        print(f'  Injected contrast fix into {filename}')
+    return new_content
+
+
+def strip_analysis_utils(content: str, filename: str) -> str:
+    """Remove any leftover <script src="assets/analysis_utils.js"> tags (idempotent)."""
+    import re as _re
+    pattern = r'<script[^>]+src=["\']assets/analysis_utils\.js["\'][^>]*>\s*</script>'
+    new_content = _re.sub(pattern, '', content, flags=_re.IGNORECASE)
+    if new_content != content:
+        print(f'  Stripped analysis_utils.js script tag from {filename}')
+    return new_content
+
+
+def inject_share_fix(content: str, filename: str) -> str:
+    """Replace bare navigator.share onclick with a feature-detected version."""
+    unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
+    safe = ('onclick="if(navigator.share){navigator.share({title:document.title,'
+            'url:window.location.href})}else if(navigator.clipboard)'
+            '{navigator.clipboard.writeText(window.location.href)}"')
+    if unsafe not in content:
+        return content
+    new_content = content.replace(unsafe, safe)
+    if new_content != content:
+        print(f'  Fixed navigator.share in {filename}')
     return new_content
 
 
@@ -665,10 +689,12 @@ def main(argv: Optional[list[str]] = None):
 
         # Inject enhancements
         new_content = inject_responsive(content, meta['filename'], args.responsive_preset)
-        new_content = inject_back_link(new_content, meta['filename'])
+        new_content = strip_back_link(new_content, meta['filename'])
+        new_content = strip_analysis_utils(new_content, meta['filename'])
         new_content = inject_favicon(new_content, meta['filename'])
         new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
-        new_content = inject_analysis_tools(new_content, meta['filename'])
+        new_content = inject_share_fix(new_content, meta['filename'])
+        new_content = inject_contrast_fix(new_content, meta['filename'])
 
         if new_content != content:
             filepath.write_text(new_content, encoding='utf-8')

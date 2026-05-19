@@ -12,6 +12,8 @@ const MANUAL_BUNDLES = {
     },
 };
 
+const INIT_TIMEOUT_MS = 30000;
+
 let db = null;
 let conn = null;
 let lastResult = null;
@@ -124,40 +126,71 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+function showInitError(message) {
+    statusEl.textContent = message + ' ';
+    const btn = document.createElement('button');
+    btn.textContent = 'Reload without service worker';
+    btn.style.cssText = 'margin-left:8px;padding:2px 8px;cursor:pointer;font-size:inherit';
+    btn.addEventListener('click', reloadWithoutSW);
+    statusEl.appendChild(btn);
+}
+
+function reloadWithoutSW() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations()
+            .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+            .then(() => location.reload());
+    } else {
+        location.reload();
+    }
+}
+
 async function init() {
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+        timedOut = true;
+        showInitError('Initialization timed out after 30 s.');
+    }, INIT_TIMEOUT_MS);
+
     try {
         statusEl.textContent = 'Selecting bundle...';
         const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
-        
+
         statusEl.textContent = 'Initializing worker...';
         const worker = new Worker(bundle.mainWorker);
         const logger = new duckdb.ConsoleLogger();
         db = new duckdb.AsyncDuckDB(logger, worker);
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-        await db.open({ path: 'indexeddb://duckdb', accessMode: duckdb.DuckDBAccessMode.READ_WRITE });
+
+        const accessMode = duckdb.DuckDBAccessMode?.READ_WRITE ?? 1;
+        console.log('DuckDB accessMode:', accessMode);
+        await db.open({ path: 'indexeddb://duckdb', accessMode });
 
         conn = await db.connect();
-        
+
         statusEl.textContent = 'Loading extensions...';
         let deltaSupported = true;
         try {
-            // DuckDB-Wasm v0.9.1 might not support the 'delta' extension on all platforms
+            // DuckDB-Wasm v0.9.1 may not support the 'delta' extension on all platforms
             await conn.query('LOAD delta;');
         } catch (e) {
             console.warn('Delta extension not supported in this environment:', e.message);
             deltaSupported = false;
         }
         window.deltaSupported = deltaSupported;
-        
-        statusEl.textContent = 'DuckDB Ready';
 
+        clearTimeout(timeoutId);
+        if (!timedOut) {
+            statusEl.textContent = 'DuckDB Ready';
+        }
         console.log('DuckDB-Wasm initialized');
-        
+
         // Restore loaded tables
         await restoreState();
     } catch (err) {
+        clearTimeout(timeoutId);
         console.error(err);
-        statusEl.textContent = 'Error: ' + err.message;
+        showInitError('Error: ' + err.message);
     }
 }
 
@@ -898,18 +931,24 @@ loadSamplesBtn.addEventListener('click', async () => {
             const escapedName = name.replace(/'/g, "''");
             await conn.query(`CREATE TABLE IF NOT EXISTS "${tableName}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
             loadedTables.add(tableName);
+            currentTableName = tableName;
         }
         
+        // Populate the example SQL before the async schema render loop, so any
+        // test (or user) waiting on schema-display to mention a table can rely on
+        // sqlInput already being settled. Otherwise this write races with the
+        // next user/test action and can clobber it.
+        sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
+        sqlInput.dispatchEvent(new Event('input'));
+
         schemaDisplay.textContent = '';
         for (const table of loadedTables) {
             await displayTableSchema(table);
         }
-        
+
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
         updateJoinUI();
         updateChartBuilderUI();
-        sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
-        sqlInput.dispatchEvent(new Event('input'));
         
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
