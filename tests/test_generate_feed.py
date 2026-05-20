@@ -126,7 +126,8 @@ def test_get_batched_git_isos_success():
     module = load_generate_feed_module()
 
     mock_result = MagicMock()
-    mock_result.stdout = "TS:2023-10-27T10:00:00+00:00\ntest.html\n"
+    # Add an empty line to trigger the "if not line: continue" branch
+    mock_result.stdout = "TS:2023-10-27T10:00:00+00:00\n\ntest.html\n"
 
     mock_path = MagicMock(spec=Path)
     mock_path.name = "test.html"
@@ -155,6 +156,10 @@ def test_get_batched_git_isos_handles_git_failure():
         result = module._get_batched_git_isos([mock_path])
         assert result == {}
 
+def test_get_batched_git_isos_empty():
+    module = load_generate_feed_module()
+    assert module._get_batched_git_isos([]) == {}
+
 def test_git_iso_success():
     module = load_generate_feed_module()
     module._git_iso.cache_clear()
@@ -164,6 +169,27 @@ def test_git_iso_success():
 
     with patch('subprocess.run', return_value=mock_result):
         assert module._git_iso(Path("test.html")) == "2023-10-27T10:00:00+00:00"
+
+def test_git_iso_fallback():
+    module = load_generate_feed_module()
+    module._git_iso.cache_clear()
+
+    with patch('subprocess.run', side_effect=Exception("Git error")):
+        with patch.object(module, 'datetime') as mock_dt:
+            mock_dt.now.return_value.strftime.return_value = '2023-10-27T10:00:00Z'
+            assert module._git_iso(Path("test.html")) == '2023-10-27T10:00:00Z'
+
+def test_git_iso_empty_stdout():
+    module = load_generate_feed_module()
+    module._git_iso.cache_clear()
+
+    mock_result = MagicMock()
+    mock_result.stdout = " "
+
+    with patch('subprocess.run', return_value=mock_result):
+        with patch.object(module, 'datetime') as mock_dt:
+            mock_dt.now.return_value.strftime.return_value = '2023-10-27T10:00:00Z'
+            assert module._git_iso(Path("test.html")) == '2023-10-27T10:00:00Z'
 
 def test_build_entry_success():
     module = load_generate_feed_module()
@@ -212,7 +238,7 @@ def test_build_feed_with_entries():
     assert "<entry>" in feed
     assert "<title>Test</title>" in feed
 
-def test_main():
+def test_main_function():
     module = load_generate_feed_module()
 
     with patch.object(module, '_load_descriptions', return_value={}):
@@ -231,3 +257,20 @@ def test_main():
                         mock_write.assert_called_once()
                         written_content = mock_write.call_args[0][0]
                         assert "<title>Test</title>" in written_content
+
+def test_runpy_main():
+    import runpy
+    module = load_generate_feed_module()
+
+    with patch('sys.exit') as mock_exit:
+        mock_exit.side_effect = SystemExit
+        with patch('pathlib.Path.glob', return_value=[]):
+            with patch.object(module, '_load_descriptions', return_value={}):
+                with patch('pathlib.Path.write_text') as mock_write:
+                    try:
+                        runpy.run_path('deployment/generate_feed.py', run_name='__main__')
+                    except SystemExit:
+                        pass
+                    # Verify that the main logic executed far enough to attempt a write
+                    mock_write.assert_called_once()
+                    assert "feed.xml" in mock_write.call_args[0][0]
