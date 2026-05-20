@@ -465,3 +465,98 @@ def test_build_html_single_analysis(monkeypatch):
     assert 'single.html' in html
     assert 'Single Analysis' in html
     assert html.count('class="card"') == 1
+
+def test_get_git_dates_batched_invalid_iso_format(monkeypatch, tmp_path):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    file1 = tmp_path / 'file1.txt'
+    file1.touch()
+
+    class MockResult:
+        stdout = "TS:invalid-date\nfile1.txt\n"
+
+    def mock_run(*args, **kwargs):
+        return MockResult()
+
+    monkeypatch.setattr(module.subprocess, 'run', mock_run)
+
+    dates = module.get_git_dates_batched([file1])
+
+    # Should fallback to mtime
+    assert file1 in dates
+    expected_date = module.datetime.fromtimestamp(file1.stat().st_mtime).strftime('%b %Y')
+    assert dates[file1] == expected_date
+
+def test_main_file_read_exception(monkeypatch, tmp_path):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setattr(module, 'EXCLUDE', set())
+
+    file1 = tmp_path / 'analysis1.html'
+    file1.touch()
+
+    # Mock load_descriptions
+    monkeypatch.setattr(module, 'load_descriptions', lambda: {})
+
+    def mock_get_git_dates_batched(*args, **kwargs):
+        return {}
+    monkeypatch.setattr(module, 'get_git_dates_batched', mock_get_git_dates_batched)
+
+    def mock_read_text(self, *args, **kwargs):
+        raise Exception("Mock read error")
+
+    monkeypatch.setattr(module.Path, 'read_text', mock_read_text)
+
+    # Run main, should not raise and should fallback
+    module.main(['--responsive-preset', 'none'])
+
+    index_file = tmp_path / 'index.html'
+    assert index_file.exists()
+
+def test_inject_responsive_none_does_not_print(monkeypatch, capsys):
+    module = load_generate_index_module()
+    content = "<html><body><p>Test</p></body></html>"
+    # Provide identical content to avoid "Removed responsive enhancer"
+    new_content = module.inject_responsive(content, "test.html", "none")
+    assert new_content == content
+    out, err = capsys.readouterr()
+    assert "Removed responsive enhancer" not in out
+
+def test_inject_favicon_already_present(monkeypatch, capsys):
+    module = load_generate_index_module()
+    content = "<html><head><link rel='icon' href='favicon.ico'></head><body></body></html>"
+    new_content = module.inject_favicon(content, "test.html")
+    assert new_content == content
+    out, err = capsys.readouterr()
+    assert "Injected favicon into" not in out
+
+def test_inject_analysis_tools_already_present(monkeypatch, capsys):
+    module = load_generate_index_module()
+    content = "<html><head></head><body><script src='assets/analysis_utils.js'></script></body></html>"
+    new_content = module.inject_analysis_tools(content, "test.html")
+    assert new_content == content
+    out, err = capsys.readouterr()
+    assert "Injected analysis tools into" not in out
+
+def test_generate_index_main_block(monkeypatch):
+    import runpy
+    import sys
+
+    # Mock sys.argv
+    monkeypatch.setattr(sys, "argv", ["deployment/generate_index.py"])
+
+    # Mock sys.exit to avoid test runner exit
+    monkeypatch.setattr(sys, "exit", lambda x: None)
+
+    # We patch main inside the execution using python's built in tools or simply replace main via patch
+    from unittest.mock import patch
+    with patch("deployment.generate_index.main"):
+        runpy.run_path("deployment/generate_index.py", run_name="__main__")
+
+def test_inject_responsive_none_does_print(monkeypatch, capsys):
+    module = load_generate_index_module()
+    content = "<html><body><!-- responsive-inject-v6 --><style></style><script></script></body></html>"
+    new_content = module.inject_responsive(content, "test.html", "none")
+    assert new_content != content
+    out, err = capsys.readouterr()
+    assert "Removed responsive enhancer from test.html" in out
