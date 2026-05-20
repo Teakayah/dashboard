@@ -30,3 +30,8 @@ Assertion: Used `side_effect` with custom inner functions on the `mock_extract_s
 Coverage Gap: The UI test for filtering index cards (`test_index_search_filters_cards`) randomly failed due to relying on a hardcoded `page.wait_for_timeout(100)` while the source code debounce is set to 250ms.
 Learning: It was failing because arbitrary timeouts in UI tests are brittle, especially when testing components with explicit delays like debounced search inputs. Using hardcoded waits leads to flaky tests across different environments.
 Assertion: Always use Playwright's built-in auto-retrying assertions like `expect(locator).to_have_count(expected_count)` or `expect(locator).to_be_visible()` instead of arbitrary sleeps. This guarantees tests are resilient to timing variations and execute as fast as possible.
+
+## 2026-05-11 - Mocking Global Imports for ImportError Fallbacks
+Coverage Gap: Uncovered fallback `except ImportError:` blocks at the top of standalone pipeline scripts.
+Learning: Standard `@patch` techniques do not work easily for top-level module imports, and `reload` can get confusing. Modifying `sys.modules` works best.
+Assertion: Use `@patch.dict('sys.modules', {'target_module': None})` combined with `importlib.reload()` or fresh imports to reliably trigger and cover `ImportError` blocks in `try/except` constructs without creating nested recursion errors.

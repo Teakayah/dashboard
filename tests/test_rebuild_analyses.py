@@ -1014,7 +1014,8 @@ def test_main_exception_handling(mock_root, capsys):
 def test_extract_statcan_data_invalid_ref_date():
     from deployment.rebuild_analyses import extract_statcan_data
     # Need to match ALL default filters for 17100005 to process REF_DATE
-    from deployment.config import EXTRACTION_CONFIGS
+    import deployment.rebuild_analyses as rb
+    EXTRACTION_CONFIGS = rb.EXTRACTION_CONFIGS
     row = {"REF_DATE": "bad_", "GEO": "Ontario", "VALUE": "16000000"}
     row.update(EXTRACTION_CONFIGS["17100005"]["default_filters"])
 
@@ -1041,7 +1042,8 @@ def test_extract_statcan_data_nhpi(mock_extract_nhpi):
 
 def test_extract_statcan_data_strip_optimization():
     from deployment.rebuild_analyses import extract_statcan_data
-    from deployment.config import EXTRACTION_CONFIGS
+    import deployment.rebuild_analyses as rb
+    EXTRACTION_CONFIGS = rb.EXTRACTION_CONFIGS
 
     # 14100287 has default_filters and variants we can target
     row = {
@@ -1064,7 +1066,8 @@ def test_extract_statcan_data_strip_optimization():
 
 def test_extract_statcan_data_general_buckets():
     from deployment.rebuild_analyses import extract_statcan_data
-    from deployment.config import EXTRACTION_CONFIGS
+    import deployment.rebuild_analyses as rb
+    EXTRACTION_CONFIGS = rb.EXTRACTION_CONFIGS
 
     # Target table_id without variant that falls through to return buckets directly
     EXTRACTION_CONFIGS["88888888"] = {"default_filters": {"test": "val"}}
