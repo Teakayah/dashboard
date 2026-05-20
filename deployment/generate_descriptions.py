@@ -20,6 +20,7 @@ import json
 import os
 import sys
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
@@ -117,7 +118,7 @@ def main() -> None:
     else:
         targets = sorted(ROOT.glob('*.html'), key=lambda p: p.stat().st_mtime, reverse=True)
 
-    updated = 0
+    files_to_process = []
     for filepath in targets:
         if filepath.name.lower() in EXCLUDE:
             continue
@@ -127,16 +128,26 @@ def main() -> None:
         if not args.force and descriptions.get(filepath.name):
             print(f'  [skip] {filepath.name} already has a description')
             continue
+        files_to_process.append(filepath)
 
+    updated = 0
+
+    def _process(filepath: Path) -> tuple[str, str]:
         print(f'  Generating description for {filepath.name}…')
         content = filepath.read_text(encoding='utf-8', errors='ignore')
         desc = ollama_describe(content, filepath.name)
-        if desc:
-            descriptions[filepath.name] = desc
-            print(f'    → {desc}')
-            updated += 1
-        else:
-            print('    → (no description generated)')
+        return filepath.name, desc
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = {executor.submit(_process, fp): fp for fp in files_to_process}
+        for future in as_completed(futures):
+            filename, desc = future.result()
+            if desc:
+                descriptions[filename] = desc
+                print(f'    → {desc}')
+                updated += 1
+            else:
+                print('    → (no description generated)')
 
     save_descriptions(descriptions)
     print(f'\nDone. {updated} description(s) updated in {DESCRIPTIONS_FILE.relative_to(ROOT)}')
