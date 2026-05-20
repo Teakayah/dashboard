@@ -154,7 +154,13 @@ function buildStats(){
     const vy=datesWithVal.length>13?m[datesWithVal[datesWithVal.length-13]]:null;
     const mom=vm?((v-vm)/vm*100).toFixed(1):null;
     const yoyv=vy?((v-vy)/vy*100).toFixed(1):null;
-    const peak=Math.max(...datesWithVal.map(d=>m[d]));
+
+    let peak = -Infinity;
+    for (let i = 0; i < datesWithVal.length; i++) {
+      const val = m[datesWithVal[i]];
+      if (val > peak) peak = val;
+    }
+
     const fromPeak=((v-peak)/peak*100).toFixed(1);
 
     const statDiv = document.createElement('div');
@@ -251,7 +257,12 @@ function buildPeakBar(){
   const items=D2_REGIONS.filter(([r])=>r!=='Canada').map(([r,c])=>{
     const m=MAPS[r]; if(!m) return null;
     const vals=ALL_DATES.filter(d=>m[d]).map(d=>m[d]);
-    const peak=Math.max(...vals);
+
+    let peak = -Infinity;
+    for (let i = 0; i < vals.length; i++) {
+      if (vals[i] > peak) peak = vals[i];
+    }
+
     const latest=vals[vals.length-1];
     const drop=+((latest-peak)/peak*100).toFixed(1);
     return {r,c,drop,atPeak:drop===0};
