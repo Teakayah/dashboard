@@ -831,8 +831,14 @@ downloadBtn.addEventListener('click', async () => {
     loadingOverlay.style.display = 'flex';
     try {
         const csvPath = 'export.csv';
-        await conn.query(`CREATE OR REPLACE TEMPORARY TABLE _export_tmp AS ${sqlInput.value.trim()}`);
-        await conn.query(`COPY _export_tmp TO '${csvPath}' (HEADER, DELIMITER ',')`);
+        let safeSql = sqlInput.value.trim();
+        // Remove trailing semicolon if present to allow wrapping in parens
+        if (safeSql.endsWith(';')) safeSql = safeSql.slice(0, -1);
+
+        // Wrap the user's query in parentheses for the COPY statement.
+        // This acts as a subquery, preventing multiple statements (e.g. SELECT * FROM t; DROP TABLE t)
+        // from being executed as part of the export, protecting the local DB state.
+        await conn.query(`COPY (${safeSql}) TO '${csvPath}' (HEADER, DELIMITER ',')`);
         
         const content = await db.copyFileToBuffer(csvPath);
         const blob = new Blob([content], { type: 'text/csv' });
