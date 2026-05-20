@@ -21,31 +21,48 @@ except ImportError:
 PORT = 8765
 
 
-def _git_commit_time(path: str) -> int:
-    """Return the Unix timestamp of the last commit touching `path`, or 0."""
+def _get_batched_git_commit_times(files: list[Path]) -> dict[Path, int]:
+    """Return Unix timestamps for multiple files from git log."""
+    if not files:
+        return {}
+
+    dates = {}
     try:
-        return int(subprocess.run(['git', 'log', '-1', '--format=%ct', '--', path], 
-                                capture_output=True, text=True, cwd=str(ROOT)).stdout.strip())
+        rel_paths = [str(f.relative_to(ROOT)) if f.is_absolute() else str(f) for f in files]
+        cmd = ['git', 'log', '--format=TS:%ct', '--name-only', '--'] + rel_paths
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+        current_ts = None
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if line.startswith('TS:'):
+                current_ts = int(line[3:])
+            elif line and current_ts is not None:
+                p = ROOT / line
+                if p not in dates:
+                    dates[p] = current_ts
     except Exception:
-        return 0
+        pass
+
+    return dates
 
 
-def needs_screenshot(name: str, force: bool = False) -> bool:
+def needs_screenshot(name: str, commit_times: dict[Path, int], force: bool = False) -> bool:
     """Return True if the page's preview is missing or older than the page's last commit."""
     if force:
         return True
+    html_path = ROOT / name
     preview = ROOT / 'previews' / f'{Path(name).stem}.png'
     if not preview.exists():
         return True
-    html_ts = _git_commit_time(name)
-    # Check if the preview file exists on disk and get its mtime as fallback if not in git
-    preview_path = f'previews/{preview.name}'
-    png_ts = _git_commit_time(preview_path)
+
+    html_ts = commit_times.get(html_path, 0)
+    png_ts = commit_times.get(preview, 0)
+
     if png_ts == 0:
-        png_ts = int((ROOT / preview_path).stat().st_mtime)
+        png_ts = int(preview.stat().st_mtime)
     
     if html_ts == 0:
-        html_ts = int((ROOT / name).stat().st_mtime)
+        html_ts = int(html_path.stat().st_mtime)
         
     return html_ts > png_ts
 
@@ -55,13 +72,23 @@ def main():
     parser.add_argument('--force', action='store_true', help='Force regenerate all screenshots')
     args = parser.parse_args()
 
-    all_pages = sorted(p.name for p in ROOT.glob('*.html'))
+    all_pages = sorted(p for p in ROOT.glob('*.html'))
     if not all_pages:
         print('No HTML files found — nothing to screenshot.')
         return
 
-    pages = [p for p in all_pages if needs_screenshot(p, force=args.force)]
-    skipped = [p for p in all_pages if p not in pages]
+    # Pre-calculate git commit times for all HTML files and their potential previews
+    files_to_check = all_pages.copy()
+    for p in all_pages:
+        preview = ROOT / 'previews' / f'{p.stem}.png'
+        if preview.exists():
+            files_to_check.append(preview)
+
+    commit_times = _get_batched_git_commit_times(files_to_check)
+
+    pages = [p.name for p in all_pages if needs_screenshot(p.name, commit_times, force=args.force)]
+    all_page_names = [p.name for p in all_pages]
+    skipped = [p for p in all_page_names if p not in pages]
 
     if skipped:
         print(f'Skipped (up-to-date): {skipped}')

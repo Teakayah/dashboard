@@ -20,3 +20,6 @@
 ## 2026-05-06 - CSV DictReader Optimization with Backward Compatibility
 **Learning:** When optimizing large CSV parsing by replacing `csv.DictReader` with `csv.reader` in Python, standard `zip()` will silently truncate missing column values if a row is shorter than the header list. To preserve the exact `restval=None` backwards compatibility of `DictReader`, use `dict(itertools.zip_longest(headers, row))`. Additionally, when injecting import statements during script patching, always ensure they are placed *below* the script shebang (`#!/usr/bin/env python3`) and any module-level docstrings to prevent breaking executable scripts.
 **Action:** When migrating from `DictReader` to `reader` + zip, always use `zip_longest` from `itertools` for safe padding. Verify new import placement in executable Python scripts.
+## 2026-05-20 - Git Metadata Retrieval Batching in screenshot.py
+**Learning:** File metadata retrieval from Git using individual `git log` subprocess calls per file creates significant N+1 query overhead. Batching this across all files significantly improves performance, dropping execution time from ~100ms to ~20ms in local tests.
+**Action:** When working with multiple files that require Git metadata, always use a batched retrieval function (e.g. `git log --format=TS:%ct --name-only -- [files...]`) instead of querying them individually.

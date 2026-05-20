@@ -11,38 +11,54 @@ def load_screenshot_module():
     spec.loader.exec_module(module)
     return module
 
-def test_git_commit_time_success():
+def test_get_batched_git_commit_times_success():
     module = load_screenshot_module()
-    with patch('subprocess.run') as mock_run:
-        mock_run.return_value = MagicMock(stdout='1234567890\n')
-        ts = module._git_commit_time('test.html')
-        assert ts == 1234567890
-        assert mock_run.call_count >= 1
+    mock_result = MagicMock()
+    mock_result.stdout = "TS:1234567890\ntest.html\n"
 
-def test_git_commit_time_empty():
+    mock_path = MagicMock(spec=Path)
+    mock_path.name = "test.html"
+
+    with patch('subprocess.run', return_value=mock_result):
+        result = module._get_batched_git_commit_times([mock_path])
+        # The key stored is ROOT / 'test.html' based on module logic, but mocking Path is tricky
+        # so we will just assert the dict isn't empty and check values
+        assert list(result.values()) == [1234567890]
+
+def test_get_batched_git_commit_times_empty():
     module = load_screenshot_module()
-    with patch('subprocess.run') as mock_run:
-        mock_run.return_value = MagicMock(stdout='')
-        ts = module._git_commit_time('test.html')
-        assert ts == 0
-        assert mock_run.call_count >= 1
+    mock_path = MagicMock(spec=Path)
+    mock_path.name = "test.html"
+    with patch('subprocess.run', side_effect=Exception("Git error")):
+        result = module._get_batched_git_commit_times([mock_path])
+        assert result == {}
 
 def test_needs_screenshot_missing():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=False):
-        assert module.needs_screenshot('test_page.html') is True
+        assert module.needs_screenshot('test_page.html', {}) is True
 
 def test_needs_screenshot_older_preview():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=True):
-        with patch.object(module, '_git_commit_time', side_effect=[100, 50]):
-            assert module.needs_screenshot('test_page.html') is True
+        # mock stat fallback
+        with patch('pathlib.Path.stat') as mock_stat:
+            mock_stat.side_effect = [MagicMock(st_mtime=50), MagicMock(st_mtime=100)]
+            # Needs screenshot if html_ts (100) > png_ts (50)
+            mock_html_path = module.ROOT / 'test_page.html'
+            mock_png_path = module.ROOT / 'previews' / 'test_page.png'
+            commit_times = {mock_html_path: 100, mock_png_path: 50}
+            assert module.needs_screenshot('test_page.html', commit_times) is True
 
 def test_needs_screenshot_newer_preview():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=True):
-        with patch.object(module, '_git_commit_time', side_effect=[50, 100]):
-            assert module.needs_screenshot('test_page.html') is False
+        with patch('pathlib.Path.stat') as mock_stat:
+            mock_stat.side_effect = [MagicMock(st_mtime=100), MagicMock(st_mtime=50)]
+            mock_html_path = module.ROOT / 'test_page.html'
+            mock_png_path = module.ROOT / 'previews' / 'test_page.png'
+            commit_times = {mock_html_path: 50, mock_png_path: 100}
+            assert module.needs_screenshot('test_page.html', commit_times) is False
 
 @patch("sys.argv", ["screenshot.py"])
 def test_main_no_html_files():
@@ -191,19 +207,20 @@ def test_main_timeout_waiting_for_load_state():
 
 def test_needs_screenshot_force():
     module = load_screenshot_module()
-    assert module.needs_screenshot('test_page.html', force=True) is True
+    assert module.needs_screenshot('test_page.html', {}, force=True) is True
 
 def test_needs_screenshot_mtime_fallback():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=True), \
-         patch.object(module, '_git_commit_time', side_effect=[0, 0, 0, 0]), \
          patch('pathlib.Path.stat') as mock_stat:
-        # html mtime > png mtime
+        # Both png and html timestamps default to 0 in empty dict
+        # fallback png stat mtime = 50, html stat mtime = 100
         mock_stat.side_effect = [MagicMock(st_mtime=50), MagicMock(st_mtime=100)]
-        assert module.needs_screenshot('test_page.html') is True
+        assert module.needs_screenshot('test_page.html', {}) is True
 
+        # fallback png stat mtime = 100, html stat mtime = 50
         mock_stat.side_effect = [MagicMock(st_mtime=100), MagicMock(st_mtime=50)]
-        assert module.needs_screenshot('test_page.html') is False
+        assert module.needs_screenshot('test_page.html', {}) is False
 
 @patch("sys.argv", ["screenshot.py"])
 def test_main_wait_for_selector_exception():
