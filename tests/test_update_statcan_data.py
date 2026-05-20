@@ -162,7 +162,7 @@ def test_load_last_checked_invalid_date(tmp_path):
 @patch('deployment.update_statcan_data._get_end_period')
 @patch('zipfile.ZipFile')
 @patch('urllib.request.urlopen')
-def test_download_table_success(mock_urlopen, mock_zipfile, mock_get_end_period, tmp_path):
+def test_download_table_success(mock_urlopen, _mock_zipfile, mock_get_end_period, tmp_path):
     from deployment.update_statcan_data import download_table
     table = {'id': '12345678', 'desc': 'Test Table', 'path': tmp_path / '12345678'}
     mock_get_end_period.side_effect = ['2023-01', '2023-02']

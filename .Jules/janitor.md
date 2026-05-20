@@ -18,3 +18,6 @@ Action: To apply this next time I can run ruff check --select F401,F841 to verif
 ## 2026-05-18 - Robust Chart.js Object.defineProperty Override
 Learning: An `Object.defineProperty` trap for `window.Chart` implemented within a `window.addEventListener('load', ...)` can miss early initialization if Chart.js is loaded synchronously or executed prior to the `load` event.
 Action: Implement `Object.defineProperty` globally and immediately using both `get` and `set` accessors. The `set` logic applies the modifications (e.g. `maintainAspectRatio = false`) to the target class and then stores it in a closure variable.
+## 2024-05-20 - Test Cleanup
+Learning: Unused imports, parameters, and variable definitions found during static analysis can be safely removed or prefixed with an underscore to keep the test function signature required for mocking injection order.
+Action: Utilize `ruff` for auto-fixing imports and format errors, and selectively rename variables flagged by `vulture` when they are required for injection.
