@@ -9,6 +9,7 @@ import json
 import re
 import sys
 from collections import defaultdict
+from functools import lru_cache
 from itertools import zip_longest
 from pathlib import Path
 from typing import Optional, Any
@@ -41,6 +42,7 @@ def _read_csv(path: Path) -> list[dict]:
         return [dict(zip_longest(headers, row)) for row in reader if any(row)]
 
 
+@lru_cache(maxsize=1024)
 def _clean(val: str) -> Optional[float]:
     """
     Return float or None for Stats Canada VALUE cells.
