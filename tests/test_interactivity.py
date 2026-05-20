@@ -322,7 +322,7 @@ class TestEmploymentPageButtons:
         """The toggle button must not crash and canvas must still have height after click."""
         _load_page(page, EMPLOYMENT_URL)
         page.locator('.tab').nth(0).click()   # Employment Rate tab
-        page.wait_for_timeout(400)
+        page.wait_for_selector('#panel-rate', state='visible')
 
         toggle = page.locator('#panel-rate button').first
         if not toggle.count():
@@ -331,7 +331,7 @@ class TestEmploymentPageButtons:
         errors: list[str] = []
         page.on('pageerror', lambda e: errors.append(str(e)))
         toggle.click()
-        page.wait_for_timeout(500)
+        page.wait_for_function("() => (document.querySelector('#panel-rate canvas')?.offsetHeight ?? 0) > 0")
         assert not errors, f'JS error after rate toggle click: {errors}'
         height = page.evaluate("document.querySelector('#panel-rate canvas')?.offsetHeight ?? 0")
         assert height > 0, 'Rate panel canvas collapsed after toggle click'
@@ -339,7 +339,7 @@ class TestEmploymentPageButtons:
     def test_debt_panel_overview_toggle(self, page: Page):
         _load_page(page, EMPLOYMENT_URL)
         page.locator('.tab').nth(2).click()   # Government Debt tab
-        page.wait_for_timeout(400)
+        page.wait_for_selector('#panel-debt', state='visible')
 
         toggle = page.locator('#panel-debt button').first
         if not toggle.count():
@@ -348,7 +348,7 @@ class TestEmploymentPageButtons:
         errors: list[str] = []
         page.on('pageerror', lambda e: errors.append(str(e)))
         toggle.click()
-        page.wait_for_timeout(500)
+        page.wait_for_function("() => (document.querySelector('#panel-debt canvas')?.offsetHeight ?? 0) > 0")
         assert not errors, f'JS error after debt toggle click: {errors}'
         height = page.evaluate("document.querySelector('#panel-debt canvas')?.offsetHeight ?? 0")
         assert height > 0, 'Debt panel canvas collapsed after toggle click'
@@ -356,7 +356,7 @@ class TestEmploymentPageButtons:
     def test_population_panel_toggle(self, page: Page):
         _load_page(page, EMPLOYMENT_URL)
         page.locator('.tab').nth(3).click()   # Population tab
-        page.wait_for_timeout(400)
+        page.wait_for_selector('#panel-pop', state='visible')
 
         toggle = page.locator('#panel-pop button').first
         if not toggle.count():
@@ -365,7 +365,7 @@ class TestEmploymentPageButtons:
         errors: list[str] = []
         page.on('pageerror', lambda e: errors.append(str(e)))
         toggle.click()
-        page.wait_for_timeout(500)
+        page.wait_for_function("() => (document.querySelector('#panel-pop canvas')?.offsetHeight ?? 0) > 0")
         assert not errors, f'JS error after population toggle click: {errors}'
         height = page.evaluate("document.querySelector('#panel-pop canvas')?.offsetHeight ?? 0")
         assert height > 0, 'Population panel canvas collapsed after toggle click'
@@ -484,7 +484,7 @@ class TestFloodPageButtons:
         assert high_hull > low_hull, (
             f'Hull level did not increase when slider went up: {low_hull} → {high_hull}'
         )
-        assert high_hull > 0, f'Hull level is zero at slider high value'
+        assert high_hull > 0, 'Hull level is zero at slider high value'
 
     def test_slider_offset_display_updates(self, page: Page):
         _load_page(page, FLOOD_URL)
