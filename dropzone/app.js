@@ -68,7 +68,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 
 /**
  * Safely converts an Arrow table result into a plain array of JavaScript objects.
-...
+ * Iterates through the Arrow Table rows and extracts them into standard dictionaries.
  * This avoids DuckDB-Wasm Proxy trap errors (ownKeys) and handles BigInt serialization.
  *
  * @param {import('@duckdb/duckdb-wasm').Table} result
