@@ -38,6 +38,7 @@ h1{font-size:1.3rem;font-weight:700;color:#1a1a2e;margin-bottom:3px}
 .tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid #ddd;overflow-x:auto}
 .tab{padding:9px 20px;cursor:pointer;font-size:0.83rem;font-weight:600;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s;white-space:nowrap;flex-shrink:0}
 .tab:hover{color:#444}
+.tab:focus-visible{outline:2px solid #1a1a2e;outline-offset:2px}
 .tab.active{color:#1a1a2e;border-bottom-color:#1a1a2e}
 .panel{display:none}.panel.active{display:block}
 .controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;align-items:center}
@@ -91,11 +92,11 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
 <p class="subtitle">Statistics Canada &mdash; Seasonally adjusted where applicable &middot; Total gender &middot; Provincial governments</p>
 <!-- insight-inject --><!-- /insight-inject -->
 
-<div class="tabs">
-  <div class="tab active"  onclick="showTab('rate')">📈 Employment Rate</div>
-  <div class="tab"         onclick="showTab('jobs')">👷 Jobs Created</div>
-  <div class="tab"         onclick="showTab('debt')">💰 Government Debt</div>
-  <div class="tab"         onclick="showTab('pop')">🧑‍🤝‍🧑 Population</div>
+<div class="tabs" role="tablist">
+  <div class="tab active" role="tab" tabindex="0" onclick="showTab('rate')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('rate');}">📈 Employment Rate</div>
+  <div class="tab" role="tab" tabindex="0" onclick="showTab('jobs')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('jobs');}">👷 Jobs Created</div>
+  <div class="tab" role="tab" tabindex="0" onclick="showTab('debt')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('debt');}">💰 Government Debt</div>
+  <div class="tab" role="tab" tabindex="0" onclick="showTab('pop')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('pop');}">🧑‍🤝‍🧑 Population</div>
 </div>
 
 <!-- ══ TAB 1: Employment Rate ═══════════════════════════════════════════════ -->

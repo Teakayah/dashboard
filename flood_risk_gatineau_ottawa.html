@@ -59,6 +59,7 @@
              border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s;
              white-space: nowrap; flex-shrink: 0; user-select: none; }
     .tab:hover { color: #444; }
+    .tab:focus-visible { outline: 2px solid #1a1a2e; outline-offset: 2px; }
     .tab.active { color: #1a1a2e; border-bottom-color: #1a1a2e; }
 
     .panel { display: none; }
@@ -176,10 +177,10 @@
   Live data: <a href="https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=02KF005" target="_blank" rel="noopener noreferrer" class="ext">WSC &#8599;</a>
 </div>
 
-<div class="tabs">
-  <div class="tab active"  onclick="showTab('gauge')">&#127777; River Vitals</div>
-  <div class="tab"         onclick="showTab('history')">&#128200; Historical Floods</div>
-  <div class="tab"         onclick="showTab('snowpack')">&#10052; Snowpack Risk</div>
+<div class="tabs" role="tablist">
+  <div class="tab active" role="tab" tabindex="0" onclick="showTab('gauge')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('gauge');}">&#127777; River Vitals</div>
+  <div class="tab" role="tab" tabindex="0" onclick="showTab('history')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('history');}">&#128200; Historical Floods</div>
+  <div class="tab" role="tab" tabindex="0" onclick="showTab('snowpack')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('snowpack');}">&#10052; Snowpack Risk</div>
 </div>
 
 <!-- ══ TAB 1: GAUGE ════════════════════════════════════════════════════ -->
