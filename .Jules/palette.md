@@ -13,3 +13,6 @@
 ## 2026-05-18 - Managing Dynamic Tooltips for Disabled States
 **Learning:** Adding `title` tooltips to `disabled` buttons improves accessibility by explaining why an action is unavailable. However, if the tooltip isn't dynamically cleared when the button becomes enabled, users see outdated/confusing explanations (e.g., "Requires a valid query" appearing on an enabled "Run Query" button).
 **Action:** When adding explanatory tooltips to disabled buttons, always pair the `title` attribute management with the JS logic that toggles the `disabled` property. Clear the `title` (or set it to the normal action description) when `disabled = false`, and restore the explanation when `disabled = true`.
+## 2026-05-12 - Button Focus Visibility
+**Learning:** While custom interactive elements often get custom focus styles, native `<button>` elements in this repository lacked explicit `:focus-visible` styles in their general CSS rules, leading to inconsistent or missing focus indicators for keyboard users across different browsers.
+**Action:** Always ensure that general button styles (e.g., in `theme.css` or inline styles) include explicit `:focus-visible` rules (like `outline: 2px solid var(--primary); outline-offset: 2px;`) to guarantee robust keyboard accessibility.
