@@ -799,7 +799,7 @@ function renderChart(id, type, data, options = {}) {
 sqlInput.addEventListener('input', () => {
     if (sqlInput.value.trim().length > 0) {
         runBtn.disabled = false;
-        runBtn.title = '';
+        runBtn.title = 'Run Query (Ctrl/Cmd + Enter)';
     } else {
         runBtn.disabled = true;
         runBtn.title = 'Requires a valid query';
@@ -807,6 +807,15 @@ sqlInput.addEventListener('input', () => {
 });
 
 runBtn.addEventListener('click', runQuery);
+
+sqlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        if (!runBtn.disabled) {
+            runQuery();
+        }
+    }
+});
 
 async function runQuery() {
     const sql = sqlInput.value.trim();

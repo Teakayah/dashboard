@@ -1,9 +1,7 @@
 import pytest
-import subprocess
 import sys
 import json
 from unittest.mock import Mock, patch
-from pathlib import Path
 
 import importlib.util
 
