@@ -13,3 +13,6 @@
 ## 2026-05-18 - Managing Dynamic Tooltips for Disabled States
 **Learning:** Adding `title` tooltips to `disabled` buttons improves accessibility by explaining why an action is unavailable. However, if the tooltip isn't dynamically cleared when the button becomes enabled, users see outdated/confusing explanations (e.g., "Requires a valid query" appearing on an enabled "Run Query" button).
 **Action:** When adding explanatory tooltips to disabled buttons, always pair the `title` attribute management with the JS logic that toggles the `disabled` property. Clear the `title` (or set it to the normal action description) when `disabled = false`, and restore the explanation when `disabled = true`.
+## $(date +%Y-%m-%d) - [Clear Search Micro-UX Improvement]
+**Learning:** Adding a clear search button (`×`) enhances accessibility, but implementing it cleanly requires moving the logic out of a debounced input listener. If toggled within a debounce, the button appearance is noticeably delayed (250ms), reducing perceived responsiveness.
+**Action:** Always attach UI visibility toggles (like showing/hiding a clear button based on input length) to an immediate, un-debounced `'input'` event listener. Reserve debounced functions strictly for expensive operations like DOM filtering or network requests.
