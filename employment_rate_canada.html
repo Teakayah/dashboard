@@ -330,11 +330,22 @@ function jobsSetGeo(g){buildJobsBar(g);}
 // ══════════════════════════════════════════════════════════════════════════════
 // TAB 3 – Government Debt
 // ══════════════════════════════════════════════════════════════════════════════
+// ⚡ Bolt Optimization: Pre-compute max values to avoid redundant O(M) computations inside the O(N log N) sort comparator.
+// We also avoid Math.max.apply on mapped arrays to prevent maximum call stack size errors.
+var maxDebt = {};
+PROV.forEach(function(g) {
+  var m = -Infinity;
+  var arr = DATA.provDebt[g] || [];
+  for(var i = 0; i < arr.length; i++) {
+    var val = arr[i].value || 0;
+    if(val > m) m = val;
+  }
+  maxDebt[g] = m;
+});
+
 var debtProvGeos=PROV.filter(function(g){return DATA.provDebt[g];});
 debtProvGeos.sort(function(a,b){
-  var mA=Math.max.apply(null,(DATA.provDebt[a]||[]).map(function(d){return d.value||0;}));
-  var mB=Math.max.apply(null,(DATA.provDebt[b]||[]).map(function(d){return d.value||0;}));
-  return mB-mA;
+  return maxDebt[b] - maxDebt[a];
 });
 var debtVis=new Set(debtProvGeos.concat(['Federal']));
 

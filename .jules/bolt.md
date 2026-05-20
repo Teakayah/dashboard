@@ -24,3 +24,10 @@
 ## 2024-05-24 - Avoiding Maximum Call Stack Size Exceeded with Spread Operator
 **Learning:** Using the spread operator (`...`) with `Math.max` or `Math.min` on very large arrays (e.g., `Math.max(...values)`) can throw a `RangeError: Maximum call stack size exceeded` because JavaScript engines have limits on the number of arguments a function can accept. Additionally, using multiple array methods like `.map` and `.reduce` iteratively adds overhead.
 **Action:** When computing aggregations like `sum`, `min`, and `max` on arrays (especially unbounded or large data arrays), use a single iterative `for` loop. This approach is `O(N)`, requires no intermediate memory allocations, and avoids stack size limits.
+## 2024-05-24 - Pre-computing aggregations before sorting
+**Learning:** When sorting an array based on an aggregation of its sub-properties (e.g. `Array.prototype.sort()` using the maximum value of sub-arrays), performing the `O(M)` aggregation inside the comparator forces redundant calculations because the comparator executes `O(N log N)` times.
+**Action:** Always pre-compute expensive aggregations into a lookup dictionary (`O(N*M)`) before calling `.sort()`. This reduces the overall complexity and improves rendering speed.
+
+## 2024-05-24 - Array Iteration over Spread Operator
+**Learning:** In addition to stack overflow errors, using `Math.max(...array)` or `Math.max.apply` combined with intermediate array allocations via `.map()` creates completely unnecessary memory churn and overhead.
+**Action:** When calculating maximums over subsets or mapped data, always write an explicit iterative `for` loop initialized with `-Infinity`. This requires zero intermediate arrays and is immune to stack depth limits.
