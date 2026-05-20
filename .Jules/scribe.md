@@ -29,3 +29,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2025-05-14 - Document Ollama requirement in README
 **Learning:** `deployment/refresh.py` calls `generate_descriptions.py`, which immediately exits if the `.env` file does not exist or lacks `OLLAMA_URL` and `OLLAMA_MODEL` variables. Without an explicit setup step in the README, developers running the default data update pipeline out of the box will encounter confusing errors or fail-fast exits.
 **Action:** When adding scripts that require specific `.env` configurations (especially local AI tooling like Ollama) to a standard developer pipeline, always document the `.env.example` setup explicitly in the project's 'Installation' instructions to prevent onboarding friction.
+
+## 2026-05-18 - DuckDB-Wasm Arrow Table Serialization
+**Learning:** DuckDB-Wasm returns query results as Apache Arrow tables which are wrapped in Proxy objects. Attempting to pass these proxies directly to UI components (like Grid.js) or standard JSON serializers will crash due to unhandled `ownKeys` proxy traps and `BigInt` formatting errors.
+**Action:** Documented `getRows` in `dropzone/app.js` with JSDoc to explicitly clarify that the function exists specifically to avoid these Proxy trap errors and handle BigInt serialization, transforming them into plain JavaScript objects safe for UI rendering.
