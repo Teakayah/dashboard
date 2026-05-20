@@ -77,16 +77,23 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 function getRows(result) {
     if (!result || !result.schema) return [];
     const fields = result.schema.fields.map(f => f.name);
-    const rows = [];
-    for (let i = 0; i < result.numRows; i++) {
+    const numFields = fields.length;
+    // ⚡ Bolt Optimization: Cache numRows outside the loop to prevent repeated property lookups,
+    // and pre-allocate the rows array since we know the exact size.
+    const numRows = result.numRows;
+    const rows = new Array(numRows);
+
+    for (let i = 0; i < numRows; i++) {
         const rowProxy = result.get(i);
         const rowPlain = {};
-        for (const field of fields) {
+        // ⚡ Bolt Optimization: Use a standard for loop over cached length instead of for...of
+        for (let j = 0; j < numFields; j++) {
+            const field = fields[j];
             const val = rowProxy[field];
             // Cast BigInts to strings for UI/JSON compatibility
             rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
-        rows.push(rowPlain);
+        rows[i] = rowPlain;
     }
     return rows;
 }
@@ -666,15 +673,33 @@ async function generateInstantCharts(tableName) {
             let bestPair = [numericCols[0], numericCols[1]];
             let maxCorr = 0;
             
+            // ⚡ Bolt Optimization: Batch N+1 correlation queries into a single SQL statement.
+            // Instead of running up to 10 separate queries (`conn.query`), we construct one
+            // large SELECT statement to compute all pairwise correlations at once, significantly
+            // reducing WebAssembly boundary crossings and I/O latency.
+            const corrPairs = [];
+            const selectExprs = [];
+
             for (let i = 0; i < Math.min(numericCols.length, 5); i++) {
                 for (let j = i + 1; j < Math.min(numericCols.length, 5); j++) {
                     const c1 = numericCols[i];
                     const c2 = numericCols[j];
-                    const corrResult = await conn.query(`SELECT corr("${c1}", "${c2}") as c FROM "${tableName}"`);
-                    const corr = Math.abs(getRows(corrResult)[0].c || 0);
+                    const alias = `corr_${i}_${j}`;
+                    corrPairs.push({ c1, c2, alias });
+                    selectExprs.push(`corr("${c1}", "${c2}") as ${alias}`);
+                }
+            }
+
+            if (selectExprs.length > 0) {
+                const corrQuery = `SELECT ${selectExprs.join(', ')} FROM "${tableName}"`;
+                const corrResult = await conn.query(corrQuery);
+                const row = getRows(corrResult)[0] || {};
+
+                for (const pair of corrPairs) {
+                    const corr = Math.abs(row[pair.alias] || 0);
                     if (corr > maxCorr) {
                         maxCorr = corr;
-                        bestPair = [c1, c2];
+                        bestPair = [pair.c1, pair.c2];
                     }
                 }
             }

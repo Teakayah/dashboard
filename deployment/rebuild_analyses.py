@@ -55,7 +55,10 @@ def _clean(val: str) -> Optional[float]:
     - 'p'  : Preliminary
     """
     v = val.strip()
-    if v in ("", "..", "F", "x", "E", "r", "p"):
+    # ⚡ Bolt Optimization: Use a set literal for O(1) membership check.
+    # Python compiles inline sets in `in` operations to a constant frozenset,
+    # which is significantly faster than a tuple check.
+    if v in {"", "..", "F", "x", "E", "r", "p"}:
         return None
     try:
         return float(v)
