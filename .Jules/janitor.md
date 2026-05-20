@@ -14,3 +14,4 @@ Action: To apply this next time I can run ruff check --select F401,F841 to verif
 ## 2025-05-19 - Duplicate tests and improperly placed module imports
 **Learning:** Found duplicate test function definitions and improperly placed module-level imports causing linters to complain and creating potential edge case test overrides.
 **Action:** Ensured to run linters consistently to catch duplicate blocks and ensure imports are cleanly placed at the top of python files.
+## 2025-05-19 - Subresource Integrity (SRI) on External Scripts\n**Learning:** Found mock external scripts in `tests/test_generate_index.py` that lacked `integrity` and `crossorigin="anonymous"` attributes, violating best practices. \n**Action:** Always verify test mocks for external imports to ensure they adhere to SRI guidelines and reflect production-ready code.

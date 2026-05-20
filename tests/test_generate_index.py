@@ -180,7 +180,7 @@ def test_extract_meta_basic():
         <meta name="description" content="Test Description">
     </head>
     <body>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js" integrity="sha384-mock-hash-chartjs" crossorigin="anonymous"></script>
     </body>
     </html>
     """
@@ -263,8 +263,8 @@ def test_extract_meta_multiple_tags():
         <title>Tags Test</title>
     </head>
     <body>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js" integrity="sha384-mock-hash-chartjs" crossorigin="anonymous"></script>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js" integrity="sha384-mock-hash-plotly" crossorigin="anonymous"></script>
     </body>
     </html>
     """
