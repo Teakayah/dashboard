@@ -24,3 +24,6 @@
 ## 2024-05-24 - Avoiding Maximum Call Stack Size Exceeded with Spread Operator
 **Learning:** Using the spread operator (`...`) with `Math.max` or `Math.min` on very large arrays (e.g., `Math.max(...values)`) can throw a `RangeError: Maximum call stack size exceeded` because JavaScript engines have limits on the number of arguments a function can accept. Additionally, using multiple array methods like `.map` and `.reduce` iteratively adds overhead.
 **Action:** When computing aggregations like `sum`, `min`, and `max` on arrays (especially unbounded or large data arrays), use a single iterative `for` loop. This approach is `O(N)`, requires no intermediate memory allocations, and avoids stack size limits.
+## 2025-02-13 - Batched Git Logging for Performance
+**Learning:** Checking git metadata (e.g., `git log -1`) sequentially for hundreds of files in a loop introduces massive overhead due to spawning Python subprocesses.
+**Action:** Always extract git timestamps via a single batched `git log --name-only` call where possible, parsing the output mapping in memory, yielding orders-of-magnitude faster execution.

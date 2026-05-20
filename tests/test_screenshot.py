@@ -11,38 +11,46 @@ def load_screenshot_module():
     spec.loader.exec_module(module)
     return module
 
-def test_git_commit_time_success():
+def test_get_git_commit_times_batched_success():
     module = load_screenshot_module()
     with patch('subprocess.run') as mock_run:
-        mock_run.return_value = MagicMock(stdout='1234567890\n')
-        ts = module._git_commit_time('test.html')
-        assert ts == 1234567890
+        mock_run.return_value = MagicMock(stdout='TS:1234567890\ntest.html\nTS:9876543210\npreviews/test.png\n')
+        ts_dict = module._get_git_commit_times_batched(['test.html', 'previews/test.png'])
+        assert ts_dict.get('test.html') == 1234567890
+        assert ts_dict.get('previews/test.png') == 9876543210
         assert mock_run.call_count >= 1
 
-def test_git_commit_time_empty():
+def test_get_git_commit_times_batched_empty():
     module = load_screenshot_module()
     with patch('subprocess.run') as mock_run:
         mock_run.return_value = MagicMock(stdout='')
-        ts = module._git_commit_time('test.html')
-        assert ts == 0
+        ts_dict = module._get_git_commit_times_batched(['test.html'])
+        assert ts_dict == {}
         assert mock_run.call_count >= 1
+
+def test_get_git_commit_times_batched_no_paths():
+    module = load_screenshot_module()
+    with patch('subprocess.run') as mock_run:
+        ts_dict = module._get_git_commit_times_batched([])
+        assert ts_dict == {}
+        mock_run.assert_not_called()
 
 def test_needs_screenshot_missing():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=False):
-        assert module.needs_screenshot('test_page.html') is True
+        assert module.needs_screenshot('test_page.html', git_times={}) is True
 
 def test_needs_screenshot_older_preview():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=True):
-        with patch.object(module, '_git_commit_time', side_effect=[100, 50]):
-            assert module.needs_screenshot('test_page.html') is True
+        git_times = {'test_page.html': 100, 'previews/test_page.png': 50}
+        assert module.needs_screenshot('test_page.html', git_times=git_times) is True
 
 def test_needs_screenshot_newer_preview():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=True):
-        with patch.object(module, '_git_commit_time', side_effect=[50, 100]):
-            assert module.needs_screenshot('test_page.html') is False
+        git_times = {'test_page.html': 50, 'previews/test_page.png': 100}
+        assert module.needs_screenshot('test_page.html', git_times=git_times) is False
 
 @patch("sys.argv", ["screenshot.py"])
 def test_main_no_html_files():
@@ -196,14 +204,13 @@ def test_needs_screenshot_force():
 def test_needs_screenshot_mtime_fallback():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=True), \
-         patch.object(module, '_git_commit_time', side_effect=[0, 0, 0, 0]), \
          patch('pathlib.Path.stat') as mock_stat:
         # html mtime > png mtime
         mock_stat.side_effect = [MagicMock(st_mtime=50), MagicMock(st_mtime=100)]
-        assert module.needs_screenshot('test_page.html') is True
+        assert module.needs_screenshot('test_page.html', git_times={}) is True
 
         mock_stat.side_effect = [MagicMock(st_mtime=100), MagicMock(st_mtime=50)]
-        assert module.needs_screenshot('test_page.html') is False
+        assert module.needs_screenshot('test_page.html', git_times={}) is False
 
 @patch("sys.argv", ["screenshot.py"])
 def test_main_wait_for_selector_exception():

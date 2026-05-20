@@ -21,26 +21,44 @@ except ImportError:
 PORT = 8765
 
 
-def _git_commit_time(path: str) -> int:
-    """Return the Unix timestamp of the last commit touching `path`, or 0."""
+def _get_git_commit_times_batched(paths: list[str]) -> dict[str, int]:
+    """Return the Unix timestamp of the last commit for multiple paths."""
+    if not paths:
+        return {}
+    dates = {}
     try:
-        return int(subprocess.run(['git', 'log', '-1', '--format=%ct', '--', path], 
-                                capture_output=True, text=True, cwd=str(ROOT)).stdout.strip())
+        cmd = ['git', 'log', '--format=TS:%ct', '--name-only', '--'] + paths
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+        current_ts = None
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('TS:'):
+                current_ts = int(line[3:])
+            elif current_ts is not None:
+                if line not in dates:
+                    dates[line] = current_ts
     except Exception:
-        return 0
+        pass
+    return dates
 
 
-def needs_screenshot(name: str, force: bool = False) -> bool:
+def needs_screenshot(name: str, force: bool = False, git_times: dict[str, int] = None) -> bool:
     """Return True if the page's preview is missing or older than the page's last commit."""
     if force:
         return True
+    if git_times is None:
+        git_times = {}
+
     preview = ROOT / 'previews' / f'{Path(name).stem}.png'
     if not preview.exists():
         return True
-    html_ts = _git_commit_time(name)
+
+    html_ts = git_times.get(name, 0)
     # Check if the preview file exists on disk and get its mtime as fallback if not in git
     preview_path = f'previews/{preview.name}'
-    png_ts = _git_commit_time(preview_path)
+    png_ts = git_times.get(preview_path, 0)
     if png_ts == 0:
         png_ts = int((ROOT / preview_path).stat().st_mtime)
     
@@ -60,7 +78,14 @@ def main():
         print('No HTML files found — nothing to screenshot.')
         return
 
-    pages = [p for p in all_pages if needs_screenshot(p, force=args.force)]
+    # Pre-fetch git commit times in a single batch
+    paths_to_check = list(all_pages)
+    for p in all_pages:
+        paths_to_check.append(f"previews/{Path(p).stem}.png")
+
+    git_times = _get_git_commit_times_batched(paths_to_check)
+
+    pages = [p for p in all_pages if needs_screenshot(p, force=args.force, git_times=git_times)]
     skipped = [p for p in all_pages if p not in pages]
 
     if skipped:
