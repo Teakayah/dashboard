@@ -119,7 +119,7 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
 <div id="panel-jobs" class="panel">
   <div class="controls">
     <label>Province / Territory:</label>
-    <select id="jobs-geo" onchange="jobsSetGeo(this.value)"></select>
+    <select id="jobs-geo" aria-label="Select Province or Territory" onchange="jobsSetGeo(this.value)"></select>
     <span class="note">Year-over-year change in employed persons (thousands)</span>
   </div>
   <div class="card"><canvas id="jobsBar" height="330"></canvas></div>
