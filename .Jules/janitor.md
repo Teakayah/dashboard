@@ -18,3 +18,7 @@ Action: To apply this next time I can run ruff check --select F401,F841 to verif
 ## 2026-05-18 - Robust Chart.js Object.defineProperty Override
 Learning: An `Object.defineProperty` trap for `window.Chart` implemented within a `window.addEventListener('load', ...)` can miss early initialization if Chart.js is loaded synchronously or executed prior to the `load` event.
 Action: Implement `Object.defineProperty` globally and immediately using both `get` and `set` accessors. The `set` logic applies the modifications (e.g. `maintainAspectRatio = false`) to the target class and then stores it in a closure variable.
+
+## $(date +%Y-%m-%d) - Unused Imports in Tests
+Learning: Removing unused imports with `ruff check --fix` is safe and efficient for improving code health without functional side-effects. Always ensure to remove all unused imports identified by static analysis to prevent iterative cleanups on the same file.
+Action: Utilize `ruff check --fix` in future tasks where dead or unused code is flagged in Python files, provided it is accompanied by full test suite validation.
