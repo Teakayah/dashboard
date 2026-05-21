@@ -1,3 +1,6 @@
+import pytest
+import runpy
+
 import importlib.util
 import os
 from pathlib import Path
@@ -227,3 +230,32 @@ def test_main_missing_file(tmp_path, capsys):
 
         captured = capsys.readouterr()
         assert '[skip] missing.html not found' in captured.out
+
+def test_missing_env_vars_exits():
+    path = Path('deployment/generate_descriptions.py').resolve()
+
+    # We must patch os.environ so that the module-level sys.exit triggers
+    # and we must catch the SystemExit exception
+    with patch.dict(os.environ, clear=True), \
+         patch('sys.exit', side_effect=SystemExit) as mock_exit:
+        with pytest.raises(SystemExit):
+            runpy.run_path(str(path))
+
+        mock_exit.assert_called_once()
+        assert "OLLAMA_URL" in mock_exit.call_args[0][0]
+
+def test_main_block():
+    path = Path('deployment/generate_descriptions.py').resolve()
+
+    # Provide env vars so it doesn't fail at module level
+    with patch.dict(os.environ, {'OLLAMA_URL': 'test', 'OLLAMA_MODEL': 'test'}):
+        # We patch sys.argv and underlying functions called by main()
+        with patch('sys.argv', ['generate_descriptions.py']), \
+             patch('pathlib.Path.glob', return_value=[]) as mock_glob, \
+             patch('pathlib.Path.write_text'), \
+             patch('pathlib.Path.exists', return_value=False):
+
+            runpy.run_path(str(path), run_name='__main__')
+
+            # If main() was called, glob should have been called
+            mock_glob.assert_called_once_with('*.html')
