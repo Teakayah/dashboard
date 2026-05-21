@@ -838,10 +838,19 @@ function renderChart(id, type, data, options = {}) {
 sqlInput.addEventListener('input', () => {
     if (sqlInput.value.trim().length > 0) {
         runBtn.disabled = false;
-        runBtn.title = '';
+        runBtn.title = 'Run Query (Ctrl+Enter)';
     } else {
         runBtn.disabled = true;
         runBtn.title = 'Requires a valid query';
+    }
+});
+
+sqlInput.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (!runBtn.disabled) {
+            runQuery();
+        }
     }
 });
 
