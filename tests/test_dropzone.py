@@ -205,12 +205,12 @@ def test_invalid_sql_shows_dialog_not_crash(dz: Page):
         timeout=ACTION_TIMEOUT,
     )
 
-    dialog_messages: list[str] = []
-    dz.on('dialog', lambda d: (dialog_messages.append(d.message), d.accept()))
-
     dz.locator('#sql-input').fill('SELECT * FROM nonexistent_table_xyz')
-    dz.locator('#run-query').click()
-    dz.wait_for_timeout(3_000)
+    with dz.expect_event("dialog") as dialog_info:
+        dz.locator('#run-query').click()
+    dialog = dialog_info.value
+    dialog_messages = [dialog.message]
+    dialog.accept()
 
     assert dialog_messages, 'Expected an error dialog for invalid SQL, got none'
     assert any('error' in m.lower() or 'nonexistent' in m.lower() for m in dialog_messages), (
