@@ -7,7 +7,6 @@ Run with:  pytest tests/test_dropzone.py -v
 
 from pathlib import Path
 
-import pytest
 from playwright.sync_api import Page, expect
 
 from helpers import (
@@ -15,7 +14,6 @@ from helpers import (
     ACTION_TIMEOUT,
     DUCKDB_READY_TIMEOUT as READY_TIMEOUT,
     wait_for_duckdb_ready as _wait_for_ready,
-    load_samples as _load_samples,
 )
 
 
@@ -238,5 +236,5 @@ def test_count_query_returns_single_value(dz: Page):
     # don't assert exact row count since Grid.js may show prior results
     cell_text = dz.locator('.gridjs-tbody tr td').first.inner_text()
     count = int(cell_text.strip())
-    assert count > 0, f'COUNT(*) returned 0 — no sample data loaded?'
+    assert count > 0, 'COUNT(*) returned 0 — no sample data loaded?'
 

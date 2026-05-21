@@ -16,3 +16,6 @@
 ## 2026-05-19 - Dispatching Events for Programmatic Input Changes
 **Learning:** When building vanilla JavaScript UIs, changing an input's value programmatically (e.g., `sqlInput.value = '...'`) does not natively fire the `input` or `change` events. This causes reactive UI state (like disabling/enabling a submit button based on the input's length) to become out of sync.
 **Action:** When adding real-time validation via `input` event listeners, always audit the codebase for programmatic assignments to that element's `.value` and explicitly append `.dispatchEvent(new Event('input'))` after them to ensure UI consistency.
+## 2026-05-21 - Keyboard Shortcut Discoverability
+**Learning:** Keyboard shortcuts improve power-user experience but are often hidden.
+**Action:** Always provide visual hints (e.g., dynamic title attributes) when implementing keyboard shortcuts.
