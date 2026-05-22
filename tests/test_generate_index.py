@@ -581,3 +581,19 @@ def test_build_html_single_analysis(monkeypatch):
     assert 'single.html' in html
     assert 'Single Analysis' in html
     assert html.count('class="card"') == 1
+
+def test_parse_args_default():
+    module = load_generate_index_module()
+    args = module.parse_args([])
+    assert args.responsive_preset == 'default'
+
+def test_parse_args_none():
+    module = load_generate_index_module()
+    args = module.parse_args(['--responsive-preset', 'none'])
+    assert args.responsive_preset == 'none'
+
+def test_parse_args_invalid():
+    import pytest
+    module = load_generate_index_module()
+    with pytest.raises(SystemExit):
+        module.parse_args(['--responsive-preset', 'invalid_choice'])
