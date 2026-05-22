@@ -38,7 +38,7 @@ PENDING_RULES = {
     'color-contrast',               # partially fixed — some analysis-page inline colours
                                     # will be resolved when CI re-generates them from
                                     # inject_contrast_fix; remove once verified clean
-    'scrollable-region-focusable',  # flood page .tabs div — deferred until tab keyboard
+    # 'scrollable-region-focusable',  # flood page .tabs div — deferred until tab keyboard
                                     # navigation is implemented (TODO §2.2)
 }
 
@@ -134,9 +134,4 @@ def test_analysis_tabs_have_roles(page: Page):
               .map(t => ({ text: t.innerText.trim(), role: t.getAttribute('role') }))
     """)
     missing = [t for t in tabs if t['role'] != 'tab']
-    # Warn rather than hard-fail until §2.2 is implemented
-    if missing:
-        pytest.xfail(
-            f'{len(missing)} tab(s) missing role="tab" — tracked in TODO §2.2: '
-            + str([t["text"] for t in missing])
-        )
+    assert not missing, f'{len(missing)} tab(s) missing role="tab": ' + str([t["text"] for t in missing])

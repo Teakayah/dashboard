@@ -95,10 +95,10 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
 <!-- insight-inject --><!-- /insight-inject -->
 
 <div class="tabs" role="tablist">
-  <div class="tab active"  role="tab" tabindex="0" onclick="showTab('rate')">📈 Employment Rate</div>
-  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('jobs')">👷 Jobs Created</div>
-  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('debt')">💰 Government Debt</div>
-  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('pop')">🧑‍🤝‍🧑 Population</div>
+  <div class="tab active"  role="tab" aria-selected="true" tabindex="0" onclick="showTab('rate')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('rate')}">📈 Employment Rate</div>
+  <div class="tab"         role="tab" aria-selected="false" tabindex="0" onclick="showTab('jobs')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('jobs')}">👷 Jobs Created</div>
+  <div class="tab"         role="tab" aria-selected="false" tabindex="0" onclick="showTab('debt')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('debt')}">💰 Government Debt</div>
+  <div class="tab"         role="tab" aria-selected="false" tabindex="0" onclick="showTab('pop')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTab('pop')}">🧑‍🤝‍🧑 Population</div>
 </div>
 
 <!-- ══ TAB 1: Employment Rate ═══════════════════════════════════════════════ -->
@@ -198,8 +198,11 @@ const RECESSIONS=[[1981,1982],[1990,1992],[2008,2009],[2020,2020]];
 // ── Tab switch ────────────────────────────────────────────────────────────────
 function showTab(id){
   ['rate','jobs','debt','pop'].forEach(function(t,i){
-    document.getElementById('panel-'+t).classList.toggle('active',t===id);
-    document.querySelectorAll('.tab')[i].classList.toggle('active',t===id);
+    const isActive = t === id;
+    document.getElementById('panel-'+t).classList.toggle('active', isActive);
+    const tabEl = document.querySelectorAll('.tab')[i];
+    tabEl.classList.toggle('active', isActive);
+    tabEl.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
 }
 
