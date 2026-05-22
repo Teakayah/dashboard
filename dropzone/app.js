@@ -84,16 +84,22 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 function getRows(result) {
     if (!result || !result.schema) return [];
     const fields = result.schema.fields.map(f => f.name);
-    const rows = [];
-    for (let i = 0; i < result.numRows; i++) {
+    const numFields = fields.length;
+    const numRows = result.numRows;
+
+    // Performance optimization: Pre-allocate the array to avoid dynamic resizing overhead,
+    // and use index-based loops to minimize iterator overhead in the hot path.
+    const rows = new Array(numRows);
+    for (let i = 0; i < numRows; i++) {
         const rowProxy = result.get(i);
         const rowPlain = {};
-        for (const field of fields) {
+        for (let j = 0; j < numFields; j++) {
+            const field = fields[j];
             const val = rowProxy[field];
             // Cast BigInts to strings for UI/JSON compatibility
             rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
-        rows.push(rowPlain);
+        rows[i] = rowPlain;
     }
     return rows;
 }
