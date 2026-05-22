@@ -31,17 +31,8 @@ Assertion: Used `side_effect` with custom inner functions on the `mock_extract_s
 Coverage Gap: The UI test for filtering index cards (`test_index_search_filters_cards`) randomly failed due to relying on a hardcoded `page.wait_for_timeout(100)` while the source code debounce is set to 250ms.
 Learning: It was failing because arbitrary timeouts in UI tests are brittle, especially when testing components with explicit delays like debounced search inputs. Using hardcoded waits leads to flaky tests across different environments.
 Assertion: Always use Playwright's built-in auto-retrying assertions like `expect(locator).to_have_count(expected_count)` or `expect(locator).to_be_visible()` instead of arbitrary sleeps. This guarantees tests are resilient to timing variations and execute as fast as possible.
-## 2024-05-21 - [Generate Descriptions script missing coverage]
-Coverage Gap: [Missing coverage on the __main__ entrypoint and module-level sys.exit for deployment/generate_descriptions.py]
-Learning: [To test module-level logic and __main__ blocks of a script, import it dynamically using runpy.run_path with run_name='__main__']
-Assertion: [Mock os.environ, mock sys.exit with side_effect=SystemExit, and catch the exception with pytest.raises(SystemExit). Mock underlying actions to confirm main() execution paths.]
-
-## 2024-05-22 - Fix Playwright goto Timeout in UI Tests
-Coverage Gap: `test_analysis_page_loads` randomly failed with a TimeoutError during `page.goto()` because the strict "load" event failed to fire fast enough for large pages or local asset loads.
-Learning: Using default `page.goto` waits for the strict "load" event, which can be extremely flaky when assets load slowly in CI/local web server setups.
-Assertion: When simply asserting the page returns HTTP 200 and the DOM is responsive, passing `wait_until='domcontentloaded'` to `page.goto()` bypasses the flaky load event timeout and stabilizes the test suite.
-## 2026-05-22 - [Mocking subprocess.check_output in deployment script]
-Coverage Gap: The `_git` helper in `deployment/refresh.py` was not properly handling or testing `subprocess.check_output` and `subprocess.CalledProcessError`.
-Learning: When a user requests testing for a specific snippet that differs from the existing codebase, it is critical to align the codebase to the intended snippet logic before writing tests for it to properly fulfill the prompt's structural and error-handling requirements.
-Assertion: Replace `subprocess.run` with `subprocess.check_output`, wrap it in a `try...except subprocess.CalledProcessError` block, and verify test assertions use `.side_effect = subprocess.CalledProcessError(...)` when mocking to guarantee exact exception catching semantics.
+## 2024-05-22 - Add Tests for build_card
+Coverage Gap: The `build_card` function in `deployment/generate_index.py` lacked unit tests, specifically for handling missing optional fields and HTML escaping.
+Learning: The test suite has an `autouse=True` fixture that starts an HTTP server for Playwright UI tests. Attempting to start a manual background HTTP server before running the suite causes port conflicts (`Errno 98`).
+Assertion: Rely on the built-in test fixtures for HTTP servers when running the full test suite instead of managing background processes manually.
 
