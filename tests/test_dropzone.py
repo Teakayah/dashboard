@@ -204,18 +204,12 @@ def test_invalid_sql_shows_dialog_not_crash(dz: Page):
         "document.getElementById('schema-display').textContent.includes('employees')",
         timeout=ACTION_TIMEOUT,
     )
-
-    dialog_messages: list[str] = []
-    dz.on('dialog', lambda d: (dialog_messages.append(d.message), d.accept()))
-
     dz.locator('#sql-input').fill('SELECT * FROM nonexistent_table_xyz')
     dz.locator('#run-query').click()
-    dz.wait_for_timeout(3_000)
 
-    assert dialog_messages, 'Expected an error dialog for invalid SQL, got none'
-    assert any('error' in m.lower() or 'nonexistent' in m.lower() for m in dialog_messages), (
-        f'Error dialog message unexpected: {dialog_messages}'
-    )
+    toast = dz.locator('[role="alert"]')
+    toast.wait_for(state="visible", timeout=3000)
+    assert 'Error' in toast.inner_text() or 'nonexistent' in toast.inner_text().lower()
 
 
 def test_count_query_returns_single_value(dz: Page):

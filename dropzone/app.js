@@ -42,7 +42,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
     if (!url) return;
 
     if (!window.deltaSupported) {
-        alert('Delta Lake support is not available in this browser environment. Please use CSV, JSON, or Parquet files instead.');
+        showToast('Delta Lake support is not available in this browser environment. Please use CSV, JSON, or Parquet files instead.');
         return;
     }
 
@@ -67,7 +67,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         setTimeout(() => { loadRemoteDeltaBtn.textContent = originalText; }, 2000);
     } catch (err) {
         console.error(err);
-        alert('Error loading remote Delta table: ' + err.message);
+        showToast('Error loading remote Delta table: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -230,7 +230,11 @@ async function displayTableSchema(tableName) {
     statsContainer.style.minHeight = '1.2em';
 
     const cols = getRows(schemaResult).map(r => {
-        const span = document.createElement('span');
+        const span = document.createElement('button');
+        span.style.background = 'none';
+        span.style.border = 'none';
+        span.style.font = 'inherit';
+        span.style.padding = '0';
         span.className = 'clickable-col';
         span.style.cursor = 'pointer';
         span.style.textDecoration = 'underline';
@@ -393,12 +397,12 @@ generateJoinBtn.addEventListener('click', () => {
     const col = joinCol.value;
     
     if (!a || !b || !col) {
-        alert('Please select both tables and a common column.');
+        showToast('Please select both tables and a common column.');
         return;
     }
     
     if (a === b) {
-        alert('Please select two different tables to join.');
+        showToast('Please select two different tables to join.');
         return;
     }
 
@@ -414,7 +418,7 @@ generateChartBtn.addEventListener('click', () => {
     const yCol = chartYCol.value;
     
     if (!xCol || !yCol) {
-        alert('Please select both X and Y axes.');
+        showToast('Please select both X and Y axes.');
         return;
     }
 
@@ -467,7 +471,7 @@ generateChartBtn.addEventListener('click', () => {
             renderChart(canvasId, type, chartData, chartOptions);
         } catch (e) {
             console.error('Custom chart error', e);
-            alert('Error generating chart: ' + e.message);
+            showToast('Error generating chart: ' + e.message);
         }
     });
 });
@@ -553,7 +557,7 @@ async function handleFiles(files) {
 
             if (isDelta) {
                 if (!window.deltaSupported) {
-                    alert(`Delta Lake table detected in folder "${dirName}", but support is missing in this browser. Skipping.`);
+                    showToast(`Delta Lake table detected in folder "${dirName}", but support is missing in this browser. Skipping.`);
                     continue;
                 }
                 currentTableName = tableName;
@@ -575,7 +579,7 @@ async function handleFiles(files) {
         updateJoinUI();
     } catch (err) {
         console.error(err);
-        alert('Error loading files: ' + err.message);
+        showToast('Error loading files: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -831,10 +835,10 @@ function renderChart(id, type, data, options = {}) {
 
 sqlInput.addEventListener('input', () => {
     if (sqlInput.value.trim().length > 0) {
-        runBtn.disabled = false;
+        runBtn.disabled = false; runBtn.setAttribute('aria-disabled', 'false');
         runBtn.title = '';
     } else {
-        runBtn.disabled = true;
+        runBtn.disabled = true; runBtn.setAttribute('aria-disabled', 'true');
         runBtn.title = 'Requires a valid query';
     }
 });
@@ -856,7 +860,7 @@ async function runQuery() {
         copyJsonBtn.title = '';
     } catch (err) {
         console.error(err);
-        alert('Query Error: ' + err.message);
+        showToast('Query Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -893,8 +897,8 @@ downloadBtn.addEventListener('click', async () => {
     loadingOverlay.style.display = 'flex';
     try {
         const csvPath = 'export.csv';
-        await conn.query(`CREATE OR REPLACE TEMPORARY TABLE _export_tmp AS ${sqlInput.value.trim()}`);
-        await conn.query(`COPY _export_tmp TO '${csvPath}' (HEADER, DELIMITER ',')`);
+        const query = sqlInput.value.trim().replace(/;+$/, '');
+        await conn.query(`COPY (${query}) TO '${csvPath}' (HEADER, DELIMITER ',')`);
         
         const content = await db.copyFileToBuffer(csvPath);
         const blob = new Blob([content], { type: 'text/csv' });
@@ -906,7 +910,7 @@ downloadBtn.addEventListener('click', async () => {
         URL.revokeObjectURL(url);
     } catch (err) {
         console.error(err);
-        alert('Export Error: ' + err.message);
+        showToast('Export Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -955,7 +959,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         setTimeout(() => { loadSamplesBtn.textContent = originalText; }, 2000);
     } catch (err) {
         console.error(err);
-        alert('Sample Loading Error: ' + err.message);
+        showToast('Sample Loading Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -984,7 +988,7 @@ exportDbBtn.addEventListener('click', async () => {
         URL.revokeObjectURL(url);
     } catch (err) {
         console.error(err);
-        alert('Database Export Error: ' + err.message);
+        showToast('Database Export Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -1018,10 +1022,21 @@ clearBtn.addEventListener('click', async () => {
         statusEl.textContent = 'Storage cleared';
     } catch (err) {
         console.error(err);
-        alert('Clear Error: ' + err.message);
+        showToast('Clear Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
 });
 
 init();
+
+
+function showToast(msg) {
+    const panel = document.createElement('div');
+    panel.textContent = msg;
+    panel.setAttribute('role', 'alert');
+    panel.setAttribute('aria-live', 'assertive');
+    panel.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#ef4444;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+    document.body.appendChild(panel);
+    setTimeout(() => { panel.remove(); }, 5000);
+}

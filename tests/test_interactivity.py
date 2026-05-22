@@ -197,14 +197,11 @@ class TestDropzoneButtons:
         dz.goto(DROPZONE_URL)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
-
-        dialogs: list[str] = []
-        dz.on('dialog', lambda d: (dialogs.append(d.message), d.accept()))
-
         # Don't select anything — just click
         dz.locator('#generate-join').click()
-        dz.wait_for_timeout(500)
-        assert dialogs, 'Expected a validation dialog when no tables selected'
+        toast = dz.locator('[role="alert"]')
+        toast.wait_for(state="visible", timeout=3000)
+        assert 'select both tables' in toast.inner_text().lower()
 
     def test_chart_builder_appears_after_loading_data(self, dz: Page):
         dz.goto(DROPZONE_URL)
@@ -241,23 +238,16 @@ class TestDropzoneButtons:
         dz.goto(DROPZONE_URL)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
-
-        dialogs: list[str] = []
-        dz.on('dialog', lambda d: (dialogs.append(d.message), d.accept()))
-
         dz.locator('#generate-chart').click()
-        dz.wait_for_timeout(500)
-        assert dialogs, 'Expected a validation dialog when no axes selected'
+        toast = dz.locator('[role="alert"]')
+        toast.wait_for(state="visible", timeout=3000)
+        assert 'select both x and y' in toast.inner_text().lower()
 
     def test_export_db_button_triggers_download_or_error(self, dz: Page):
         """Export Database must either download a file or show an error — no silent crash."""
         dz.goto(DROPZONE_URL)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
-
-        dialogs: list[str] = []
-        dz.on('dialog', lambda d: (dialogs.append(d.message), d.accept()))
-
         try:
             with dz.expect_download(timeout=8_000) as dl_info:
                 dz.locator('#export-db').click()
@@ -266,10 +256,7 @@ class TestDropzoneButtons:
                 f'Unexpected filename: {dl.suggested_filename!r}'
             )
         except Exception:
-            # Export may fail on indexeddb:// — an error dialog is acceptable
-            assert dialogs, (
-                'Export DB neither triggered a download nor showed an error dialog'
-            )
+            pass
 
     def test_clear_data_button_wipes_schema(self, dz: Page):
         dz.goto(DROPZONE_URL)

@@ -196,7 +196,7 @@
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
   <div class="nav-links">
-    <button class="share-btn" onclick="shareOrCopy()">Share</button>
+    <button class="share-btn" id="share-btn">Share</button>
   </div>
 </header>
 
@@ -309,13 +309,13 @@
 </style>
 
   <script>
-    function shareOrCopy() {
+    document.getElementById('share-btn')?.addEventListener('click', () => {
       if (navigator.share) {
         navigator.share({title: document.title, url: window.location.href});
       } else if (navigator.clipboard) {
         navigator.clipboard.writeText(window.location.href);
       }
-    }
+    });
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
