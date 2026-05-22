@@ -2,7 +2,7 @@ import pytest
 from playwright.sync_api import Page, expect
 from pathlib import Path
 from helpers import (
-    BASE_URL,
+    BASE as BASE_URL,
     DROPZONE_URL,
     ACTION_TIMEOUT,
     DUCKDB_READY_TIMEOUT,
@@ -115,12 +115,12 @@ class TestFloodPageButtons:
     def test_reset_button_reverts_offset(self, page: Page):
         _load_page(page, FLOOD_URL)
         slider = page.locator("#levelSlider")
-        slider.fill("1.5")
+        slider.evaluate("el => { el.value = '1.5'; el.dispatchEvent(new Event('input')); }")
         expect(page.locator("#offsetDisplay")).to_contain_text("1.50m")
 
         page.locator('button:has-text("Reset")').click()
         expect(page.locator("#offsetDisplay")).to_contain_text("0.00m")
-        expect(slider).to_have_value("0.0")
+        expect(slider).to_have_value("0")
 
     def test_slider_updates_regional_levels(self, page: Page):
         _load_page(page, FLOOD_URL)
@@ -129,7 +129,7 @@ class TestFloodPageButtons:
         low_hull = float(page.locator("#hullDisplay").inner_text())
 
         # Move slider up
-        page.locator("#levelSlider").fill("2.0")
+        page.locator("#levelSlider").evaluate("el => { el.value = '2.0'; el.dispatchEvent(new Event('input')); }")
         page.wait_for_timeout(300)
 
         high_hull = float(page.locator("#hullDisplay").inner_text())
@@ -144,8 +144,8 @@ class TestFloodPageButtons:
         slider = page.locator("#levelSlider")
         display = page.locator("#offsetDisplay")
 
-        slider.fill("-0.5")
+        slider.evaluate("el => { el.value = '-0.5'; el.dispatchEvent(new Event('input')); }")
         expect(display).to_contain_text("-0.50m")
 
-        slider.fill("2.25")
+        slider.evaluate("el => { el.value = '2.25'; el.dispatchEvent(new Event('input')); }")
         expect(display).to_contain_text("2.25m")
