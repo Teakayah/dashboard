@@ -15,7 +15,6 @@ from helpers import (
     ACTION_TIMEOUT,
     DUCKDB_READY_TIMEOUT as READY_TIMEOUT,
     wait_for_duckdb_ready as _wait_for_ready,
-    load_samples as _load_samples,
 )
 
 
