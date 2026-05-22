@@ -33,3 +33,4 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-15 - Documenting the CI/CD Dual-Branch Workflow
 **Learning:** The project uses a specific dual-branch workflow (`integration` -> `main`), where `main` is strictly for CI-generated production artifacts and `integration` is for all PRs and AI-agent branches. This wasn't explicitly clear to new contributors, leading to potential issues with committing generated artifacts to the wrong branch.
 **Action:** Always ensure repository workflow specifics, especially related to CI/CD and protected branches, are prominently documented in the README under a 'Contributing' or 'Workflow' section to reduce friction and prevent bad commits.
+
