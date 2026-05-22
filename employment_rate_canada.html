@@ -74,7 +74,7 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
   <link rel="stylesheet" href="assets/theme.css">
   <script src="assets/fullscreen.js"></script>
 
-  <style data-contrast-fix>body{background:var(--bg)!important;color:var(--text)!important}.subtitle,.note,.empty,.tab:not(.active),.related-label,.card-date{color:var(--text-muted,#4b5563)!important}.related-link span,footer,footer a{color:var(--text-muted,#4b5563)!important}</style>
+  <style data-contrast-fix>body{background:var(--bg)!important;color:var(--text)!important}.subtitle,.note,.empty,.tab:not(.active),.related-label,.card-date{color:var(--text-muted,#4b5563)!important}.related-link span,footer,footer a{color:var(--text-muted,#4b5563)!important}button.tab{background:transparent;border:none;border-bottom:3px solid transparent;font-family:inherit;outline:none}button.tab.active{border-bottom-color:#1a1a2e}button.tab:focus-visible{outline:2px solid var(--primary,#1a1a2e);outline-offset:-2px}</style>
 </head>
 <body>
 <!-- unified-header-inject -->
@@ -95,10 +95,11 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
 <!-- insight-inject --><!-- /insight-inject -->
 
 <div class="tabs" role="tablist">
-  <div class="tab active"  role="tab" tabindex="0" onclick="showTab('rate')">📈 Employment Rate</div>
-  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('jobs')">👷 Jobs Created</div>
-  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('debt')">💰 Government Debt</div>
-  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('pop')">🧑‍🤝‍🧑 Population</div>
+  <button class="tab active" role="tab" aria-selected="true" tabindex="0" onclick="showTab('rate')">📈 Employment Rate</button>
+
+  <button class="tab"         role="tab" aria-selected="false" tabindex="-1" onclick="showTab('jobs')">👷 Jobs Created</button>
+  <button class="tab"         role="tab" aria-selected="false" tabindex="-1" onclick="showTab('debt')">💰 Government Debt</button>
+  <button class="tab"         role="tab" aria-selected="false" tabindex="-1" onclick="showTab('pop')">🧑‍🤝‍🧑 Population</button>
 </div>
 
 <!-- ══ TAB 1: Employment Rate ═══════════════════════════════════════════════ -->
@@ -198,8 +199,12 @@ const RECESSIONS=[[1981,1982],[1990,1992],[2008,2009],[2020,2020]];
 // ── Tab switch ────────────────────────────────────────────────────────────────
 function showTab(id){
   ['rate','jobs','debt','pop'].forEach(function(t,i){
-    document.getElementById('panel-'+t).classList.toggle('active',t===id);
-    document.querySelectorAll('.tab')[i].classList.toggle('active',t===id);
+    const isActive = t === id;
+    document.getElementById('panel-'+t).classList.toggle('active', isActive);
+    const tab = document.querySelectorAll('.tab')[i];
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    tab.setAttribute('tabindex', isActive ? '0' : '-1');
   });
 }
 
@@ -572,5 +577,32 @@ popBuildSmall();
   </script>
 
   
+<script>
+document.addEventListener('keydown', function(e) {
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const currentTab = document.activeElement;
+
+  if (!tabs.includes(currentTab)) return;
+
+  let newIndex = tabs.indexOf(currentTab);
+
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    newIndex = (newIndex + 1) % tabs.length;
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    newIndex = (newIndex - 1 + tabs.length) % tabs.length;
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    currentTab.click();
+    return;
+  } else {
+    return;
+  }
+
+  tabs[newIndex].focus();
+  tabs[newIndex].click(); // Activate on focus, standard for WAI-ARIA tabs pattern
+});
+</script>
 </body>
 </html>
