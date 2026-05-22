@@ -623,6 +623,7 @@ CONTRAST_FIX_STYLE = (
     '.subtitle,.note,.empty,.tab:not(.active),.related-label,.card-date'
     '{color:var(--text-muted,#4b5563)!important}'
     '.related-link span,footer,footer a{color:var(--text-muted,#4b5563)!important}'
+    'button.tab{background:transparent;border:none;border-bottom:3px solid transparent;font-family:inherit;outline:none}button.tab.active{border-bottom-color:#1a1a2e}button.tab:focus-visible{outline:2px solid var(--primary,#1a1a2e);outline-offset:-2px}'
     '</style>'
 )
 
