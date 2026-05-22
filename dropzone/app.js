@@ -19,6 +19,8 @@ let conn = null;
 let lastResult = null;
 let currentTableName = '';
 let loadedTables = new Set();
+const getFilePath = (file) => file.webkitRelativePath || file.name;
+
 
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
@@ -163,7 +165,6 @@ async function init() {
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 
         const accessMode = duckdb.DuckDBAccessMode?.READ_WRITE ?? 1;
-        console.log('DuckDB accessMode:', accessMode);
         await db.open({ path: 'indexeddb://duckdb', accessMode });
 
         conn = await db.connect();
@@ -183,7 +184,6 @@ async function init() {
         if (!timedOut) {
             statusEl.textContent = 'DuckDB Ready';
         }
-        console.log('DuckDB-Wasm initialized');
 
         // Restore loaded tables
         await restoreState();
@@ -523,7 +523,7 @@ async function handleFiles(files) {
         const standaloneFiles = [];
 
         for (const file of files) {
-            const relPath = file.webkitRelativePath || file.name;
+            const relPath = getFilePath(file);
             const pathParts = relPath.split('/');
             
             if (pathParts.length > 1) {
@@ -542,11 +542,11 @@ async function handleFiles(files) {
 
         // Process directory groups (Potential Delta Lake or multi-part datasets)
         for (const [dirName, dirFiles] of Object.entries(fileGroups)) {
-            const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
+            const isDelta = dirFiles.some(f => getFilePath(f).includes('_delta_log'));
             const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
             
             for (const file of dirFiles) {
-                const fullPath = file.webkitRelativePath || file.name;
+                const fullPath = getFilePath(file);
                 const buffer = await file.arrayBuffer();
                 await db.registerFileBuffer(fullPath, new Uint8Array(buffer));
             }
@@ -566,7 +566,7 @@ async function handleFiles(files) {
             } else {
                 // If not delta, just treat as individual files (default behavior)
                 for (const file of dirFiles) {
-                    await processFile(file, file.webkitRelativePath || file.name);
+                    await processFile(file, getFilePath(file));
                 }
             }
         }

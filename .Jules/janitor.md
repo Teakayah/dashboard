@@ -18,3 +18,6 @@ Action: To apply this next time I can run ruff check --select F401,F841 to verif
 ## 2026-05-18 - Robust Chart.js Object.defineProperty Override
 Learning: An `Object.defineProperty` trap for `window.Chart` implemented within a `window.addEventListener('load', ...)` can miss early initialization if Chart.js is loaded synchronously or executed prior to the `load` event.
 Action: Implement `Object.defineProperty` globally and immediately using both `get` and `set` accessors. The `set` logic applies the modifications (e.g. `maintainAspectRatio = false`) to the target class and then stores it in a closure variable.
+## 2026-05-22 - Extracted duplicated logic and unused code cleanup
+**Learning:** Found duplicated inline logic `file.webkitRelativePath || file.name` across several loops in `dropzone/app.js` and removed leftover `console.log` statements used for debugging.
+**Action:** Extracted the logic into a top-level helper `const getFilePath = (file) => file.webkitRelativePath || file.name;` and replaced all duplicated inline expressions. Removed debug `console.log`.
