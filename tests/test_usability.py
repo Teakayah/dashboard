@@ -26,23 +26,23 @@ def analysis_pages() -> list[str]:
 # ── Index page ────────────────────────────────────────────────────────────────
 
 def test_index_title(page: Page):
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     expect(page).to_have_title('DataDashboard')
 
 
 def test_index_header_visible(page: Page):
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     expect(page.locator('header h1')).to_be_visible()
 
 
 def test_index_has_cards(page: Page):
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     cards = page.locator('.card')
     assert cards.count() > 0, 'Index page has no analysis cards'
 
 
 def test_index_card_hrefs_are_valid(page: Page):
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     hrefs = page.locator('.card').evaluate_all(
         'els => els.map(e => e.getAttribute("href"))'
     )
@@ -53,7 +53,7 @@ def test_index_card_hrefs_are_valid(page: Page):
 
 
 def test_index_search_filters_cards(page: Page):
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     search = page.locator('#search')
     expect(search).to_be_visible()
 
@@ -70,7 +70,7 @@ def test_index_search_filters_cards(page: Page):
 
 
 def test_index_search_finds_match(page: Page):
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     # Grab the first card's title text and search for part of it
     first_title = page.locator('.card-title').first.inner_text()
     keyword = first_title.split()[0]  # first word of the title
@@ -79,7 +79,7 @@ def test_index_search_finds_match(page: Page):
 
 
 def test_index_footer_github_link(page: Page):
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     github_link = page.locator('footer a[href*="github.com"]')
     expect(github_link).to_be_visible()
     href = github_link.get_attribute('href')
@@ -87,7 +87,7 @@ def test_index_footer_github_link(page: Page):
 
 
 def test_index_footer_rss_link(page: Page):
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     rss_link = page.locator('footer a[href*="feed.xml"]')
     expect(rss_link).to_be_visible()
     href = rss_link.get_attribute('href')
@@ -97,7 +97,7 @@ def test_index_footer_rss_link(page: Page):
 def test_index_no_js_errors(page: Page):
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     page.wait_for_load_state('networkidle')
     assert errors == [], f'JS errors on index: {errors}'
 
@@ -106,7 +106,7 @@ def test_index_no_js_errors(page: Page):
 
 def test_index_no_horizontal_scroll_mobile(page: Page):
     page.set_viewport_size({'width': 375, 'height': 812})
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     scroll_width = page.evaluate('document.body.scrollWidth')
     viewport_width = page.evaluate('window.innerWidth')
     assert scroll_width <= viewport_width + 2, (
@@ -116,7 +116,7 @@ def test_index_no_horizontal_scroll_mobile(page: Page):
 
 def test_index_cards_visible_on_mobile(page: Page):
     page.set_viewport_size({'width': 375, 'height': 812})
-    page.goto(BASE)
+    page.goto(BASE, wait_until='domcontentloaded')
     expect(page.locator('.card').first).to_be_visible()
 
 
@@ -132,14 +132,14 @@ def test_analysis_page_loads(page: Page, filename: str):
 
 @pytest.mark.parametrize('filename', analysis_pages())
 def test_analysis_page_has_title(page: Page, filename: str):
-    page.goto(f'{BASE}/{filename}')
+    page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded')
     title = page.title()
     assert title.strip(), f'{filename} has an empty <title>'
 
 
 @pytest.mark.parametrize('filename', analysis_pages())
 def test_analysis_page_has_og_image(page: Page, filename: str):
-    page.goto(f'{BASE}/{filename}')
+    page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded')
     og = page.locator('meta[property="og:image"]')
     assert og.count() > 0, f'{filename} is missing og:image meta tag'
     content = og.get_attribute('content')
@@ -152,7 +152,7 @@ def test_analysis_page_has_og_image(page: Page, filename: str):
 def test_analysis_page_no_js_errors(page: Page, filename: str):
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto(f'{BASE}/{filename}')
+    page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded')
     try:
         page.wait_for_load_state('networkidle', timeout=8000)
     except Exception:
@@ -163,7 +163,7 @@ def test_analysis_page_no_js_errors(page: Page, filename: str):
 @pytest.mark.parametrize('filename', analysis_pages())
 def test_analysis_page_no_horizontal_scroll_mobile(page: Page, filename: str):
     page.set_viewport_size({'width': 375, 'height': 812})
-    page.goto(f'{BASE}/{filename}')
+    page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded')
     scroll_width = page.evaluate('document.body.scrollWidth')
     viewport_width = page.evaluate('window.innerWidth')
     assert scroll_width <= viewport_width + 2, (
@@ -216,7 +216,7 @@ def test_flood_simulator_updates_multiple_stations(page: Page):
 @pytest.mark.parametrize('filename', analysis_pages())
 def test_analysis_page_no_horizontal_scroll_desktop(page: Page, filename: str):
     page.set_viewport_size({'width': 1280, 'height': 800})
-    page.goto(f'{BASE}/{filename}')
+    page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded')
     try:
         page.wait_for_load_state('networkidle', timeout=8000)
     except Exception:
@@ -233,7 +233,7 @@ def test_analysis_page_no_horizontal_scroll_desktop(page: Page, filename: str):
 @pytest.mark.parametrize('filename', analysis_pages())
 def test_analysis_page_no_vertical_clip_desktop(page: Page, filename: str):
     page.set_viewport_size({'width': 1280, 'height': 800})
-    page.goto(f'{BASE}/{filename}')
+    page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded')
     try:
         page.wait_for_load_state('networkidle', timeout=8000)
     except Exception:
@@ -255,7 +255,7 @@ def test_analysis_page_no_vertical_clip_desktop(page: Page, filename: str):
 
 def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
     page.set_viewport_size({'width': 1280, 'height': 800})
-    page.goto(f'{BASE}/employment_rate_canada.html')
+    page.goto(f'{BASE}/employment_rate_canada.html', wait_until='domcontentloaded')
     try:
         page.wait_for_load_state('networkidle', timeout=8000)
     except Exception:
@@ -377,7 +377,7 @@ def test_flood_no_vertical_scroll_desktop(page: Page):
 @pytest.mark.parametrize('filename', analysis_pages())
 def test_viz_elements_have_height(page: Page, filename: str):
     """Ensure that critical visualization elements (canvases, maps) have a non-zero height when visible."""
-    page.goto(f'{BASE}/{filename}')
+    page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded')
     try:
         page.wait_for_load_state('networkidle', timeout=5000)
     except Exception:
