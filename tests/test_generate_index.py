@@ -12,6 +12,24 @@ def load_generate_index_module():
     return module
 
 
+import pytest
+
+def test_parse_args():
+    module = load_generate_index_module()
+
+    # Test default
+    args = module.parse_args([])
+    assert args.responsive_preset == 'default'
+
+    # Test explicit valid preset
+    args = module.parse_args(['--responsive-preset', 'none'])
+    assert args.responsive_preset == 'none'
+
+    # Test invalid preset
+    with pytest.raises(SystemExit):
+        module.parse_args(['--responsive-preset', 'invalid_preset'])
+
+
 def test_inject_responsive_default_adds_v6_marker_and_dashboard_rules():
     module = load_generate_index_module()
     initial_content = '<html><head></head><body><div class="grid"></div></body></html>'

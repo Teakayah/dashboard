@@ -30,3 +30,7 @@ Assertion: Used `side_effect` with custom inner functions on the `mock_extract_s
 Coverage Gap: The UI test for filtering index cards (`test_index_search_filters_cards`) randomly failed due to relying on a hardcoded `page.wait_for_timeout(100)` while the source code debounce is set to 250ms.
 Learning: It was failing because arbitrary timeouts in UI tests are brittle, especially when testing components with explicit delays like debounced search inputs. Using hardcoded waits leads to flaky tests across different environments.
 Assertion: Always use Playwright's built-in auto-retrying assertions like `expect(locator).to_have_count(expected_count)` or `expect(locator).to_be_visible()` instead of arbitrary sleeps. This guarantees tests are resilient to timing variations and execute as fast as possible.
+## 2024-05-22 - [Cover parse_args in generate_index.py]
+Coverage Gap: [Missing test for argument parsing in `deployment/generate_index.py`]
+Learning: [Always verify the actual `add_argument` parameter definitions in the codebase instead of relying solely on the prompt's summary, which may be outdated or simplified.]
+Assertion: [Mock `sys.exit` using `pytest.raises(SystemExit)` to test `argparse` behavior with invalid inputs to ensure robust testing of standalone scripts.]
