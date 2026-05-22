@@ -24,3 +24,7 @@
 ## 2024-05-24 - Avoiding Maximum Call Stack Size Exceeded with Spread Operator
 **Learning:** Using the spread operator (`...`) with `Math.max` or `Math.min` on very large arrays (e.g., `Math.max(...values)`) can throw a `RangeError: Maximum call stack size exceeded` because JavaScript engines have limits on the number of arguments a function can accept. Additionally, using multiple array methods like `.map` and `.reduce` iteratively adds overhead.
 **Action:** When computing aggregations like `sum`, `min`, and `max` on arrays (especially unbounded or large data arrays), use a single iterative `for` loop. This approach is `O(N)`, requires no intermediate memory allocations, and avoids stack size limits.
+
+## 2026-05-22 - Parallelize LLM API requests in generate_descriptions.py
+**Learning:** `deployment/generate_descriptions.py` previously executed Ollama descriptions synchronously in a linear loop, which created a major I/O bottleneck when parsing numerous HTML files sequentially. Parallelizing this loop was hindered by UI output assumptions (printing descriptions incrementally to stdout).
+**Action:** Use `concurrent.futures.ThreadPoolExecutor(max_workers=5)` to resolve the I/O blocking. Ensure `future.result()` is captured efficiently in a loop using `concurrent.futures.as_completed(future_to_file)`. To fix stdout formatting without losing track of corresponding files, explicitly print the array/dictionary key (`[filepath.name]`) alongside the asynchronous console logs.
