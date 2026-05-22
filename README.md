@@ -25,6 +25,19 @@ A modern, interactive hub for navigating and conducting data analysis. This proj
 *   **ETL Pipeline**: Python-based automation for StatCan data extraction and HTML injection.
 *   **Testing**: Comprehensive test suite using `pytest` and Playwright.
 
+## 📊 Pre-built Analyses
+*   **[Canadian Labour & Fiscal Dashboard](employment_rate_canada.html)**: Displays Statistics Canada's seasonally adjusted employment rate data for Canadian provincial governments.
+*   **[NHPI — Big-6 City Comparison](nhpi_big6_comparison.html)**: Comparison of the New Housing Price Index (NHPI) across six major Canadian cities using Statistics Canada data.
+*   **[Ottawa-Gatineau Flood Risk](flood_risk_gatineau_ottawa.html)**: Interactive flood risk dashboard for Ottawa-Gatineau: Station 02KF005 level simulator, historical flood peaks, snowpack (SWE) risk, and flood zone map.
+
+## 🔄 Contribution Workflow
+This project uses a dual-branch CI workflow:
+*   **`integration`**: All feature branches and Pull Requests must target this branch.
+*   **`main`**: Reserved exclusively for CI-generated production artifacts (HTML, XML, PNGs) and must never be committed to directly by contributors.
+
+## ⚠️ Known Issues
+Before proposing changes, please read the [TODO.md](TODO.md) file to check for current critical bugs and ongoing accessibility/hygiene work that should not be regressed.
+
 ## 🚀 Getting Started
 
 ### Prerequisites
