@@ -36,6 +36,54 @@ const loadingOverlay = document.getElementById('loading');
 const previewsContainer = document.getElementById('instant-previews');
 const remoteDeltaUrl = document.getElementById('remote-delta-url');
 const loadRemoteDeltaBtn = document.getElementById('load-remote-delta');
+const initProgressContainer = document.getElementById('init-progress-container');
+const initProgress = document.getElementById('init-progress');
+const queryHistoryEl = document.getElementById('query-history');
+
+let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
+
+function setProgress(percent) {
+    if (percent > 0 && percent < 100) {
+        initProgressContainer.style.display = 'block';
+    } else {
+        initProgressContainer.style.display = 'none';
+    }
+    initProgress.style.width = `${percent}%`;
+}
+
+function addToHistory(sql) {
+    const trimmed = sql.trim();
+    if (!trimmed) return;
+    queryHistory = [trimmed, ...queryHistory.filter(q => q !== trimmed)].slice(0, 10);
+    localStorage.setItem('dz_query_history', JSON.stringify(queryHistory));
+    renderHistory();
+}
+
+function renderHistory() {
+    queryHistoryEl.textContent = '';
+    if (queryHistory.length === 0) return;
+    
+    const label = document.createElement('span');
+    label.textContent = 'Recent:';
+    label.style.fontSize = '0.7rem';
+    label.style.color = 'var(--text-muted)';
+    label.style.marginRight = '8px';
+    queryHistoryEl.appendChild(label);
+
+    queryHistory.forEach(sql => {
+        const chip = document.createElement('div');
+        chip.className = 'history-chip';
+        chip.textContent = sql;
+        chip.title = sql;
+        chip.onclick = () => {
+            sqlInput.value = sql;
+            sqlInput.dispatchEvent(new Event('input'));
+        };
+        queryHistoryEl.appendChild(chip);
+    });
+}
+
+renderHistory();
 
 loadRemoteDeltaBtn.addEventListener('click', async () => {
     const url = remoteDeltaUrl.value.trim();
@@ -154,26 +202,46 @@ function reloadWithoutSW() {
 async function init() {
     let timedOut = false;
     const timeoutId = setTimeout(() => {
-        timedOut = true;
-        showInitError('Initialization timed out after 30 s.');
+        if (!db) {
+            timedOut = true;
+            showInitError('DuckDB initialization timed out. Service worker may be stale.');
+        }
     }, INIT_TIMEOUT_MS);
 
     try {
+        setProgress(10);
         statusEl.textContent = 'Selecting bundle...';
         const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+        console.log('Selected bundle:', bundle);
 
-        statusEl.textContent = 'Initializing worker...';
+        setProgress(30);
+        statusEl.textContent = 'Instantiating DuckDB...';
         const worker = new Worker(bundle.mainWorker);
         const logger = new duckdb.ConsoleLogger();
         db = new duckdb.AsyncDuckDB(logger, worker);
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 
-        const accessMode = duckdb.DuckDBAccessMode?.READ_WRITE ?? 1;
-        console.log('DuckDB accessMode:', accessMode);
-        await db.open({ path: 'indexeddb://duckdb', accessMode });
+        setProgress(50);
+        statusEl.textContent = 'Opening database...';
+        const accessMode = duckdb.DuckDBAccessMode?.READ_WRITE ?? 3;
+        const opfsSupported = !!(navigator.storage && navigator.storage.getDirectory);
+        // We use a versioned name for OPFS to avoid conflicts with older incompatible files
+        const dbPath = opfsSupported ? 'opfs://duckdb_v1.db' : null;
+        
+        console.log('DuckDB init:', { accessMode, dbPath, opfsSupported });
+        
+        try {
+            await db.open({ path: dbPath, accessMode });
+        } catch (err) {
+            console.warn('Persistent db.open failed, falling back to in-memory:', err);
+            await db.open({ path: null, accessMode });
+        }
 
+        setProgress(70);
+        statusEl.textContent = 'Connecting...';
         conn = await db.connect();
 
+        setProgress(85);
         statusEl.textContent = 'Loading extensions...';
         let deltaSupported = true;
         try {
@@ -186,6 +254,7 @@ async function init() {
         window.deltaSupported = deltaSupported;
 
         clearTimeout(timeoutId);
+        setProgress(100);
         if (!timedOut) {
             statusEl.textContent = 'DuckDB Ready';
         }
@@ -195,6 +264,7 @@ async function init() {
         await restoreState();
     } catch (err) {
         clearTimeout(timeoutId);
+        setProgress(0);
         console.error(err);
         showInitError('Error: ' + err.message);
     }
@@ -255,10 +325,47 @@ async function displayTableSchema(tableName) {
             
             // Profiling logic
             try {
-                statsContainer.textContent = 'Calculating stats...';
+                statsContainer.innerHTML = '<i>Calculating stats...</i>';
                 const profilingResult = await conn.query(`SELECT MIN("${r.column_name}") as min_val, MAX("${r.column_name}") as max_val, COUNT("${r.column_name}") as count_val FROM "${tableName}"`);
                 const stats = getRows(profilingResult)[0];
-                statsContainer.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
+                
+                const distResult = await conn.query(`SELECT "${r.column_name}" as val, count(*) as cnt FROM "${tableName}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
+                const distRows = getRows(distResult);
+
+                statsContainer.innerHTML = '';
+                const text = document.createElement('div');
+                text.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
+                statsContainer.appendChild(text);
+
+                if (distRows.length > 0) {
+                    const chartCont = document.createElement('div');
+                    chartCont.className = 'mini-chart-container';
+                    chartCont.style.height = '100px';
+                    const canvas = document.createElement('canvas');
+                    chartCont.appendChild(canvas);
+                    statsContainer.appendChild(chartCont);
+
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: distRows.map(dr => String(dr.val).substring(0, 15)),
+                            datasets: [{
+                                label: 'Frequency',
+                                data: distRows.map(dr => dr.cnt),
+                                backgroundColor: 'rgba(79, 142, 247, 0.6)'
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false }, title: { display: true, text: 'Top 10 Values', font: { size: 10 } } },
+                            scales: { 
+                                x: { display: false },
+                                y: { ticks: { font: { size: 8 } } }
+                            }
+                        }
+                    });
+                }
             } catch (err) {
                 statsContainer.textContent = `Profiling failed: ${err.message}`;
             }
@@ -862,13 +969,18 @@ async function runQuery() {
     
     loadingOverlay.style.display = 'flex';
     try {
+        const start = performance.now();
         const result = await conn.query(sql);
+        const duration = Math.round(performance.now() - start);
+        
         lastResult = getRows(result);
         renderResults(lastResult);
         downloadBtn.disabled = false;
         downloadBtn.title = '';
         copyJsonBtn.disabled = false;
         copyJsonBtn.title = '';
+        statusEl.textContent = `Query executed in ${duration}ms`;
+        addToHistory(sql);
     } catch (err) {
         console.error(err);
         alert('Query Error: ' + err.message);
