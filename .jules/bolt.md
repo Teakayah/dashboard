@@ -24,3 +24,8 @@
 ## 2024-05-24 - Avoiding Maximum Call Stack Size Exceeded with Spread Operator
 **Learning:** Using the spread operator (`...`) with `Math.max` or `Math.min` on very large arrays (e.g., `Math.max(...values)`) can throw a `RangeError: Maximum call stack size exceeded` because JavaScript engines have limits on the number of arguments a function can accept. Additionally, using multiple array methods like `.map` and `.reduce` iteratively adds overhead.
 **Action:** When computing aggregations like `sum`, `min`, and `max` on arrays (especially unbounded or large data arrays), use a single iterative `for` loop. This approach is `O(N)`, requires no intermediate memory allocations, and avoids stack size limits.
+## 2026-05-22 - Optimize `generate_descriptions.py` blocking I/O
+
+**Learning:** `deployment/generate_descriptions.py` was iterating through a list of target files and calling the synchronous `ollama_describe` function one by one. This blocked the main thread entirely on slow network I/O per API request, leading to poor overall performance for large batch operations.
+
+**Action:** Wrap the blocking I/O loop in a `concurrent.futures.ThreadPoolExecutor`. In typical Python scripts involving external API requests, using `as_completed` allows us to consume and report results immediately as network calls resolve without getting stuck on a single slow response.
