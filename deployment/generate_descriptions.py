@@ -17,6 +17,7 @@ Usage:
 
 import argparse
 import json
+import concurrent.futures
 import os
 import sys
 import urllib.request
@@ -118,6 +119,7 @@ def main() -> None:
         targets = sorted(ROOT.glob('*.html'), key=lambda p: p.stat().st_mtime, reverse=True)
 
     updated = 0
+    jobs = []
     for filepath in targets:
         if filepath.name.lower() in EXCLUDE:
             continue
@@ -127,16 +129,26 @@ def main() -> None:
         if not args.force and descriptions.get(filepath.name):
             print(f'  [skip] {filepath.name} already has a description')
             continue
+        jobs.append(filepath)
 
-        print(f'  Generating description for {filepath.name}…')
-        content = filepath.read_text(encoding='utf-8', errors='ignore')
-        desc = ollama_describe(content, filepath.name)
-        if desc:
-            descriptions[filepath.name] = desc
-            print(f'    → {desc}')
-            updated += 1
-        else:
-            print('    → (no description generated)')
+    if jobs:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_file = {}
+            for filepath in jobs:
+                print(f'  Generating description for {filepath.name}…')
+                content = filepath.read_text(encoding='utf-8', errors='ignore')
+                future = executor.submit(ollama_describe, content, filepath.name)
+                future_to_file[future] = filepath.name
+
+            for future in concurrent.futures.as_completed(future_to_file):
+                filename = future_to_file[future]
+                desc = future.result()
+                if desc:
+                    descriptions[filename] = desc
+                    print(f'    → {desc}')
+                    updated += 1
+                else:
+                    print('    → (no description generated)')
 
     save_descriptions(descriptions)
     print(f'\nDone. {updated} description(s) updated in {DESCRIPTIONS_FILE.relative_to(ROOT)}')
