@@ -67,12 +67,28 @@ def test_run_failure_allow_nonzero(mock_subprocess, mock_sys_exit):
     assert module._run('false', allow_nonzero=True) == 1
     mock_sys_exit.assert_not_called()
 
-def test_git_success(mock_subprocess):
-    module = load_refresh_module()
-    mock_subprocess.return_value.stdout = "  git output  \n"
+@pytest.fixture
+def mock_check_output():
+    with patch('subprocess.check_output') as mock_co:
+        yield mock_co
 
-    assert module._git('status') == "git output"
-    mock_subprocess.assert_called_once()
+def test_git_success(mock_check_output):
+    module = load_refresh_module()
+    mock_check_output.return_value = "  git output  \n"
+
+    assert module._git('status', '--porcelain') == "git output"
+    mock_check_output.assert_called_once_with(
+        ['git', 'status', '--porcelain'],
+        cwd=str(module.ROOT),
+        text=True,
+        stderr=subprocess.DEVNULL
+    )
+
+def test_git_error(mock_check_output):
+    module = load_refresh_module()
+    mock_check_output.side_effect = subprocess.CalledProcessError(1, ['git'])
+
+    assert module._git('log') == ""
 
 def test_main_success_all_steps(mock_subprocess, mock_sys_exit, mock_path, monkeypatch):
     module = load_refresh_module()

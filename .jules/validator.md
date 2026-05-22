@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## 2024-05-06 - Missing Test Coverage for git_dates and load_descriptions
 Coverage Gap: The `get_git_dates_batched` and `load_descriptions` functions lacked testing.
 Learning: When writing tests for modules that import config or are dynamically loaded, using standard fixtures like `monkeypatch` and `tmp_path` provides isolation and prevents the tests from depending on external git behavior or touching disk assets.
@@ -39,4 +40,8 @@ Assertion: [Mock os.environ, mock sys.exit with side_effect=SystemExit, and catc
 Coverage Gap: `test_analysis_page_loads` randomly failed with a TimeoutError during `page.goto()` because the strict "load" event failed to fire fast enough for large pages or local asset loads.
 Learning: Using default `page.goto` waits for the strict "load" event, which can be extremely flaky when assets load slowly in CI/local web server setups.
 Assertion: When simply asserting the page returns HTTP 200 and the DOM is responsive, passing `wait_until='domcontentloaded'` to `page.goto()` bypasses the flaky load event timeout and stabilizes the test suite.
+## 2026-05-22 - [Mocking subprocess.check_output in deployment script]
+Coverage Gap: The `_git` helper in `deployment/refresh.py` was not properly handling or testing `subprocess.check_output` and `subprocess.CalledProcessError`.
+Learning: When a user requests testing for a specific snippet that differs from the existing codebase, it is critical to align the codebase to the intended snippet logic before writing tests for it to properly fulfill the prompt's structural and error-handling requirements.
+Assertion: Replace `subprocess.run` with `subprocess.check_output`, wrap it in a `try...except subprocess.CalledProcessError` block, and verify test assertions use `.side_effect = subprocess.CalledProcessError(...)` when mocking to guarantee exact exception catching semantics.
 
