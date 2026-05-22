@@ -124,7 +124,7 @@ def test_index_cards_visible_on_mobile(page: Page):
 
 @pytest.mark.parametrize('filename', analysis_pages())
 def test_analysis_page_loads(page: Page, filename: str):
-    response = page.goto(f'{BASE}/{filename}')
+    response = page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded')
     assert response is not None and response.status == 200, (
         f'{filename} returned HTTP {response and response.status}'
     )
