@@ -56,14 +56,16 @@ jobs:
             echo "Conflicted files: $CONFLICTS"
             
             # Check if any non-generated file is conflicted
-            STRICT_CONFLICTS=$(echo "$CONFLICTS" | grep -vE '^(index\.html|feed\.xml|previews/|.*\.html|favicon\.ico)$' || true)
+            STRICT_CONFLICTS=$(echo "$CONFLICTS" | grep -vE '^(index\.html|feed\.xml|previews/|.*\.html|favicon\.ico|descriptions\.json)$' || true)
             
             if [ -n "$STRICT_CONFLICTS" ]; then
               echo "CRITICAL: Conflict in source/test files: $STRICT_CONFLICTS"
               exit 1
             else
-              echo "Resolving conflicts in generated assets by taking 'integration' version."
-              git checkout --theirs -- .
+              echo "Resolving conflicts in generated assets by taking 'integration' version where available."
+              git checkout --theirs -- . || true
+              # descriptions.json must be preserved from main if missing in integration
+              git checkout --ours -- descriptions.json || true
               git add -A
               git commit --no-edit
             fi
@@ -72,13 +74,16 @@ jobs:
       # 3. Update Previews & Push
       - name: Final asset generation
         run: |
+          mkdir -p source
+          python3 deployment/update_flood_data.py
+          python3 deployment/rebuild_analyses.py || [ $? -eq 1 ]
           python3 deployment/generate_index.py
           python3 deployment/generate_feed.py
           python3 deployment/screenshot.py
 
       - name: Commit and push to main
         run: |
-          git add index.html feed.xml previews/ *.html favicon.ico
+          git add index.html feed.xml previews/ *.html favicon.ico descriptions.json
           git diff --staged --quiet && echo "Nothing new to commit." || \
             git commit -m "chore: update index, feed, previews, og tags [skip ci]"
           git push origin main
