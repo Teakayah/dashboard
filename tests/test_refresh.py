@@ -1,6 +1,7 @@
 import pytest
 import sys
 import json
+import subprocess
 from unittest.mock import Mock, patch
 
 import importlib.util
