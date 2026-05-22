@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## 2024-05-06 - Missing Test Coverage for git_dates and load_descriptions
 Coverage Gap: The `get_git_dates_batched` and `load_descriptions` functions lacked testing.
 Learning: When writing tests for modules that import config or are dynamically loaded, using standard fixtures like `monkeypatch` and `tmp_path` provides isolation and prevents the tests from depending on external git behavior or touching disk assets.
@@ -36,3 +35,7 @@ Coverage Gap: The `build_card` function in `deployment/generate_index.py` lacked
 Learning: The test suite has an `autouse=True` fixture that starts an HTTP server for Playwright UI tests. Attempting to start a manual background HTTP server before running the suite causes port conflicts (`Errno 98`).
 Assertion: Rely on the built-in test fixtures for HTTP servers when running the full test suite instead of managing background processes manually.
 
+## 2024-05-22 - Cover parse_args in generate_index.py
+Coverage Gap: `parse_args` in `deployment/generate_index.py` was not tested, especially the argument choices.
+Learning: The prompt mentioned `--responsive`, but the codebase actually had `--responsive-preset` with choices from `RESPONSIVE_PRESETS`. Always verify the actual codebase state instead of blindly following outdated prompt snippets.
+Assertion: Tested default, specific choice (`'none'`), and invalid choice for `parse_args` properly handling `SystemExit`.

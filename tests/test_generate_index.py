@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 from unittest.mock import patch
+import pytest
 
 
 def load_generate_index_module():
@@ -582,6 +583,7 @@ def test_build_html_single_analysis(monkeypatch):
     assert 'Single Analysis' in html
     assert html.count('class="card"') == 1
 
+
 def test_build_card_fully_populated():
     module = load_generate_index_module()
     analysis = {
@@ -600,6 +602,7 @@ def test_build_card_fully_populated():
     assert '>tag2<' in html
     assert '--accent:' in html
 
+
 def test_build_card_missing_optional_fields():
     module = load_generate_index_module()
     analysis = {
@@ -614,6 +617,7 @@ def test_build_card_missing_optional_fields():
     assert 'href="min.html"' in html
     assert 'card-desc' not in html
     assert 'card-date' not in html
+
 
 def test_build_card_html_escaping():
     module = load_generate_index_module()
@@ -631,3 +635,21 @@ def test_build_card_html_escaping():
     assert '2023-01-01 &lt;script&gt;' in html
     assert 'evil&quot;file.html' in html
     assert '&lt;tag&gt;' in html
+
+
+def test_parse_args_default():
+    module = load_generate_index_module()
+    args = module.parse_args([])
+    assert args.responsive_preset == 'default'
+
+
+def test_parse_args_none():
+    module = load_generate_index_module()
+    args = module.parse_args(['--responsive-preset', 'none'])
+    assert args.responsive_preset == 'none'
+
+
+def test_parse_args_invalid():
+    module = load_generate_index_module()
+    with pytest.raises(SystemExit):
+        module.parse_args(['--responsive-preset', 'invalid_choice'])
