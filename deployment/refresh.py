@@ -52,10 +52,16 @@ def _run(*args: str, allow_nonzero: bool = False) -> int:
 
 def _git(*args: str) -> str:
     """Run a git command and return stdout (stripped)."""
-    result = subprocess.run(
-        ['git', *args], capture_output=True, text=True, cwd=str(ROOT)
-    )
-    return result.stdout.strip()
+    try:
+        res = subprocess.check_output(
+            ['git', *args],
+            cwd=str(ROOT),
+            text=True,
+            stderr=subprocess.DEVNULL
+        )
+        return res.strip()
+    except subprocess.CalledProcessError:
+        return ""
 
 
 # ── Pipeline ───────────────────────────────────────────────────────────────────
