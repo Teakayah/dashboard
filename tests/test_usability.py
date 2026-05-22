@@ -175,7 +175,7 @@ def test_analysis_page_no_horizontal_scroll_mobile(page: Page, filename: str):
 def test_vitals_grid_no_overflow_mobile(page: Page):
     """Specifically ensure the vitals-grid on the flood page doesn't overflow its container."""
     page.set_viewport_size({'width': 360, 'height': 800}) # Slightly narrower than iPhone
-    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded')
     
     overflow = page.evaluate("""
         () => {
@@ -193,7 +193,7 @@ def test_vitals_grid_no_overflow_mobile(page: Page):
 
 def test_flood_simulator_updates_multiple_stations(page: Page):
     """Verify that the offset slider updates both Britannia and Hull levels."""
-    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded')
     
     # Get initial values
     initial_brit = page.locator('#levelDisplay').inner_text()
@@ -303,7 +303,7 @@ def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
 def test_flood_dashboard_height_stabilizes(page: Page):
     """Ensure the flood dashboard height remains stable across all tabs."""
     page.set_viewport_size({'width': 1280, 'height': 800})
-    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded')
     try:
         page.wait_for_load_state('networkidle', timeout=8000)
     except Exception:
@@ -332,7 +332,7 @@ def test_flood_dashboard_height_stabilizes(page: Page):
 def test_flood_charts_no_overflow_card(page: Page):
     """Ensure that charts do not spill out of their cards on the flood dashboard."""
     page.set_viewport_size({'width': 1280, 'height': 800})
-    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded')
 
     page.wait_for_selector('canvas#gaugeChart')
     page.wait_for_selector('canvas#comparisonChart')
@@ -359,7 +359,7 @@ def test_flood_charts_no_overflow_card(page: Page):
 def test_flood_no_vertical_scroll_desktop(page: Page):
     """Ensure the flood page fits within the vertical viewport on desktop without scrolling."""
     page.set_viewport_size({'width': 1280, 'height': 800})
-    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html')
+    page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded')
     try:
         page.wait_for_load_state('networkidle', timeout=8000)
     except Exception:
