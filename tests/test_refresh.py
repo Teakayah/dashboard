@@ -204,6 +204,22 @@ def test_main_no_git_changes(mock_subprocess, mock_sys_exit, mock_path, monkeypa
         if args[0] == 'git':
             assert args[1] != 'push'
 
+def test_parse_args_defaults(monkeypatch):
+    module = load_refresh_module()
+    monkeypatch.setattr(sys, 'argv', ['refresh.py'])
+    args = module.parse_args()
+    assert args.no_push is False
+    assert args.no_descriptions is False
+    assert args.force_descriptions is False
+
+def test_parse_args_all_flags(monkeypatch):
+    module = load_refresh_module()
+    monkeypatch.setattr(sys, 'argv', ['refresh.py', '--no-push', '--no-descriptions', '--force-descriptions'])
+    args = module.parse_args()
+    assert args.no_push is True
+    assert args.no_descriptions is True
+    assert args.force_descriptions is True
+
 def test_if_name_main(mock_subprocess, mock_sys_exit, mock_path, monkeypatch):
     import runpy
     monkeypatch.setattr(sys, 'argv', ['refresh.py'])
