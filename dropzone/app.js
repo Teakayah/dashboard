@@ -893,8 +893,8 @@ downloadBtn.addEventListener('click', async () => {
     loadingOverlay.style.display = 'flex';
     try {
         const csvPath = 'export.csv';
-        await conn.query(`CREATE OR REPLACE TEMPORARY TABLE _export_tmp AS ${sqlInput.value.trim()}`);
-        await conn.query(`COPY _export_tmp TO '${csvPath}' (HEADER, DELIMITER ',')`);
+        const query = sqlInput.value.trim().replace(/;+$/, '');
+        await conn.query(`COPY (${query}) TO '${csvPath}' (HEADER, DELIMITER ',')`);
         
         const content = await db.copyFileToBuffer(csvPath);
         const blob = new Blob([content], { type: 'text/csv' });
