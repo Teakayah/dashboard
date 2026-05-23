@@ -75,8 +75,10 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 
 /**
  * Safely converts an Arrow table result into a plain array of JavaScript objects.
-...
- * This avoids DuckDB-Wasm Proxy trap errors (ownKeys) and handles BigInt serialization.
+ * DuckDB-Wasm returns query results as Apache Arrow tables wrapped in Proxy objects.
+ * Attempting to pass these proxies directly to UI components (like Grid.js) or standard
+ * JSON serializers crashes due to unhandled ownKeys proxy traps. This function extracts
+ * the rows and explicitly converts BigInt values to strings to prevent serialization errors.
  *
  * @param {import('@duckdb/duckdb-wasm').Table} result
  * @returns {Array<Object>}
