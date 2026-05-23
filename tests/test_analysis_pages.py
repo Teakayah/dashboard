@@ -18,7 +18,7 @@ TAB_TIMEOUT  = 2_000   # ms — post-click settle
 
 
 def _load(page: Page, path: str) -> None:
-    page.goto(f'{BASE}{path}')
+    page.goto(f'{BASE}{path}', wait_until='domcontentloaded')
     try:
         page.wait_for_load_state('networkidle', timeout=LOAD_TIMEOUT)
     except Exception:
