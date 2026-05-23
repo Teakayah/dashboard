@@ -30,3 +30,7 @@ Assertion: Used `side_effect` with custom inner functions on the `mock_extract_s
 Coverage Gap: The UI test for filtering index cards (`test_index_search_filters_cards`) randomly failed due to relying on a hardcoded `page.wait_for_timeout(100)` while the source code debounce is set to 250ms.
 Learning: It was failing because arbitrary timeouts in UI tests are brittle, especially when testing components with explicit delays like debounced search inputs. Using hardcoded waits leads to flaky tests across different environments.
 Assertion: Always use Playwright's built-in auto-retrying assertions like `expect(locator).to_have_count(expected_count)` or `expect(locator).to_be_visible()` instead of arbitrary sleeps. This guarantees tests are resilient to timing variations and execute as fast as possible.
+## 2026-05-23 - Replace wait_for_timeout with wait_until='domcontentloaded' in page.goto
+Coverage Gap: The UI test for accessibility (test_images_have_alt_text) randomly failed due to relying on the strict 'load' event.
+Learning: It was failing because the strict 'load' event doesn't fire sometimes despite the page returning 200 OK.
+Assertion: Use wait_until='domcontentloaded' to prevent flaky test failures when using page.goto().
