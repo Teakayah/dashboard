@@ -84,16 +84,18 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 function getRows(result) {
     if (!result || !result.schema) return [];
     const fields = result.schema.fields.map(f => f.name);
-    const rows = [];
-    for (let i = 0; i < result.numRows; i++) {
+    const numRows = result.numRows;
+    const rows = new Array(numRows);
+    for (let i = 0; i < numRows; i++) {
         const rowProxy = result.get(i);
         const rowPlain = {};
-        for (const field of fields) {
+        for (let j = 0; j < fields.length; j++) {
+            const field = fields[j];
             const val = rowProxy[field];
             // Cast BigInts to strings for UI/JSON compatibility
             rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
-        rows.push(rowPlain);
+        rows[i] = rowPlain;
     }
     return rows;
 }
@@ -631,11 +633,7 @@ async function onTableLoaded(tableName) {
 }
 
 function insertAtCursor(myField, myValue) {
-    if (document.selection) {
-        myField.focus();
-        const sel = document.selection.createRange();
-        sel.text = myValue;
-    } else if (myField.selectionStart || myField.selectionStart == '0') {
+    if (myField.selectionStart !== undefined) {
         const startPos = myField.selectionStart;
         const endPos = myField.selectionEnd;
         myField.value = myField.value.substring(0, startPos)

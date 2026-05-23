@@ -484,7 +484,7 @@ class TestFloodPageButtons:
         assert high_hull > low_hull, (
             f'Hull level did not increase when slider went up: {low_hull} → {high_hull}'
         )
-        assert high_hull > 0, f'Hull level is zero at slider high value'
+        assert high_hull > 0, 'Hull level is zero at slider high value'
 
     def test_slider_offset_display_updates(self, page: Page):
         _load_page(page, FLOOD_URL)

@@ -172,7 +172,7 @@ def test_nhpi_main_chart_renders(page: Page):
             return c ? c.offsetHeight : 0;
         }
     """)
-    assert height > 0, f'Main canvas has zero height'
+    assert height > 0, 'Main canvas has zero height'
 
 
 def test_nhpi_subtitle_references_statcan(page: Page):
