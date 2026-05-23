@@ -47,7 +47,7 @@
       margin-bottom: 4px;
     }
     header h1 span {
-      color: #4f8ef7;
+      color: #1e40af;
     }
     .header-sub {
       font-size: 0.82rem;
@@ -73,7 +73,7 @@
       transition: border-color 0.15s, box-shadow 0.15s;
     }
     .search-bar input:focus {
-      border-color: #4f8ef7;
+      border-color: #1e40af;
       box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
     }
     .search-bar input::placeholder { color: #6b7280; }
@@ -139,7 +139,7 @@
       font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.04em;
-      color: #4f8ef7;
+      color: #1e40af;
       background: rgba(79,142,247,0.1);
       border-radius: 4px;
       padding: 2px 6px;
@@ -168,7 +168,7 @@
     .card-link {
       font-size: 0.75rem;
       font-weight: 700;
-      color: var(--accent, #4f8ef7);
+      color: var(--accent, #2563eb);
     }
 
     /* ── Empty state ─────────────────────────────────────────── */
@@ -220,14 +220,14 @@
   <div class="header-sub">4 analyses</div>
 </header>
 
-<div class="search-bar">
+<search><div class="search-bar">
   <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
-</div>
+</div></search>
 
 <main>
   <div class="grid-label">Analyses</div>
   <div class="grid" id="grid">
-      <a class="card" href="employment_rate_canada.html" style="--accent:#4f8ef7">
+      <a class="card" href="employment_rate_canada.html" style="--accent:#2563eb">
         <div class="card-top">
           <div class="card-title">Canadian Labour &amp; Fiscal Dashboard</div>
           <div class="badges"><span class="badge">Chart.js</span></div>
@@ -238,7 +238,7 @@
           <span class="card-link">View analysis →</span>
         </div>
       </a>
-      <a class="card" href="dropzone.html" style="--accent:#ff6384">
+      <a class="card" href="dropzone.html" style="--accent:#be123c">
         <div class="card-top">
           <div class="card-title">Analytical Drop-Zone</div>
           <div class="badges"><span class="badge">Chart.js</span><span class="badge">DuckDB</span><span class="badge">Grid.js</span></div>
@@ -249,7 +249,7 @@
           <span class="card-link">View analysis →</span>
         </div>
       </a>
-      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#4bc0c0">
+      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#0f766e">
         <div class="card-top">
           <div class="card-title">NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</div>
           <div class="badges"><span class="badge">Chart.js</span></div>
@@ -260,7 +260,7 @@
           <span class="card-link">View analysis →</span>
         </div>
       </a>
-      <a class="card" href="flood_risk_gatineau_ottawa.html" style="--accent:#ff9f40">
+      <a class="card" href="flood_risk_gatineau_ottawa.html" style="--accent:#c2410c">
         <div class="card-top">
           <div class="card-title">Ottawa-Gatineau Flood Risk — Station 02KF005</div>
           <div class="badges"><span class="badge">Chart.js</span></div>
