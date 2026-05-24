@@ -379,7 +379,7 @@ def build_html(analyses: list[dict]) -> str:
       margin-bottom: 4px;
     }}
     header h1 span {{
-      color: #4f8ef7;
+      color: #1e40af;
     }}
     .header-sub {{
       font-size: 0.82rem;
@@ -405,7 +405,7 @@ def build_html(analyses: list[dict]) -> str:
       transition: border-color 0.15s, box-shadow 0.15s;
     }}
     .search-bar input:focus {{
-      border-color: #4f8ef7;
+      border-color: #1e40af;
       box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
     }}
     .search-bar input::placeholder {{ color: #6b7280; }}
@@ -471,7 +471,7 @@ def build_html(analyses: list[dict]) -> str:
       font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.04em;
-      color: #4f8ef7;
+      color: #1e40af;
       background: rgba(79,142,247,0.1);
       border-radius: 4px;
       padding: 2px 6px;
@@ -500,7 +500,7 @@ def build_html(analyses: list[dict]) -> str:
     .card-link {{
       font-size: 0.75rem;
       font-weight: 700;
-      color: var(--accent, #4f8ef7);
+      color: var(--accent, #2563eb);
     }}
 
     /* ── Empty state ─────────────────────────────────────────── */
@@ -552,9 +552,9 @@ def build_html(analyses: list[dict]) -> str:
   <div class="header-sub">{subtitle}</div>
 </header>
 
-<div class="search-bar">
+<search><div class="search-bar">
   <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
-</div>
+</div></search>
 
 <main>
   <div class="grid-label">Analyses</div>
@@ -623,6 +623,7 @@ CONTRAST_FIX_STYLE = (
     '.subtitle,.note,.empty,.tab:not(.active),.related-label,.card-date'
     '{color:var(--text-muted,#4b5563)!important}'
     '.related-link span,footer,footer a{color:var(--text-muted,#4b5563)!important}'
+    'button.tab{background:transparent;border:none;border-bottom:3px solid transparent;font-family:inherit;outline:none}button.tab.active{border-bottom-color:#1a1a2e}button.tab:focus-visible{outline:2px solid var(--primary,#1a1a2e);outline-offset:-2px}'
     '</style>'
 )
 

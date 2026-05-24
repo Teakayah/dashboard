@@ -154,6 +154,61 @@
             background: var(--border);
             display: inline-block;
         }
+        .progress-container {
+            width: 200px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+            display: none;
+        }
+        #init-progress {
+            width: 0%;
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+        .query-history-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 0.5rem;
+            background: rgba(0,0,0,0.02);
+            min-height: 20px;
+        }
+        .history-chip {
+            font-size: 0.7rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .history-chip:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(79, 142, 247, 0.05);
+        }
+        .mini-chart-container {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(0,0,0,0.02);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        @media (prefers-color-scheme: dark) {
+            .query-history-container, .mini-chart-container { background: rgba(255,255,255,0.03); }
+            .history-chip { background: var(--card-bg); border-color: var(--border); }
+        }
         .loading-overlay {
             display: none;
             position: fixed;
@@ -196,32 +251,33 @@
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
   <div class="nav-links">
-    <button class="share-btn" onclick="shareOrCopy()">Share</button>
+    <button class="share-btn" id="share-btn">Share</button>
   </div>
 </header>
 
-    <div class="container">
-        <header class="drop-header">
+    <main class="container">
+        <div class="drop-header">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                     <h1>Analytical Drop-Zone</h1>
                     <p>Drag & Drop CSV, JSON, Parquet, or Delta Lake files to query them locally with SQL.</p>
                 </div>
-                <button id="load-samples" class="secondary" style="background-color: #6366f1;">Load Sample Datasets</button>
+                <button id="load-samples" class="secondary" style="background-color: #4f46e5;">Load Sample Datasets</button>
             </div>
             <div id="status" aria-live="polite">Initializing DuckDB...</div>
-        </header>
+            <div class="progress-container" id="init-progress-container"><div id="init-progress"></div></div>
+        </div>
 
         <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Drop files or folders here or click to select">
             <p>Drop files or folders here or click to select</p>
             <input type="file" id="file-input" style="display: none;" multiple webkitdirectory>
         </div>
 
-        <div class="sql-console" style="border-left: 4px solid #8b5cf6;">
-            <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #8b5cf6;">🌐 Remote Delta Table</div>
+        <div class="sql-console" style="border-left: 4px solid #7c3aed;">
+            <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #7c3aed;">🌐 Remote Delta Table</div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <input type="text" id="remote-delta-url" aria-label="Remote Delta Table URL" placeholder="https://my-bucket.s3.amazonaws.com/delta-table" style="flex: 1; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
-                <button id="load-remote-delta" class="secondary" style="background-color: #8b5cf6;">Load Remote Table</button>
+                <button id="load-remote-delta" class="secondary" style="background-color: #7c3aed;">Load Remote Table</button>
             </div>
             <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">Supports HTTP and S3 URLs. Ensure CORS is enabled for remote buckets.</p>
         </div>
@@ -230,8 +286,8 @@
 
         <div id="schema-display" class="schema-info"></div>
 
-        <div id="join-assistant" class="sql-console" style="display: none; border-left: 4px solid #4bc0c0;">
-            <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #4bc0c0;">🔗 Join Assistant</div>
+        <div id="join-assistant" class="sql-console" style="display: none; border-left: 4px solid #0d9488;">
+            <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #0d9488;">🔗 Join Assistant</div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <select id="join-table-a" aria-label="First table to join" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);"></select>
                 <span>JOIN</span>
@@ -240,12 +296,12 @@
                 <select id="join-col" aria-label="Column to join on" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
                     <option value="" disabled selected>Select Column...</option>
                 </select>
-                <button id="generate-join" class="secondary" style="background-color: #4bc0c0;">Generate Join SQL</button>
+                <button id="generate-join" class="secondary" style="background-color: #0d9488;">Generate Join SQL</button>
             </div>
         </div>
 
-        <div id="chart-builder" class="sql-console" style="display: none; border-left: 4px solid #ff9f40;">
-            <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #ff9f40;">📊 Visual Chart Builder</div>
+        <div id="chart-builder" class="sql-console" style="display: none; border-left: 4px solid #ea580c;">
+            <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #ea580c;">📊 Visual Chart Builder</div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <select id="chart-type" aria-label="Chart Type" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);">
                     <option value="bar">Bar Chart</option>
@@ -260,7 +316,7 @@
                 <select id="chart-y-col" aria-label="Y-Axis Column" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
                     <option value="" disabled selected>Select Column...</option>
                 </select>
-                <button id="generate-chart" class="secondary" style="background-color: #ff9f40;">Generate Chart SQL</button>
+                <button id="generate-chart" class="secondary" style="background-color: #ea580c;">Generate Chart SQL</button>
             </div>
         </div>
 
@@ -274,18 +330,19 @@
                     <option value="SELECT column_name, data_type FROM (DESCRIBE {{TABLE}})">Show Schema Details</option>
                 </select>
                 <div style="flex: 1"></div>
-                <button id="clear-data" class="secondary" style="background-color: #ef4444;">Clear All Data</button>
+                <button id="clear-data" class="secondary" style="background-color: #dc2626;">Clear All Data</button>
                 <button id="run-query" disabled title="Requires a valid query">Run Query</button>
                 <button id="download-csv" class="secondary" disabled title="Requires query results">Download Results as CSV</button>
                 <button id="copy-json" class="secondary" disabled title="Requires query results">Copy JSON</button>
-                <button id="export-db" class="secondary" style="background-color: #8b5cf6;">Export Database (.db)</button>
+                <button id="export-db" class="secondary" style="background-color: #7c3aed;">Export Database (.db)</button>
             </div>
             <textarea id="sql-input" aria-label="SQL query input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
-            <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: -5px;">Tip: Click column names in the schema above to insert them into your query.</p>
+            <div id="query-history" class="query-history-container"></div>
+            <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 5px;">Tip: Click column names in the schema above to insert them into your query.</p>
         </div>
 
         <div id="results" class="results-container"></div>
-    </div>
+    </main>
 
     <div id="loading" class="loading-overlay">Processing...</div>
 
@@ -309,13 +366,13 @@
 </style>
 
   <script>
-    function shareOrCopy() {
+    document.getElementById('share-btn')?.addEventListener('click', () => {
       if (navigator.share) {
         navigator.share({title: document.title, url: window.location.href});
       } else if (navigator.clipboard) {
         navigator.clipboard.writeText(window.location.href);
       }
-    }
+    });
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

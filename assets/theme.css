@@ -236,3 +236,4 @@ body {
     padding: 10px 16px;
   }
 }
+.drop-zone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
