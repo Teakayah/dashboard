@@ -18,7 +18,7 @@ LOAD_TIMEOUT = 8_000
 
 
 def _load_page(page: Page, url: str) -> None:
-    page.goto(url, wait_until="domcontentloaded")
+    page.goto(url, wait_until="domcontentloaded", timeout=60000)
     try:
         page.wait_for_load_state("networkidle", timeout=LOAD_TIMEOUT)
     except Exception:
