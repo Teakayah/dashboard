@@ -34,3 +34,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 **Learning:** The project uses a specific dual-branch workflow (`integration` -> `main`), where `main` is strictly for CI-generated production artifacts and `integration` is for all PRs and AI-agent branches. This wasn't explicitly clear to new contributors, leading to potential issues with committing generated artifacts to the wrong branch.
 **Action:** Always ensure repository workflow specifics, especially related to CI/CD and protected branches, are prominently documented in the README under a 'Contributing' or 'Workflow' section to reduce friction and prevent bad commits.
 
+
+## 2026-05-24 - DuckDB-Wasm OPFS State Rehydration
+**Learning:** DuckDB-Wasm can persist databases across browser sessions using the Origin Private File System (OPFS). However, when the page reloads, the DuckDB instance attaches to the OPFS database silently. The frontend UI must explicitly query `information_schema.tables` to discover these persisted tables and re-hydrate the schema displays and workspace state.
+**Action:** When implementing persistence with DuckDB-Wasm in the browser, always document the two-step process: DuckDB handles the storage backend, but the frontend must proactively query system tables upon initialization to restore the user's context.
