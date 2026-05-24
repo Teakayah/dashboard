@@ -55,7 +55,7 @@ def _clean(val: str) -> Optional[float]:
     - 'p'  : Preliminary
     """
     v = val.strip()
-    if v in ("", "..", "F", "x", "E", "r", "p"):
+    if v in {"", "..", "F", "x", "E", "r", "p"}:
         return None
     try:
         return float(v)
