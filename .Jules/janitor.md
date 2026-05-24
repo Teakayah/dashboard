@@ -29,3 +29,6 @@ Action: To apply this next time, strip trailing semicolons from the user input a
 ## 2026-05-23 - Modernized syntax in dropzone/app.js
 **Learning:** Found an old IE6 era `document.selection` being used in `insertAtCursor` in `dropzone/app.js` and modernized it to use nullish coalescing `??`. Also found an opportunity to improve the `getRows` function to preallocate the array `new Array(numRows)` and use standard index-based `for` loops rather than `for...of` loops, as well as minimizing property lookup overhead, which reduces WebAssembly boundary crossing overhead.
 **Action:** Replaced `document.selection` with `??`, and modernized `getRows`. Applied in `dropzone/app.js`.
+## 2026-05-24 - Service Worker Path Issues
+**Learning:** Absolute paths (e.g. `/sw.js`) cause service worker registration to fail when deployed in sub-directories like Github Pages, and relative paths (e.g. `sw.js`) are safer.
+**Action:** To apply this next time I can ensure relative paths are used instead of absolute paths.

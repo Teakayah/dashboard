@@ -1,11 +1,9 @@
-import pytest
 from playwright.sync_api import Page, expect
 from pathlib import Path
 from helpers import (
     BASE as BASE_URL,
     DROPZONE_URL,
     ACTION_TIMEOUT,
-    DUCKDB_READY_TIMEOUT,
     wait_for_duckdb_ready,
     load_samples,
 )
