@@ -16,6 +16,14 @@
 ## 2026-05-19 - Dispatching Events for Programmatic Input Changes
 **Learning:** When building vanilla JavaScript UIs, changing an input's value programmatically (e.g., `sqlInput.value = '...'`) does not natively fire the `input` or `change` events. This causes reactive UI state (like disabling/enabling a submit button based on the input's length) to become out of sync.
 **Action:** When adding real-time validation via `input` event listeners, always audit the codebase for programmatic assignments to that element's `.value` and explicitly append `.dispatchEvent(new Event('input'))` after them to ensure UI consistency.
+## 2026-05-21 - Keyboard Shortcut Discoverability
+**Learning:** Keyboard shortcuts improve power-user experience but are often hidden.
+**Action:** Always provide visual hints (e.g., dynamic title attributes) when implementing keyboard shortcuts.
+
+## 2026-05-22 - Replacing Custom Tabs with Native Buttons Requires Style Resets
+**Learning:** When improving accessibility by converting custom `<div>` or `<span>` tabs into native `<button role="tab">` elements to gain free keyboard and focus support, the browser's default button styles (background, borders, font-family, and outline) will break the existing UI design if not explicitly overridden, even if the elements share the same CSS classes.
+**Action:** When replacing custom elements with native buttons for accessibility, always inject specific CSS resets (e.g., `background: transparent; border: none; font-family: inherit; outline: none;`) alongside the new tags so that existing class-based styling continues to render identically.
+
 ## 2026-05-22 - Fix deferred accessibility rules (axe-core color-contrast, scrollable-region-focusable)
 **Learning:** Axe-core color contrast failures inside charts or custom components can be tricky. Explicitly map UI data elements (like map dots, labels) to darker accessible colors by adjusting the color variables or style attributes directly. For `scrollable-region-focusable`, it was important to identify that `.tabs` acting as scrollable containers must also be explicitly keyboard accessible. Native HTML `<button>` works, or explicitly using `role="tab"` and `tabindex` with Javascript focus handlers on `<div>` elements satisfies accessibility.
 **Action:** When working on custom interactive elements or styling from third-party themes, proactively verify the contrast ratio (`>= 4.5:1` for regular text) against both light and dark mode variables. When fixing `axe-core` tests during pytest runs, if error logs truncate the elements, spin up a fast Playwright script to fetch `axe.run()` and print full `nodes`.

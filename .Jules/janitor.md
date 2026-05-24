@@ -18,3 +18,14 @@ Action: To apply this next time I can run ruff check --select F401,F841 to verif
 ## 2026-05-18 - Robust Chart.js Object.defineProperty Override
 Learning: An `Object.defineProperty` trap for `window.Chart` implemented within a `window.addEventListener('load', ...)` can miss early initialization if Chart.js is loaded synchronously or executed prior to the `load` event.
 Action: Implement `Object.defineProperty` globally and immediately using both `get` and `set` accessors. The `set` logic applies the modifications (e.g. `maintainAspectRatio = false`) to the target class and then stores it in a closure variable.
+## 2026-05-22 - Prevent SQL Injection in Export Logic
+Learning: When building SQL commands with user input inside DuckDB-Wasm, directly interpolating raw strings (e.g., `CREATE OR REPLACE TEMPORARY TABLE _export_tmp AS ${sqlInput.value.trim()}`) makes the application vulnerable to stacked query injection.
+Action: To apply this next time, strip trailing semicolons from the user input and wrap the dynamic portion within parentheses inside a `COPY (<query>) TO ...` command to force it to act purely as a subquery, blocking multiple statement execution.
+
+## 2026-05-22 - Extracted duplicated logic and unused code cleanup
+**Learning:** Found duplicated inline logic `file.webkitRelativePath || file.name` across several loops in `dropzone/app.js` and removed leftover `console.log` statements used for debugging.
+**Action:** Extracted the logic into a top-level helper `const getFilePath = (file) => file.webkitRelativePath || file.name;` and replaced all duplicated inline expressions. Removed debug `console.log`.
+
+## 2026-05-23 - Modernized syntax in dropzone/app.js
+**Learning:** Found an old IE6 era `document.selection` being used in `insertAtCursor` in `dropzone/app.js` and modernized it to use nullish coalescing `??`. Also found an opportunity to improve the `getRows` function to preallocate the array `new Array(numRows)` and use standard index-based `for` loops rather than `for...of` loops, as well as minimizing property lookup overhead, which reduces WebAssembly boundary crossing overhead.
+**Action:** Replaced `document.selection` with `??`, and modernized `getRows`. Applied in `dropzone/app.js`.

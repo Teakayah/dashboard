@@ -7,7 +7,6 @@ Run with:  pytest tests/test_dropzone.py -v
 
 from pathlib import Path
 
-import pytest
 from playwright.sync_api import Page, expect
 
 from helpers import (
@@ -15,7 +14,6 @@ from helpers import (
     ACTION_TIMEOUT,
     DUCKDB_READY_TIMEOUT as READY_TIMEOUT,
     wait_for_duckdb_ready as _wait_for_ready,
-    load_samples as _load_samples,
 )
 
 
@@ -205,17 +203,12 @@ def test_invalid_sql_shows_dialog_not_crash(dz: Page):
         timeout=ACTION_TIMEOUT,
     )
 
-    dialog_messages: list[str] = []
-    dz.on('dialog', lambda d: (dialog_messages.append(d.message), d.accept()))
-
     dz.locator('#sql-input').fill('SELECT * FROM nonexistent_table_xyz')
     dz.locator('#run-query').click()
-    dz.wait_for_timeout(3_000)
 
-    assert dialog_messages, 'Expected an error dialog for invalid SQL, got none'
-    assert any('error' in m.lower() or 'nonexistent' in m.lower() for m in dialog_messages), (
-        f'Error dialog message unexpected: {dialog_messages}'
-    )
+    toast = dz.locator('[role="alert"]')
+    toast.wait_for(state="visible", timeout=3000)
+    assert 'Error' in toast.inner_text() or 'nonexistent' in toast.inner_text().lower()
 
 
 def test_count_query_returns_single_value(dz: Page):
@@ -238,5 +231,5 @@ def test_count_query_returns_single_value(dz: Page):
     # don't assert exact row count since Grid.js may show prior results
     cell_text = dz.locator('.gridjs-tbody tr td').first.inner_text()
     count = int(cell_text.strip())
-    assert count > 0, f'COUNT(*) returned 0 — no sample data loaded?'
+    assert count > 0, 'COUNT(*) returned 0 — no sample data loaded?'
 

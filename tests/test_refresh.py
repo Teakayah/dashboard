@@ -1,9 +1,8 @@
 import pytest
-import subprocess
 import sys
 import json
+import subprocess
 from unittest.mock import Mock, patch
-from pathlib import Path
 
 import importlib.util
 
@@ -69,12 +68,28 @@ def test_run_failure_allow_nonzero(mock_subprocess, mock_sys_exit):
     assert module._run('false', allow_nonzero=True) == 1
     mock_sys_exit.assert_not_called()
 
-def test_git_success(mock_subprocess):
-    module = load_refresh_module()
-    mock_subprocess.return_value.stdout = "  git output  \n"
+@pytest.fixture
+def mock_check_output():
+    with patch('subprocess.check_output') as mock_co:
+        yield mock_co
 
-    assert module._git('status') == "git output"
-    mock_subprocess.assert_called_once()
+def test_git_success(mock_check_output):
+    module = load_refresh_module()
+    mock_check_output.return_value = "  git output  \n"
+
+    assert module._git('status', '--porcelain') == "git output"
+    mock_check_output.assert_called_once_with(
+        ['git', 'status', '--porcelain'],
+        cwd=str(module.ROOT),
+        text=True,
+        stderr=subprocess.DEVNULL
+    )
+
+def test_git_error(mock_check_output):
+    module = load_refresh_module()
+    mock_check_output.side_effect = subprocess.CalledProcessError(1, ['git'])
+
+    assert module._git('log') == ""
 
 def test_main_success_all_steps(mock_subprocess, mock_sys_exit, mock_path, monkeypatch):
     module = load_refresh_module()
@@ -189,6 +204,22 @@ def test_main_no_git_changes(mock_subprocess, mock_sys_exit, mock_path, monkeypa
         args = call.args[0]
         if args[0] == 'git':
             assert args[1] != 'push'
+
+def test_parse_args_defaults(monkeypatch):
+    module = load_refresh_module()
+    monkeypatch.setattr(sys, 'argv', ['refresh.py'])
+    args = module.parse_args()
+    assert args.no_push is False
+    assert args.no_descriptions is False
+    assert args.force_descriptions is False
+
+def test_parse_args_all_flags(monkeypatch):
+    module = load_refresh_module()
+    monkeypatch.setattr(sys, 'argv', ['refresh.py', '--no-push', '--no-descriptions', '--force-descriptions'])
+    args = module.parse_args()
+    assert args.no_push is True
+    assert args.no_descriptions is True
+    assert args.force_descriptions is True
 
 def test_if_name_main(mock_subprocess, mock_sys_exit, mock_path, monkeypatch):
     import runpy

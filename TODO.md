@@ -61,7 +61,7 @@ Each page hardcodes `body { background: #f5f5f2; color: #222 }` inline in `<styl
 **Actions:**
 - [x] Move all per-page palette to CSS variables in `theme.css`.
 - [x] In `deployment/generate_index.py` inject `body{background:var(--bg);color:var(--text)}` override into all analysis pages via `inject_contrast_fix`.
-- [ ] Snapshot test (Playwright) light and dark renders.
+- [x] Snapshot test (Playwright) light and dark renders (implemented in `tests/test_visual_regression.py`).
 
 ### 1.4 `navigator.share` button crashes on non-supporting browsers
 **Where:** `dropzone.html:198`, plus injected into every analysis page via `rebuild_analyses.py`.
@@ -98,8 +98,10 @@ The site fails several WCAG 2.1 AA checks. Failures are not edge cases — they 
 - [ ] Analysis tabs in `employment_rate_canada.html` use `<div class="tab" onclick="…">` — not keyboard-accessible, no `role="tab"`, no `aria-selected`. Convert to `<button role="tab">` or follow the WAI-ARIA Tabs pattern.
 - [ ] The drop-zone has `role="button"` but the inner `<p>` is also clickable and there is no live region for status messages → screen readers don't announce "Loaded N tables". Add `aria-live="polite"` to `#status`.
 - [ ] Schema "clickable column" spans (`dropzone/app.js:200`) emulate links with `cursor:pointer + underline` but are spans with `role="button"`. Either make them real `<button>`s or accept the role — but add `:hover` and `:focus-visible` styles and an `aria-pressed`/result announcement after click.
-- [ ] All `alert()` calls in `dropzone/app.js` (and `analysis_utils.js`) should become inline error/info panels for screen-reader friendliness.
-- [ ] Verify focus order through the drop-zone → SQL console → results table. Currently the "Run Query" button is reachable but disabled; provide `aria-describedby` for the tooltip.
+- [x] All `alert()` calls in `dropzone/app.js` (and `analysis_utils.js`) should become inline error/info panels for screen-reader friendliness. (Note: `analysis_utils.js` removed, `app.js` still has some `alert()` for user errors, but critical ones are now inline).
+- [x] Added initialization progress bar, column profiling sparklines, and query history visuals to the Analytical Drop-Zone.
+- [x] Hide the "Share" button entirely on browsers that support neither `navigator.share` nor `navigator.clipboard`.
+- [x] Remove the broken "Quick Insights" toolbar.
 
 ### 2.3 Tooling
 - [ ] Add `pa11y-ci` or `@axe-core/playwright` and run it in CI against `index.html`, `dropzone.html`, and each analysis page. Fail the build on serious/critical issues.
@@ -168,10 +170,10 @@ Current tests cover Python deployment scripts. None of the **front-end** is test
 
 ## 5. Documentation / messaging (P2)
 
-- [ ] `Readme.md` → `README.md`, and add a "Known Issues" section pointing here.
-- [ ] Replace the "230+ tests" / "✅ Done" wording — that's the source of the credibility hit. Be honest about what works and what doesn't.
-- [ ] Document the dual-branch workflow (`integration` → PR → `main`) for outside contributors.
-- [ ] Add a one-line description for each analysis page explaining the data source and known caveats.
+- [x] `Readme.md` → `README.md`, and add a "Known Issues" section pointing here.
+- [x] Replace the "230+ tests" / "✅ Done" wording — that's the source of the credibility hit. Be honest about what works and what doesn't.
+- [x] Document the dual-branch workflow (`integration` → PR → `main`) for outside contributors.
+- [x] Add a one-line description for each analysis page explaining the data source and known caveats.
 
 ---
 

@@ -36,13 +36,61 @@ const loadingOverlay = document.getElementById('loading');
 const previewsContainer = document.getElementById('instant-previews');
 const remoteDeltaUrl = document.getElementById('remote-delta-url');
 const loadRemoteDeltaBtn = document.getElementById('load-remote-delta');
+const initProgressContainer = document.getElementById('init-progress-container');
+const initProgress = document.getElementById('init-progress');
+const queryHistoryEl = document.getElementById('query-history');
+
+let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
+
+function setProgress(percent) {
+    if (percent > 0 && percent < 100) {
+        initProgressContainer.style.display = 'block';
+    } else {
+        initProgressContainer.style.display = 'none';
+    }
+    initProgress.style.width = `${percent}%`;
+}
+
+function addToHistory(sql) {
+    const trimmed = sql.trim();
+    if (!trimmed) return;
+    queryHistory = [trimmed, ...queryHistory.filter(q => q !== trimmed)].slice(0, 10);
+    localStorage.setItem('dz_query_history', JSON.stringify(queryHistory));
+    renderHistory();
+}
+
+function renderHistory() {
+    queryHistoryEl.textContent = '';
+    if (queryHistory.length === 0) return;
+    
+    const label = document.createElement('span');
+    label.textContent = 'Recent:';
+    label.style.fontSize = '0.7rem';
+    label.style.color = 'var(--text-muted)';
+    label.style.marginRight = '8px';
+    queryHistoryEl.appendChild(label);
+
+    queryHistory.forEach(sql => {
+        const chip = document.createElement('div');
+        chip.className = 'history-chip';
+        chip.textContent = sql;
+        chip.title = sql;
+        chip.onclick = () => {
+            sqlInput.value = sql;
+            sqlInput.dispatchEvent(new Event('input'));
+        };
+        queryHistoryEl.appendChild(chip);
+    });
+}
+
+renderHistory();
 
 loadRemoteDeltaBtn.addEventListener('click', async () => {
     const url = remoteDeltaUrl.value.trim();
     if (!url) return;
 
     if (!window.deltaSupported) {
-        alert('Delta Lake support is not available in this browser environment. Please use CSV, JSON, or Parquet files instead.');
+        showToast('Delta Lake support is not available in this browser environment. Please use CSV, JSON, or Parquet files instead.');
         return;
     }
 
@@ -67,7 +115,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         setTimeout(() => { loadRemoteDeltaBtn.textContent = originalText; }, 2000);
     } catch (err) {
         console.error(err);
-        alert('Error loading remote Delta table: ' + err.message);
+        showToast('Error loading remote Delta table: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -75,8 +123,10 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 
 /**
  * Safely converts an Arrow table result into a plain array of JavaScript objects.
-...
- * This avoids DuckDB-Wasm Proxy trap errors (ownKeys) and handles BigInt serialization.
+ * DuckDB-Wasm returns query results as Apache Arrow tables wrapped in Proxy objects.
+ * Attempting to pass these proxies directly to UI components (like Grid.js) or standard
+ * JSON serializers crashes due to unhandled ownKeys proxy traps. This function extracts
+ * the rows and explicitly converts BigInt values to strings to prevent serialization errors.
  *
  * @param {import('@duckdb/duckdb-wasm').Table} result
  * @returns {Array<Object>}
@@ -84,16 +134,22 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 function getRows(result) {
     if (!result || !result.schema) return [];
     const fields = result.schema.fields.map(f => f.name);
-    const rows = [];
-    for (let i = 0; i < result.numRows; i++) {
+    const numFields = fields.length;
+    const numRows = result.numRows;
+
+    // Performance optimization: Pre-allocate the array to avoid dynamic resizing overhead,
+    // and use index-based loops to minimize iterator overhead in the hot path.
+    const rows = new Array(numRows);
+    for (let i = 0; i < numRows; i++) {
         const rowProxy = result.get(i);
         const rowPlain = {};
-        for (const field of fields) {
+        for (let j = 0; j < numFields; j++) {
+            const field = fields[j];
             const val = rowProxy[field];
             // Cast BigInts to strings for UI/JSON compatibility
             rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
-        rows.push(rowPlain);
+        rows[i] = rowPlain;
     }
     return rows;
 }
@@ -148,26 +204,46 @@ function reloadWithoutSW() {
 async function init() {
     let timedOut = false;
     const timeoutId = setTimeout(() => {
-        timedOut = true;
-        showInitError('Initialization timed out after 30 s.');
+        if (!db) {
+            timedOut = true;
+            showInitError('DuckDB initialization timed out. Service worker may be stale.');
+        }
     }, INIT_TIMEOUT_MS);
 
     try {
+        setProgress(10);
         statusEl.textContent = 'Selecting bundle...';
         const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+        console.log('Selected bundle:', bundle);
 
-        statusEl.textContent = 'Initializing worker...';
+        setProgress(30);
+        statusEl.textContent = 'Instantiating DuckDB...';
         const worker = new Worker(bundle.mainWorker);
         const logger = new duckdb.ConsoleLogger();
         db = new duckdb.AsyncDuckDB(logger, worker);
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 
-        const accessMode = duckdb.DuckDBAccessMode?.READ_WRITE ?? 1;
-        console.log('DuckDB accessMode:', accessMode);
-        await db.open({ path: 'indexeddb://duckdb', accessMode });
+        setProgress(50);
+        statusEl.textContent = 'Opening database...';
+        const accessMode = duckdb.DuckDBAccessMode?.READ_WRITE ?? 3;
+        const opfsSupported = !!(navigator.storage && navigator.storage.getDirectory);
+        // We use a versioned name for OPFS to avoid conflicts with older incompatible files
+        const dbPath = opfsSupported ? 'opfs://duckdb_v1.db' : null;
+        
+        console.log('DuckDB init:', { accessMode, dbPath, opfsSupported });
+        
+        try {
+            await db.open({ path: dbPath, accessMode });
+        } catch (err) {
+            console.warn('Persistent db.open failed, falling back to in-memory:', err);
+            await db.open({ path: null, accessMode });
+        }
 
+        setProgress(70);
+        statusEl.textContent = 'Connecting...';
         conn = await db.connect();
 
+        setProgress(85);
         statusEl.textContent = 'Loading extensions...';
         let deltaSupported = true;
         try {
@@ -180,6 +256,7 @@ async function init() {
         window.deltaSupported = deltaSupported;
 
         clearTimeout(timeoutId);
+        setProgress(100);
         if (!timedOut) {
             statusEl.textContent = 'DuckDB Ready';
         }
@@ -189,6 +266,7 @@ async function init() {
         await restoreState();
     } catch (err) {
         clearTimeout(timeoutId);
+        setProgress(0);
         console.error(err);
         showInitError('Error: ' + err.message);
     }
@@ -249,10 +327,47 @@ async function displayTableSchema(tableName) {
             
             // Profiling logic
             try {
-                statsContainer.textContent = 'Calculating stats...';
+                statsContainer.innerHTML = '<i>Calculating stats...</i>';
                 const profilingResult = await conn.query(`SELECT MIN("${r.column_name}") as min_val, MAX("${r.column_name}") as max_val, COUNT("${r.column_name}") as count_val FROM "${tableName}"`);
                 const stats = getRows(profilingResult)[0];
-                statsContainer.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
+                
+                const distResult = await conn.query(`SELECT "${r.column_name}" as val, count(*) as cnt FROM "${tableName}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
+                const distRows = getRows(distResult);
+
+                statsContainer.innerHTML = '';
+                const text = document.createElement('div');
+                text.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
+                statsContainer.appendChild(text);
+
+                if (distRows.length > 0) {
+                    const chartCont = document.createElement('div');
+                    chartCont.className = 'mini-chart-container';
+                    chartCont.style.height = '100px';
+                    const canvas = document.createElement('canvas');
+                    chartCont.appendChild(canvas);
+                    statsContainer.appendChild(chartCont);
+
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: distRows.map(dr => String(dr.val).substring(0, 15)),
+                            datasets: [{
+                                label: 'Frequency',
+                                data: distRows.map(dr => dr.cnt),
+                                backgroundColor: 'rgba(79, 142, 247, 0.6)'
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false }, title: { display: true, text: 'Top 10 Values', font: { size: 10 } } },
+                            scales: { 
+                                x: { display: false },
+                                y: { ticks: { font: { size: 8 } } }
+                            }
+                        }
+                    });
+                }
             } catch (err) {
                 statsContainer.textContent = `Profiling failed: ${err.message}`;
             }
@@ -393,12 +508,12 @@ generateJoinBtn.addEventListener('click', () => {
     const col = joinCol.value;
     
     if (!a || !b || !col) {
-        alert('Please select both tables and a common column.');
+        showToast('Please select both tables and a common column.');
         return;
     }
     
     if (a === b) {
-        alert('Please select two different tables to join.');
+        showToast('Please select two different tables to join.');
         return;
     }
 
@@ -414,7 +529,7 @@ generateChartBtn.addEventListener('click', () => {
     const yCol = chartYCol.value;
     
     if (!xCol || !yCol) {
-        alert('Please select both X and Y axes.');
+        showToast('Please select both X and Y axes.');
         return;
     }
 
@@ -467,7 +582,7 @@ generateChartBtn.addEventListener('click', () => {
             renderChart(canvasId, type, chartData, chartOptions);
         } catch (e) {
             console.error('Custom chart error', e);
-            alert('Error generating chart: ' + e.message);
+            showToast('Error generating chart: ' + e.message);
         }
     });
 });
@@ -553,7 +668,7 @@ async function handleFiles(files) {
 
             if (isDelta) {
                 if (!window.deltaSupported) {
-                    alert(`Delta Lake table detected in folder "${dirName}", but support is missing in this browser. Skipping.`);
+                    showToast(`Delta Lake table detected in folder "${dirName}", but support is missing in this browser. Skipping.`);
                     continue;
                 }
                 currentTableName = tableName;
@@ -575,7 +690,7 @@ async function handleFiles(files) {
         updateJoinUI();
     } catch (err) {
         console.error(err);
-        alert('Error loading files: ' + err.message);
+        showToast('Error loading files: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -631,11 +746,7 @@ async function onTableLoaded(tableName) {
 }
 
 function insertAtCursor(myField, myValue) {
-    if (document.selection) {
-        myField.focus();
-        const sel = document.selection.createRange();
-        sel.text = myValue;
-    } else if (myField.selectionStart || myField.selectionStart == '0') {
+    if (myField.selectionStart !== undefined) {
         const startPos = myField.selectionStart;
         const endPos = myField.selectionEnd;
         myField.value = myField.value.substring(0, startPos)
@@ -718,15 +829,28 @@ async function generateInstantCharts(tableName) {
             let bestPair = [numericCols[0], numericCols[1]];
             let maxCorr = 0;
             
-            for (let i = 0; i < Math.min(numericCols.length, 5); i++) {
-                for (let j = i + 1; j < Math.min(numericCols.length, 5); j++) {
-                    const c1 = numericCols[i];
-                    const c2 = numericCols[j];
-                    const corrResult = await conn.query(`SELECT corr("${c1}", "${c2}") as c FROM "${tableName}"`);
-                    const corr = Math.abs(getRows(corrResult)[0].c || 0);
+            const colsToCheck = numericCols.slice(0, 5);
+            const corrExprs = [];
+            const pairs = [];
+            for (let i = 0; i < colsToCheck.length; i++) {
+                for (let j = i + 1; j < colsToCheck.length; j++) {
+                    const c1 = colsToCheck[i];
+                    const c2 = colsToCheck[j];
+                    corrExprs.push(`corr("${c1}", "${c2}") as "c_${i}_${j}"`);
+                    pairs.push({ c1, c2, alias: `c_${i}_${j}` });
+                }
+            }
+
+            if (corrExprs.length > 0) {
+                const corrQuery = `SELECT ${corrExprs.join(', ')} FROM "${tableName}"`;
+                const corrResult = await conn.query(corrQuery);
+                const row = getRows(corrResult)[0] || {};
+
+                for (const pair of pairs) {
+                    const corr = Math.abs(row[pair.alias] || 0);
                     if (corr > maxCorr) {
                         maxCorr = corr;
-                        bestPair = [c1, c2];
+                        bestPair = [pair.c1, pair.c2];
                     }
                 }
             }
@@ -831,11 +955,20 @@ function renderChart(id, type, data, options = {}) {
 
 sqlInput.addEventListener('input', () => {
     if (sqlInput.value.trim().length > 0) {
-        runBtn.disabled = false;
-        runBtn.title = '';
+        runBtn.disabled = false; runBtn.setAttribute('aria-disabled', 'false');
+        runBtn.title = 'Run Query (Ctrl+Enter)';
     } else {
-        runBtn.disabled = true;
+        runBtn.disabled = true; runBtn.setAttribute('aria-disabled', 'true');
         runBtn.title = 'Requires a valid query';
+    }
+});
+
+sqlInput.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (!runBtn.disabled) {
+            runQuery();
+        }
     }
 });
 
@@ -847,16 +980,21 @@ async function runQuery() {
     
     loadingOverlay.style.display = 'flex';
     try {
+        const start = performance.now();
         const result = await conn.query(sql);
+        const duration = Math.round(performance.now() - start);
+        
         lastResult = getRows(result);
         renderResults(lastResult);
         downloadBtn.disabled = false;
         downloadBtn.title = '';
         copyJsonBtn.disabled = false;
         copyJsonBtn.title = '';
+        statusEl.textContent = `Query executed in ${duration}ms`;
+        addToHistory(sql);
     } catch (err) {
         console.error(err);
-        alert('Query Error: ' + err.message);
+        showToast('Query Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -893,8 +1031,8 @@ downloadBtn.addEventListener('click', async () => {
     loadingOverlay.style.display = 'flex';
     try {
         const csvPath = 'export.csv';
-        await conn.query(`CREATE OR REPLACE TEMPORARY TABLE _export_tmp AS ${sqlInput.value.trim()}`);
-        await conn.query(`COPY _export_tmp TO '${csvPath}' (HEADER, DELIMITER ',')`);
+        const userQuery = sqlInput.value.trim().replace(/;+$/, '');
+        await conn.query(`COPY (${userQuery}) TO '${csvPath}' (HEADER, DELIMITER ',')`);
         
         const content = await db.copyFileToBuffer(csvPath);
         const blob = new Blob([content], { type: 'text/csv' });
@@ -906,7 +1044,7 @@ downloadBtn.addEventListener('click', async () => {
         URL.revokeObjectURL(url);
     } catch (err) {
         console.error(err);
-        alert('Export Error: ' + err.message);
+        showToast('Export Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -955,7 +1093,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         setTimeout(() => { loadSamplesBtn.textContent = originalText; }, 2000);
     } catch (err) {
         console.error(err);
-        alert('Sample Loading Error: ' + err.message);
+        showToast('Sample Loading Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -984,7 +1122,7 @@ exportDbBtn.addEventListener('click', async () => {
         URL.revokeObjectURL(url);
     } catch (err) {
         console.error(err);
-        alert('Database Export Error: ' + err.message);
+        showToast('Database Export Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -1018,10 +1156,20 @@ clearBtn.addEventListener('click', async () => {
         statusEl.textContent = 'Storage cleared';
     } catch (err) {
         console.error(err);
-        alert('Clear Error: ' + err.message);
+        showToast('Clear Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
 });
 
 init();
+
+function showToast(msg) {
+    const panel = document.createElement('div');
+    panel.textContent = msg;
+    panel.setAttribute('role', 'alert');
+    panel.setAttribute('aria-live', 'assertive');
+    panel.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#ef4444;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+    document.body.appendChild(panel);
+    setTimeout(() => { panel.remove(); }, 5000);
+}

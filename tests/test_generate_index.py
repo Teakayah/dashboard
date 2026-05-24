@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 from unittest.mock import patch
+import pytest
 
 
 def load_generate_index_module():
@@ -581,3 +582,74 @@ def test_build_html_single_analysis(monkeypatch):
     assert 'single.html' in html
     assert 'Single Analysis' in html
     assert html.count('class="card"') == 1
+
+
+def test_build_card_fully_populated():
+    module = load_generate_index_module()
+    analysis = {
+        'title': 'Test Analysis',
+        'description': 'A description',
+        'date': '2023-01-01',
+        'filename': 'test.html',
+        'tags': ['tag1', 'tag2']
+    }
+    html = module.build_card(analysis, 0)
+    assert 'Test Analysis' in html
+    assert 'A description' in html
+    assert '2023-01-01' in html
+    assert 'href="test.html"' in html
+    assert '>tag1<' in html
+    assert '>tag2<' in html
+    assert '--accent:' in html
+
+
+def test_build_card_missing_optional_fields():
+    module = load_generate_index_module()
+    analysis = {
+        'title': 'Minimal Analysis',
+        'description': '',
+        'date': None,
+        'filename': 'min.html',
+        'tags': []
+    }
+    html = module.build_card(analysis, 1)
+    assert 'Minimal Analysis' in html
+    assert 'href="min.html"' in html
+    assert 'card-desc' not in html
+    assert 'card-date' not in html
+
+
+def test_build_card_html_escaping():
+    module = load_generate_index_module()
+    analysis = {
+        'title': '<script>alert("xss")</script>',
+        'description': 'Description with "quotes" and &ampersand',
+        'date': '2023-01-01 <script>',
+        'filename': 'evil"file.html',
+        'tags': ['<tag>']
+    }
+    html = module.build_card(analysis, 2)
+    assert '<script>' not in html
+    assert '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;' in html
+    assert 'Description with &quot;quotes&quot; and &amp;ampersand' in html
+    assert '2023-01-01 &lt;script&gt;' in html
+    assert 'evil&quot;file.html' in html
+    assert '&lt;tag&gt;' in html
+
+
+def test_parse_args_default():
+    module = load_generate_index_module()
+    args = module.parse_args([])
+    assert args.responsive_preset == 'default'
+
+
+def test_parse_args_none():
+    module = load_generate_index_module()
+    args = module.parse_args(['--responsive-preset', 'none'])
+    assert args.responsive_preset == 'none'
+
+
+def test_parse_args_invalid():
+    module = load_generate_index_module()
+    with pytest.raises(SystemExit):
+        module.parse_args(['--responsive-preset', 'invalid_choice'])
