@@ -26,6 +26,24 @@ jobs:
           pip install pytest pytest-playwright playwright
           python -m playwright install --with-deps chromium
 
+      # Generated HTML pages live on main only (CLAUDE.md §3). The PR merge ref
+      # propagates integration's deletion of those files, leaving the worktree
+      # without them — rebuild_analyses.py would then SKIP and Playwright tests
+      # would 404. Hydrate from origin/main so the rebuild + test steps work.
+      - name: Hydrate generated pages from main
+        run: |
+          git fetch origin main --depth=1
+          for f in index.html feed.xml descriptions.json favicon.ico \
+                   employment_rate_canada.html nhpi_big6_comparison.html \
+                   flood_risk_gatineau_ottawa.html; do
+            if git cat-file -e "origin/main:$f" 2>/dev/null; then
+              git show "origin/main:$f" > "$f"
+              echo "  hydrated $f"
+            else
+              echo "  skip $f (not on main)"
+            fi
+          done
+
       - name: Generate index.html + inject og tags
         run: python3 deployment/generate_index.py
 
@@ -48,6 +66,9 @@ jobs:
           # These live on main only and are regenerated below after the merge,
           # so discard them here to let the branch switch succeed.
           git checkout -f main
+          # Snapshot the pre-merge main SHA so we can restore generated files
+          # that integration deletes (per CLAUDE.md §3, these live on main only).
+          MAIN_SHA_PRE_MERGE=$(git rev-parse HEAD)
           if ! git merge origin/integration --no-ff -m "chore: auto-merge integration into main [skip ci]"; then
             echo "Merge conflict detected."
             
@@ -69,6 +90,24 @@ jobs:
               git add -A
               git commit --no-edit
             fi
+          fi
+
+          # Restore generated files that integration deleted, so the final-gen
+          # step (rebuild_analyses.py refreshes data in *existing* files only)
+          # has something to operate on and main keeps the deployed pages.
+          RESTORED=0
+          for f in index.html feed.xml descriptions.json favicon.ico \
+                   employment_rate_canada.html nhpi_big6_comparison.html \
+                   flood_risk_gatineau_ottawa.html; do
+            if [ ! -f "$f" ] && git cat-file -e "$MAIN_SHA_PRE_MERGE:$f" 2>/dev/null; then
+              git show "$MAIN_SHA_PRE_MERGE:$f" > "$f"
+              git add "$f"
+              RESTORED=1
+              echo "  restored $f from pre-merge main"
+            fi
+          done
+          if [ "$RESTORED" = "1" ]; then
+            git commit -m "chore: restore generated artifacts dropped by integration merge [skip ci]"
           fi
 
       # 3. Update Previews & Push
