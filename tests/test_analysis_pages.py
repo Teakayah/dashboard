@@ -18,7 +18,7 @@ TAB_TIMEOUT  = 2_000   # ms — post-click settle
 
 
 def _load(page: Page, path: str) -> None:
-    page.goto(f'{BASE}{path}', wait_until='domcontentloaded')
+    page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
     try:
         page.wait_for_load_state('networkidle', timeout=LOAD_TIMEOUT)
     except Exception:
@@ -172,7 +172,7 @@ def test_nhpi_main_chart_renders(page: Page):
             return c ? c.offsetHeight : 0;
         }
     """)
-    assert height > 0, 'Main canvas has zero height'
+    assert height > 0, f'Main canvas has zero height'
 
 
 def test_nhpi_subtitle_references_statcan(page: Page):

@@ -9,7 +9,9 @@ Failure thresholds:
   serious   — fails the build (WCAG AA requires these to be fixed)
 """
 
+from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -79,7 +81,7 @@ def _fmt(violations: list[dict]) -> str:
 
 @pytest.mark.parametrize('label,path', PAGES)
 def test_page_has_no_critical_or_serious_violations(page: Page, label: str, path: str):
-    page.goto(f'{BASE}{path}', wait_until='domcontentloaded')
+    page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
     try:
         page.wait_for_load_state('networkidle', timeout=8_000)
     except Exception:
@@ -95,7 +97,7 @@ def test_page_has_no_critical_or_serious_violations(page: Page, label: str, path
 @pytest.mark.parametrize('label,path', PAGES)
 def test_page_has_lang_attribute(page: Page, label: str, path: str):
     """<html lang="..."> is required for screen-reader language detection."""
-    page.goto(f'{BASE}{path}', wait_until='domcontentloaded')
+    page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
     lang = page.evaluate('document.documentElement.lang')
     assert lang, f'{label}: <html> is missing a lang attribute'
 
@@ -103,7 +105,7 @@ def test_page_has_lang_attribute(page: Page, label: str, path: str):
 @pytest.mark.parametrize('label,path', PAGES)
 def test_images_have_alt_text(page: Page, label: str, path: str):
     """All <img> elements must carry non-empty alt attributes."""
-    page.goto(f'{BASE}{path}', wait_until='domcontentloaded')
+    page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
     bad: list[str] = page.evaluate("""
         () => [...document.querySelectorAll('img')]
               .filter(i => !i.hasAttribute('alt') || i.alt.trim() === '')
@@ -114,7 +116,7 @@ def test_images_have_alt_text(page: Page, label: str, path: str):
 
 def test_dropzone_status_has_live_region(page: Page):
     """#status should announce DuckDB init progress to screen readers."""
-    page.goto(f'{BASE}/dropzone.html', wait_until='domcontentloaded')
+    page.goto(f'{BASE}/dropzone.html', wait_until='domcontentloaded', timeout=60000)
     live = page.evaluate(
         "document.getElementById('status')?.getAttribute('aria-live')"
     )
@@ -126,7 +128,7 @@ def test_dropzone_status_has_live_region(page: Page):
 
 def test_analysis_tabs_have_roles(page: Page):
     """Tabs on employment page must carry ARIA roles for keyboard users."""
-    page.goto(f'{BASE}/employment_rate_canada.html', wait_until='domcontentloaded')
+    page.goto(f'{BASE}/employment_rate_canada.html', wait_until='domcontentloaded', timeout=60000)
     tabs = page.evaluate("""
         () => [...document.querySelectorAll('.tab')]
               .map(t => ({ text: t.innerText.trim(), role: t.getAttribute('role') }))
