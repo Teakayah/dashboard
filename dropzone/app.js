@@ -829,15 +829,28 @@ async function generateInstantCharts(tableName) {
             let bestPair = [numericCols[0], numericCols[1]];
             let maxCorr = 0;
             
-            for (let i = 0; i < Math.min(numericCols.length, 5); i++) {
-                for (let j = i + 1; j < Math.min(numericCols.length, 5); j++) {
-                    const c1 = numericCols[i];
-                    const c2 = numericCols[j];
-                    const corrResult = await conn.query(`SELECT corr("${c1}", "${c2}") as c FROM "${tableName}"`);
-                    const corr = Math.abs(getRows(corrResult)[0].c || 0);
+            const colsToCheck = numericCols.slice(0, 5);
+            const corrExprs = [];
+            const pairs = [];
+            for (let i = 0; i < colsToCheck.length; i++) {
+                for (let j = i + 1; j < colsToCheck.length; j++) {
+                    const c1 = colsToCheck[i];
+                    const c2 = colsToCheck[j];
+                    corrExprs.push(`corr("${c1}", "${c2}") as "c_${i}_${j}"`);
+                    pairs.push({ c1, c2, alias: `c_${i}_${j}` });
+                }
+            }
+
+            if (corrExprs.length > 0) {
+                const corrQuery = `SELECT ${corrExprs.join(', ')} FROM "${tableName}"`;
+                const corrResult = await conn.query(corrQuery);
+                const row = getRows(corrResult)[0] || {};
+
+                for (const pair of pairs) {
+                    const corr = Math.abs(row[pair.alias] || 0);
                     if (corr > maxCorr) {
                         maxCorr = corr;
-                        bestPair = [c1, c2];
+                        bestPair = [pair.c1, pair.c2];
                     }
                 }
             }
