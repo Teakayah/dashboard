@@ -39,3 +39,8 @@ Assertion: Rely on the built-in test fixtures for HTTP servers when running the 
 Coverage Gap: `parse_args` in `deployment/generate_index.py` was not tested, especially the argument choices.
 Learning: The prompt mentioned `--responsive`, but the codebase actually had `--responsive-preset` with choices from `RESPONSIVE_PRESETS`. Always verify the actual codebase state instead of blindly following outdated prompt snippets.
 Assertion: Tested default, specific choice (`'none'`), and invalid choice for `parse_args` properly handling `SystemExit`.
+
+## 2026-05-23 - Replace wait_for_timeout with wait_until='domcontentloaded' in page.goto
+Coverage Gap: The UI test for accessibility (test_images_have_alt_text) randomly failed due to relying on the strict 'load' event.
+Learning: It was failing because the strict 'load' event doesn't fire sometimes despite the page returning 200 OK.
+Assertion: Use wait_until='domcontentloaded' to prevent flaky test failures when using page.goto().

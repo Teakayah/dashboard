@@ -14,8 +14,15 @@ REPO_ROOT = Path(__file__).parent.parent
 FLOOD_URL = f"{BASE_URL}/flood_risk_gatineau_ottawa.html"
 
 
-def _load_page(page: Page, url: str):
+LOAD_TIMEOUT = 8_000
+
+
+def _load_page(page: Page, url: str) -> None:
     page.goto(url, wait_until="domcontentloaded")
+    try:
+        page.wait_for_load_state("networkidle", timeout=LOAD_TIMEOUT)
+    except Exception:
+        pass
 
 
 class TestIndexSearch:
