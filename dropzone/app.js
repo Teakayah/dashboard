@@ -746,11 +746,7 @@ async function onTableLoaded(tableName) {
 }
 
 function insertAtCursor(myField, myValue) {
-    if (document.selection) {
-        myField.focus();
-        const sel = document.selection.createRange();
-        sel.text = myValue;
-    } else if (myField.selectionStart || myField.selectionStart == '0') {
+    if (myField.selectionStart !== undefined) {
         const startPos = myField.selectionStart;
         const endPos = myField.selectionEnd;
         myField.value = myField.value.substring(0, startPos)
