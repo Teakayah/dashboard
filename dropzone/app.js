@@ -272,6 +272,13 @@ async function init() {
     }
 }
 
+/**
+ * Restores the Analytical Drop-Zone UI state after a browser reload.
+ * Queries the DuckDB instance's information_schema to discover tables that were
+ * persisted across sessions (e.g., within the Origin Private File System (OPFS)).
+ * Re-populates the UI table schemas and restores the query workspace, enabling
+ * seamless offline usage and resilience against accidental refreshes.
+ */
 async function restoreState() {
     try {
         const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
