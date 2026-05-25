@@ -86,3 +86,4 @@ pytest
 
 ---
 *Built with Python & DuckDB · Auto-generated via GitHub Actions*
+
