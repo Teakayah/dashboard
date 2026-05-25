@@ -233,3 +233,62 @@ def test_count_query_returns_single_value(dz: Page):
     count = int(cell_text.strip())
     assert count > 0, 'COUNT(*) returned 0 — no sample data loaded?'
 
+
+# ── Export & Copy ─────────────────────────────────────────────────────────────
+
+def test_csv_export_downloads_file(dz: Page):
+    """Clicking Download CSV must trigger a file download containing the query results."""
+    dz.goto(DROPZONE)
+    _wait_for_ready(dz)
+
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=ACTION_TIMEOUT,
+    )
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    with dz.expect_download() as download_info:
+        dz.locator('#download-csv').click()
+
+    download = download_info.value
+    assert download.suggested_filename.startswith('query_results_'), "Downloaded file name should start with 'query_results_'"
+    assert download.suggested_filename.endswith('.csv'), "Downloaded file name should end with '.csv'"
+
+    path = download.path()
+    with open(path, 'r') as f:
+        content = f.read()
+
+    assert 'id,name,dept_id,salary,join_date' in content, "CSV should contain headers"
+    assert '1,Alice,101,85000,2022-01-15' in content, "CSV should contain row data"
+
+def test_copy_json_copies_to_clipboard(dz: Page):
+    """Clicking Copy JSON must copy the query results to the clipboard."""
+    dz.goto(DROPZONE)
+    _wait_for_ready(dz)
+
+    # Grant clipboard-read and clipboard-write permissions to the current origin
+    dz.context.grant_permissions(['clipboard-read', 'clipboard-write'], origin=dz.url)
+
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=ACTION_TIMEOUT,
+    )
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    dz.locator('#copy-json').click()
+
+    # Wait for the button text to change to 'Copied!' to ensure the action is complete
+    expect(dz.locator('#copy-json')).to_have_text('Copied!')
+
+    # Read the clipboard content
+    clipboard_content = dz.evaluate("navigator.clipboard.readText()")
+    assert 'Alice' in clipboard_content, "Clipboard should contain JSON data with 'Alice'"
+    assert 'id' in clipboard_content, "Clipboard should contain JSON data with 'id'"
