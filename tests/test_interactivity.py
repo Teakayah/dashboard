@@ -43,7 +43,7 @@ class TestIndexSearch:
 
 class TestDropzoneButtons:
     def test_load_samples_button_works(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
 
         # Before loading, schema should mention nothing
@@ -59,7 +59,7 @@ class TestDropzoneButtons:
         expect(dz.locator("#schema-display")).to_contain_text("departments")
 
     def test_generate_join_validation(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
         # Don't select anything — just click
@@ -69,13 +69,13 @@ class TestDropzoneButtons:
         assert "select both tables" in toast.inner_text().lower()
 
     def test_chart_builder_appears_after_loading_data(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
         expect(dz.locator("#chart-builder")).to_be_visible()
 
     def test_chart_builder_validation(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
         dz.locator("#generate-chart").click()
@@ -85,7 +85,7 @@ class TestDropzoneButtons:
 
     def test_export_db_button_triggers_download_or_error(self, dz: Page):
         """Export Database must either download a file or show an error — no silent crash."""
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
         try:
@@ -99,7 +99,7 @@ class TestDropzoneButtons:
             pass
 
     def test_clear_data_button_wipes_schema(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
         expect(dz.locator("#schema-display")).to_contain_text("employees")
