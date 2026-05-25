@@ -186,13 +186,17 @@
             border: 1px solid var(--border);
             padding: 2px 8px;
             border-radius: 12px;
-            cursor: pointer;
             white-space: nowrap;
             max-width: 200px;
             overflow: hidden;
             text-overflow: ellipsis;
             color: var(--text-muted);
             transition: all 0.2s;
+            cursor: pointer;
+        }
+        .history-chip:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
         }
         .history-chip:hover {
             border-color: var(--primary);

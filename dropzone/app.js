@@ -75,9 +75,22 @@ function renderHistory() {
         chip.className = 'history-chip';
         chip.textContent = sql;
         chip.title = sql;
-        chip.onclick = () => {
+        chip.tabIndex = 0;
+        chip.setAttribute('role', 'button');
+        chip.setAttribute('aria-label', `Load recent query: ${sql}`);
+
+        const triggerAction = () => {
             sqlInput.value = sql;
             sqlInput.dispatchEvent(new Event('input'));
+            sqlInput.focus();
+        };
+
+        chip.onclick = triggerAction;
+        chip.onkeydown = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                triggerAction();
+            }
         };
         queryHistoryEl.appendChild(chip);
     });
