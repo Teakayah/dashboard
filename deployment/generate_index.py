@@ -129,9 +129,9 @@ def _fallback(filepath: Path, date_str: str = "") -> dict:
 
 RESPONSIVE_PRESETS = {
     'default': {
-        'marker': '<!-- responsive-inject-v6 -->',
+        'marker': '<!-- responsive-inject-v7 -->',
         'snippet': '''\
-  <!-- responsive-inject-v6 -->
+  <!-- responsive-inject-v7 -->
   <style>
     @media (min-width: 769px) {
       .dashboard-container { display: flex; flex-direction: row; }
@@ -139,23 +139,8 @@ RESPONSIVE_PRESETS = {
       .main-content { flex-grow: 1; }
     }
   </style>
-  <script>
-    (function() {
-      // Small Chart.js hack for responsiveness
-      let _Chart;
-      Object.defineProperty(window, 'Chart', {
-        get: function() { return _Chart; },
-        set: function(val) {
-          if (val && val.defaults) {
-            val.defaults.maintainAspectRatio = false;
-          }
-          _Chart = val;
-        },
-        configurable: true
-      });
-    })();
-  </script>
-  <!-- /responsive-inject-v6 -->''',
+  <script src="assets/chart_responsive.js"></script>
+  <!-- /responsive-inject-v7 -->''',
     },
     'none': {
         'marker': None,
@@ -192,7 +177,7 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
         \s*                                     # Match any leading whitespace
         <!--\ responsive-inject(?:-v\d+)?\ -->  # Opening marker with optional version (e.g. -v5)
         \s*<style>.*?</style>                   # Match the injected CSS block non-greedily
-        \s*<script>.*?</script>                 # Match the injected JavaScript block non-greedily
+        \s*<script[^>]*>.*?</script>                 # Match the injected JavaScript block non-greedily
         (?:                                     # Optional non-capturing group for the closing marker
             \s*<!--\ /responsive-inject(?:-v\d+)?\ -->
         )?
