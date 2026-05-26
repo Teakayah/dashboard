@@ -619,6 +619,27 @@ def test_build_card_missing_optional_fields():
     assert 'card-date' not in html
 
 
+def test_build_card_accent_color_wrap_around():
+    module = load_generate_index_module()
+    analysis = {
+        'title': 'Wrap Around Analysis',
+        'description': '',
+        'date': None,
+        'filename': 'wrap.html',
+        'tags': []
+    }
+    # ACCENT_COLORS has 8 items (indices 0-7). Index 8 should wrap to 0.
+    html_0 = module.build_card(analysis, 0)
+    html_8 = module.build_card(analysis, 8)
+
+    # Extract the --accent: value from style attribute
+    import re
+    accent_0 = re.search(r'--accent:([^"]+)', html_0).group(1)
+    accent_8 = re.search(r'--accent:([^"]+)', html_8).group(1)
+
+    assert accent_0 == accent_8
+
+
 def test_build_card_html_escaping():
     module = load_generate_index_module()
     analysis = {
