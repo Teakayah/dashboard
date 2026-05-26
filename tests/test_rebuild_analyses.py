@@ -410,6 +410,10 @@ def test_extract_nhpi_empty():
     assert extract_nhpi([]) == {}
 
 
+def test_extract_nhpi_none():
+    assert extract_nhpi(None) == {}
+
+
 def test_extract_nhpi_missing_idx_col():
     # Pass rows that do not have any column containing 'housing price'
     rows = [
