@@ -34,7 +34,7 @@ Likely contributing causes (verify each):
 - [x] Add a 30 s init timeout that surfaces a visible, actionable error in `#status` + a "Reload without service worker" button.
 - [x] Bump and version the service worker; on `activate`, delete all old caches.
 - [ ] Upgrade `@duckdb/duckdb-wasm` from v0.9.1 to the current release and re-vendor the bundles.
-- [ ] Delete `duckdb-wasm-browser.mjs` if confirmed unused.
+- [x] Delete `duckdb-wasm-browser.mjs` if confirmed unused.
 - [ ] Add a Playwright test that loads `dropzone.html` and waits for `#status` to read `DuckDB Ready` within 15 s.
 
 ### 1.2 "Quick Insights" toolbar is non-functional
@@ -134,7 +134,7 @@ Recent history shows long sequences of merges from `palette/…`, `validator/…
 - [ ] Squash old agent merges into thematic commits if history becomes a problem for `git blame`.
 
 ### 3.3 Dead / suspect code
-- [ ] `dropzone/vendor/duckdb/duckdb-wasm-browser.mjs` — appears to be a stub error message, not a module. Verify and delete.
+- [x] `dropzone/vendor/duckdb/duckdb-wasm-browser.mjs` — appears to be a stub error message, not a module. Verify and delete.
 - [ ] `responsive-inject-v6` block at the top of `dropzone.html` and every analysis page does a `Object.defineProperty(window, 'Chart', …)` hack that runs **before** Chart.js loads — confirm it's still needed; if Chart.js defaults are configured elsewhere, remove it.
 - [ ] `assets/fullscreen.js` (41 lines) — check that the fullscreen button is actually wired up on every chart, not just some.
 
