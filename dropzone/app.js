@@ -334,14 +334,19 @@ async function displayTableSchema(tableName) {
             
             // Profiling logic
             try {
-                statsContainer.innerHTML = '<i>Calculating stats...</i>';
-                const profilingResult = await conn.query(`SELECT MIN("${r.column_name}") as min_val, MAX("${r.column_name}") as max_val, COUNT("${r.column_name}") as count_val FROM "${tableName}"`);
+                statsContainer.textContent = '';
+                const italic = document.createElement('i');
+                italic.textContent = 'Calculating stats...';
+                statsContainer.appendChild(italic);
+                const escCol = r.column_name.replace(/"/g, '""');
+                const escTable = tableName.replace(/"/g, '""');
+                const profilingResult = await conn.query(`SELECT MIN("${escCol}") as min_val, MAX("${escCol}") as max_val, COUNT("${escCol}") as count_val FROM "${escTable}"`);
                 const stats = getRows(profilingResult)[0];
                 
-                const distResult = await conn.query(`SELECT "${r.column_name}" as val, count(*) as cnt FROM "${tableName}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
+                const distResult = await conn.query(`SELECT "${escCol}" as val, count(*) as cnt FROM "${escTable}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
-                statsContainer.innerHTML = '';
+                statsContainer.textContent = '';
                 const text = document.createElement('div');
                 text.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
                 statsContainer.appendChild(text);
