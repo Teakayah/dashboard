@@ -146,25 +146,19 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
  */
 function getRows(result) {
     if (!result || !result.schema) return [];
-    const fields = result.schema.fields.map(f => f.name);
-    const numFields = fields.length;
-    const numRows = result.numRows;
 
-    // Performance optimization: Pre-allocate the array to avoid dynamic resizing overhead,
-    // and use index-based loops to minimize iterator overhead in the hot path.
-    const rows = new Array(numRows);
-    for (let i = 0; i < numRows; i++) {
-        const rowProxy = result.get(i);
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowProxy[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+    // Performance optimization: Use duckdb-wasm's native toArray()
+    // which is significantly faster than row-by-row iteration with result.get(i),
+    // mapping the underlying object rather than stepping through proxies.
+    return result.toArray().map(row => {
+        const plain = row.toJSON ? row.toJSON() : row;
+        for (const k in plain) {
+            if (typeof plain[k] === 'bigint') {
+                plain[k] = plain[k].toString();
+            }
         }
-        rows[i] = rowPlain;
-    }
-    return rows;
+        return plain;
+    });
 }
 
 // Join Assistant Elements
