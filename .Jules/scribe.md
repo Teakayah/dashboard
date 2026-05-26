@@ -38,3 +38,9 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-24 - DuckDB-Wasm OPFS State Rehydration
 **Learning:** DuckDB-Wasm can persist databases across browser sessions using the Origin Private File System (OPFS). However, when the page reloads, the DuckDB instance attaches to the OPFS database silently. The frontend UI must explicitly query `information_schema.tables` to discover these persisted tables and re-hydrate the schema displays and workspace state.
 **Action:** When implementing persistence with DuckDB-Wasm in the browser, always document the two-step process: DuckDB handles the storage backend, but the frontend must proactively query system tables upon initialization to restore the user's context.
+## 2026-05-25 - Extracted duckdb table UI interaction logic
+**Learning:** , , and  dynamically rebuild UI select elements based on duckdb queries against information schemas, but lacked JSDoc detailing the prerequisites like requiring 2 loaded tables to activate the join UI.
+**Action:** When adding logic that conditionally changes UI based on DuckDB state, always explicitly comment the required table constraints.
+## 2026-05-25 - Extracted duckdb table UI interaction logic
+**Learning:** `updateJoinUI`, `updateJoinColumns`, and `updateChartBuilderUI` dynamically rebuild UI select elements based on duckdb queries against information schemas, but lacked JSDoc detailing the prerequisites like requiring 2 loaded tables to activate the join UI.
+**Action:** When adding logic that conditionally changes UI based on DuckDB state, always explicitly comment the required table constraints.

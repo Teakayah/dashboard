@@ -75,9 +75,22 @@ function renderHistory() {
         chip.className = 'history-chip';
         chip.textContent = sql;
         chip.title = sql;
-        chip.onclick = () => {
+        chip.tabIndex = 0;
+        chip.setAttribute('role', 'button');
+        chip.setAttribute('aria-label', `Load recent query: ${sql}`);
+
+        const triggerAction = () => {
             sqlInput.value = sql;
             sqlInput.dispatchEvent(new Event('input'));
+            sqlInput.focus();
+        };
+
+        chip.onclick = triggerAction;
+        chip.onkeydown = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                triggerAction();
+            }
         };
         queryHistoryEl.appendChild(chip);
     });
@@ -401,6 +414,11 @@ async function displayTableSchema(tableName) {
     schemaDisplay.appendChild(tableDiv);
 }
 
+/**
+ * Toggles and populates the Join Assistant UI based on the current state of loaded tables.
+ * The Join Assistant requires at least two tables to be loaded in the local DuckDB instance
+ * to become visible. It prevents the user from joining a table to itself by default.
+ */
 function updateJoinUI() {
     if (loadedTables.size >= 2) {
         joinAssistant.style.display = 'flex';
@@ -432,6 +450,11 @@ function updateJoinUI() {
     }
 }
 
+/**
+ * Dynamically queries the DuckDB schema to populate the join column dropdowns
+ * based on the selected tables in the Join Assistant. Attempts to auto-detect
+ * and pre-select matching column names between the two tables for convenience.
+ */
 async function updateJoinColumns() {
     const tableA = joinTableA.value;
     const tableB = joinTableB.value;
@@ -471,6 +494,12 @@ async function updateJoinColumns() {
     }
 }
 
+/**
+ * Initializes and populates the Chart Builder UI drop-downs.
+ * Scans the currently active table's schema to categorize columns into
+ * X-axis (all columns) and Y-axis (numeric columns only) options.
+ * Hides the builder entirely if no table is currently active.
+ */
 async function updateChartBuilderUI() {
     if (!currentTableName) {
         chartBuilder.style.display = 'none';
