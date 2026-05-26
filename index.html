@@ -60,10 +60,14 @@
       background: #f5f5f2;
       border-bottom: 1px solid #e8e8e4;
     }
-    .search-bar input {
+    .search-wrapper {
+      position: relative;
       width: 100%;
       max-width: 480px;
-      padding: 9px 14px;
+    }
+    .search-wrapper input {
+      width: 100%;
+      padding: 9px 32px 9px 14px;
       border-radius: 8px;
       border: 1px solid #d8d8d4;
       background: #fff;
@@ -72,7 +76,26 @@
       outline: none;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .search-bar input:focus {
+    .search-shortcut {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #f0f0ec;
+      border: 1px solid #d8d8d4;
+      color: #6b7280;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      pointer-events: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      transition: opacity 0.15s;
+    }
+    .search-wrapper input:focus + .search-shortcut,
+    .search-wrapper input:not(:placeholder-shown) + .search-shortcut {
+      opacity: 0;
+    }
+    .search-wrapper input:focus {
       border-color: #1e40af;
       box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
     }
@@ -225,7 +248,10 @@
 </header>
 
 <search><div class="search-bar">
-  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
+  <div class="search-wrapper">
+    <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses" title="Search analyses (Press '/')">
+    <kbd class="search-shortcut" aria-hidden="true">/</kbd>
+  </div>
 </div></search>
 
 <main>
@@ -291,6 +317,13 @@
   const cards = document.querySelectorAll('.card');
   const noResults = document.getElementById('no-results');
   const noResultsQuery = noResults.querySelector('strong');
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== input && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      input.focus();
+    }
+  });
 
   function debounce(func, wait) {
     let timeout;

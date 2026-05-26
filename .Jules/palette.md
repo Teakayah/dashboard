@@ -30,3 +30,6 @@
 ## 2026-05-24 - Focus Visible Styles
 **Learning:** Default browser focus rings are frequently insufficient or completely hidden for native `<button>` and `<input>` elements in this application's custom CSS, requiring explicit `:focus-visible` styles with custom outlines and offsets to guarantee keyboard accessibility.
 **Action:** Always verify keyboard focus visibility using tab navigation and explicitly define `:focus-visible` styles (e.g., `outline: 2px solid var(--primary); outline-offset: 2px;`) rather than relying on default browser behaviors.
+## 2026-05-26 - Keyboard Shortcut Discoverability in Search Fields
+**Learning:** Search fields benefit greatly from keyboard shortcuts (like `/`), but these are often hidden from users. Adding a visual hint like a `<kbd>` tag inside the search bar, along with a `title` attribute, significantly improves discoverability for power users while remaining unobtrusive. Hiding the `<kbd>` tag when the input is focused or has content prevents UI clutter.
+**Action:** When adding keyboard shortcuts to focus input fields, always provide a visual hint such as `<kbd>/</kbd>` positioned inside the input wrapper, hide it via CSS on focus or when not empty, and update the input's `title` or `aria-label` to include the shortcut.
