@@ -37,8 +37,8 @@ PENDING_RULES = {
     'color-contrast',               # partially fixed — some analysis-page inline colours
                                     # will be resolved when CI re-generates them from
                                     # inject_contrast_fix; remove once verified clean
-    'scrollable-region-focusable',  # flood page .tabs div — deferred until tab keyboard
-                                    # navigation is implemented (TODO §2.2)
+    # 'scrollable-region-focusable',  # flood page .tabs div — deferred until tab keyboard
+    #                                 # navigation is implemented (TODO §2.2)
 }
 
 
