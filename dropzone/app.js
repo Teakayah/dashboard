@@ -150,15 +150,16 @@ function getRows(result) {
     const numFields = fields.length;
     const numRows = result.numRows;
 
-    // Performance optimization: Pre-allocate the array to avoid dynamic resizing overhead,
-    // and use index-based loops to minimize iterator overhead in the hot path.
+    // Performance optimization: Use Arrow's native .toArray() to extract objects first
+    // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
+    const rawRows = result.toArray();
     const rows = new Array(numRows);
     for (let i = 0; i < numRows; i++) {
-        const rowProxy = result.get(i);
+        const rowObj = rawRows[i];
         const rowPlain = {};
         for (let j = 0; j < numFields; j++) {
             const field = fields[j];
-            const val = rowProxy[field];
+            const val = rowObj[field];
             // Cast BigInts to strings for UI/JSON compatibility
             rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
