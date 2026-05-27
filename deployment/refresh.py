@@ -29,6 +29,7 @@ import subprocess
 import sys
 from datetime import date
 from pathlib import Path
+from typing import Optional
 
 ROOT = Path(__file__).parent.parent
 DEPLOY = ROOT / 'deployment'
@@ -66,7 +67,7 @@ def _git(*args: str) -> str:
 
 # ── Pipeline ───────────────────────────────────────────────────────────────────
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.strip())
     parser.add_argument('--no-push', action='store_true',
                         help='Run all steps but skip git commit and push.')
@@ -74,7 +75,7 @@ def parse_args() -> argparse.Namespace:
                         help='Skip the Ollama description generation step.')
     parser.add_argument('--force-descriptions', action='store_true',
                         help='Regenerate ALL descriptions, not just new ones.')
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def main() -> None:
