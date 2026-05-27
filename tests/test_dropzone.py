@@ -6,6 +6,7 @@ Run with:  pytest tests/test_dropzone.py -v
 """
 
 from pathlib import Path
+import re
 
 from playwright.sync_api import Page, expect
 
@@ -207,8 +208,8 @@ def test_invalid_sql_shows_dialog_not_crash(dz: Page):
     dz.locator('#run-query').click()
 
     toast = dz.locator('[role="alert"]')
-    toast.wait_for(state="visible", timeout=3000)
-    assert 'Error' in toast.inner_text() or 'nonexistent' in toast.inner_text().lower()
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Error|nonexistent', re.IGNORECASE))
 
 
 def test_count_query_returns_single_value(dz: Page):
