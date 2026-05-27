@@ -51,6 +51,13 @@ function setProgress(percent) {
     initProgress.style.width = `${percent}%`;
 }
 
+/**
+ * Adds a successfully executed SQL query to the local storage history.
+ * Maintains a maximum of 10 recent unique queries, automatically moving
+ * reused queries to the top of the list.
+ *
+ * @param {string} sql - The SQL query string to record
+ */
 function addToHistory(sql) {
     const trimmed = sql.trim();
     if (!trimmed) return;
@@ -1015,6 +1022,12 @@ sqlInput.addEventListener('keydown', (e) => {
 
 runBtn.addEventListener('click', runQuery);
 
+/**
+ * Executes the SQL query from the editor against the local DuckDB instance.
+ * Measures execution time, formats the result into a plain object array,
+ * updates the data grid visualization, and records the query in local history.
+ * Displays a toast notification if the query fails.
+ */
 async function runQuery() {
     const sql = sqlInput.value.trim();
     if (!sql) return;
