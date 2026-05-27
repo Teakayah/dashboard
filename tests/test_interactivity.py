@@ -48,7 +48,7 @@ class TestDropzoneButtons:
         """Share button must invoke shareOrCopy() without throwing."""
         errors: list[str] = []
         dz.on('pageerror', lambda e: errors.append(str(e)))
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
 
         dz.locator('.share-btn').click()
@@ -56,7 +56,7 @@ class TestDropzoneButtons:
         assert not errors, f'JS errors after Share click: {errors}'
 
     def test_load_samples_button_creates_tables(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
 
         dz.locator('#load-samples').click()
@@ -71,7 +71,7 @@ class TestDropzoneButtons:
         """Clicking Load Remote Table with an empty URL must not crash."""
         errors: list[str] = []
         dz.on('pageerror', lambda e: errors.append(str(e)))
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
 
         # Ensure URL field is empty
@@ -85,7 +85,7 @@ class TestDropzoneButtons:
 
     def test_recipe_select_populates_sql_input(self, dz: Page):
         """Selecting a recipe must inject its SQL (with table name) into #sql-input."""
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
@@ -106,12 +106,12 @@ class TestDropzoneButtons:
         assert '{{TABLE}}' not in sql, f'Placeholder not substituted: {sql!r}'
 
     def test_run_query_button_disabled_before_input(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         assert dz.locator('#run-query').is_disabled()
 
     def test_run_query_executes_and_renders_table(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
@@ -121,7 +121,7 @@ class TestDropzoneButtons:
         assert dz.locator('.gridjs-tbody tr').count() == 5
 
     def test_download_csv_button_enabled_after_query(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
@@ -134,7 +134,7 @@ class TestDropzoneButtons:
         assert not dz.locator('#download-csv').is_disabled()
 
     def test_download_csv_button_triggers_download(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
@@ -151,7 +151,7 @@ class TestDropzoneButtons:
 
     def test_copy_json_button_changes_label(self, dz: Page):
         """Copy JSON must briefly change its button text to 'Copied!'."""
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
@@ -164,7 +164,7 @@ class TestDropzoneButtons:
         expect(dz.locator('#copy-json')).to_contain_text('Copied', timeout=2_000)
 
     def test_join_assistant_appears_after_loading_two_tables(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
@@ -172,7 +172,7 @@ class TestDropzoneButtons:
 
     def test_generate_join_sql_button_populates_sql_input(self, dz: Page):
         """Select two tables + a join column → Generate Join SQL fills the editor."""
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
@@ -194,20 +194,20 @@ class TestDropzoneButtons:
 
     def test_generate_join_sql_without_selection_shows_dialog(self, dz: Page):
         """Clicking Generate Join without selecting tables must show an error dialog."""
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
         dialogs: list[str] = []
-        dz.on('dialog', lambda d: (dialogs.append(d.message), d.accept()))
 
         # Don't select anything — just click
         dz.locator('#generate-join').click()
-        dz.wait_for_timeout(500)
+        dz.wait_for_selector('[role="alert"]')
+        dialogs.append(dz.locator('[role="alert"]').inner_text())
         assert dialogs, 'Expected a validation dialog when no tables selected'
 
     def test_chart_builder_appears_after_loading_data(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
@@ -215,7 +215,7 @@ class TestDropzoneButtons:
 
     def test_generate_chart_sql_button_populates_sql_input(self, dz: Page):
         """Select X + Y axes → Generate Chart SQL fills the editor."""
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
@@ -238,25 +238,24 @@ class TestDropzoneButtons:
         assert 'SELECT' in sql.upper(), f'No SELECT in chart SQL: {sql!r}'
 
     def test_generate_chart_without_selection_shows_dialog(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
         dialogs: list[str] = []
-        dz.on('dialog', lambda d: (dialogs.append(d.message), d.accept()))
 
         dz.locator('#generate-chart').click()
-        dz.wait_for_timeout(500)
+        dz.wait_for_selector('[role="alert"]')
+        dialogs.append(dz.locator('[role="alert"]').inner_text())
         assert dialogs, 'Expected a validation dialog when no axes selected'
 
     def test_export_db_button_triggers_download_or_error(self, dz: Page):
         """Export Database must either download a file or show an error — no silent crash."""
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
         dialogs: list[str] = []
-        dz.on('dialog', lambda d: (dialogs.append(d.message), d.accept()))
 
         try:
             with dz.expect_download(timeout=8_000) as dl_info:
@@ -267,16 +266,20 @@ class TestDropzoneButtons:
             )
         except Exception:
             # Export may fail on indexeddb:// — an error dialog is acceptable
+            dz.wait_for_selector('[role="alert"]')
+            dialogs.append(dz.locator('[role="alert"]').inner_text())
             assert dialogs, (
                 'Export DB neither triggered a download nor showed an error dialog'
             )
 
     def test_clear_data_button_wipes_schema(self, dz: Page):
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
-        dz.on('dialog', lambda d: d.accept())
+
+        # Override the confirm dialog to always return true for testing clearing data
+        dz.evaluate('window.confirm = () => true')
         dz.locator('#clear-data').click()
         dz.wait_for_function(
             "document.getElementById('status').textContent === 'Storage cleared'",
@@ -286,11 +289,12 @@ class TestDropzoneButtons:
 
     def test_clear_data_cancel_preserves_tables(self, dz: Page):
         """Cancelling the confirm dialog must leave data intact."""
-        dz.goto(DROPZONE_URL)
+        dz.goto(DROPZONE_URL, wait_until='domcontentloaded')
         wait_for_duckdb_ready(dz)
         load_samples(dz)
 
-        dz.on('dialog', lambda d: d.dismiss())
+        # Override the confirm dialog to always return false for testing cancelling
+        dz.evaluate('window.confirm = () => false')
         dz.locator('#clear-data').click()
         dz.wait_for_timeout(600)
 

@@ -42,7 +42,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
     if (!url) return;
 
     if (!window.deltaSupported) {
-        alert('Delta Lake support is not available in this browser environment. Please use CSV, JSON, or Parquet files instead.');
+        showToast('Delta Lake support is not available in this browser environment. Please use CSV, JSON, or Parquet files instead.');
         return;
     }
 
@@ -67,7 +67,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         setTimeout(() => { loadRemoteDeltaBtn.textContent = originalText; }, 2000);
     } catch (err) {
         console.error(err);
-        alert('Error loading remote Delta table: ' + err.message);
+        showToast('Error loading remote Delta table: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -393,12 +393,12 @@ generateJoinBtn.addEventListener('click', () => {
     const col = joinCol.value;
     
     if (!a || !b || !col) {
-        alert('Please select both tables and a common column.');
+        showToast('Please select both tables and a common column.');
         return;
     }
     
     if (a === b) {
-        alert('Please select two different tables to join.');
+        showToast('Please select two different tables to join.');
         return;
     }
 
@@ -414,7 +414,7 @@ generateChartBtn.addEventListener('click', () => {
     const yCol = chartYCol.value;
     
     if (!xCol || !yCol) {
-        alert('Please select both X and Y axes.');
+        showToast('Please select both X and Y axes.');
         return;
     }
 
@@ -467,7 +467,7 @@ generateChartBtn.addEventListener('click', () => {
             renderChart(canvasId, type, chartData, chartOptions);
         } catch (e) {
             console.error('Custom chart error', e);
-            alert('Error generating chart: ' + e.message);
+            showToast('Error generating chart: ' + e.message);
         }
     });
 });
@@ -553,7 +553,7 @@ async function handleFiles(files) {
 
             if (isDelta) {
                 if (!window.deltaSupported) {
-                    alert(`Delta Lake table detected in folder "${dirName}", but support is missing in this browser. Skipping.`);
+                    showToast(`Delta Lake table detected in folder "${dirName}", but support is missing in this browser. Skipping.`);
                     continue;
                 }
                 currentTableName = tableName;
@@ -575,7 +575,7 @@ async function handleFiles(files) {
         updateJoinUI();
     } catch (err) {
         console.error(err);
-        alert('Error loading files: ' + err.message);
+        showToast('Error loading files: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -856,7 +856,7 @@ async function runQuery() {
         copyJsonBtn.title = '';
     } catch (err) {
         console.error(err);
-        alert('Query Error: ' + err.message);
+        showToast('Query Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -906,7 +906,7 @@ downloadBtn.addEventListener('click', async () => {
         URL.revokeObjectURL(url);
     } catch (err) {
         console.error(err);
-        alert('Export Error: ' + err.message);
+        showToast('Export Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -955,7 +955,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         setTimeout(() => { loadSamplesBtn.textContent = originalText; }, 2000);
     } catch (err) {
         console.error(err);
-        alert('Sample Loading Error: ' + err.message);
+        showToast('Sample Loading Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -984,7 +984,7 @@ exportDbBtn.addEventListener('click', async () => {
         URL.revokeObjectURL(url);
     } catch (err) {
         console.error(err);
-        alert('Database Export Error: ' + err.message);
+        showToast('Database Export Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -1018,7 +1018,7 @@ clearBtn.addEventListener('click', async () => {
         statusEl.textContent = 'Storage cleared';
     } catch (err) {
         console.error(err);
-        alert('Clear Error: ' + err.message);
+        showToast('Clear Error: ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
