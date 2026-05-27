@@ -85,11 +85,29 @@ def test_git_success(mock_check_output):
         stderr=subprocess.DEVNULL
     )
 
+def test_git_success_multiple_args(mock_check_output):
+    module = load_refresh_module()
+    mock_check_output.return_value = "  another output  \n"
+
+    assert module._git('log', '-n', '1') == "another output"
+    mock_check_output.assert_called_once_with(
+        ['git', 'log', '-n', '1'],
+        cwd=str(module.ROOT),
+        text=True,
+        stderr=subprocess.DEVNULL
+    )
+
 def test_git_error(mock_check_output):
     module = load_refresh_module()
     mock_check_output.side_effect = subprocess.CalledProcessError(1, ['git'])
 
     assert module._git('log') == ""
+    mock_check_output.assert_called_once_with(
+        ['git', 'log'],
+        cwd=str(module.ROOT),
+        text=True,
+        stderr=subprocess.DEVNULL
+    )
 
 def test_main_success_all_steps(mock_subprocess, mock_sys_exit, mock_path, monkeypatch):
     module = load_refresh_module()
