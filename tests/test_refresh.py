@@ -90,6 +90,12 @@ def test_git_error(mock_check_output):
     mock_check_output.side_effect = subprocess.CalledProcessError(1, ['git'])
 
     assert module._git('log') == ""
+    mock_check_output.assert_called_once_with(
+        ['git', 'log'],
+        cwd=str(module.ROOT),
+        text=True,
+        stderr=subprocess.DEVNULL
+    )
 
 def test_main_success_all_steps(mock_subprocess, mock_sys_exit, mock_path, monkeypatch):
     module = load_refresh_module()
