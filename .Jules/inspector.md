@@ -13,3 +13,7 @@
 ## 2026-05-27 - DuckDB Database Export Playwright Testing
 **Learning:** The database export feature in DuckDB-Wasm, which uses `db.copyFileToBuffer` to create an object URL, was completely untested. We need to use Playwright's `expect_download` context manager to assert the export works since it bypasses typical API calls.
 **Action:** Add test coverage for complex WASM file blob exports using Playwright's download interception and verify file size to ensure no empty artifacts are produced.
+
+## 2026-05-26 - Assertions for Error Cases
+**Learning:** Testing error handling (like `subprocess.CalledProcessError`) should not only verify the fallback return value but also assert that the mocked function was called with the exact expected arguments that led to the error.
+**Action:** Add `assert_called_once_with` to mock exception scenarios to ensure the correct code path and arguments triggered the failure.
