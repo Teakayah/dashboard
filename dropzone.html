@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- responsive-inject-v6 -->
+  <!-- responsive-inject-v7 -->
   <style>
     @media (min-width: 769px) {
       .dashboard-container { display: flex; flex-direction: row; }
@@ -9,23 +9,8 @@
       .main-content { flex-grow: 1; }
     }
   </style>
-  <script>
-    (function() {
-      // Small Chart.js hack for responsiveness
-      let _Chart;
-      Object.defineProperty(window, 'Chart', {
-        get: function() { return _Chart; },
-        set: function(val) {
-          if (val && val.defaults) {
-            val.defaults.maintainAspectRatio = false;
-          }
-          _Chart = val;
-        },
-        configurable: true
-      });
-    })();
-  </script>
-  <!-- /responsive-inject-v6 -->
+  <script src="assets/chart_hack.js"></script>
+  <!-- /responsive-inject-v7 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytical Drop-Zone</title>
