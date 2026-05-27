@@ -637,6 +637,27 @@ def test_build_card_html_escaping():
     assert '&lt;tag&gt;' in html
 
 
+def test_build_card_cyclical_color_indexing():
+    module = load_generate_index_module()
+    analysis = {
+        'title': 'Test Analysis',
+        'description': 'A description',
+        'date': '2023-01-01',
+        'filename': 'test.html',
+        'tags': ['tag1', 'tag2']
+    }
+    # Test that modulo logic correctly wraps around
+    num_colors = len(module.ACCENT_COLORS)
+    html_0 = module.build_card(analysis, 0)
+    html_n = module.build_card(analysis, num_colors)
+
+    html_1 = module.build_card(analysis, 1)
+    html_n_plus_1 = module.build_card(analysis, num_colors + 1)
+
+    assert html_0 == html_n
+    assert html_1 == html_n_plus_1
+
+
 def test_parse_args_default():
     module = load_generate_index_module()
     args = module.parse_args([])
