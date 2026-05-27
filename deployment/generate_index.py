@@ -712,5 +712,5 @@ def main(argv: Optional[list[str]] = None):
         print(f'  - {a["filename"]} → {a["title"]}')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     main()

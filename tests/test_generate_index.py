@@ -653,3 +653,70 @@ def test_parse_args_invalid():
     module = load_generate_index_module()
     with pytest.raises(SystemExit):
         module.parse_args(['--responsive-preset', 'invalid_choice'])
+
+def test_main_handles_file_read_error(tmp_path, monkeypatch):
+    import sys
+    from pathlib import Path
+    from unittest.mock import patch
+    module = load_generate_index_module()
+    html_file = tmp_path / "error_page.html"
+    html_file.touch()
+
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setattr(module, 'EXCLUDE', {'index.html'})
+    monkeypatch.setattr(sys, 'argv', ['generate_index.py'])
+
+    original_read_text = Path.read_text
+
+    def mock_read_text(self, *args, **kwargs):
+        if self.name == "error_page.html":
+            raise PermissionError("Permission Denied")
+        return original_read_text(self, *args, **kwargs)
+
+    with patch.object(Path, 'read_text', autospec=True, side_effect=mock_read_text):
+        module.main()
+
+    index_file = tmp_path / 'index.html'
+    assert index_file.exists()
+    content = index_file.read_text(encoding='utf-8')
+    assert "Error Page" in content
+
+def test_get_git_dates_batched_invalid_iso_format(monkeypatch, tmp_path):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+
+    file1 = tmp_path / 'file1.txt'
+    file1.touch()
+
+    class MockResult:
+        stdout = "TS:invalid-date\nfile1.txt\n"
+
+    def mock_run(*args, **kwargs):
+        return MockResult()
+
+    monkeypatch.setattr(module.subprocess, 'run', mock_run)
+
+    dates = module.get_git_dates_batched([file1])
+    # Because fromisoformat fails, it falls back to mtime string
+    assert file1 in dates
+    assert "202" in dates[file1] or "Jan" in dates[file1] or "Feb" in dates[file1] or "Mar" in dates[file1] or "Apr" in dates[file1] or "May" in dates[file1] or "Jun" in dates[file1] or "Jul" in dates[file1] or "Aug" in dates[file1] or "Sep" in dates[file1] or "Oct" in dates[file1] or "Nov" in dates[file1] or "Dec" in dates[file1]
+
+def test_main_with_none_responsive_preset_removes_enhancer(tmp_path, monkeypatch):
+    import sys
+    module = load_generate_index_module()
+    analysis = tmp_path / 'sample.html'
+    analysis.write_text(
+        '<html><head><title>Sample</title></head><body><!-- responsive-inject-v6 -->\n<style>body { color: red; }</style>\n<script>alert(1);</script>\n<p>Hello</p></body></html>',
+        encoding='utf-8',
+    )
+
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setattr(module, 'EXCLUDE', {'index.html'})
+    monkeypatch.setattr(sys, 'argv', ['generate_index.py', '--responsive-preset', 'none'])
+
+    module.main()
+
+    content = analysis.read_text(encoding='utf-8')
+    assert '<!-- responsive-inject-v6 -->' not in content
+    assert '<script>alert(1);</script>' not in content
+    assert '<p>Hello</p>' in content
