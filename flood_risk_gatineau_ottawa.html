@@ -177,10 +177,10 @@
   Live data: <a href="https://wateroffice.ec.gc.ca/report/real_time_e.html?stn=02KF005" target="_blank" rel="noopener noreferrer" class="ext">WSC &#8599;</a>
 </div>
 
-<div class="tabs">
-  <div class="tab active"  onclick="showTab('gauge')">&#127777; River Vitals</div>
-  <div class="tab"         onclick="showTab('history')">&#128200; Historical Floods</div>
-  <div class="tab"         onclick="showTab('snowpack')">&#10052; Snowpack Risk</div>
+<div class="tabs" role="tablist">
+  <button class="tab active" role="tab" aria-selected="true" tabindex="0" onclick="showTab('gauge')" onkeydown="handleTabKey(event, 0)">&#127777; River Vitals</button>
+  <button class="tab"        role="tab" aria-selected="false" tabindex="-1" onclick="showTab('history')" onkeydown="handleTabKey(event, 1)">&#128200; Historical Floods</button>
+  <button class="tab"        role="tab" aria-selected="false" tabindex="-1" onclick="showTab('snowpack')" onkeydown="handleTabKey(event, 2)">&#10052; Snowpack Risk</button>
 </div>
 
 <!-- ══ TAB 1: GAUGE ════════════════════════════════════════════════════ -->
@@ -301,11 +301,27 @@
 <script>
 const TAB_NAMES = ['gauge','history','snowpack'];
 function showTab(name) {
-  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', TAB_NAMES[i] === name));
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const isActive = TAB_NAMES[i] === name;
+    t.classList.toggle('active', isActive);
+    t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    t.setAttribute('tabindex', isActive ? '0' : '-1');
+    if (isActive) t.focus();
+  });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   if (name === 'history'  && !historyInitialized)  initHistory();
   if (name === 'snowpack' && !sweInitialized)       initSWE();
+}
+function handleTabKey(e, idx) {
+  const tabs = document.querySelectorAll('.tab');
+  let newIdx = idx;
+  if (e.key === 'ArrowRight') newIdx = (idx + 1) % tabs.length;
+  else if (e.key === 'ArrowLeft') newIdx = (idx - 1 + tabs.length) % tabs.length;
+  if (newIdx !== idx) {
+    e.preventDefault();
+    tabs[newIdx].click();
+  }
 }
 
 function getRiskForStation(level, station) {

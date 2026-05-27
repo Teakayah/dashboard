@@ -30,3 +30,6 @@
 ## 2026-05-24 - Focus Visible Styles
 **Learning:** Default browser focus rings are frequently insufficient or completely hidden for native `<button>` and `<input>` elements in this application's custom CSS, requiring explicit `:focus-visible` styles with custom outlines and offsets to guarantee keyboard accessibility.
 **Action:** Always verify keyboard focus visibility using tab navigation and explicitly define `:focus-visible` styles (e.g., `outline: 2px solid var(--primary); outline-offset: 2px;`) rather than relying on default browser behaviors.
+## 2026-05-27 - WAI-ARIA Tabs Keyboard Navigation
+**Learning:** When using custom tabs (even if converting to native `<button role="tab">` elements), screen-reader users expect to be able to navigate between tabs using the `ArrowLeft` and `ArrowRight` keys, which isn't provided out of the box by basic HTML elements.
+**Action:** When implementing the WAI-ARIA Tabs pattern in Vanilla JS, always add `keydown` event listeners to support `ArrowLeft` and `ArrowRight` navigation, in addition to correctly toggling `aria-selected` and `tabindex` on activation.
