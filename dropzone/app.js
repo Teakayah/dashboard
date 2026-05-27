@@ -793,6 +793,13 @@ async function onTableLoaded(tableName) {
     sqlInput.dispatchEvent(new Event('input'));
 }
 
+/**
+ * Inserts text at the current cursor position within an input or textarea element.
+ * If text is selected, the selected text is replaced. Also triggers an 'input' event.
+ *
+ * @param {HTMLInputElement|HTMLTextAreaElement} myField - The target input field.
+ * @param {string} myValue - The text to insert.
+ */
 function insertAtCursor(myField, myValue) {
     if (myField.selectionStart !== undefined) {
         const startPos = myField.selectionStart;
@@ -944,6 +951,13 @@ async function generateInstantCharts(tableName) {
     }
 }
 
+/**
+ * Creates a DOM container for an instant chart preview and invokes a render function
+ * to populate it. Automatically provides a header with a title and a download button.
+ *
+ * @param {string} title - The title displayed in the card header.
+ * @param {Function} renderFn - A callback function invoked with the newly generated canvas ID.
+ */
 function createPreviewCard(title, renderFn) {
     const id = 'chart-' + Math.random().toString(36).substr(2, 9);
     const card = document.createElement('div');
@@ -985,6 +999,15 @@ function createPreviewCard(title, renderFn) {
     renderFn(id);
 }
 
+/**
+ * Initializes and renders a Chart.js instance onto a specific canvas element.
+ * Automatically applies responsive defaults.
+ *
+ * @param {string} id - The ID of the target canvas element.
+ * @param {string} type - The Chart.js chart type (e.g., 'line', 'bar', 'scatter').
+ * @param {Object} data - The Chart.js data configuration object.
+ * @param {Object} [options={}] - Additional Chart.js options to merge with defaults.
+ */
 function renderChart(id, type, data, options = {}) {
     const canvas = document.getElementById(id);
     if (!canvas) return;
@@ -1218,6 +1241,12 @@ clearBtn.addEventListener('click', async () => {
 
 init();
 
+/**
+ * Displays a temporary, accessible error or informational toast notification
+ * at the bottom right of the viewport. Automatically dismisses after 5 seconds.
+ *
+ * @param {string} msg - The message text to display.
+ */
 function showToast(msg) {
     const panel = document.createElement('div');
     panel.textContent = msg;
