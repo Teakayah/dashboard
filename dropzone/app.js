@@ -343,15 +343,16 @@ async function displayTableSchema(tableName) {
         
         const triggerAction = async (e) => {
             e.stopPropagation();
-            insertAtCursor(sqlInput, `"${r.column_name}"`);
+            const escCol = r.column_name.replace(/"/g, '""');
+            insertAtCursor(sqlInput, `"${escCol}"`);
             
             // Profiling logic
             try {
                 statsContainer.innerHTML = '<i>Calculating stats...</i>';
-                const profilingResult = await conn.query(`SELECT MIN("${r.column_name}") as min_val, MAX("${r.column_name}") as max_val, COUNT("${r.column_name}") as count_val FROM "${tableName}"`);
+                const profilingResult = await conn.query(`SELECT MIN("${escCol}") as min_val, MAX("${escCol}") as max_val, COUNT("${escCol}") as count_val FROM "${tableName}"`);
                 const stats = getRows(profilingResult)[0];
                 
-                const distResult = await conn.query(`SELECT "${r.column_name}" as val, count(*) as cnt FROM "${tableName}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
+                const distResult = await conn.query(`SELECT "${escCol}" as val, count(*) as cnt FROM "${tableName}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
                 statsContainer.innerHTML = '';
