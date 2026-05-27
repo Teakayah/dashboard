@@ -30,3 +30,6 @@
 ## 2026-05-24 - Focus Visible Styles
 **Learning:** Default browser focus rings are frequently insufficient or completely hidden for native `<button>` and `<input>` elements in this application's custom CSS, requiring explicit `:focus-visible` styles with custom outlines and offsets to guarantee keyboard accessibility.
 **Action:** Always verify keyboard focus visibility using tab navigation and explicitly define `:focus-visible` styles (e.g., `outline: 2px solid var(--primary); outline-offset: 2px;`) rather than relying on default browser behaviors.
+## 2026-05-27 - WAI-ARIA Tabs Resolves scrollable-region-focusable
+**Learning:** The axe-core accessibility rule `scrollable-region-focusable` will fail on scrollable containers (like `.tabs` with `overflow-x: auto`) if they are not accessible by keyboard. Implementing the WAI-ARIA tabs pattern on the container (`role="tablist"`) and its children (`role="tab"` with `tabindex` focus management and arrow key navigation) natively resolves this without needing a `tabindex` directly on the container.
+**Action:** When fixing `scrollable-region-focusable` on custom tab components, fully implement the WAI-ARIA tabs pattern (roles, aria-selected, roving tabindex, keyboard navigation) on the child tabs rather than haphazardly adding a `tabindex="0"` to the container.

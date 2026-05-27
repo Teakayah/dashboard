@@ -95,10 +95,10 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
 <!-- insight-inject --><!-- /insight-inject -->
 
 <div class="tabs" role="tablist">
-  <div class="tab active"  role="tab" tabindex="0" onclick="showTab('rate')">📈 Employment Rate</div>
-  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('jobs')">👷 Jobs Created</div>
-  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('debt')">💰 Government Debt</div>
-  <div class="tab"         role="tab" tabindex="-1" onclick="showTab('pop')">🧑‍🤝‍🧑 Population</div>
+  <div class="tab active"  role="tab" tabindex="0" aria-selected="true" onclick="showTab('rate')" onkeydown="handleTabKey(event, 'rate')">📈 Employment Rate</div>
+  <div class="tab"         role="tab" tabindex="-1" aria-selected="false" onclick="showTab('jobs')" onkeydown="handleTabKey(event, 'jobs')">👷 Jobs Created</div>
+  <div class="tab"         role="tab" tabindex="-1" aria-selected="false" onclick="showTab('debt')" onkeydown="handleTabKey(event, 'debt')">💰 Government Debt</div>
+  <div class="tab"         role="tab" tabindex="-1" aria-selected="false" onclick="showTab('pop')" onkeydown="handleTabKey(event, 'pop')">🧑‍🤝‍🧑 Population</div>
 </div>
 
 <!-- ══ TAB 1: Employment Rate ═══════════════════════════════════════════════ -->
@@ -196,11 +196,35 @@ const PROV=['Ontario','Quebec','British Columbia','Alberta','Manitoba','Saskatch
 const RECESSIONS=[[1981,1982],[1990,1992],[2008,2009],[2020,2020]];
 
 // ── Tab switch ────────────────────────────────────────────────────────────────
+const TAB_NAMES = ['rate','jobs','debt','pop'];
 function showTab(id){
-  ['rate','jobs','debt','pop'].forEach(function(t,i){
-    document.getElementById('panel-'+t).classList.toggle('active',t===id);
-    document.querySelectorAll('.tab')[i].classList.toggle('active',t===id);
+  TAB_NAMES.forEach(function(t,i){
+    var isActive = (t === id);
+    document.getElementById('panel-'+t).classList.toggle('active', isActive);
+    var tabEl = document.querySelectorAll('.tab')[i];
+    tabEl.classList.toggle('active', isActive);
+    tabEl.setAttribute('tabindex', isActive ? '0' : '-1');
+    tabEl.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
+}
+
+function handleTabKey(e, id) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    showTab(id);
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    var tabs = Array.from(document.querySelectorAll('.tab'));
+    var currentIndex = tabs.findIndex(function(t) { return t.getAttribute('aria-selected') === 'true'; });
+    var newIndex = currentIndex;
+    if (e.key === 'ArrowRight') {
+      newIndex = (currentIndex + 1) % tabs.length;
+    } else if (e.key === 'ArrowLeft') {
+      newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    }
+    showTab(TAB_NAMES[newIndex]);
+    tabs[newIndex].focus();
+  }
 }
 
 // ── Recession plugin ──────────────────────────────────────────────────────────
