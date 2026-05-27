@@ -9,8 +9,6 @@ Failure thresholds:
   serious   — fails the build (WCAG AA requires these to be fixed)
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import pytest
