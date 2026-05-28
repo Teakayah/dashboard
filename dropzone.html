@@ -355,11 +355,15 @@
 </style>
 
   <script>
-    document.getElementById('share-btn')?.addEventListener('click', () => {
+    document.getElementById('share-btn')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget;
       if (navigator.share) {
         navigator.share({title: document.title, url: window.location.href});
       } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(window.location.href);
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = 'Share'; }, 2000);
+        });
       }
     });
 

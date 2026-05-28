@@ -30,3 +30,6 @@
 ## 2026-05-24 - Focus Visible Styles
 **Learning:** Default browser focus rings are frequently insufficient or completely hidden for native `<button>` and `<input>` elements in this application's custom CSS, requiring explicit `:focus-visible` styles with custom outlines and offsets to guarantee keyboard accessibility.
 **Action:** Always verify keyboard focus visibility using tab navigation and explicitly define `:focus-visible` styles (e.g., `outline: 2px solid var(--primary); outline-offset: 2px;`) rather than relying on default browser behaviors.
+## 2026-05-28 - Event target safety and temporary state fixes
+**Learning:** Using `e.target` for button text replacements can break if children (like spans or icons) are added later. Also, naively saving the original text and restoring it on a timeout creates bugs if the user double-clicks (the temporary text gets saved as the "original" text).
+**Action:** Always use `e.currentTarget` for event handlers attached to the button itself, and hardcode the fallback text or disable the button temporarily instead of sequentially reading `textContent`.
