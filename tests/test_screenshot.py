@@ -1,14 +1,19 @@
 import importlib.util
 from pathlib import Path
+import sys
 from unittest.mock import patch, MagicMock
 import pytest
 
 def load_screenshot_module():
     path = Path(__file__).parent.parent / 'deployment' / 'screenshot.py'
-    spec = importlib.util.spec_from_file_location('screenshot', path)
+    spec = importlib.util.spec_from_file_location('deployment.screenshot', path)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
-    spec.loader.exec_module(module)
+    sys.path.insert(0, str(path.parent))
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.pop(0)
     return module
 
 def test_get_git_commit_times_batched_success():
