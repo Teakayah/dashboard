@@ -129,9 +129,9 @@ def _fallback(filepath: Path, date_str: str = "") -> dict:
 
 RESPONSIVE_PRESETS = {
     'default': {
-        'marker': '<!-- responsive-inject-v6 -->',
+        'marker': '<!-- responsive-inject-v7 -->',
         'snippet': '''\
-  <!-- responsive-inject-v6 -->
+  <!-- responsive-inject-v7 -->
   <style>
     @media (min-width: 769px) {
       .dashboard-container { display: flex; flex-direction: row; }
@@ -139,23 +139,7 @@ RESPONSIVE_PRESETS = {
       .main-content { flex-grow: 1; }
     }
   </style>
-  <script>
-    (function() {
-      // Small Chart.js hack for responsiveness
-      let _Chart;
-      Object.defineProperty(window, 'Chart', {
-        get: function() { return _Chart; },
-        set: function(val) {
-          if (val && val.defaults) {
-            val.defaults.maintainAspectRatio = false;
-          }
-          _Chart = val;
-        },
-        configurable: true
-      });
-    })();
-  </script>
-  <!-- /responsive-inject-v6 -->''',
+  <!-- /responsive-inject-v7 -->''',
     },
     'none': {
         'marker': None,
@@ -712,5 +696,5 @@ def main(argv: Optional[list[str]] = None):
         print(f'  - {a["filename"]} → {a["title"]}')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     main()

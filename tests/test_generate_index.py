@@ -19,9 +19,8 @@ def test_inject_responsive_default_adds_v6_marker_and_dashboard_rules():
 
     content = module.inject_responsive(initial_content, 'analysis.html')
 
-    assert '<!-- responsive-inject-v6 -->' in content
+    assert '<!-- responsive-inject-v7 -->' in content
     assert '.dashboard-container { display: flex; flex-direction: row; }' in content
-    assert 'Object.defineProperty(window, \'Chart\'' in content
 
 
 def test_inject_responsive_is_idempotent():
@@ -32,7 +31,7 @@ def test_inject_responsive_is_idempotent():
     second = module.inject_responsive(first, 'analysis.html')
 
     assert first == second
-    assert second.count('<!-- responsive-inject-v6 -->') == 1
+    assert second.count('<!-- responsive-inject-v7 -->') == 1
 
 
 def test_inject_responsive_replaces_older_versions():
@@ -52,7 +51,7 @@ def test_inject_responsive_replaces_older_versions():
 
     assert '<!-- responsive-inject-v3 -->' not in content
     assert 'window.oldResponsive = true' not in content
-    assert content.count('<!-- responsive-inject-v6 -->') == 1
+    assert content.count('<!-- responsive-inject-v7 -->') == 1
 
 
 def test_strip_back_link_removes_existing():
@@ -189,7 +188,7 @@ def test_inject_functions_handle_missing_tags():
 
 def test_inject_responsive_returns_early_if_marker_present():
     module = load_generate_index_module()
-    content = "<html><head><!-- responsive-inject-v6 --></head><body></body></html>"
+    content = "<html><head><!-- responsive-inject-v7 --></head><body></body></html>"
     res = module.inject_responsive(content, "test.html")
     assert res == content
     assert isinstance(res, str)
@@ -282,7 +281,7 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
         module.main(['--responsive-preset', 'none'])
 
     content = analysis.read_text(encoding='utf-8')
-    assert '<!-- responsive-inject-v6 -->' not in content
+    assert '<!-- responsive-inject-v7 -->' not in content
     assert module.BACK_LINK_MARKER not in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
@@ -619,6 +618,27 @@ def test_build_card_missing_optional_fields():
     assert 'card-date' not in html
 
 
+def test_build_card_accent_color_wrap_around():
+    module = load_generate_index_module()
+    analysis = {
+        'title': 'Wrap Around Analysis',
+        'description': '',
+        'date': None,
+        'filename': 'wrap.html',
+        'tags': []
+    }
+    # ACCENT_COLORS has 8 items (indices 0-7). Index 8 should wrap to 0.
+    html_0 = module.build_card(analysis, 0)
+    html_8 = module.build_card(analysis, 8)
+
+    # Extract the --accent: value from style attribute
+    import re
+    accent_0 = re.search(r'--accent:([^"]+)', html_0).group(1)
+    accent_8 = re.search(r'--accent:([^"]+)', html_8).group(1)
+
+    assert accent_0 == accent_8
+
+
 def test_build_card_html_escaping():
     module = load_generate_index_module()
     analysis = {
@@ -653,3 +673,70 @@ def test_parse_args_invalid():
     module = load_generate_index_module()
     with pytest.raises(SystemExit):
         module.parse_args(['--responsive-preset', 'invalid_choice'])
+
+def test_main_handles_file_read_error(tmp_path, monkeypatch):
+    import sys
+    from pathlib import Path
+    from unittest.mock import patch
+    module = load_generate_index_module()
+    html_file = tmp_path / "error_page.html"
+    html_file.touch()
+
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setattr(module, 'EXCLUDE', {'index.html'})
+    monkeypatch.setattr(sys, 'argv', ['generate_index.py'])
+
+    original_read_text = Path.read_text
+
+    def mock_read_text(self, *args, **kwargs):
+        if self.name == "error_page.html":
+            raise PermissionError("Permission Denied")
+        return original_read_text(self, *args, **kwargs)
+
+    with patch.object(Path, 'read_text', autospec=True, side_effect=mock_read_text):
+        module.main()
+
+    index_file = tmp_path / 'index.html'
+    assert index_file.exists()
+    content = index_file.read_text(encoding='utf-8')
+    assert "Error Page" in content
+
+def test_get_git_dates_batched_invalid_iso_format(monkeypatch, tmp_path):
+    module = load_generate_index_module()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+
+    file1 = tmp_path / 'file1.txt'
+    file1.touch()
+
+    class MockResult:
+        stdout = "TS:invalid-date\nfile1.txt\n"
+
+    def mock_run(*args, **kwargs):
+        return MockResult()
+
+    monkeypatch.setattr(module.subprocess, 'run', mock_run)
+
+    dates = module.get_git_dates_batched([file1])
+    # Because fromisoformat fails, it falls back to mtime string
+    assert file1 in dates
+    assert "202" in dates[file1] or "Jan" in dates[file1] or "Feb" in dates[file1] or "Mar" in dates[file1] or "Apr" in dates[file1] or "May" in dates[file1] or "Jun" in dates[file1] or "Jul" in dates[file1] or "Aug" in dates[file1] or "Sep" in dates[file1] or "Oct" in dates[file1] or "Nov" in dates[file1] or "Dec" in dates[file1]
+
+def test_main_with_none_responsive_preset_removes_enhancer(tmp_path, monkeypatch):
+    import sys
+    module = load_generate_index_module()
+    analysis = tmp_path / 'sample.html'
+    analysis.write_text(
+        '<html><head><title>Sample</title></head><body><!-- responsive-inject-v6 -->\n<style>body { color: red; }</style>\n<script>alert(1);</script>\n<p>Hello</p></body></html>',
+        encoding='utf-8',
+    )
+
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setattr(module, 'EXCLUDE', {'index.html'})
+    monkeypatch.setattr(sys, 'argv', ['generate_index.py', '--responsive-preset', 'none'])
+
+    module.main()
+
+    content = analysis.read_text(encoding='utf-8')
+    assert '<!-- responsive-inject-v6 -->' not in content
+    assert '<script>alert(1);</script>' not in content
+    assert '<p>Hello</p>' in content

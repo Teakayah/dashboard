@@ -44,3 +44,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-25 - Extracted duckdb table UI interaction logic
 **Learning:** `updateJoinUI`, `updateJoinColumns`, and `updateChartBuilderUI` dynamically rebuild UI select elements based on duckdb queries against information schemas, but lacked JSDoc detailing the prerequisites like requiring 2 loaded tables to activate the join UI.
 **Action:** When adding logic that conditionally changes UI based on DuckDB state, always explicitly comment the required table constraints.
+
+## 2026-05-27 - Documenting undocumented utility functions in DuckDB dropzone
+**Learning:** `insertAtCursor`, `createPreviewCard`, `renderChart`, and `showToast` were heavily used utility functions inside `dropzone/app.js` but lacked JSDoc comments. This required developers to read the function bodies to understand the accepted argument types and behaviors.
+**Action:** Always add complete JSDoc block comments to utility functions to clarify their signatures, parameter types, and overall purpose, reducing cognitive load for developers working within the feature.

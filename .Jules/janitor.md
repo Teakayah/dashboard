@@ -32,3 +32,6 @@ Action: To apply this next time, strip trailing semicolons from the user input a
 ## 2026-05-24 - Service Worker Path Issues
 **Learning:** Absolute paths (e.g. `/sw.js`) cause service worker registration to fail when deployed in sub-directories like Github Pages, and relative paths (e.g. `sw.js`) are safer.
 **Action:** To apply this next time I can ensure relative paths are used instead of absolute paths.
+## 2026-05-26 - Removed redundant Object.defineProperty Chart hack
+**Learning:** Found a redundant `Object.defineProperty` Chart.js hack used in `responsive-inject-v6` that isn't needed anymore because `maintainAspectRatio: false` is already manually set in `new Chart` instances.
+**Action:** Removed the script block from `deployment/generate_index.py` and updated the marker to `v7` to regenerate all HTML files without it.

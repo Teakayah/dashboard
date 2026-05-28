@@ -111,6 +111,18 @@ class TestDropzoneButtons:
         expect(dz.locator("#schema-display")).to_be_empty()
         expect(dz.locator("#instant-previews")).to_be_empty()
 
+    def test_clear_data_button_dismiss_keeps_schema(self, dz: Page):
+        dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
+        wait_for_duckdb_ready(dz)
+        load_samples(dz)
+        expect(dz.locator("#schema-display")).to_contain_text("employees")
+
+        # Dismiss the dialog
+        dz.on("dialog", lambda d: d.dismiss())
+        dz.locator("#clear-data").click()
+
+        expect(dz.locator("#schema-display")).to_contain_text("employees")
+
 
 class TestFloodPageButtons:
     def test_share_button_exists(self, page: Page):
