@@ -162,5 +162,5 @@ def main():
         sys.exit(f'Failed to screenshot: {failed}')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     main()

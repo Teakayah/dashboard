@@ -306,3 +306,43 @@ def test_main_partial_updates(mock_fetch, mock_load, capsys):
             out = capsys.readouterr().out
             assert "Skipping unchanged: ['456']" in out
             assert "Errors (1): ['123']" in out
+
+def test_download_table_no_change(tmp_path, monkeypatch):
+    import io
+    import sys
+    import zipfile
+    from unittest.mock import MagicMock
+    from deployment import update_statcan_data
+    monkeypatch.setattr(update_statcan_data, 'ROOT', tmp_path)
+
+    table = {
+        'id': '10100015',
+        'desc': 'Test Table',
+        'url': 'https://example.com/data.zip',
+        'zip_name': '10100015.csv',
+        'csv_name': 'test.csv',
+        'path': tmp_path
+    }
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w') as zf:
+        zf.writestr('10100015.csv', 'some csv data')
+
+    mock_resp = MagicMock()
+    mock_resp.read.return_value = buffer.getvalue()
+
+    from unittest.mock import patch
+    with patch('deployment.update_statcan_data.urllib.request.urlopen') as mock_urllib_open:
+        mock_urllib_open.return_value.__enter__.return_value = mock_resp
+        with patch('deployment.update_statcan_data._get_end_period') as mock_get_end_period:
+            mock_get_end_period.side_effect = ['2023-01', '2023-01']
+
+            captured_output = io.StringIO()
+            monkeypatch.setattr(sys, 'stdout', captured_output)
+
+            result = update_statcan_data.download_table(table)
+
+            assert "No change" in captured_output.getvalue()
+            assert result['updated'] == False
+            assert result['prev_end'] == '2023-01'
+            assert result['new_end'] == '2023-01'

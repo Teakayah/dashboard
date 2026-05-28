@@ -198,5 +198,5 @@ def main() -> None:
         print(f'  - {e["title"]} ({e["updated"][:10]})')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     main()
