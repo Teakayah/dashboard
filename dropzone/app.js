@@ -1093,8 +1093,8 @@ function renderResults(rows) {
     resultsContainer.textContent = '';
     
     new gridjs.Grid({
-        columns: columns,
-        data: rows.map(row => columns.map(col => row[col])),
+        columns: columns.map(c => ({ id: c, name: c })),
+        data: rows,
         pagination: { limit: 10 },
         sort: true,
         search: true,
