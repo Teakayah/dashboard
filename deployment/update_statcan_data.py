@@ -225,5 +225,5 @@ def _write_status(now: datetime, today: date, any_updated: bool, tables: list[di
     print(f'\n  Status written → {STATUS_FILE.relative_to(ROOT)}')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     sys.exit(main())

@@ -6,6 +6,7 @@ Run with:  pytest tests/test_dropzone.py -v
 """
 
 from pathlib import Path
+import re
 
 from playwright.sync_api import Page, expect
 
@@ -207,8 +208,8 @@ def test_invalid_sql_shows_dialog_not_crash(dz: Page):
     dz.locator('#run-query').click()
 
     toast = dz.locator('[role="alert"]')
-    toast.wait_for(state="visible", timeout=3000)
-    assert 'Error' in toast.inner_text() or 'nonexistent' in toast.inner_text().lower()
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Error|nonexistent', re.IGNORECASE))
 
 
 def test_count_query_returns_single_value(dz: Page):
@@ -264,6 +265,30 @@ def test_csv_export_downloads_file(dz: Page):
 
     assert 'id,name,dept_id,salary,join_date' in content, "CSV should contain headers"
     assert '1,Alice,101,85000,2022-01-15' in content, "CSV should contain row data"
+
+def test_export_db_downloads_file(dz: Page):
+    """Clicking Export Database must trigger a file download containing the DuckDB database."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+
+    dz.wait_for_function("document.getElementById('status').textContent.includes('Ready') || document.getElementById('status').textContent.includes('Loaded')", timeout=10000)
+
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=5000,
+    )
+
+    with dz.expect_download() as download_info:
+        dz.locator('#export-db').click()
+
+    download = download_info.value
+    assert download.suggested_filename.startswith('datadashboard_export_'), "Downloaded file name should start with 'datadashboard_export_'"
+    assert download.suggested_filename.endswith('.db'), "Downloaded file name should end with '.db'"
+
+    path = download.path()
+    import os
+    assert os.path.getsize(path) > 0, "Exported database file should not be empty"
+
 
 def test_copy_json_copies_to_clipboard(dz: Page):
     """Clicking Copy JSON must copy the query results to the clipboard."""

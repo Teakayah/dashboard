@@ -231,3 +231,42 @@ def test_main():
                         mock_write.assert_called_once()
                         written_content = mock_write.call_args[0][0]
                         assert "<title>Test</title>" in written_content
+
+def test_get_batched_git_isos_empty_line():
+    module = load_generate_feed_module()
+
+    mock_result = MagicMock()
+    mock_result.stdout = "TS:2023-10-27T10:00:00+00:00\n\ntest.html\n"
+
+    mock_path = MagicMock(spec=Path)
+    mock_path.name = "test.html"
+
+    with patch('subprocess.run', return_value=mock_result):
+        result = module._get_batched_git_isos([mock_path])
+        assert result == {mock_path: "2023-10-27T10:00:00+00:00"}
+
+def test_get_batched_git_isos_empty_files():
+    module = load_generate_feed_module()
+    result = module._get_batched_git_isos([])
+    assert result == {}
+
+def test_git_iso_fallback_on_empty_stamp():
+    module = load_generate_feed_module()
+    module._git_iso.cache_clear()
+
+    mock_result = MagicMock()
+    mock_result.stdout = "\n"
+
+    with patch('subprocess.run', return_value=mock_result):
+        result = module._git_iso(Path("test.html"))
+        # Returns current time formatted, just check format roughly
+        assert result.endswith("Z")
+
+def test_git_iso_fallback_on_exception():
+    module = load_generate_feed_module()
+    module._git_iso.cache_clear()
+
+    with patch('subprocess.run', side_effect=Exception("Git failed")):
+        result = module._git_iso(Path("test.html"))
+        # Returns current time formatted, just check format roughly
+        assert result.endswith("Z")

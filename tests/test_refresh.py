@@ -85,11 +85,29 @@ def test_git_success(mock_check_output):
         stderr=subprocess.DEVNULL
     )
 
+def test_git_success_multiple_args(mock_check_output):
+    module = load_refresh_module()
+    mock_check_output.return_value = "  another output  \n"
+
+    assert module._git('log', '-n', '1') == "another output"
+    mock_check_output.assert_called_once_with(
+        ['git', 'log', '-n', '1'],
+        cwd=str(module.ROOT),
+        text=True,
+        stderr=subprocess.DEVNULL
+    )
+
 def test_git_error(mock_check_output):
     module = load_refresh_module()
     mock_check_output.side_effect = subprocess.CalledProcessError(1, ['git'])
 
     assert module._git('log') == ""
+    mock_check_output.assert_called_once_with(
+        ['git', 'log'],
+        cwd=str(module.ROOT),
+        text=True,
+        stderr=subprocess.DEVNULL
+    )
 
 def test_main_success_all_steps(mock_subprocess, mock_sys_exit, mock_path, monkeypatch):
     module = load_refresh_module()
@@ -205,21 +223,34 @@ def test_main_no_git_changes(mock_subprocess, mock_sys_exit, mock_path, monkeypa
         if args[0] == 'git':
             assert args[1] != 'push'
 
-def test_parse_args_defaults(monkeypatch):
+def test_parse_args_defaults():
     module = load_refresh_module()
-    monkeypatch.setattr(sys, 'argv', ['refresh.py'])
-    args = module.parse_args()
+    args = module.parse_args([])
     assert args.no_push is False
     assert args.no_descriptions is False
     assert args.force_descriptions is False
 
-def test_parse_args_all_flags(monkeypatch):
+def test_parse_args_all_flags():
     module = load_refresh_module()
-    monkeypatch.setattr(sys, 'argv', ['refresh.py', '--no-push', '--no-descriptions', '--force-descriptions'])
-    args = module.parse_args()
+    args = module.parse_args(['--no-push', '--no-descriptions', '--force-descriptions'])
     assert args.no_push is True
     assert args.no_descriptions is True
     assert args.force_descriptions is True
+
+def test_parse_args_invalid():
+    module = load_refresh_module()
+    with pytest.raises(SystemExit) as exc_info:
+        module.parse_args(['--unknown-flag'])
+    assert exc_info.value.code == 2
+
+def test_parse_args_help(capsys):
+    module = load_refresh_module()
+    with pytest.raises(SystemExit) as exc_info:
+        module.parse_args(['--help'])
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr()
+    assert 'usage:' in captured.out
+    assert 'Local weekly data refresh pipeline.' in captured.out
 
 def test_if_name_main(mock_subprocess, mock_sys_exit, mock_path, monkeypatch):
     import runpy

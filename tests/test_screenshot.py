@@ -11,38 +11,36 @@ def load_screenshot_module():
     spec.loader.exec_module(module)
     return module
 
-def test_git_commit_time_success():
+def test_get_git_commit_times_batched_success():
     module = load_screenshot_module()
     with patch('subprocess.run') as mock_run:
-        mock_run.return_value = MagicMock(stdout='1234567890\n')
-        ts = module._git_commit_time('test.html')
-        assert ts == 1234567890
+        mock_run.return_value = MagicMock(stdout='TS:1234567890\ntest.html\npreviews/test.png\n')
+        times = module.get_git_commit_times_batched(['test.html', 'previews/test.png'])
+        assert times == {'test.html': 1234567890, 'previews/test.png': 1234567890}
         assert mock_run.call_count >= 1
 
-def test_git_commit_time_empty():
+def test_get_git_commit_times_batched_empty():
     module = load_screenshot_module()
     with patch('subprocess.run') as mock_run:
         mock_run.return_value = MagicMock(stdout='')
-        ts = module._git_commit_time('test.html')
-        assert ts == 0
+        times = module.get_git_commit_times_batched(['test.html'])
+        assert times == {}
         assert mock_run.call_count >= 1
 
 def test_needs_screenshot_missing():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=False):
-        assert module.needs_screenshot('test_page.html') is True
+        assert module.needs_screenshot('test_page.html', 0, 0) is True
 
 def test_needs_screenshot_older_preview():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=True):
-        with patch.object(module, '_git_commit_time', side_effect=[100, 50]):
-            assert module.needs_screenshot('test_page.html') is True
+        assert module.needs_screenshot('test_page.html', 100, 50) is True
 
 def test_needs_screenshot_newer_preview():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=True):
-        with patch.object(module, '_git_commit_time', side_effect=[50, 100]):
-            assert module.needs_screenshot('test_page.html') is False
+        assert module.needs_screenshot('test_page.html', 50, 100) is False
 
 @patch("sys.argv", ["screenshot.py"])
 def test_main_no_html_files():
@@ -56,6 +54,7 @@ def test_main_all_uptodate():
     mock_p = MagicMock()
     mock_p.name = 'test.html'
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'get_git_commit_times_batched', return_value={}), \
          patch.object(module, 'needs_screenshot', return_value=False):
         module.main()
 
@@ -66,6 +65,7 @@ def test_main_playwright_missing():
     mock_p.name = 'test.html'
 
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'get_git_commit_times_batched', return_value={}), \
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen') as mock_popen, \
          patch('socket.create_connection'), \
@@ -83,6 +83,7 @@ def test_main_server_fails_to_start():
     mock_p.name = 'test.html'
 
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'get_git_commit_times_batched', return_value={}), \
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen') as mock_popen, \
          patch('socket.create_connection', side_effect=OSError), \
@@ -110,6 +111,7 @@ def test_main_success_flow():
     mock_sync_playwright.return_value.__enter__.return_value = mock_pw
 
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'get_git_commit_times_batched', return_value={}), \
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen') as mock_popen, \
          patch('socket.create_connection'), \
@@ -146,6 +148,7 @@ def test_main_screenshot_failure():
     mock_sync_playwright.return_value.__enter__.return_value = mock_pw
 
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'get_git_commit_times_batched', return_value={}), \
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen'), \
          patch('socket.create_connection'), \
@@ -174,6 +177,7 @@ def test_main_timeout_waiting_for_load_state():
     mock_sync_playwright.return_value.__enter__.return_value = mock_pw
 
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'get_git_commit_times_batched', return_value={}), \
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen'), \
          patch('socket.create_connection'), \
@@ -191,19 +195,18 @@ def test_main_timeout_waiting_for_load_state():
 
 def test_needs_screenshot_force():
     module = load_screenshot_module()
-    assert module.needs_screenshot('test_page.html', force=True) is True
+    assert module.needs_screenshot('test_page.html', 0, 0, force=True) is True
 
 def test_needs_screenshot_mtime_fallback():
     module = load_screenshot_module()
     with patch('pathlib.Path.exists', return_value=True), \
-         patch.object(module, '_git_commit_time', side_effect=[0, 0, 0, 0]), \
          patch('pathlib.Path.stat') as mock_stat:
         # html mtime > png mtime
         mock_stat.side_effect = [MagicMock(st_mtime=50), MagicMock(st_mtime=100)]
-        assert module.needs_screenshot('test_page.html') is True
+        assert module.needs_screenshot('test_page.html', 0, 0) is True
 
         mock_stat.side_effect = [MagicMock(st_mtime=100), MagicMock(st_mtime=50)]
-        assert module.needs_screenshot('test_page.html') is False
+        assert module.needs_screenshot('test_page.html', 0, 0) is False
 
 @patch("sys.argv", ["screenshot.py"])
 def test_main_wait_for_selector_exception():
@@ -225,6 +228,7 @@ def test_main_wait_for_selector_exception():
     mock_sync_playwright.return_value.__enter__.return_value = mock_pw
 
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
+         patch.object(module, 'get_git_commit_times_batched', return_value={}), \
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen') as _, \
          patch('socket.create_connection'), \

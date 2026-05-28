@@ -51,6 +51,13 @@ function setProgress(percent) {
     initProgress.style.width = `${percent}%`;
 }
 
+/**
+ * Adds a successfully executed SQL query to the local storage history.
+ * Maintains a maximum of 10 recent unique queries, automatically moving
+ * reused queries to the top of the list.
+ *
+ * @param {string} sql - The SQL query string to record
+ */
 function addToHistory(sql) {
     const trimmed = sql.trim();
     if (!trimmed) return;
@@ -114,7 +121,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         // but we can ensure it's there if needed.
 
         const escapedUrl = url.replace(/'/g, "''");
-        const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${escapedUrl}')`;
+        const query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedUrl}')`;
         await conn.query(query);
 
         currentTableName = tableName;
@@ -144,21 +151,26 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
  * @param {import('@duckdb/duckdb-wasm').Table} result
  * @returns {Array<Object>}
  */
+function escapeId(str) {
+    return String(str).replace(/"/g, '""');
+}
+
 function getRows(result) {
     if (!result || !result.schema) return [];
     const fields = result.schema.fields.map(f => f.name);
     const numFields = fields.length;
     const numRows = result.numRows;
 
-    // Performance optimization: Pre-allocate the array to avoid dynamic resizing overhead,
-    // and use index-based loops to minimize iterator overhead in the hot path.
+    // Performance optimization: Use Arrow's native .toArray() to extract objects first
+    // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
+    const rawRows = result.toArray();
     const rows = new Array(numRows);
     for (let i = 0; i < numRows; i++) {
-        const rowProxy = result.get(i);
+        const rowObj = rawRows[i];
         const rowPlain = {};
         for (let j = 0; j < numFields; j++) {
             const field = fields[j];
-            const val = rowProxy[field];
+            const val = rowObj[field];
             // Cast BigInts to strings for UI/JSON compatibility
             rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
@@ -307,7 +319,7 @@ async function restoreState() {
                 await displayTableSchema(table);
             }
             
-            sqlInput.value = `SELECT * FROM "${currentTableName}" LIMIT 100`;
+            sqlInput.value = `SELECT * FROM "${escapeId(currentTableName)}" LIMIT 100`;
             sqlInput.dispatchEvent(new Event('input'));
             
             updateJoinUI();
@@ -319,7 +331,7 @@ async function restoreState() {
 }
 
 async function displayTableSchema(tableName) {
-    const schemaResult = await conn.query(`DESCRIBE "${tableName}"`);
+    const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
     const statsContainer = document.createElement('div');
     statsContainer.style.fontSize = '0.75rem';
     statsContainer.style.marginTop = '4px';
@@ -343,15 +355,15 @@ async function displayTableSchema(tableName) {
         
         const triggerAction = async (e) => {
             e.stopPropagation();
-            insertAtCursor(sqlInput, `"${r.column_name}"`);
+            insertAtCursor(sqlInput, `"${escapeId(r.column_name)}"`);
             
             // Profiling logic
             try {
                 statsContainer.innerHTML = '<i>Calculating stats...</i>';
-                const profilingResult = await conn.query(`SELECT MIN("${r.column_name}") as min_val, MAX("${r.column_name}") as max_val, COUNT("${r.column_name}") as count_val FROM "${tableName}"`);
+                const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
                 const stats = getRows(profilingResult)[0];
-                
-                const distResult = await conn.query(`SELECT "${r.column_name}" as val, count(*) as cnt FROM "${tableName}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
+
+                const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
                 statsContainer.innerHTML = '';
@@ -461,8 +473,8 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await conn.query(`DESCRIBE "${tableA}"`);
-        const schemaBResult = await conn.query(`DESCRIBE "${tableB}"`);
+        const schemaAResult = await conn.query(`DESCRIBE "${escapeId(tableA)}"`);
+        const schemaBResult = await conn.query(`DESCRIBE "${escapeId(tableB)}"`);
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
@@ -507,7 +519,7 @@ async function updateChartBuilderUI() {
     }
     chartBuilder.style.display = 'flex';
     try {
-        const schemaResult = await conn.query(`DESCRIBE "${currentTableName}"`);
+        const schemaResult = await conn.query(`DESCRIBE "${escapeId(currentTableName)}"`);
         const cols = getRows(schemaResult);
         
         const populateSelect = (select, cols, defaultMsg) => {
@@ -553,7 +565,7 @@ generateJoinBtn.addEventListener('click', () => {
         return;
     }
 
-    const sql = `SELECT *\nFROM "${a}"\nJOIN "${b}" ON "${a}"."${col}" = "${b}"."${col}"\nLIMIT 100`;
+    const sql = `SELECT *\nFROM "${escapeId(a)}"\nJOIN "${escapeId(b)}" ON "${escapeId(a)}"."${escapeId(col)}" = "${escapeId(b)}"."${escapeId(col)}"\nLIMIT 100`;
     sqlInput.value = sql;
     sqlInput.dispatchEvent(new Event('input'));
     sqlInput.focus();
@@ -575,9 +587,9 @@ generateChartBtn.addEventListener('click', () => {
         try {
             let sql = '';
             if (type === 'scatter') {
-                sql = `SELECT "${xCol}" as x, "${yCol}" as y\nFROM "${currentTableName}"\nWHERE "${xCol}" IS NOT NULL AND "${yCol}" IS NOT NULL\nLIMIT 500`;
+                sql = `SELECT "${escapeId(xCol)}" as x, "${escapeId(yCol)}" as y\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nLIMIT 500`;
             } else {
-                sql = `SELECT "${xCol}" as label, AVG("${yCol}") as value\nFROM "${currentTableName}"\nWHERE "${xCol}" IS NOT NULL AND "${yCol}" IS NOT NULL\nGROUP BY 1\nORDER BY 1 ASC\nLIMIT 100`;
+                sql = `SELECT "${escapeId(xCol)}" as label, AVG("${escapeId(yCol)}") as value\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nGROUP BY 1\nORDER BY 1 ASC\nLIMIT 100`;
             }
             
             // Show the generated SQL to the user in the console
@@ -704,14 +716,14 @@ async function handleFiles(files) {
 
             if (isDelta) {
                 if (!window.deltaSupported) {
-                    showToast(`Delta Lake table detected in folder "${dirName}", but support is missing in this browser. Skipping.`);
+                    showToast(`Delta Lake table detected in folder "${escapeId(dirName)}", but support is missing in this browser. Skipping.`);
                     continue;
                 }
                 currentTableName = tableName;
                 loadedTables.add(tableName);
                 const escapedDirName = dirName.replace(/'/g, "''");
-                const query = `CREATE TABLE "${tableName}" AS SELECT * FROM delta_scan('${escapedDirName}')`;
-                await conn.query(`DROP TABLE IF EXISTS "${tableName}"`);
+                const query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedDirName}')`;
+                await conn.query(`DROP TABLE IF EXISTS "${escapeId(tableName)}"`);
                 await conn.query(query);
                 await onTableLoaded(tableName);
             } else {
@@ -754,16 +766,16 @@ async function processFile(file, path) {
     const escapedPath = path.replace(/'/g, "''");
     
     if (ext === 'parquet') {
-        query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_parquet('${escapedPath}')`;
+        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_parquet('${escapedPath}')`;
     } else if (ext === 'csv') {
-        query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${escapedPath}')`;
+        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedPath}')`;
     } else if (ext === 'json') {
-        query = `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${escapedPath}')`;
+        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_json_auto('${escapedPath}')`;
     } else {
-        query = `CREATE TABLE "${tableName}" AS SELECT * FROM '${escapedPath}'`;
+        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM '${escapedPath}'`;
     }
     
-    await conn.query(`DROP TABLE IF EXISTS "${tableName}"`);
+    await conn.query(`DROP TABLE IF EXISTS "${escapeId(tableName)}"`);
     await conn.query(query);
     await onTableLoaded(tableName);
 }
@@ -777,10 +789,17 @@ async function onTableLoaded(tableName) {
     await generateInstantCharts(tableName);
     
     // Set default query
-    sqlInput.value = `SELECT * FROM "${tableName}" LIMIT 100`;
+    sqlInput.value = `SELECT * FROM "${escapeId(tableName)}" LIMIT 100`;
     sqlInput.dispatchEvent(new Event('input'));
 }
 
+/**
+ * Inserts text at the current cursor position within an input or textarea element.
+ * If text is selected, the selected text is replaced. Also triggers an 'input' event.
+ *
+ * @param {HTMLInputElement|HTMLTextAreaElement} myField - The target input field.
+ * @param {string} myValue - The text to insert.
+ */
 function insertAtCursor(myField, myValue) {
     if (myField.selectionStart !== undefined) {
         const startPos = myField.selectionStart;
@@ -816,7 +835,7 @@ recipeSelect.addEventListener('change', () => {
  * @param {string} tableName - The name of the DuckDB table to analyze
  */
 async function generateInstantCharts(tableName) {
-    const schemaResult = await conn.query(`DESCRIBE "${tableName}"`);
+    const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
     const columns = getRows(schemaResult);
     const numericCols = columns.filter(c => 
         ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase())
@@ -840,9 +859,9 @@ async function generateInstantCharts(tableName) {
         const nCol = numericCols[0];
         createPreviewCard(`Trend: ${nCol} over ${dCol}`, async (canvasId) => {
             const result = await conn.query(`
-                SELECT "${dCol}" as date, AVG("${nCol}") as val 
-                FROM "${tableName}"
-                WHERE "${dCol}" IS NOT NULL AND "${nCol}" IS NOT NULL
+                SELECT "${escapeId(dCol)}" as date, AVG("${escapeId(nCol)}") as val
+                FROM "${escapeId(tableName)}"
+                WHERE "${escapeId(dCol)}" IS NOT NULL AND "${escapeId(nCol)}" IS NOT NULL
                 GROUP BY 1 ORDER BY 1 ASC LIMIT 100
             `);
             const rows = getRows(result);
@@ -872,13 +891,13 @@ async function generateInstantCharts(tableName) {
                 for (let j = i + 1; j < colsToCheck.length; j++) {
                     const c1 = colsToCheck[i];
                     const c2 = colsToCheck[j];
-                    corrExprs.push(`corr("${c1}", "${c2}") as "c_${i}_${j}"`);
+                    corrExprs.push(`corr("${escapeId(c1)}", "${escapeId(c2)}") as "c_${i}_${j}"`);
                     pairs.push({ c1, c2, alias: `c_${i}_${j}` });
                 }
             }
 
             if (corrExprs.length > 0) {
-                const corrQuery = `SELECT ${corrExprs.join(', ')} FROM "${tableName}"`;
+                const corrQuery = `SELECT ${corrExprs.join(', ')} FROM "${escapeId(tableName)}"`;
                 const corrResult = await conn.query(corrQuery);
                 const row = getRows(corrResult)[0] || {};
 
@@ -892,7 +911,7 @@ async function generateInstantCharts(tableName) {
             }
             
             createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, async (canvasId) => {
-                const result = await conn.query(`SELECT "${bestPair[0]}" as x, "${bestPair[1]}" as y FROM "${tableName}" WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
+                const result = await conn.query(`SELECT "${escapeId(bestPair[0])}" as x, "${escapeId(bestPair[1])}" as y FROM "${escapeId(tableName)}" WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
                 const rows = getRows(result);
                 renderChart(canvasId, 'scatter', {
                     datasets: [{
@@ -913,8 +932,8 @@ async function generateInstantCharts(tableName) {
         const nCol = numericCols[0];
         createPreviewCard(`Distribution: ${nCol} by ${tCol}`, async (canvasId) => {
             const result = await conn.query(`
-                SELECT "${tCol}" as label, AVG("${nCol}") as value 
-                FROM "${tableName}"
+                SELECT "${escapeId(tCol)}" as label, AVG("${escapeId(nCol)}") as value
+                FROM "${escapeId(tableName)}"
                 GROUP BY 1 
                 ORDER BY value DESC 
                 LIMIT 10
@@ -932,6 +951,13 @@ async function generateInstantCharts(tableName) {
     }
 }
 
+/**
+ * Creates a DOM container for an instant chart preview and invokes a render function
+ * to populate it. Automatically provides a header with a title and a download button.
+ *
+ * @param {string} title - The title displayed in the card header.
+ * @param {Function} renderFn - A callback function invoked with the newly generated canvas ID.
+ */
 function createPreviewCard(title, renderFn) {
     const id = 'chart-' + Math.random().toString(36).substr(2, 9);
     const card = document.createElement('div');
@@ -973,6 +999,15 @@ function createPreviewCard(title, renderFn) {
     renderFn(id);
 }
 
+/**
+ * Initializes and renders a Chart.js instance onto a specific canvas element.
+ * Automatically applies responsive defaults.
+ *
+ * @param {string} id - The ID of the target canvas element.
+ * @param {string} type - The Chart.js chart type (e.g., 'line', 'bar', 'scatter').
+ * @param {Object} data - The Chart.js data configuration object.
+ * @param {Object} [options={}] - Additional Chart.js options to merge with defaults.
+ */
 function renderChart(id, type, data, options = {}) {
     const canvas = document.getElementById(id);
     if (!canvas) return;
@@ -1010,6 +1045,12 @@ sqlInput.addEventListener('keydown', (e) => {
 
 runBtn.addEventListener('click', runQuery);
 
+/**
+ * Executes the SQL query from the editor against the local DuckDB instance.
+ * Measures execution time, formats the result into a plain object array,
+ * updates the data grid visualization, and records the query in local history.
+ * Displays a toast notification if the query fails.
+ */
 async function runQuery() {
     const sql = sqlInput.value.trim();
     if (!sql) return;
@@ -1103,7 +1144,7 @@ loadSamplesBtn.addEventListener('click', async () => {
             const tableName = name.replace('.csv', '');
             await db.registerFileText(name, content);
             const escapedName = name.replace(/'/g, "''");
-            await conn.query(`CREATE TABLE IF NOT EXISTS "${tableName}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
+            await conn.query(`CREATE TABLE IF NOT EXISTS "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
             loadedTables.add(tableName);
             currentTableName = tableName;
         }
@@ -1173,7 +1214,7 @@ clearBtn.addEventListener('click', async () => {
         const tables = getRows(tablesResult).map(r => r.table_name);
         
         for (const table of tables) {
-            await conn.query(`DROP TABLE IF EXISTS "${table}"`);
+            await conn.query(`DROP TABLE IF EXISTS "${escapeId(table)}"`);
         }
         
         loadedTables.clear();
@@ -1200,6 +1241,12 @@ clearBtn.addEventListener('click', async () => {
 
 init();
 
+/**
+ * Displays a temporary, accessible error or informational toast notification
+ * at the bottom right of the viewport. Automatically dismisses after 5 seconds.
+ *
+ * @param {string} msg - The message text to display.
+ */
 function showToast(msg) {
     const panel = document.createElement('div');
     panel.textContent = msg;
