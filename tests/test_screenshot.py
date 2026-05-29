@@ -5,7 +5,7 @@ import pytest
 
 def load_screenshot_module():
     path = Path(__file__).parent.parent / 'deployment' / 'screenshot.py'
-    spec = importlib.util.spec_from_file_location('screenshot', path)
+    spec = importlib.util.spec_from_file_location('deployment.screenshot', path)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
@@ -242,3 +242,14 @@ def test_main_wait_for_selector_exception():
     mock_page.wait_for_selector.assert_called_once()
     mock_page.wait_for_timeout.assert_not_called()
     mock_page.screenshot.assert_called_once()
+
+def test_get_git_commit_times_batched_empty_list():
+    module = load_screenshot_module()
+    times = module.get_git_commit_times_batched([])
+    assert times == {}
+
+def test_get_git_commit_times_batched_exception():
+    module = load_screenshot_module()
+    with patch('subprocess.run', side_effect=Exception('git error')):
+        times = module.get_git_commit_times_batched(['test.html'])
+        assert times == {}
