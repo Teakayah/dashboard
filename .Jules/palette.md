@@ -30,3 +30,6 @@
 ## 2026-05-24 - Focus Visible Styles
 **Learning:** Default browser focus rings are frequently insufficient or completely hidden for native `<button>` and `<input>` elements in this application's custom CSS, requiring explicit `:focus-visible` styles with custom outlines and offsets to guarantee keyboard accessibility.
 **Action:** Always verify keyboard focus visibility using tab navigation and explicitly define `:focus-visible` styles (e.g., `outline: 2px solid var(--primary); outline-offset: 2px;`) rather than relying on default browser behaviors.
+## 2026-05-25 - Keyboard Shortcut Discoverability with aria-hidden
+**Learning:** Keyboard shortcuts improve power-user experience but are often hidden. Users might not know a shortcut exists unless visually prompted. However, the visual prompt itself can clutter the screen reader experience if it's placed right next to the element it describes, which should instead use an `aria-label` or `title` containing the shortcut.
+**Action:** Always provide visual hints (e.g., dynamic title attributes, `<kbd>` tags) when implementing keyboard shortcuts. Hide hints visually when the input is focused or not empty. Additionally, ensure the visual hint is hidden from screen readers using `aria-hidden="true"`, placing the instructions in the element's `aria-label` or `title` instead.
