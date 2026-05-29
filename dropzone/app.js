@@ -142,6 +142,16 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 });
 
 /**
+ * Escapes double quotes in SQL identifiers (e.g., table or column names) for DuckDB queries.
+ *
+ * @param {string|number} str - The identifier to escape
+ * @returns {string} The escaped identifier
+ */
+function escapeId(str) {
+    return String(str).replace(/"/g, '""');
+}
+
+/**
  * Safely converts an Arrow table result into a plain array of JavaScript objects.
  * DuckDB-Wasm returns query results as Apache Arrow tables wrapped in Proxy objects.
  * Attempting to pass these proxies directly to UI components (like Grid.js) or standard
@@ -151,10 +161,6 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
  * @param {import('@duckdb/duckdb-wasm').Table} result
  * @returns {Array<Object>}
  */
-function escapeId(str) {
-    return String(str).replace(/"/g, '""');
-}
-
 function getRows(result) {
     if (!result || !result.schema) return [];
     const fields = result.schema.fields.map(f => f.name);
