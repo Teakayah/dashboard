@@ -1043,6 +1043,13 @@ sqlInput.addEventListener('keydown', (e) => {
     }
 });
 
+document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== sqlInput && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'SELECT') {
+        e.preventDefault();
+        sqlInput.focus();
+    }
+});
+
 runBtn.addEventListener('click', runQuery);
 
 /**
