@@ -1092,9 +1092,12 @@ function renderResults(rows) {
     const resultsContainer = document.getElementById('results');
     resultsContainer.textContent = '';
     
+    // Optimization: Pass plain objects directly to `data` and map columns using `id`
+    // to utilize Grid.js native object mapping. This prevents blocking the main thread
+    // and allocating redundant arrays with a manual rows.map() over large datasets.
     new gridjs.Grid({
-        columns: columns,
-        data: rows.map(row => columns.map(col => row[col])),
+        columns: columns.map(c => ({ id: c, name: c })),
+        data: rows,
         pagination: { limit: 10 },
         sort: true,
         search: true,
