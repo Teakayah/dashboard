@@ -211,6 +211,31 @@
         @media (prefers-color-scheme: dark) {
             .loading-overlay { background: rgba(0,0,0,0.7); }
         }
+        .input-wrapper {
+            position: relative;
+            display: block;
+            width: 100%;
+        }
+        .shortcut-hint {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        @media (prefers-color-scheme: dark) {
+            .shortcut-hint {
+                background: rgba(255, 255, 255, 0.05);
+            }
+        }
+        textarea:focus + .shortcut-hint, textarea:not(:placeholder-shown) + .shortcut-hint {
+            display: none;
+        }
         @media (max-width: 600px) {
             .preview-section { grid-template-columns: 1fr; }
             .container { padding: 1rem; }
@@ -325,7 +350,10 @@
                 <button id="copy-json" class="secondary" disabled title="Requires query results">Copy JSON</button>
                 <button id="export-db" class="secondary" style="background-color: #7c3aed;">Export Database (.db)</button>
             </div>
-            <textarea id="sql-input" aria-label="SQL query input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
+            <div class="input-wrapper">
+                <textarea id="sql-input" aria-label="SQL query input (Press / to focus)" title="Press / to focus" placeholder="SELECT * FROM data LIMIT 10"></textarea>
+                <kbd aria-hidden="true" class="shortcut-hint">/</kbd>
+            </div>
             <div id="query-history" class="query-history-container"></div>
             <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 5px;">Tip: Click column names in the schema above to insert them into your query.</p>
         </div>
