@@ -17,7 +17,12 @@ def test_get_git_commit_times_batched_success():
         mock_run.return_value = MagicMock(stdout='TS:1234567890\ntest.html\npreviews/test.png\n')
         times = module.get_git_commit_times_batched(['test.html', 'previews/test.png'])
         assert times == {'test.html': 1234567890, 'previews/test.png': 1234567890}
-        assert mock_run.call_count >= 1
+        mock_run.assert_called_once_with(
+            ['git', 'log', '--format=TS:%ct', '--name-only', '--', 'test.html', 'previews/test.png'],
+            capture_output=True,
+            text=True,
+            cwd=str(module.ROOT)
+        )
 
 def test_get_git_commit_times_batched_empty():
     module = load_screenshot_module()
@@ -25,7 +30,12 @@ def test_get_git_commit_times_batched_empty():
         mock_run.return_value = MagicMock(stdout='')
         times = module.get_git_commit_times_batched(['test.html'])
         assert times == {}
-        assert mock_run.call_count >= 1
+        mock_run.assert_called_once_with(
+            ['git', 'log', '--format=TS:%ct', '--name-only', '--', 'test.html'],
+            capture_output=True,
+            text=True,
+            cwd=str(module.ROOT)
+        )
 
 def test_needs_screenshot_missing():
     module = load_screenshot_module()
