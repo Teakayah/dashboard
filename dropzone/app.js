@@ -359,14 +359,18 @@ async function displayTableSchema(tableName) {
             
             // Profiling logic
             try {
-                statsContainer.innerHTML = '<i>Calculating stats...</i>';
+                statsContainer.textContent = '';
+                const loadingText = document.createElement('i');
+                loadingText.textContent = 'Calculating stats...';
+                statsContainer.appendChild(loadingText);
+
                 const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
                 const stats = getRows(profilingResult)[0];
 
                 const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
-                statsContainer.innerHTML = '';
+                statsContainer.textContent = '';
                 const text = document.createElement('div');
                 text.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
                 statsContainer.appendChild(text);
