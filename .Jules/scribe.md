@@ -48,3 +48,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-27 - Documenting undocumented utility functions in DuckDB dropzone
 **Learning:** `insertAtCursor`, `createPreviewCard`, `renderChart`, and `showToast` were heavily used utility functions inside `dropzone/app.js` but lacked JSDoc comments. This required developers to read the function bodies to understand the accepted argument types and behaviors.
 **Action:** Always add complete JSDoc block comments to utility functions to clarify their signatures, parameter types, and overall purpose, reducing cognitive load for developers working within the feature.
+## 2026-05-31 - Fix JSDoc misplacement during refactoring
+**Learning:** JSDoc blocks can sometimes become mismatched or detached from their intended functions due to poor merge resolution or hasty refactoring (e.g. `escapeId` being inserted right before `getRows` and splitting the JSDoc intended for `getRows`).
+**Action:** When auditing documentation, explicitly verify that the JSDoc parameters match the signature of the function directly below it, to spot any misplacements.
