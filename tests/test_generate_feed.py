@@ -4,7 +4,7 @@ from pathlib import Path
 
 def load_generate_feed_module():
     path = Path(__file__).parent.parent / 'deployment' / 'generate_feed.py'
-    spec = importlib.util.spec_from_file_location('generate_feed', path)
+    spec = importlib.util.spec_from_file_location('deployment.generate_feed', path)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
