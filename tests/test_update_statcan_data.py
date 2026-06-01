@@ -343,6 +343,6 @@ def test_download_table_no_change(tmp_path, monkeypatch):
             result = update_statcan_data.download_table(table)
 
             assert "No change" in captured_output.getvalue()
-            assert result['updated'] == False
+            assert not result['updated']
             assert result['prev_end'] == '2023-01'
             assert result['new_end'] == '2023-01'
