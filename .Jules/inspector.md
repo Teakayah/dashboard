@@ -17,3 +17,11 @@
 ## 2026-05-26 - Assertions for Error Cases
 **Learning:** Testing error handling (like `subprocess.CalledProcessError`) should not only verify the fallback return value but also assert that the mocked function was called with the exact expected arguments that led to the error.
 **Action:** Add `assert_called_once_with` to mock exception scenarios to ensure the correct code path and arguments triggered the failure.
+
+## 2026-06-01 - Python coverage module names for `importlib.util.spec_from_file_location`
+**Learning:** If a Python module is imported dynamically in tests using `importlib.util.spec_from_file_location` and the module name doesn't match its relative package path (e.g., using `screenshot` instead of `deployment.screenshot`), `pytest-cov` might report 0% coverage with a `module-not-imported` warning.
+**Action:** Always ensure the module name passed to `spec_from_file_location` matches its expected dot-separated package path (e.g., `deployment.script_name`) to enable proper coverage tracking.
+
+## 2026-06-01 - Testing `__main__` entrypoint with `importlib.util`
+**Learning:** Dynamic module execution using `importlib.util.spec_from_file_location` bypasses mocks defined for that module in the parent testing context, since `exec_module` initializes it in a fresh namespace. Mocking the script's `main()` function from the parent test before `exec_module` does not mock the module's internal `main()` call inside its `if __name__ == "__main__":` block.
+**Action:** Mocking `sys.exit` works for the top-level block, but to avoid executing the module's real `main()`, `sys.argv` mocking or other external mock patterns (or refactoring) should be used if running the real `main()` has side effects.

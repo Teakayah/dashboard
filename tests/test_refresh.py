@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import importlib.util
 
 def load_refresh_module():
-    spec = importlib.util.spec_from_file_location("refresh", "deployment/refresh.py")
+    spec = importlib.util.spec_from_file_location("deployment.refresh", "deployment/refresh.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
