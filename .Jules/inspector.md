@@ -17,3 +17,6 @@
 ## 2026-05-26 - Assertions for Error Cases
 **Learning:** Testing error handling (like `subprocess.CalledProcessError`) should not only verify the fallback return value but also assert that the mocked function was called with the exact expected arguments that led to the error.
 **Action:** Add `assert_called_once_with` to mock exception scenarios to ensure the correct code path and arguments triggered the failure.
+## 2026-05-28 - Test Exception Handling Validation
+**Learning:** Adding test coverage for exception blocks isn't just about covering lines; it requires asserting *how* the failure was triggered to ensure it's not a generic or unintended exception.
+**Action:** Always use `mock.assert_called_once_with` when simulating exceptions (like `subprocess.CalledProcessError`) to explicitly verify the mock was called with the exact parameters expected before it threw the error.
