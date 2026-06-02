@@ -95,30 +95,6 @@
             gap: 10px;
             align-items: center;
         }
-        .input-wrapper {
-            position: relative;
-            display: block;
-        }
-        .shortcut-hint {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            pointer-events: none;
-            color: var(--text-dim);
-            font-size: 0.8rem;
-            transition: opacity 0.2s;
-        }
-        kbd {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 1px 4px;
-            font-family: "JetBrains Mono", "Fira Code", monospace;
-        }
-        #sql-input:focus + .shortcut-hint,
-        #sql-input:not(:placeholder-shown) + .shortcut-hint {
-            opacity: 0;
-        }
         textarea {
             width: 100%;
             height: 100px;
@@ -239,6 +215,30 @@
             .preview-section { grid-template-columns: 1fr; }
             .container { padding: 1rem; }
         }
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .shortcut-hint {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            pointer-events: none;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            transition: opacity 0.2s;
+        }
+        .shortcut-hint kbd {
+            background: var(--card-bg);
+            padding: 0.1rem 0.4rem;
+            border-radius: 0.25rem;
+            border: 1px solid var(--border);
+            font-family: inherit;
+        }
+        .input-wrapper:focus-within .shortcut-hint,
+        textarea:not(:placeholder-shown) + .shortcut-hint {
+            opacity: 0;
+        }
     </style>
 
   <!-- Open Graph / Social Sharing -->
@@ -350,7 +350,7 @@
                 <button id="export-db" class="secondary" style="background-color: #7c3aed;">Export Database (.db)</button>
             </div>
             <div class="input-wrapper">
-                <textarea id="sql-input" aria-label="SQL query input (Press '/' to focus)" placeholder="SELECT * FROM data LIMIT 10"></textarea>
+                <textarea id="sql-input" aria-label="SQL query input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
                 <div class="shortcut-hint" aria-hidden="true"><kbd>/</kbd> to focus</div>
             </div>
             <div id="query-history" class="query-history-container"></div>
@@ -376,7 +376,7 @@
   .related-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; letter-spacing: 0.05em; text-align: center; }
   .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
   .related-link { display: flex; flex-direction: column; padding: 16px; background: #fff; border-radius: 10px; border: 1px solid var(--border); text-decoration: none; color: inherit; transition: transform 0.2s; }
-  .related-link:hover { transform: translateY(-3px); border-color: var(--primary); }
+  .related-link:hover { transform: translateY(-3px); border-color: var(--primary); border-width: 1.5px; }
   .related-link strong { font-size: 0.9rem; color: #1a1a2e; margin-bottom: 4px; }
   .related-link span { font-size: 0.75rem; color: var(--text-muted); }
 </style>

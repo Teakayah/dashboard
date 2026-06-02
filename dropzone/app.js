@@ -930,7 +930,7 @@ async function generateInstantCharts(tableName) {
                         backgroundColor: '#4f8ef7'
                     }]
                 }, {
-                    scales: { x: { title: {display: true, text: bestPair[0]} }, y: { title: {display: true, text: bestPair[1]} } }
+                    scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }
                 });
             });
         } catch (e) { console.warn('Correlation check failed', e); }
@@ -1045,12 +1045,7 @@ sqlInput.addEventListener('input', () => {
 });
 
 document.addEventListener('keydown', (e) => {
-    const activeTagName = document.activeElement.tagName.toLowerCase();
-    if (activeTagName === 'input' || activeTagName === 'textarea' || activeTagName === 'select') {
-        return;
-    }
-
-    if (e.key === '/') {
+    if (e.key === '/' && document.activeElement !== sqlInput && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'SELECT') {
         e.preventDefault();
         sqlInput.focus();
     }

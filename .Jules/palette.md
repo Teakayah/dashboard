@@ -30,6 +30,7 @@
 ## 2026-05-24 - Focus Visible Styles
 **Learning:** Default browser focus rings are frequently insufficient or completely hidden for native `<button>` and `<input>` elements in this application's custom CSS, requiring explicit `:focus-visible` styles with custom outlines and offsets to guarantee keyboard accessibility.
 **Action:** Always verify keyboard focus visibility using tab navigation and explicitly define `:focus-visible` styles (e.g., `outline: 2px solid var(--primary); outline-offset: 2px;`) rather than relying on default browser behaviors.
+
 ## 2026-06-01 - Global Keyboard Shortcut Hints and Focus States
 **Learning:** When adding a global keyboard shortcut (like `/` to focus an input), it's crucial to visually indicate the shortcut exists without obstructing the UI. Additionally, a shortcut hint over an input should hide when the input is focused or not empty.
 **Action:** Use CSS pseudo-classes (`:focus` and `:not(:placeholder-shown)`) combined with the adjacent sibling selector (`+`) to hide `.shortcut-hint` when the input is focused or populated, and provide the shortcut in `aria-label` for screen reader discoverability.
