@@ -1044,6 +1044,18 @@ sqlInput.addEventListener('input', () => {
     }
 });
 
+document.addEventListener('keydown', (e) => {
+    const activeTagName = document.activeElement.tagName.toLowerCase();
+    if (activeTagName === 'input' || activeTagName === 'textarea' || activeTagName === 'select') {
+        return;
+    }
+
+    if (e.key === '/') {
+        e.preventDefault();
+        sqlInput.focus();
+    }
+});
+
 sqlInput.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
