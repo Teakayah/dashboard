@@ -9,7 +9,7 @@ from unittest.mock import patch, MagicMock
 def load_generate_descriptions_module():
     with patch.dict(os.environ, {'OLLAMA_URL': 'http://localhost:11434/api/generate', 'OLLAMA_MODEL': 'llama3'}):
         path = Path(__file__).parent.parent / 'deployment' / 'generate_descriptions.py'
-        spec = importlib.util.spec_from_file_location('generate_descriptions', path)
+        spec = importlib.util.spec_from_file_location('deployment.generate_descriptions', path)
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(module)
