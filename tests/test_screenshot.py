@@ -30,6 +30,25 @@ def test_get_git_commit_times_batched_success():
         assert times == {'test.html': 1234567890, 'previews/test.png': 1234567890}
         assert mock_run.call_count >= 1
 
+def test_get_git_commit_times_batched_empty_paths():
+    module = load_screenshot_module()
+    times = module.get_git_commit_times_batched([])
+    assert times == {}
+
+def test_get_git_commit_times_batched_exception():
+    module = load_screenshot_module()
+    with patch('subprocess.run') as mock_run:
+        import subprocess
+        mock_run.side_effect = subprocess.CalledProcessError(1, 'git')
+        times = module.get_git_commit_times_batched(['test.html'])
+        assert times == {}
+        mock_run.assert_called_once_with(
+            ['git', 'log', '--format=TS:%ct', '--name-only', '--', 'test.html'],
+            capture_output=True,
+            text=True,
+            cwd=str(module.ROOT)
+        )
+
 def test_get_git_commit_times_batched_empty():
     module = load_screenshot_module()
     with patch('subprocess.run') as mock_run:

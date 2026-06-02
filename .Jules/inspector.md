@@ -18,6 +18,10 @@
 **Learning:** Testing error handling (like `subprocess.CalledProcessError`) should not only verify the fallback return value but also assert that the mocked function was called with the exact expected arguments that led to the error.
 **Action:** Add `assert_called_once_with` to mock exception scenarios to ensure the correct code path and arguments triggered the failure.
 
+## 2026-05-28 - Test Exception Handling Validation
+**Learning:** Adding test coverage for exception blocks isn't just about covering lines; it requires asserting *how* the failure was triggered to ensure it's not a generic or unintended exception.
+**Action:** Always use `mock.assert_called_once_with` when simulating exceptions (like `subprocess.CalledProcessError`) to explicitly verify the mock was called with the exact parameters expected before it threw the error.
+
 ## 2026-06-01 - Python coverage module names for `importlib.util.spec_from_file_location`
 **Learning:** If a Python module is imported dynamically in tests using `importlib.util.spec_from_file_location` and the module name doesn't match its relative package path (e.g., using `screenshot` instead of `deployment.screenshot`), `pytest-cov` might report 0% coverage with a `module-not-imported` warning.
 **Action:** Always ensure the module name passed to `spec_from_file_location` matches its expected dot-separated package path (e.g., `deployment.script_name`) to enable proper coverage tracking.
