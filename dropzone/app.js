@@ -1134,6 +1134,9 @@ copyJsonBtn.addEventListener('click', () => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
+    }).catch(err => {
+        console.error(err);
+        showToast('Clipboard Error: ' + err.message);
     });
 });
 

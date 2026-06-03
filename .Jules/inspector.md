@@ -17,3 +17,7 @@
 ## 2026-05-26 - Assertions for Error Cases
 **Learning:** Testing error handling (like `subprocess.CalledProcessError`) should not only verify the fallback return value but also assert that the mocked function was called with the exact expected arguments that led to the error.
 **Action:** Add `assert_called_once_with` to mock exception scenarios to ensure the correct code path and arguments triggered the failure.
+
+## 2026-06-03 - [Missing clipboard error handling]
+**Learning:** The clipboard API (`navigator.clipboard.writeText`) returns a Promise that must be `.catch()`'d to handle denials or context issues. Silent failures prevent UI toasts from alerting the user. Mocking `navigator.clipboard` using `Object.defineProperty` within `page.evaluate()` is effective for simulating these failures in Playwright tests.
+**Action:** Always append `.catch()` blocks to clipboard operations and include tests that mock promise rejections.
