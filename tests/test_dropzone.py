@@ -317,3 +317,36 @@ def test_copy_json_copies_to_clipboard(dz: Page):
     clipboard_content = dz.evaluate("navigator.clipboard.readText()")
     assert 'Alice' in clipboard_content, "Clipboard should contain JSON data with 'Alice'"
     assert 'id' in clipboard_content, "Clipboard should contain JSON data with 'id'"
+
+
+def test_copy_json_shows_error_toast_on_failure(dz: Page):
+    """Clicking Copy JSON when clipboard fails must show an error toast."""
+    dz.goto(DROPZONE)
+    _wait_for_ready(dz)
+
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=ACTION_TIMEOUT,
+    )
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    # Force clipboard.writeText to reject (we need to ensure navigator.clipboard exists first or assign it safely)
+    dz.evaluate("""
+        Object.defineProperty(navigator, 'clipboard', {
+            value: {
+                writeText: () => Promise.reject(new Error('Write permission denied'))
+            },
+            writable: true,
+            configurable: true
+        });
+    """)
+
+    dz.locator('#copy-json').click()
+
+    toast = dz.locator('[role="alert"]')
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Clipboard Error', re.IGNORECASE))
