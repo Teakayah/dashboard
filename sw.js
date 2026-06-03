@@ -4,7 +4,6 @@ const ASSETS = [
   '/',
   '/index.html',
   '/assets/theme.css',
-  '/assets/fullscreen.js',
   '/dropzone/vendor/gridjs/gridjs.js',
   '/dropzone/vendor/gridjs/mermaid.min.css'
 ];
