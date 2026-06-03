@@ -246,6 +246,27 @@ def inject_favicon(content: str, filename: str) -> str:
     return new_content
 
 
+def inject_csp(content: str, filename: str) -> str:
+    """Inject a Content Security Policy meta tag into an analysis HTML file."""
+    if 'Content-Security-Policy' in content:
+        return content
+
+    csp_block = (
+        '\n  <meta http-equiv="Content-Security-Policy" content="default-src \'self\'; '
+        'script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https://cdn.jsdelivr.net; '
+        'style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; '
+        'font-src \'self\' https://fonts.gstatic.com; '
+        'img-src \'self\' data: https:; '
+        'connect-src \'self\' https: blob:; '
+        'worker-src \'self\' blob:">'
+    )
+
+    new_content = re.sub(r'(<head[^>]*>)', r'\1' + csp_block, content, count=1, flags=re.IGNORECASE)
+    if new_content != content:
+        print(f'  Injected CSP into {filename}')
+    return new_content
+
+
 def inject_og_tags(content: str, filename: str, stem: str) -> str:
     """Inject og:image/twitter:image into an analysis HTML file content if not already present."""
     if 'og:image' in content:
@@ -684,6 +705,7 @@ def main(argv: Optional[list[str]] = None):
         new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
         new_content = inject_share_fix(new_content, meta['filename'])
         new_content = inject_contrast_fix(new_content, meta['filename'])
+        new_content = inject_csp(new_content, meta['filename'])
 
         if new_content != content:
             filepath.write_text(new_content, encoding='utf-8')
