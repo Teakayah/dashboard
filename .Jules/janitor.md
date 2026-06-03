@@ -35,3 +35,7 @@ Action: To apply this next time, strip trailing semicolons from the user input a
 ## 2026-05-26 - Removed redundant Object.defineProperty Chart hack
 **Learning:** Found a redundant `Object.defineProperty` Chart.js hack used in `responsive-inject-v6` that isn't needed anymore because `maintainAspectRatio: false` is already manually set in `new Chart` instances.
 **Action:** Removed the script block from `deployment/generate_index.py` and updated the marker to `v7` to regenerate all HTML files without it.
+
+## 2026-05-29 - Removed unused mock variables
+Learning: Using `ruff check --select F401,F841 . --fix --unsafe-fixes` will effectively remove unused `patch` variable assignments in tests and automatically clean up unused standard library and external imports.
+Action: Next time I find F841 and F401 warnings for unused patches, use the `--unsafe-fixes` flag with `ruff check` to automate the cleanup.
