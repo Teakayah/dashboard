@@ -42,6 +42,10 @@ def test_benchmark_final():
         assert module._read_csv_orig("fake") is not None
         assert module._read_csv_stripped(Path("fake")) is not None
 
+    with patch('builtins.open', mock_open(read_data='')):
+        assert module._read_csv_stripped(Path("empty_fake")) == []
+
+    with patch('builtins.open', mock_open(read_data=csv_data)):
         with patch('pathlib.Path.exists', return_value=True):
             with patch('time.time', side_effect=[1, 2, 3, 4]):
                 with patch('builtins.print') as mock_print:
