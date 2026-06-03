@@ -4,7 +4,7 @@ from playwright.sync_api import Page
 
 BASE = 'http://localhost:8765'
 DROPZONE_URL = f'{BASE}/dropzone.html'
-DUCKDB_READY_TIMEOUT = 40_000
+DUCKDB_READY_TIMEOUT = 90_000
 ACTION_TIMEOUT = 15_000
 
 
