@@ -111,6 +111,8 @@ def test_clear_data_wipes_schema(dz: Page):
     )
 
     expect(dz.locator('#schema-display')).to_have_text('')
+    expect(dz.locator('#sql-input')).to_have_value('')
+    assert dz.locator('#run-query').is_disabled()
 
 
 
