@@ -949,7 +949,7 @@ async function generateInstantCharts(tableName) {
                     datasets: [{
                         label: `${bestPair[0]} vs ${bestPair[1]}`,
                         data: rows.map(r => ({x: r.x, y: r.y})),
-                        backgroundColor: '#4f8ef7'
+                        backgroundColor: '#1d4ed8'
                     }]
                 }, {
                     scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }

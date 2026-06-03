@@ -363,11 +363,11 @@ def build_html(analyses: list[dict]) -> str:
       margin-bottom: 4px;
     }}
     header h1 span {{
-      color: #1e40af;
+      color: #60a5fa;
     }}
     .header-sub {{
       font-size: 0.82rem;
-      color: rgba(255,255,255,0.75);
+      color: rgba(255,255,255,0.85);
     }}
 
     /* ── Search ─────────────────────────────────────────────── */
@@ -420,7 +420,7 @@ def build_html(analyses: list[dict]) -> str:
       border-radius: 12px;
       padding: 18px 18px 14px;
       box-shadow: 0 1px 6px rgba(0,0,0,0.07);
-      border-top: 3px solid var(--accent, #4f8ef7);
+      border-top: 3px solid var(--accent, #1d4ed8);
       text-decoration: none;
       color: inherit;
       transition: transform 0.15s, box-shadow 0.15s;
@@ -508,11 +508,11 @@ def build_html(analyses: list[dict]) -> str:
 
     /* ── Keyboard focus ──────────────────────────────────────── */
     button:focus-visible {{
-      outline: 2px solid #4f8ef7;
+      outline: 2px solid #1d4ed8;
       outline-offset: 2px;
     }}
     .card:focus-visible {{
-      outline: 2px solid #4f8ef7;
+      outline: 2px solid #1d4ed8;
       outline-offset: 2px;
     }}
 
@@ -608,10 +608,12 @@ CONTRAST_FIX_MARKER = 'data-contrast-fix'
 CONTRAST_FIX_STYLE = (
     '\n  <style data-contrast-fix>'
     'body{background:var(--bg)!important;color:var(--text)!important}'
+    'h1,h2,h3,h4,h5,h6{color:var(--text)!important}'
+    'a{color:var(--primary,#2563eb)}'
     '.subtitle,.note,.empty,.tab:not(.active),.related-label,.card-date'
     '{color:var(--text-muted,#4b5563)!important}'
     '.related-link span,footer,footer a{color:var(--text-muted,#4b5563)!important}'
-    'button.tab{background:transparent;border:none;border-bottom:3px solid transparent;font-family:inherit;outline:none}button.tab.active{border-bottom-color:#1a1a2e}button.tab:focus-visible{outline:2px solid var(--primary,#1a1a2e);outline-offset:-2px}'
+    'button.tab{background:transparent;border:none;border-bottom:3px solid transparent;font-family:inherit;outline:none}button.tab.active{border-bottom-color:var(--primary,#1a1a2e)}button.tab:focus-visible{outline:2px solid var(--primary,#1a1a2e);outline-offset:-2px}'
     '</style>'
 )
 
