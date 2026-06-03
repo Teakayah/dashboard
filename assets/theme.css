@@ -1,5 +1,5 @@
 :root {
-  --primary: #4f8ef7;
+  --primary: #1d4ed8;
   --bg: #f5f5f2;
   --card-bg: #ffffff;
   --text: #1e293b;
@@ -10,7 +10,7 @@
   --header-bg: #1a1a2e;
   --header-text: #ffffff;
   --header-muted: rgba(255, 255, 255, 0.75);
-  --accent-blue: #4f8ef7;
+  --accent-blue: #1d4ed8;
   --accent-red: #ff6384;
   --accent-teal: #4bc0c0;
   --accent-orange: #ff9f40;
@@ -216,7 +216,7 @@ body {
 
 .fullscreen-btn:focus-visible,
 .clickable-col:focus-visible {
-  outline: 2px solid var(--primary, #4f8ef7);
+  outline: 2px solid var(--primary, #1d4ed8);
   outline-offset: 2px;
 }
 
