@@ -5,7 +5,7 @@ import pytest
 
 def load_screenshot_module():
     path = Path(__file__).parent.parent / 'deployment' / 'screenshot.py'
-    spec = importlib.util.spec_from_file_location('screenshot', path)
+    spec = importlib.util.spec_from_file_location('deployment.screenshot', path)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)

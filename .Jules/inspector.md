@@ -17,3 +17,7 @@
 ## 2026-05-26 - Assertions for Error Cases
 **Learning:** Testing error handling (like `subprocess.CalledProcessError`) should not only verify the fallback return value but also assert that the mocked function was called with the exact expected arguments that led to the error.
 **Action:** Add `assert_called_once_with` to mock exception scenarios to ensure the correct code path and arguments triggered the failure.
+
+## 2026-05-29 - Coverage Warning Troubleshooting
+**Learning:** Running pytest with `--cov=deployment.screenshot` causes a "Module was never imported" warning if the module is imported using `importlib.util.spec_from_file_location("screenshot", ...)` in the test code.
+**Action:** When using `importlib.util.spec_from_file_location` to dynamically load a module, the first argument to `spec_from_file_location` must match the dot-separated relative path of the module (e.g. `deployment.screenshot`) so that `coverage` can correctly track it.
