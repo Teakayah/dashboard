@@ -1,8 +1,6 @@
-import pytest
 from pathlib import Path
 from unittest.mock import patch, mock_open, MagicMock
 import importlib.util
-import sys
 
 def run_script(script_name):
     path = Path(__file__).parent.parent.parent / 'scripts' / script_name
@@ -44,6 +42,10 @@ def test_benchmark_final():
         assert module._read_csv_orig("fake") is not None
         assert module._read_csv_stripped(Path("fake")) is not None
 
+        # Test empty CSV handling (StopIteration)
+        with patch('builtins.open', mock_open(read_data="")):
+            assert module._read_csv_stripped(Path("fake")) == []
+
         with patch('pathlib.Path.exists', return_value=True):
             with patch('time.time', side_effect=[1, 2, 3, 4]):
                 with patch('builtins.print') as mock_print:
@@ -80,9 +82,9 @@ def test_dummy_data_gen():
 
 def test_generate_icons():
     with patch('PIL.Image.new') as mock_image_new:
-        with patch('PIL.ImageDraw.Draw') as mock_draw:
-            with patch('os.makedirs') as mock_makedirs:
-                with patch('builtins.print') as mock_print:
+        with patch('PIL.ImageDraw.Draw'):
+            with patch('os.makedirs'):
+                with patch('builtins.print'):
                     module = load_script_as_module('generate_icons.py', 'generate_icons')
 
                     # Test logic
@@ -96,8 +98,8 @@ def test_generate_icons():
                     mock_img.save.assert_called_with("fake.png")
 
 def test_generate_icons_main():
-    with patch('PIL.Image.new') as mock_image_new:
-        with patch('PIL.ImageDraw.Draw') as mock_draw:
+    with patch('PIL.Image.new'):
+        with patch('PIL.ImageDraw.Draw'):
             with patch('os.makedirs') as mock_makedirs:
                 with patch('builtins.print') as mock_print:
                     run_script('generate_icons.py')

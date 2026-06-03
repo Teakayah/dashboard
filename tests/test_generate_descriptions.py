@@ -9,11 +9,21 @@ from unittest.mock import patch, MagicMock
 def load_generate_descriptions_module():
     with patch.dict(os.environ, {'OLLAMA_URL': 'http://localhost:11434/api/generate', 'OLLAMA_MODEL': 'llama3'}):
         path = Path(__file__).parent.parent / 'deployment' / 'generate_descriptions.py'
-        spec = importlib.util.spec_from_file_location('generate_descriptions', path)
+        spec = importlib.util.spec_from_file_location('deployment.generate_descriptions', path)
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(module)
         return module
+
+def test_ollama_describe_insecure_url():
+    module = load_generate_descriptions_module()
+
+    with patch.dict(os.environ, {'OLLAMA_URL': 'ftp://localhost:11434'}):
+        # We need to re-load or manually update the module's OLLAMA_URL
+        # since it was set at module-load time.
+        module.OLLAMA_URL = 'ftp://localhost:11434'
+        with pytest.raises(ValueError, match="Insecure URL scheme in OLLAMA_URL"):
+            module.ollama_describe("<html>Content</html>", "test.html")
 
 def test_ollama_describe_error_handling(capsys):
     module = load_generate_descriptions_module()

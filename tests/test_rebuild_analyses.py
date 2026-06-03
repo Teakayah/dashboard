@@ -1085,12 +1085,12 @@ def test_extract_statcan_data_general_buckets():
 
 @patch("sys.exit")
 def test_script_entrypoint(mock_exit):
-    import runpy
-    import sys
-    with patch.object(sys, "argv", ["deployment/rebuild_analyses.py"]):
-        try:
-            with patch("deployment.rebuild_analyses.main", return_value=0):
-                runpy.run_path("deployment/rebuild_analyses.py", run_name="__main__")
-        except SystemExit:
-            pass
-            pass
+    import importlib.util
+    from pathlib import Path
+    with patch("deployment.rebuild_analyses.main", return_value=0):
+        path = Path(__file__).parent.parent / 'deployment' / 'rebuild_analyses.py'
+        spec = importlib.util.spec_from_file_location('__main__', path)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        mock_exit.assert_called_once_with(0)

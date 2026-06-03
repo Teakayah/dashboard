@@ -215,6 +215,30 @@
             .preview-section { grid-template-columns: 1fr; }
             .container { padding: 1rem; }
         }
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .shortcut-hint {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            pointer-events: none;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            transition: opacity 0.2s;
+        }
+        .shortcut-hint kbd {
+            background: var(--card-bg);
+            padding: 0.1rem 0.4rem;
+            border-radius: 0.25rem;
+            border: 1px solid var(--border);
+            font-family: inherit;
+        }
+        .input-wrapper:focus-within .shortcut-hint,
+        textarea:not(:placeholder-shown) + .shortcut-hint {
+            opacity: 0;
+        }
     </style>
 
   <!-- Open Graph / Social Sharing -->
@@ -235,7 +259,7 @@
 <!-- unified-header-inject -->
 <header class="unified-header">
   <div class="back-link-box">
-    <a href="https://teakayah.github.io/dashboard/" style="font-weight:700; color:var(--primary); font-size:1.2rem;">DataDashboard</a>
+    <a href="https://teakayah.github.io/dashboard/" style="font-weight:700; color:inherit; font-size:1.2rem;">DataDashboard</a>
     <span style="opacity:0.3; margin: 0 4px;">/</span>
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
@@ -325,7 +349,10 @@
                 <button id="copy-json" class="secondary" disabled title="Requires query results">Copy JSON</button>
                 <button id="export-db" class="secondary" style="background-color: #7c3aed;">Export Database (.db)</button>
             </div>
-            <textarea id="sql-input" aria-label="SQL query input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
+            <div class="input-wrapper">
+                <textarea id="sql-input" aria-label="SQL query input (Press / to focus)" placeholder="SELECT * FROM data LIMIT 10"></textarea>
+                <div class="shortcut-hint" aria-hidden="true"><kbd>/</kbd> to focus</div>
+            </div>
             <div id="query-history" class="query-history-container"></div>
             <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 5px;">Tip: Click column names in the schema above to insert them into your query.</p>
         </div>
@@ -349,7 +376,7 @@
   .related-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; letter-spacing: 0.05em; text-align: center; }
   .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
   .related-link { display: flex; flex-direction: column; padding: 16px; background: #fff; border-radius: 10px; border: 1px solid var(--border); text-decoration: none; color: inherit; transition: transform 0.2s; }
-  .related-link:hover { transform: translateY(-3px); border-color: var(--primary); }
+  .related-link:hover { transform: translateY(-3px); border-color: var(--primary); border-width: 1.5px; }
   .related-link strong { font-size: 0.9rem; color: #1a1a2e; margin-bottom: 4px; }
   .related-link span { font-size: 0.75rem; color: var(--text-muted); }
 </style>
@@ -362,6 +389,11 @@
         navigator.clipboard.writeText(window.location.href);
       }
     });
+
+    if (!navigator.share && !navigator.clipboard) {
+      const shareBtn = document.getElementById('share-btn');
+      if (shareBtn) shareBtn.style.display = 'none';
+    }
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

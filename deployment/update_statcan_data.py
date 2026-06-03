@@ -72,6 +72,8 @@ def fetch_changed_since(since: date) -> Optional[set[str]]:
     since `since`. Returns None if the API call fails (caller should fall back).
     """
     url = _CHANGED_URL.format(date=since.isoformat())
+    if not url.startswith(('http://', 'https://')):
+        raise ValueError(f"Insecure URL scheme: {url}")
     print(f'  Checking Stats Canada for tables changed since {since} ...')
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'DataDashboard/1.0'})
@@ -113,6 +115,8 @@ def download_table(table: dict) -> dict:
     prev_end = _get_end_period(meta_path)
 
     url = _DL_URL.format(pid=pid)
+    if not url.startswith(('http://', 'https://')):
+        raise ValueError(f"Insecure URL scheme: {url}")
     print(f'  [{pid}] {table["desc"]}')
     print('         Downloading ...')
 

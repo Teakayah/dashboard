@@ -27,6 +27,8 @@ PRECIP_STATION = "6106000"  # Ottawa CDA
 def fetch_gauge_data(station_id):
     """Fetch latest reading from ECCC GeoMet API."""
     url = f"https://api.weather.gc.ca/collections/hydrometric-realtime/items?STATION_NUMBER={station_id}&f=json&limit=1"
+    if not url.startswith(('http://', 'https://')):
+        raise ValueError(f"Insecure URL scheme: {url}")
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "DataDashboard/1.0"})
         with urllib.request.urlopen(req, timeout=15) as resp:

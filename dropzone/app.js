@@ -142,6 +142,17 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 });
 
 /**
+ * Escapes double quotes in identifiers (like table or column names)
+ * to prevent SQL injection or syntax errors when constructing dynamic queries.
+ *
+ * @param {string} str - The identifier string to escape
+ * @returns {string} The escaped identifier string
+ */
+function escapeId(str) {
+    return String(str).replace(/"/g, '""');
+}
+
+/**
  * Safely converts an Arrow table result into a plain array of JavaScript objects.
  * DuckDB-Wasm returns query results as Apache Arrow tables wrapped in Proxy objects.
  * Attempting to pass these proxies directly to UI components (like Grid.js) or standard
@@ -151,10 +162,6 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
  * @param {import('@duckdb/duckdb-wasm').Table} result
  * @returns {Array<Object>}
  */
-function escapeId(str) {
-    return String(str).replace(/"/g, '""');
-}
-
 function getRows(result) {
     if (!result || !result.schema) return [];
     const fields = result.schema.fields.map(f => f.name);
@@ -226,6 +233,13 @@ function reloadWithoutSW() {
     }
 }
 
+/**
+ * Initializes the DuckDB-Wasm instance and sets up the Analytical Drop-Zone UI.
+ * This includes instantiating the WebAssembly module, connecting to the database
+ * (preferring OPFS persistence if available), loading the delta extension,
+ * and restoring the offline UI state. Includes a timeout fallback to handle
+ * stale service worker scenarios.
+ */
 async function init() {
     let timedOut = false;
     const timeoutId = setTimeout(() => {
@@ -330,6 +344,14 @@ async function restoreState() {
     }
 }
 
+/**
+ * Queries and displays the schema for a specific DuckDB table.
+ * Renders an interactive UI where users can click column names to insert them
+ * into the SQL editor. Additionally, calculates and renders inline profiling
+ * stats (min, max, count) and a frequency distribution chart when a column is clicked.
+ *
+ * @param {string} tableName - The name of the table to display the schema for
+ */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
     const statsContainer = document.createElement('div');
@@ -359,14 +381,17 @@ async function displayTableSchema(tableName) {
             
             // Profiling logic
             try {
-                statsContainer.innerHTML = '<i>Calculating stats...</i>';
+                statsContainer.textContent = '';
+                const calcItalics = document.createElement('i');
+                calcItalics.textContent = 'Calculating stats...';
+                statsContainer.appendChild(calcItalics);
                 const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
                 const stats = getRows(profilingResult)[0];
 
                 const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
-                statsContainer.innerHTML = '';
+                statsContainer.textContent = '';
                 const text = document.createElement('div');
                 text.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
                 statsContainer.appendChild(text);
@@ -780,6 +805,13 @@ async function processFile(file, path) {
     await onTableLoaded(tableName);
 }
 
+/**
+ * Orchestrates the UI updates immediately after a new table is registered in DuckDB.
+ * Triggers schema display generation, instant chart previews, and sets a default
+ * query in the SQL editor for the user.
+ *
+ * @param {string} tableName - The name of the newly loaded table
+ */
 async function onTableLoaded(tableName) {
     // Show schema
     if (loadedTables.size === 1) schemaDisplay.textContent = '';
@@ -917,10 +949,10 @@ async function generateInstantCharts(tableName) {
                     datasets: [{
                         label: `${bestPair[0]} vs ${bestPair[1]}`,
                         data: rows.map(r => ({x: r.x, y: r.y})),
-                        backgroundColor: '#4f8ef7'
+                        backgroundColor: '#1d4ed8'
                     }]
                 }, {
-                    scales: { x: { title: {display: true, text: bestPair[0]} }, y: { title: {display: true, text: bestPair[1]} } }
+                    scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }
                 });
             });
         } catch (e) { console.warn('Correlation check failed', e); }
@@ -977,6 +1009,8 @@ function createPreviewCard(title, renderFn) {
 
     const downloadBtn = document.createElement('button');
     downloadBtn.textContent = '💾 PNG';
+    downloadBtn.setAttribute('aria-label', `Download ${title} as PNG`);
+    downloadBtn.title = `Download ${title} as PNG`;
     downloadBtn.style.padding = '2px 6px';
     downloadBtn.style.fontSize = '0.7rem';
     downloadBtn.onclick = () => {
@@ -1031,6 +1065,13 @@ sqlInput.addEventListener('input', () => {
     } else {
         runBtn.disabled = true; runBtn.setAttribute('aria-disabled', 'true');
         runBtn.title = 'Requires a valid query';
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== sqlInput && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'SELECT') {
+        e.preventDefault();
+        sqlInput.focus();
     }
 });
 
@@ -1092,9 +1133,11 @@ function renderResults(rows) {
     const resultsContainer = document.getElementById('results');
     resultsContainer.textContent = '';
     
+    // Performance optimization: pass the plain objects array directly to data
+    // and map columns with id keys to avoid array mapping overhead.
     new gridjs.Grid({
-        columns: columns,
-        data: rows.map(row => columns.map(col => row[col])),
+        columns: columns.map(c => ({ id: c, name: c })),
+        data: rows,
         pagination: { limit: 10 },
         sort: true,
         search: true,
