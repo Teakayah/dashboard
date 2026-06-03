@@ -168,9 +168,38 @@ function getRows(result) {
     const numFields = fields.length;
     const numRows = result.numRows;
 
-    // Performance optimization: Use Arrow's native .toArray() to extract objects first
-    // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
     const rawRows = result.toArray();
+
+    // Check schema for BigInt fields to bypass checking each value
+    let hasBigInt = false;
+    for (let j = 0; j < numFields; j++) {
+        const type = result.schema.fields[j].type;
+        // In Apache Arrow JS, Int64/Uint64 types are represented with bitWidth = 64.
+        // We also check stringified type names as a fallback.
+        if (type && (type.bitWidth === 64 || String(type).includes('Int64'))) {
+            hasBigInt = true;
+            break;
+        }
+    }
+
+    // Fast path: if no BigInts are found in the schema, map to plain objects
+    // directly without the typeof check per-cell. We must still create plain
+    // objects because DuckDB Arrow Proxy objects will crash Grid.js.
+    if (!hasBigInt) {
+        const rows = new Array(numRows);
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                rowPlain[field] = rowObj[field];
+            }
+            rows[i] = rowPlain;
+        }
+        return rows;
+    }
+
+    // Slow path: Cast BigInts to strings for UI/JSON compatibility
     const rows = new Array(numRows);
     for (let i = 0; i < numRows; i++) {
         const rowObj = rawRows[i];
@@ -178,7 +207,6 @@ function getRows(result) {
         for (let j = 0; j < numFields; j++) {
             const field = fields[j];
             const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
             rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
         rows[i] = rowPlain;
