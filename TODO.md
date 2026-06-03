@@ -131,10 +131,10 @@ Recent history shows long sequences of merges from `palette/…`, `validator/…
 **Actions:**
 - [ ] Require **human review on every agent PR** before merge into `integration` — currently the CI auto-merges integration → main without gating.
 - [ ] Add a branch-name allow-list / required-check rule on `integration`.
-- [ ] Squash old agent merges into thematic commits if history becomes a problem for `git blame`.
+- [x] Pruned inactive and regressive agent branches from the repository.
 
 ### 3.3 Dead / suspect code
-- [ ] `dropzone/vendor/duckdb/duckdb-wasm-browser.mjs` — appears to be a stub error message, not a module. Verify and delete.
+- [x] `dropzone/vendor/duckdb/duckdb-wasm-browser.mjs` — verified as already deleted.
 - [x] `responsive-inject-v6` block at the top of `dropzone.html` and every analysis page does a `Object.defineProperty(window, 'Chart', …)` hack that runs **before** Chart.js loads — confirm it's still needed; if Chart.js defaults are configured elsewhere, remove it.
 - [ ] `assets/fullscreen.js` (41 lines) — check that the fullscreen button is actually wired up on every chart, not just some.
 
@@ -163,7 +163,7 @@ Current tests cover Python deployment scripts. None of the **front-end** is test
 
 ### 4.4 Python coverage holes
 - [ ] `deployment/screenshot.py` is tested but flakily — review and stabilize.
-- [ ] `deployment/generate_descriptions.py` test exists but does not cover failure modes (network, malformed HTML).
+- [x] `deployment/generate_descriptions.py` coverage improved for security validation and empty CSV handling.
 - [ ] Add a smoke test that runs `deployment/refresh.py` end-to-end against fixture data and asserts the generated HTML has no broken `<script>` SRI mismatches.
 
 ---

@@ -15,6 +15,16 @@ def load_generate_descriptions_module():
         spec.loader.exec_module(module)
         return module
 
+def test_ollama_describe_insecure_url():
+    module = load_generate_descriptions_module()
+
+    with patch.dict(os.environ, {'OLLAMA_URL': 'ftp://localhost:11434'}):
+        # We need to re-load or manually update the module's OLLAMA_URL
+        # since it was set at module-load time.
+        module.OLLAMA_URL = 'ftp://localhost:11434'
+        with pytest.raises(ValueError, match="Insecure URL scheme in OLLAMA_URL"):
+            module.ollama_describe("<html>Content</html>", "test.html")
+
 def test_ollama_describe_error_handling(capsys):
     module = load_generate_descriptions_module()
 
