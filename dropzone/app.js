@@ -233,6 +233,13 @@ function reloadWithoutSW() {
     }
 }
 
+/**
+ * Initializes the DuckDB-Wasm instance and sets up the Analytical Drop-Zone UI.
+ * This includes instantiating the WebAssembly module, connecting to the database
+ * (preferring OPFS persistence if available), loading the delta extension,
+ * and restoring the offline UI state. Includes a timeout fallback to handle
+ * stale service worker scenarios.
+ */
 async function init() {
     let timedOut = false;
     const timeoutId = setTimeout(() => {
@@ -337,6 +344,14 @@ async function restoreState() {
     }
 }
 
+/**
+ * Queries and displays the schema for a specific DuckDB table.
+ * Renders an interactive UI where users can click column names to insert them
+ * into the SQL editor. Additionally, calculates and renders inline profiling
+ * stats (min, max, count) and a frequency distribution chart when a column is clicked.
+ *
+ * @param {string} tableName - The name of the table to display the schema for
+ */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
     const statsContainer = document.createElement('div');
@@ -790,6 +805,13 @@ async function processFile(file, path) {
     await onTableLoaded(tableName);
 }
 
+/**
+ * Orchestrates the UI updates immediately after a new table is registered in DuckDB.
+ * Triggers schema display generation, instant chart previews, and sets a default
+ * query in the SQL editor for the user.
+ *
+ * @param {string} tableName - The name of the newly loaded table
+ */
 async function onTableLoaded(tableName) {
     // Show schema
     if (loadedTables.size === 1) schemaDisplay.textContent = '';
