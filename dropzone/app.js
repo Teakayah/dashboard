@@ -164,24 +164,47 @@ function escapeId(str) {
  */
 function getRows(result) {
     if (!result || !result.schema) return [];
-    const fields = result.schema.fields.map(f => f.name);
-    const numFields = fields.length;
+    const fieldNames = result.schema.fields.map(f => f.name);
+    const numFields = fieldNames.length;
     const numRows = result.numRows;
+
+    // Fast path: check schema to avoid typeof 'bigint' on every cell
+    let hasBigInt = false;
+    for (let j = 0; j < numFields; j++) {
+        const fieldType = result.schema.fields[j].type;
+        if ((fieldType && fieldType.bitWidth === 64) || String(fieldType).includes('Int64')) {
+            hasBigInt = true;
+            break;
+        }
+    }
 
     // Performance optimization: Use Arrow's native .toArray() to extract objects first
     // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
     const rawRows = result.toArray();
     const rows = new Array(numRows);
-    for (let i = 0; i < numRows; i++) {
-        const rowObj = rawRows[i];
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+
+    if (!hasBigInt) {
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fieldNames[j];
+                rowPlain[field] = rowObj[field];
+            }
+            rows[i] = rowPlain;
         }
-        rows[i] = rowPlain;
+    } else {
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fieldNames[j];
+                const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
+                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+            }
+            rows[i] = rowPlain;
+        }
     }
     return rows;
 }
