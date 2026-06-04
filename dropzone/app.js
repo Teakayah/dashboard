@@ -42,6 +42,12 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+/**
+ * Updates the initialization progress bar UI.
+ * Hides the progress container if the percent is 0 or >= 100.
+ *
+ * @param {number} percent - The progress percentage (0-100)
+ */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
         initProgressContainer.style.display = 'block';
@@ -66,6 +72,11 @@ function addToHistory(sql) {
     renderHistory();
 }
 
+/**
+ * Renders the query history in the UI.
+ * Creates clickable badges for the 10 most recent queries that,
+ * when clicked, load the query into the SQL editor and run it.
+ */
 function renderHistory() {
     queryHistoryEl.textContent = '';
     if (queryHistory.length === 0) return;
@@ -214,6 +225,12 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+/**
+ * Displays a visible error message during DuckDB initialization
+ * and appends a button to reload the page without the Service Worker.
+ *
+ * @param {string} message - The error message to display
+ */
 function showInitError(message) {
     statusEl.textContent = message + ' ';
     const btn = document.createElement('button');
@@ -223,6 +240,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Unregisters all active service workers and reloads the page.
+ * Used as a fallback when DuckDB-Wasm initialization fails due to
+ * potentially stale or corrupted cached worker scripts.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
@@ -233,6 +255,14 @@ function reloadWithoutSW() {
     }
 }
 
+/**
+ * Initializes the DuckDB-Wasm instance.
+ * Selects the appropriate WebAssembly bundle, instantiates the worker,
+ * connects to the database (attempting to use OPFS for persistence),
+ * and attempts to load the 'delta' extension. Updates the UI progress
+ * bar throughout the process. Sets a timeout to catch hanging init flows
+ * caused by stale service workers.
+ */
 async function init() {
     let timedOut = false;
     const timeoutId = setTimeout(() => {
@@ -337,6 +367,13 @@ async function restoreState() {
     }
 }
 
+/**
+ * Queries the schema of a given table and renders a visual representation
+ * of its columns and types in the UI. Includes the table name and a
+ * container for basic row count statistics.
+ *
+ * @param {string} tableName - The name of the table to display
+ */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
     const statsContainer = document.createElement('div');
@@ -790,6 +827,14 @@ async function processFile(file, path) {
     await onTableLoaded(tableName);
 }
 
+/**
+ * Hook that runs immediately after a new table is successfully loaded.
+ * Clears previous schemas if this is the first table, displays the schema
+ * for the new table, generates instant visualization previews, and populates
+ * the SQL editor with a default SELECT query for the new table.
+ *
+ * @param {string} tableName - The name of the newly loaded table
+ */
 async function onTableLoaded(tableName) {
     // Show schema
     if (loadedTables.size === 1) schemaDisplay.textContent = '';

@@ -52,3 +52,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-27 - Documenting undocumented utility functions and preventing misplaced comments
 **Learning:** In `dropzone/app.js`, the `escapeId` function was mistakenly inserted *between* a massive JSDoc comment for `getRows` and the `getRows` function itself, causing IDEs and documentation generators to attach the wrong documentation to `escapeId` and leaving `getRows` (which had a critical explanation about BigInt proxy traps) without correct tooling support.
 **Action:** When auditing or reading codebase utility functions, actively check that JSDoc comments are directly adjacent to the functions they describe, and ensure every utility function (like `escapeId`) has its own clear documentation.
+
+## 2026-06-04 - Documenting DuckDB-Wasm Initialization Flows
+**Learning:** DuckDB-Wasm initialization (`init()`) and error recovery (`reloadWithoutSW()`) in the browser dropzone rely on complex service worker cache busting and timeout flows that were completely undocumented. This makes debugging "DuckDB Ready" hangs difficult.
+**Action:** Always document complex asynchronous initialization and fallback flows, especially when interacting with Service Workers and WebAssembly.
