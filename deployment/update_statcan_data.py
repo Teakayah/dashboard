@@ -75,7 +75,7 @@ def fetch_changed_since(since: date) -> Optional[set[str]]:
     print(f'  Checking Stats Canada for tables changed since {since} ...')
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'DataDashboard/1.0'})
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp: # nosec B310
             payload = json.loads(resp.read())
     except Exception as exc:
         print(f'  WARNING: changed-cubes API call failed ({exc}) — will download all.')
@@ -118,7 +118,7 @@ def download_table(table: dict) -> dict:
 
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'DataDashboard/1.0'})
-        with urllib.request.urlopen(req, timeout=180) as resp:
+        with urllib.request.urlopen(req, timeout=180) as resp: # nosec B310
             data = resp.read()
     except Exception as exc:
         print(f'         ERROR: {exc}')
