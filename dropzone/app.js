@@ -168,20 +168,39 @@ function getRows(result) {
     const numFields = fields.length;
     const numRows = result.numRows;
 
+    // Check if any column is of type BigInt (Int64, UInt64, Timestamp, Time64, etc.) to avoid checking every cell
+    const hasBigInt = result.schema.fields.some(f =>
+        (f.type && f.type.bitWidth === 64) || String(f.type).includes('Int64') || String(f.type).includes('Timestamp') || String(f.type).includes('Time64') || String(f.type).includes('Decimal')
+    );
+
     // Performance optimization: Use Arrow's native .toArray() to extract objects first
     // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
     const rawRows = result.toArray();
     const rows = new Array(numRows);
-    for (let i = 0; i < numRows; i++) {
-        const rowObj = rawRows[i];
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+
+    if (hasBigInt) {
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
+                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+            }
+            rows[i] = rowPlain;
         }
-        rows[i] = rowPlain;
+    } else {
+        // Fast-path: no BigInts in schema, so we can skip typeof checks
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                rowPlain[field] = rowObj[field];
+            }
+            rows[i] = rowPlain;
+        }
     }
     return rows;
 }
