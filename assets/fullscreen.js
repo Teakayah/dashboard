@@ -1,3 +1,12 @@
+/**
+ * Automatically wraps all `<canvas>` elements on the page in a `.chart-container`
+ * and injects a "Full Screen" toggle button.
+ *
+ * This enables responsive, full-viewport chart viewing. When toggled, it applies
+ * the `.chart-fullscreen` class to the container and blocks body scrolling.
+ * It also triggers a global `resize` event to force Chart.js to redraw
+ * according to the new container dimensions.
+ */
 (function() {
   function initFullscreen() {
     const canvases = document.querySelectorAll('canvas');

@@ -52,3 +52,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-27 - Documenting undocumented utility functions and preventing misplaced comments
 **Learning:** In `dropzone/app.js`, the `escapeId` function was mistakenly inserted *between* a massive JSDoc comment for `getRows` and the `getRows` function itself, causing IDEs and documentation generators to attach the wrong documentation to `escapeId` and leaving `getRows` (which had a critical explanation about BigInt proxy traps) without correct tooling support.
 **Action:** When auditing or reading codebase utility functions, actively check that JSDoc comments are directly adjacent to the functions they describe, and ensure every utility function (like `escapeId`) has its own clear documentation.
+
+## 2026-06-05 - Documenting Implicit DOM Manipulation in Utility Scripts
+**Learning:** `assets/fullscreen.js` automatically queries and wraps all `<canvas>` elements on the page to inject fullscreen functionality upon DOMContentLoaded. This type of implicit DOM manipulation can be surprising if undocumented, as developers might wonder why their markup was dynamically altered.
+**Action:** When creating utility scripts that globally scan and modify DOM elements at runtime, always include a top-level JSDoc or module comment explaining exactly what CSS selectors it targets, what elements it injects, and what classes it toggles.
