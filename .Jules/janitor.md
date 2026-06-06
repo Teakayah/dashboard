@@ -38,3 +38,6 @@ Action: To apply this next time, strip trailing semicolons from the user input a
 ## 2024-06-01 - Automated tech debt cleanup with Ruff
 Learning: The project uses `ruff` for Python linting. Routine tech debt such as unused module imports, unused variable assignments in mock context managers, and anti-pattern boolean assertions (e.g. `assert x == False`) can be safely and automatically fixed using the `--fix` and `--unsafe-fixes` flags.
 Action: To apply this next time, proactively use `ruff check . --fix --unsafe-fixes` to sweep the codebase for easy technical debt wins before resorting to manual string replacements.
+## 2026-06-06 - Fixing Bandit B310:blacklist Warnings
+Learning: When encountering `B310:blacklist` warnings for `urllib.request.urlopen`, runtime scheme validation is necessary for dynamically resolved URLs (e.g., from environment variables) to prevent Server-Side Request Forgery. For static, developer-controlled URLs, a `# nosec B310` pragma suffices.
+Action: Add URL validation checks before `urlopen` calls for configurable URLs, and use `# nosec B310` pragmas to disable linter false positives for static, safe URLs.
