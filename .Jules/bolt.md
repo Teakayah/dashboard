@@ -13,3 +13,7 @@
 ## 2026-05-28 - [Optimize Grid.js Large Dataset Initialization]
 **Learning:** When initializing `gridjs.Grid` with large datasets, mapping an array of plain objects into an array of arrays (e.g., `rows.map(...)`) creates significant CPU and memory overhead.
 **Action:** Always pass the plain objects array directly to `data` and configure `columns` to specify `id` keys (e.g., `columns: columns.map(c => ({ id: c, name: c }))`) to utilize Grid.js native object mapping.
+
+## 2024-06-06 - Optimized getRows DuckDB-Wasm row extraction
+**Learning:** Checking the Arrow schema first to identify BigInt columns can save significant iteration overhead by skipping row-by-row `typeof === 'bigint'` checks when formatting UI-friendly object arrays from `DuckDB-Wasm`.
+**Action:** Implement a schema fast-path that determines if type coercion is necessary before entering the nested data loop, effectively converting an O(R*C) type-check operation into a simple loop when BigInts are absent.

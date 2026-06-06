@@ -168,20 +168,45 @@ function getRows(result) {
     const numFields = fields.length;
     const numRows = result.numRows;
 
+    // Performance optimization: Check if any columns might contain BigInts
+    // by inspecting the Arrow schema to skip expensive per-cell typeof checks.
+    let hasBigInt = false;
+    for (const field of result.schema.fields) {
+        const typeStr = String(field.type);
+        if (field.type.bitWidth === 64 || typeStr.includes('Int64') || typeStr.includes('Timestamp') || typeStr.includes('Time64') || typeStr.includes('Decimal')) {
+            hasBigInt = true;
+            break;
+        }
+    }
+
     // Performance optimization: Use Arrow's native .toArray() to extract objects first
     // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
     const rawRows = result.toArray();
     const rows = new Array(numRows);
-    for (let i = 0; i < numRows; i++) {
-        const rowObj = rawRows[i];
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+
+    if (hasBigInt) {
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
+                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+            }
+            rows[i] = rowPlain;
         }
-        rows[i] = rowPlain;
+    } else {
+        // Fast-path: no BigInt-like types in schema
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                rowPlain[field] = rowObj[field];
+            }
+            rows[i] = rowPlain;
+        }
     }
     return rows;
 }
