@@ -989,6 +989,8 @@ function createPreviewCard(title, renderFn) {
     downloadBtn.textContent = '💾 PNG';
     downloadBtn.style.padding = '2px 6px';
     downloadBtn.style.fontSize = '0.7rem';
+    downloadBtn.setAttribute('aria-label', `Download ${title} chart`);
+    downloadBtn.title = `Download ${title} chart`;
     downloadBtn.onclick = () => {
         const canvas = document.getElementById(id);
         const url = canvas.toDataURL('image/png');

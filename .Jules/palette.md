@@ -34,3 +34,6 @@
 ## 2026-06-01 - Global Keyboard Shortcut Hints and Focus States
 **Learning:** When adding a global keyboard shortcut (like `/` to focus an input), it's crucial to visually indicate the shortcut exists without obstructing the UI. Additionally, a shortcut hint over an input should hide when the input is focused or not empty.
 **Action:** Use CSS pseudo-classes (`:focus` and `:not(:placeholder-shown)`) combined with the adjacent sibling selector (`+`) to hide `.shortcut-hint` when the input is focused or populated, and provide the shortcut in `aria-label` for screen reader discoverability.
+## 2026-06-07 - Context-Aware ARIA Labels for Dynamic Buttons with Abbreviations
+**Learning:** Dynamically generated action buttons that rely on visual abbreviations or emojis (e.g., "💾 PNG") often lack clarity for screen readers and tooltips if they don't include the specific context of the data they act upon.
+**Action:** Always ensure dynamically generated action buttons include context-aware `aria-label` and `title` attributes using the data's specific context (e.g., `Download ${title} chart`) to provide full clarity for screen readers and visual tooltips.
