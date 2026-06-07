@@ -317,3 +317,34 @@ def test_copy_json_copies_to_clipboard(dz: Page):
     clipboard_content = dz.evaluate("navigator.clipboard.readText()")
     assert 'Alice' in clipboard_content, "Clipboard should contain JSON data with 'Alice'"
     assert 'id' in clipboard_content, "Clipboard should contain JSON data with 'id'"
+
+def test_copy_json_handles_clipboard_failure_gracefully(dz: Page):
+    """If navigator.clipboard.writeText fails, the app must show an error toast and not crash."""
+    dz.goto(DROPZONE)
+    _wait_for_ready(dz)
+
+    # Force clipboard API to be defined but fail to simulate restricted headless/iframe environments
+    dz.evaluate('''
+        Object.defineProperty(navigator, "clipboard", {
+            value: { writeText: () => Promise.reject(new Error("Simulated clipboard rejection")) },
+            writable: true, configurable: true
+        });
+    ''')
+
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=ACTION_TIMEOUT,
+    )
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    # Click copy - this should trigger the mocked rejection
+    dz.locator('#copy-json').click()
+
+    # The catch block should show a toast notification
+    toast = dz.locator('[role="alert"]')
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Clipboard Error|clipboard', re.IGNORECASE))

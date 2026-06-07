@@ -29,3 +29,6 @@
 ## 2026-06-01 - Testing `__main__` entrypoint with `importlib.util`
 **Learning:** Dynamic module execution using `importlib.util.spec_from_file_location` bypasses mocks defined for that module in the parent testing context, since `exec_module` initializes it in a fresh namespace. Mocking the script's `main()` function from the parent test before `exec_module` does not mock the module's internal `main()` call inside its `if __name__ == "__main__":` block.
 **Action:** Mocking `sys.exit` works for the top-level block, but to avoid executing the module's real `main()`, `sys.argv` mocking or other external mock patterns (or refactoring) should be used if running the real `main()` has side effects.
+## $(date +%Y-%m-%d) - Handling API Promise Rejections in Headless Contexts
+**Learning:** In restrictive environments like headless browsers or specific iframes, browser APIs like `navigator.clipboard.writeText` can be absent, read-only, or reject due to permissions, leading to silent unhandled promise rejections.
+**Action:** Always wrap volatile browser API calls (like clipboard interactions) with `.catch()` blocks in application code to provide graceful error fallback UI (e.g., toast notifications), and explicitly mock these rejections in Playwright tests using `Object.defineProperty(navigator, 'clipboard', ...)` to verify the fallback logic.
