@@ -381,10 +381,7 @@ async function displayTableSchema(tableName) {
             
             // Profiling logic
             try {
-                statsContainer.textContent = '';
-                const calcItalics = document.createElement('i');
-                calcItalics.textContent = 'Calculating stats...';
-                statsContainer.appendChild(calcItalics);
+                statsContainer.textContent = 'Calculating stats...';
                 const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
                 const stats = getRows(profilingResult)[0];
 
