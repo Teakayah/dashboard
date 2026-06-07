@@ -164,6 +164,15 @@ function escapeId(str) {
  */
 function getRows(result) {
     if (!result || !result.schema) return [];
+
+    let hasBigInt = false;
+    for (const f of result.schema.fields) {
+        if (f.type && (f.type.bitWidth === 64 || String(f.type).match(/Int64|Timestamp|Time64|Decimal/i))) {
+            hasBigInt = true;
+            break;
+        }
+    }
+
     const fields = result.schema.fields.map(f => f.name);
     const numFields = fields.length;
     const numRows = result.numRows;
@@ -172,16 +181,29 @@ function getRows(result) {
     // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
     const rawRows = result.toArray();
     const rows = new Array(numRows);
-    for (let i = 0; i < numRows; i++) {
-        const rowObj = rawRows[i];
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+
+    if (hasBigInt) {
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
+                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+            }
+            rows[i] = rowPlain;
         }
-        rows[i] = rowPlain;
+    } else {
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                rowPlain[field] = rowObj[field];
+            }
+            rows[i] = rowPlain;
+        }
     }
     return rows;
 }
