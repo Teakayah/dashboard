@@ -38,3 +38,7 @@ Action: To apply this next time, strip trailing semicolons from the user input a
 ## 2024-06-01 - Automated tech debt cleanup with Ruff
 Learning: The project uses `ruff` for Python linting. Routine tech debt such as unused module imports, unused variable assignments in mock context managers, and anti-pattern boolean assertions (e.g. `assert x == False`) can be safely and automatically fixed using the `--fix` and `--unsafe-fixes` flags.
 Action: To apply this next time, proactively use `ruff check . --fix --unsafe-fixes` to sweep the codebase for easy technical debt wins before resorting to manual string replacements.
+
+## 2024-06-02 - Duplicate test definition cleanup
+Learning: Duplicate test names cause Ruff F811 errors and the second test overrides the first one, leading to missed test execution for the first logic block.
+Action: Rename tests with different logic to distinct names and remove exact identical duplicated tests to resolve warnings and restore coverage.

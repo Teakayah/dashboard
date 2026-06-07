@@ -30,12 +30,7 @@ def test_get_git_commit_times_batched_success():
         assert times == {'test.html': 1234567890, 'previews/test.png': 1234567890}
         assert mock_run.call_count >= 1
 
-def test_get_git_commit_times_batched_empty_paths():
-    module = load_screenshot_module()
-    times = module.get_git_commit_times_batched([])
-    assert times == {}
-
-def test_get_git_commit_times_batched_exception():
+def test_get_git_commit_times_batched_called_process_error():
     module = load_screenshot_module()
     with patch('subprocess.run') as mock_run:
         import subprocess
