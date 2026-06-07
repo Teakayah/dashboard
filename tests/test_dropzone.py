@@ -239,7 +239,7 @@ def test_count_query_returns_single_value(dz: Page):
 
 def test_csv_export_downloads_file(dz: Page):
     """Clicking Download CSV must trigger a file download containing the query results."""
-    dz.goto(DROPZONE)
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
     dz.locator('#load-samples').click()
@@ -292,7 +292,7 @@ def test_export_db_downloads_file(dz: Page):
 
 def test_copy_json_copies_to_clipboard(dz: Page):
     """Clicking Copy JSON must copy the query results to the clipboard."""
-    dz.goto(DROPZONE)
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
     # Grant clipboard-read and clipboard-write permissions to the current origin
