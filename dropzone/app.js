@@ -214,6 +214,12 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+/**
+ * Displays an initialization error message and provides a button to reload the page without the service worker.
+ * This is a fallback mechanism for when DuckDB-Wasm initialization times out or fails, often due to a stale service worker.
+ *
+ * @param {string} message - The error message to display to the user.
+ */
 function showInitError(message) {
     statusEl.textContent = message + ' ';
     const btn = document.createElement('button');
