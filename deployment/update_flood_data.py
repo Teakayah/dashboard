@@ -31,7 +31,7 @@ def fetch_gauge_data(station_id):
         raise ValueError(f"Insecure URL scheme: {url}")
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "DataDashboard/1.0"})
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
             data = json.loads(resp.read())
             if not data.get("features"):
                 return None
@@ -52,7 +52,7 @@ def fetch_precip_data(climate_id):
     url = f"https://api.weather.gc.ca/collections/climate-daily/items?CLIMATE_IDENTIFIER={climate_id}&f=json&limit=7"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "DataDashboard/1.0"})
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
             data = json.loads(resp.read())
             if not data.get("features"):
                 return None
