@@ -42,8 +42,8 @@ def test_benchmark_final():
         assert module._read_csv_orig("fake") is not None
         assert module._read_csv_stripped(Path("fake")) is not None
 
-        # Test empty CSV handling (StopIteration)
-        with patch('builtins.open', mock_open(read_data="")):
+        # Test empty CSV for StopIteration
+        with patch('builtins.open', mock_open(read_data='')):
             assert module._read_csv_stripped(Path("fake")) == []
 
         with patch('pathlib.Path.exists', return_value=True):
