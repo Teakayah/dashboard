@@ -42,3 +42,7 @@ Action: To apply this next time, proactively use `ruff check . --fix --unsafe-fi
 ## 2026-06-03 - Fix test name redefinition
 Learning: Found a redefined test function name `test_get_git_commit_times_batched_exception` in `tests/test_screenshot.py` which hid one of the tests.
 Action: Renamed the second definition to `test_get_git_commit_times_batched_called_process_error` so both tests run properly, addressing the `F811` ruff error.
+
+## 2026-06-07 - Safe URL parsing
+Learning: When using `urllib.request.urlopen`, Bandit raises B310 because allowing arbitrary URL schemes (like `file://`) is potentially unsafe.
+Action: For statically configured developer-controlled URLs, just add `# nosec B310`. For configurable URLs, explicitly check that the URL scheme starts with `http://` or `https://` before calling `urlopen` and then add `# nosec B310`.
