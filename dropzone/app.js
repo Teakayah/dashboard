@@ -168,20 +168,44 @@ function getRows(result) {
     const numFields = fields.length;
     const numRows = result.numRows;
 
+    // Check if any column might contain BigInt values
+    let hasBigInt = false;
+    for (let i = 0; i < result.schema.fields.length; i++) {
+        const type = result.schema.fields[i].type;
+        if (type.bitWidth === 64 || String(type).includes('Int64') || String(type).includes('Timestamp') || String(type).includes('Time64') || String(type).includes('Decimal')) {
+            hasBigInt = true;
+            break;
+        }
+    }
+
     // Performance optimization: Use Arrow's native .toArray() to extract objects first
     // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
     const rawRows = result.toArray();
     const rows = new Array(numRows);
-    for (let i = 0; i < numRows; i++) {
-        const rowObj = rawRows[i];
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+
+    if (hasBigInt) {
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
+                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+            }
+            rows[i] = rowPlain;
         }
-        rows[i] = rowPlain;
+    } else {
+        // Fast-path: no BigInts present, skip type checks
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                rowPlain[field] = rowObj[field];
+            }
+            rows[i] = rowPlain;
+        }
     }
     return rows;
 }
