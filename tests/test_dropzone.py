@@ -317,3 +317,21 @@ def test_copy_json_copies_to_clipboard(dz: Page):
     clipboard_content = dz.evaluate("navigator.clipboard.readText()")
     assert 'Alice' in clipboard_content, "Clipboard should contain JSON data with 'Alice'"
     assert 'id' in clipboard_content, "Clipboard should contain JSON data with 'id'"
+
+
+# ── Remote Delta Table ────────────────────────────────────────────────────────
+
+def test_load_remote_delta_table(dz: Page):
+    """Loading a remote Delta table handles unsupported environment correctly."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    dz.evaluate("window.deltaSupported = false;")
+
+    dz.locator('#remote-delta-url').fill("https://example.com/mock-delta-table")
+    dz.locator('#load-remote-delta').click()
+
+    toast = dz.locator('[role="alert"]')
+    expect(toast).to_be_visible(timeout=5000)
+
+    expect(toast).to_contain_text("Delta Lake support is not available")
