@@ -616,6 +616,21 @@ CONTRAST_FIX_STYLE = (
 )
 
 
+CSP_MARKER = '<meta http-equiv="Content-Security-Policy"'
+
+CSP_TAG = (
+    '\n    <meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https://cdn.jsdelivr.net; connect-src \'self\' https: blob:; worker-src \'self\' blob:; style-src \'self\' \'unsafe-inline\' https://cdn.jsdelivr.net; img-src \'self\' data: https://teakayah.github.io; font-src \'self\'; object-src \'none\'">'
+)
+
+def inject_csp(content: str, filename: str) -> str:
+    """Inject a Content Security Policy meta tag into the head."""
+    if CSP_MARKER in content:
+        return content
+    new_content = re.sub(r'(<head>)', r'\1' + CSP_TAG, content, count=1, flags=re.IGNORECASE)
+    if new_content != content:
+        print(f'  Injected CSP into {filename}')
+    return new_content
+
 def inject_contrast_fix(content: str, filename: str) -> str:
     """Inject a CSS override that fixes dark-mode body colours and WCAG AA contrast failures."""
     if CONTRAST_FIX_MARKER in content:
@@ -684,6 +699,7 @@ def main(argv: Optional[list[str]] = None):
         new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
         new_content = inject_share_fix(new_content, meta['filename'])
         new_content = inject_contrast_fix(new_content, meta['filename'])
+        new_content = inject_csp(new_content, meta['filename'])
 
         if new_content != content:
             filepath.write_text(new_content, encoding='utf-8')
