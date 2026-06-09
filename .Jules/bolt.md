@@ -13,3 +13,7 @@
 ## 2026-05-28 - [Optimize Grid.js Large Dataset Initialization]
 **Learning:** When initializing `gridjs.Grid` with large datasets, mapping an array of plain objects into an array of arrays (e.g., `rows.map(...)`) creates significant CPU and memory overhead.
 **Action:** Always pass the plain objects array directly to `data` and configure `columns` to specify `id` keys (e.g., `columns: columns.map(c => ({ id: c, name: c }))`) to utilize Grid.js native object mapping.
+
+## 2026-05-31 - [Fast-path DuckDB Arrow Proxy Mapping]
+**Learning:** Checking `typeof val === 'bigint'` on every cell during Arrow Table to object mapping creates significant overhead. DuckDB's schema provides type information (`type.bitWidth === 64` or `String(type)` including `Int64`, `Timestamp`, etc.) that allows us to determine upfront if BigInts are possible.
+**Action:** When extracting data from DuckDB-Wasm results, first inspect the schema for BigInt-like types. If none are present, use a fast-path mapping loop to avoid expensive per-cell type checks.

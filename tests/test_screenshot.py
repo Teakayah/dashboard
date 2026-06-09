@@ -35,7 +35,7 @@ def test_get_git_commit_times_batched_empty_paths():
     times = module.get_git_commit_times_batched([])
     assert times == {}
 
-def test_get_git_commit_times_batched_exception():
+def test_get_git_commit_times_batched_called_process_error():
     module = load_screenshot_module()
     with patch('subprocess.run') as mock_run:
         import subprocess
