@@ -34,3 +34,6 @@
 ## 2026-06-01 - Global Keyboard Shortcut Hints and Focus States
 **Learning:** When adding a global keyboard shortcut (like `/` to focus an input), it's crucial to visually indicate the shortcut exists without obstructing the UI. Additionally, a shortcut hint over an input should hide when the input is focused or not empty.
 **Action:** Use CSS pseudo-classes (`:focus` and `:not(:placeholder-shown)`) combined with the adjacent sibling selector (`+`) to hide `.shortcut-hint` when the input is focused or populated, and provide the shortcut in `aria-label` for screen reader discoverability.
+## 2026-06-09 - Native Buttons for Schema Columns
+**Learning:** Emulating buttons with `<span>` and `role="button"` requires manual focus management and keyboard event handling, which can be error-prone and less robust for screen readers.
+**Action:** Use native `<button>` elements with CSS resets (e.g., `background: transparent; border: none; font-family: inherit;`) to naturally inherit keyboard interactivity and accessibility features, and provide explicit feedback (e.g. via toast) when interactive elements trigger actions without obvious DOM changes.
