@@ -790,6 +790,13 @@ async function processFile(file, path) {
     await onTableLoaded(tableName);
 }
 
+/**
+ * Updates the UI and global state when a new table is successfully imported into DuckDB.
+ * Triggers schema display, join UI updates, chart builder population, and auto-generates
+ * instant insight charts for the newly loaded dataset.
+ *
+ * @param {string} tableName - The name of the successfully loaded table.
+ */
 async function onTableLoaded(tableName) {
     // Show schema
     if (loadedTables.size === 1) schemaDisplay.textContent = '';
