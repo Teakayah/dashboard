@@ -12,3 +12,4 @@ tests_*
 .digest/**
 tests/**.coverage
 .coverage
+venv/

@@ -52,3 +52,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-27 - Documenting undocumented utility functions and preventing misplaced comments
 **Learning:** In `dropzone/app.js`, the `escapeId` function was mistakenly inserted *between* a massive JSDoc comment for `getRows` and the `getRows` function itself, causing IDEs and documentation generators to attach the wrong documentation to `escapeId` and leaving `getRows` (which had a critical explanation about BigInt proxy traps) without correct tooling support.
 **Action:** When auditing or reading codebase utility functions, actively check that JSDoc comments are directly adjacent to the functions they describe, and ensure every utility function (like `escapeId`) has its own clear documentation.
+
+## 2026-05-27 - Documenting initialization and fallback utilities in dropzone
+**Learning:** Functions like `showInitError` and `reloadWithoutSW` handle complex state fallbacks (like bypassing stale Service Workers during DuckDB instantiation failures) but lacked JSDoc, forcing developers to trace their usage.
+**Action:** Always add complete JSDoc to initialization and fallback utility functions, explaining not just *what* they do, but *why* they exist (e.g., to bypass stale WebAssembly assets), to provide critical context for future debugging.
