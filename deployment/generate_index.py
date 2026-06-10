@@ -636,6 +636,28 @@ def strip_analysis_utils(content: str, filename: str) -> str:
     return new_content
 
 
+def inject_csp(content: str, filename: str) -> str:
+    """Inject a strict Content-Security-Policy meta tag."""
+    if 'Content-Security-Policy' in content:
+        return content
+
+    import re as _re
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "worker-src 'self' blob:; "
+        "connect-src 'self' https: blob:; "
+        "img-src 'self' data: https://teakayah.github.io;"
+    )
+    csp_tag = f'\n  <meta http-equiv="Content-Security-Policy" content="{csp}">'
+
+    new_content = _re.sub(r'(<head[^>]*>)', r'\1' + csp_tag, content, count=1, flags=_re.IGNORECASE)
+    if new_content != content:
+        print(f'  Injected CSP into {filename}')
+    return new_content
+
+
 def inject_share_fix(content: str, filename: str) -> str:
     """Replace bare navigator.share onclick with a feature-detected version."""
     unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
@@ -677,7 +699,8 @@ def main(argv: Optional[list[str]] = None):
         analyses.append(meta)
 
         # Inject enhancements
-        new_content = inject_responsive(content, meta['filename'], args.responsive_preset)
+        new_content = inject_csp(content, meta['filename'])
+        new_content = inject_responsive(new_content, meta['filename'], args.responsive_preset)
         new_content = strip_back_link(new_content, meta['filename'])
         new_content = strip_analysis_utils(new_content, meta['filename'])
         new_content = inject_favicon(new_content, meta['filename'])
