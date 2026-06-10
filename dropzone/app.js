@@ -595,6 +595,13 @@ generateChartBtn.addEventListener('click', () => {
     
     createPreviewCard(title, async (canvasId) => {
         try {
+            const schemaResult = await conn.query(`DESCRIBE "${escapeId(currentTableName)}"`);
+            const validCols = getRows(schemaResult).map(r => r.column_name);
+            if (!validCols.includes(xCol) || !validCols.includes(yCol)) {
+                showToast('Invalid column selection.');
+                return;
+            }
+
             let sql = '';
             if (type === 'scatter') {
                 sql = `SELECT "${escapeId(xCol)}" as x, "${escapeId(yCol)}" as y\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nLIMIT 500`;
