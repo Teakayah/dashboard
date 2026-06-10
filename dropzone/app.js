@@ -42,6 +42,12 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+/**
+ * Updates the initialization progress bar width and visibility.
+ * Hides the progress container if percent is 0 or 100.
+ *
+ * @param {number} percent - The current progress percentage (0-100)
+ */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
         initProgressContainer.style.display = 'block';
@@ -66,6 +72,10 @@ function addToHistory(sql) {
     renderHistory();
 }
 
+/**
+ * Renders the query history as clickable chips in the UI.
+ * Clicking a chip loads the query into the SQL editor and focuses it.
+ */
 function renderHistory() {
     queryHistoryEl.textContent = '';
     if (queryHistory.length === 0) return;
@@ -214,6 +224,12 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+/**
+ * Displays an initialization error message and provides a button
+ * to reload the page while bypassing the service worker.
+ *
+ * @param {string} message - The error message to display
+ */
 function showInitError(message) {
     statusEl.textContent = message + ' ';
     const btn = document.createElement('button');
@@ -223,6 +239,10 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Unregisters any active service workers and forces a page reload.
+ * Used as a fallback when DuckDB initialization times out or fails.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
