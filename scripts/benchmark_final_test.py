@@ -35,15 +35,15 @@ def _read_csv_stripped(path: Path) -> list[dict]:
 def extract_emp_rate_reordered(rows):
     buckets = defaultdict(lambda: defaultdict(list))
     for row in rows:
-        if (row['Gender'].strip() == 'Total - Gender'
-                and row['Age group'].strip() == '15 years and over'
-                and row['Labour force characteristics'].strip() == 'Employment rate'
-                and row['Data type'].strip() == 'Seasonally adjusted'
-                and row['Statistics'].strip() == 'Estimate'):
+        if (row['Gender'] == 'Total - Gender'
+                and row['Age group'] == '15 years and over'
+                and row['Labour force characteristics'] == 'Employment rate'
+                and row['Data type'] == 'Seasonally adjusted'
+                and row['Statistics'] == 'Estimate'):
             val = _clean(row['VALUE'])
             if val is not None:
                 year = int(row['REF_DATE'][:4])
-                buckets[row['GEO'].strip()][year].append(val)
+                buckets[row['GEO']][year].append(val)
     return buckets
 
 def extract_emp_rate_opt(rows):
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     start = time.time()
     for _ in range(10):
-        rows = _read_csv_orig(lfs_csv)
+        rows = _read_csv_stripped(lfs_csv)
         extract_emp_rate_reordered(rows)
     print("Orig Read + Reordered Loop:", time.time() - start)
 
