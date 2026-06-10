@@ -575,6 +575,17 @@ generateJoinBtn.addEventListener('click', () => {
         return;
     }
 
+    if (!loadedTables.has(a) || !loadedTables.has(b)) {
+        showToast('Invalid table selection.');
+        return;
+    }
+
+    const validCols = Array.from(joinCol.options).map(o => o.value);
+    if (!validCols.includes(col)) {
+        showToast('Invalid column selection.');
+        return;
+    }
+
     const sql = `SELECT *\nFROM "${escapeId(a)}"\nJOIN "${escapeId(b)}" ON "${escapeId(a)}"."${escapeId(col)}" = "${escapeId(b)}"."${escapeId(col)}"\nLIMIT 100`;
     sqlInput.value = sql;
     sqlInput.dispatchEvent(new Event('input'));
@@ -588,6 +599,18 @@ generateChartBtn.addEventListener('click', () => {
     
     if (!xCol || !yCol) {
         showToast('Please select both X and Y axes.');
+        return;
+    }
+
+    if (!currentTableName || !loadedTables.has(currentTableName)) {
+        showToast('Invalid table selection.');
+        return;
+    }
+
+    const validXCols = Array.from(chartXCol.options).map(o => o.value);
+    const validYCols = Array.from(chartYCol.options).map(o => o.value);
+    if (!validXCols.includes(xCol) || !validYCols.includes(yCol)) {
+        showToast('Invalid column selection.');
         return;
     }
 
