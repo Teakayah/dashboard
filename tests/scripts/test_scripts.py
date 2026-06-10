@@ -76,28 +76,45 @@ def test_dummy_data_gen():
                 assert instance.writerow.call_count == 400000
                 assert instance.writeheader.call_count == 4
 
-def test_generate_icons():
-    with patch('PIL.Image.new') as mock_image_new:
-        with patch('PIL.ImageDraw.Draw'):
-            with patch('os.makedirs'):
-                with patch('builtins.print'):
-                    module = load_script_as_module('generate_icons.py', 'generate_icons')
+def test_generate_icons(tmp_path):
+    module = load_script_as_module('generate_icons.py', 'generate_icons')
 
-                    # Test logic
-                    mock_img = MagicMock()
-                    mock_image_new.return_value = mock_img
+    icon_path = tmp_path / "test_icon.png"
+    module.generate_icon(100, str(icon_path), color="#ff0000")
 
-                    module.generate_icon(100, "fake.png")
+    assert icon_path.exists()
 
-                    assert mock_image_new.call_count == 1
-                    assert mock_img.save.call_count == 1
-                    mock_img.save.assert_called_with("fake.png")
+    from PIL import Image
+    with Image.open(icon_path) as img:
+        assert img.size == (100, 100)
+        assert img.mode == 'RGBA'
 
-def test_generate_icons_main():
-    with patch('PIL.Image.new'):
-        with patch('PIL.ImageDraw.Draw'):
-            with patch('os.makedirs') as mock_makedirs:
-                with patch('builtins.print') as mock_print:
-                    run_script('generate_icons.py')
-                    assert mock_makedirs.call_count == 1
-                    assert mock_print.call_count == 3
+        # Check top-left corner pixel color to ensure background color was applied
+        assert img.getpixel((0, 0)) == (255, 0, 0, 255)
+        # Check center pixel color (it draws white bars in the center)
+        assert img.getpixel((50, 50)) == (255, 255, 255, 255)
+
+def test_generate_icons_main(monkeypatch, tmp_path):
+    # Change dir so assets/icons are created in tmp_path
+    monkeypatch.chdir(tmp_path)
+
+    run_script('generate_icons.py')
+
+    # Check that directories and files were created
+    assets_dir = tmp_path / "assets" / "icons"
+    assert assets_dir.exists()
+
+    expected_files = [
+        ("icon-192.png", 192),
+        ("icon-512.png", 512),
+        ("icon-maskable.png", 512)
+    ]
+
+    from PIL import Image
+    for filename, expected_size in expected_files:
+        icon_path = assets_dir / filename
+        assert icon_path.exists(), f"Missing {filename}"
+
+        with Image.open(icon_path) as img:
+            assert img.size == (expected_size, expected_size)
+            assert img.mode == 'RGBA'
