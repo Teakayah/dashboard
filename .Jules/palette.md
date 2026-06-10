@@ -34,3 +34,6 @@
 ## 2026-06-01 - Global Keyboard Shortcut Hints and Focus States
 **Learning:** When adding a global keyboard shortcut (like `/` to focus an input), it's crucial to visually indicate the shortcut exists without obstructing the UI. Additionally, a shortcut hint over an input should hide when the input is focused or not empty.
 **Action:** Use CSS pseudo-classes (`:focus` and `:not(:placeholder-shown)`) combined with the adjacent sibling selector (`+`) to hide `.shortcut-hint` when the input is focused or populated, and provide the shortcut in `aria-label` for screen reader discoverability.
+## 2026-06-08 - Accessible Notifications for Dynamic Actions
+**Learning:** When users click a dynamically generated button that performs an action out of their immediate focus area (like inserting a column name into a SQL editor), screen reader users receive no feedback that the action succeeded.
+**Action:** Always provide explicit `aria-live` announcements (e.g., updating a status `#status` element with `aria-live="polite"`) after successful dynamic actions so assistive technologies can confirm the result.

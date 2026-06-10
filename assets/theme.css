@@ -18,7 +18,7 @@
   --accent-sky: #36a2eb;
   --accent-yellow: #ffce56;
   --accent-green: #2ecc71;
-  --shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,25 +30,31 @@
     --text-dim: #94a3b8;
     --border: #334155;
     --border-dark: #475569;
-    --shadow: 0 4px 12px rgba(0,0,0,0.3);
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
   .sql-console p {
     color: var(--text-muted) !important;
   }
-  
+
   body {
     background: var(--bg);
     color: var(--text);
   }
 
-  .preview-card, .sql-console, .results-container, .card, .related-link {
+  .preview-card,
+  .sql-console,
+  .results-container,
+  .card,
+  .related-link {
     background: var(--card-bg) !important;
     border-color: var(--border) !important;
     color: var(--text) !important;
   }
 
-  .card-title, .preview-card h3, .related-link strong {
+  .card-title,
+  .preview-card h3,
+  .related-link strong {
     color: var(--text) !important;
   }
 
@@ -67,13 +73,14 @@
     background: #0f172a !important;
     border-color: var(--border) !important;
   }
-  
+
   /* Grid.js dark mode tweaks */
   .gridjs-wrapper {
     background-color: var(--card-bg) !important;
     border-color: var(--border) !important;
   }
-  .gridjs-td, .gridjs-th {
+  .gridjs-td,
+  .gridjs-th {
     background-color: var(--card-bg) !important;
     color: var(--text) !important;
     border-color: var(--border) !important;
@@ -118,10 +125,14 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   background: var(--bg);
   color: var(--text);
-  transition: background-color 0.3s, color 0.3s;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
 }
 
 /* Common Layout Components */
@@ -132,7 +143,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -175,8 +186,8 @@ body {
 }
 
 .share-btn {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
   padding: 4px 12px;
   border-radius: 6px;
@@ -186,7 +197,7 @@ body {
 }
 
 .share-btn:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Fullscreen Chart Support */
@@ -198,7 +209,7 @@ body {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(255,255,255,0.8);
+  background: rgba(255, 255, 255, 0.8);
   border: 1px solid #ddd;
   border-radius: 4px;
   padding: 4px 8px;
@@ -236,4 +247,7 @@ body {
     padding: 10px 16px;
   }
 }
-.drop-zone:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.drop-zone:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
