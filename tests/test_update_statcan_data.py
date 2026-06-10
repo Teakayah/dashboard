@@ -1,3 +1,4 @@
+import pytest
 import json
 from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
@@ -5,26 +6,22 @@ from unittest.mock import MagicMock, patch
 from deployment.update_statcan_data import fetch_changed_since, _get_end_period, _normalize_pid, _load_last_checked
 import csv
 
-def test_normalize_pid():
-    # 10-digit IDs ending in '01'
-    assert _normalize_pid('1010001501') == '10100015'
-    assert _normalize_pid(1010001501) == '10100015'
-
-    # 10-digit IDs not ending in '01'
-    assert _normalize_pid('1010001502') == '1010001502'
-
-    # Normal 8-digit IDs
-    assert _normalize_pid('10100015') == '10100015'
-    assert _normalize_pid(10100015) == '10100015'
-
-    # Inputs with leading/trailing whitespaces
-    assert _normalize_pid(' 1010001501 ') == '10100015'
-    assert _normalize_pid(' 10100015 ') == '10100015'
-
-    # Other lengths/strings
-    assert _normalize_pid('short') == 'short'
-    assert _normalize_pid('thisiswaytoolong') == 'thisiswaytoolong'
-    assert _normalize_pid('10100015010') == '10100015010'
+@pytest.mark.parametrize("raw_pid,expected", [
+    ('1010001501', '10100015'),
+    (1010001501, '10100015'),
+    ('1010001502', '1010001502'),
+    ('10100015', '10100015'),
+    (10100015, '10100015'),
+    (' 1010001501 ', '10100015'),
+    (' 10100015 ', '10100015'),
+    ('short', 'short'),
+    ('thisiswaytoolong', 'thisiswaytoolong'),
+    ('10100015010', '10100015010'),
+    ('10-10-0015-01', '10100015'),
+    ('10-10-0015', '10100015'),
+])
+def test_normalize_pid(raw_pid, expected):
+    assert _normalize_pid(raw_pid) == expected
 
 def test_fetch_changed_since_success():
     # Mock data returned by Stats Canada API

@@ -60,7 +60,7 @@ def _load_last_checked() -> Optional[date]:
 
 def _normalize_pid(raw: Union[str, int]) -> str:
     """Stats Canada API returns 10-digit PIDs (8-digit + '01'). Strip to 8."""
-    s = str(raw).strip()
+    s = str(raw).strip().replace('-', '')
     if len(s) == 10 and s.endswith('01'):
         return s[:8]
     return s
