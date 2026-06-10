@@ -29,3 +29,7 @@
 ## 2026-06-01 - Testing `__main__` entrypoint with `importlib.util`
 **Learning:** Dynamic module execution using `importlib.util.spec_from_file_location` bypasses mocks defined for that module in the parent testing context, since `exec_module` initializes it in a fresh namespace. Mocking the script's `main()` function from the parent test before `exec_module` does not mock the module's internal `main()` call inside its `if __name__ == "__main__":` block.
 **Action:** Mocking `sys.exit` works for the top-level block, but to avoid executing the module's real `main()`, `sys.argv` mocking or other external mock patterns (or refactoring) should be used if running the real `main()` has side effects.
+
+## 2026-06-10 - Handle Missing Auto-generated UI test files gracefully
+**Learning:** UI tests for generated HTML artifacts failing with 404/Element not found timeouts when the artifacts aren't generated on development branches can cause flaky or spurious CI failures.
+**Action:** Use `response = page.goto(...)` and check for a 404 status. If missing, gracefully invoke `pytest.skip()` rather than asserting element states that don't exist.
