@@ -1090,8 +1090,11 @@ sqlInput.addEventListener('input', () => {
     }
 });
 
+// Global shortcut: press '/' to focus the SQL input field if not already in an input
 document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement !== sqlInput && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'SELECT') {
+    if (e.key === '/' && 
+        document.activeElement !== sqlInput && 
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
         e.preventDefault();
         sqlInput.focus();
     }
