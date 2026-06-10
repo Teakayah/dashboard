@@ -38,3 +38,6 @@ Action: To apply this next time, strip trailing semicolons from the user input a
 ## 2024-06-01 - Automated tech debt cleanup with Ruff
 Learning: The project uses `ruff` for Python linting. Routine tech debt such as unused module imports, unused variable assignments in mock context managers, and anti-pattern boolean assertions (e.g. `assert x == False`) can be safely and automatically fixed using the `--fix` and `--unsafe-fixes` flags.
 Action: To apply this next time, proactively use `ruff check . --fix --unsafe-fixes` to sweep the codebase for easy technical debt wins before resorting to manual string replacements.
+## 2026-06-10 - Fixed duplicate test definition F811
+**Learning:** Found an `F811 Redefinition` error in `tests/test_screenshot.py` where a test was defined twice, hiding the coverage of the `CalledProcessError` test case. Avoided using Ruff's auto-fix, which would have simply deleted the redefined function, losing the test entirely.
+**Action:** Manually renamed the duplicate test to `test_get_git_commit_times_batched_called_process_error` to properly test the `subprocess.CalledProcessError` scenario and restore hidden test coverage.
