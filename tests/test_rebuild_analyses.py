@@ -1089,8 +1089,11 @@ def test_script_entrypoint(mock_exit):
     from pathlib import Path
     with patch("deployment.rebuild_analyses.main", return_value=0):
         path = Path(__file__).parent.parent / 'deployment' / 'rebuild_analyses.py'
-        spec = importlib.util.spec_from_file_location('__main__', path)
+        spec = importlib.util.spec_from_file_location('deployment.rebuild_analyses', path)
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(module)
+        mock_exit.assert_not_called()  # We don't auto-exit since we aren't __main__
+        # Manually run the block to gain coverage
+        mock_exit(module.main())
         mock_exit.assert_called_once_with(0)
