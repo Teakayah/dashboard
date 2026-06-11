@@ -319,6 +319,7 @@ def build_html(analyses: list[dict]) -> str:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https://teakayah.github.io; connect-src 'self' https: blob:; worker-src 'self' blob:; frame-src 'self'; font-src 'self';">
   <title>DataDashboard</title>
   <link rel="icon" href="{SITE_URL}/favicon.ico" type="image/x-icon">
 
