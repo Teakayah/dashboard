@@ -164,6 +164,18 @@ function escapeId(str) {
  */
 function getRows(result) {
     if (!result || !result.schema) return [];
+
+    // Performance optimization: Check schema for BigInts to avoid typeof checks on every cell
+    let hasBigInt = false;
+    const isBigIntColumn = new Array(result.schema.fields.length).fill(false);
+    result.schema.fields.forEach((f, i) => {
+        const typeStr = String(f.type);
+        if ((f.type && f.type.bitWidth === 64) || typeStr.includes('Int64') || typeStr.includes('Timestamp') || typeStr.includes('Time64') || typeStr.includes('Decimal')) {
+            hasBigInt = true;
+            isBigIntColumn[i] = true;
+        }
+    });
+
     const fields = result.schema.fields.map(f => f.name);
     const numFields = fields.length;
     const numRows = result.numRows;
@@ -172,16 +184,30 @@ function getRows(result) {
     // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
     const rawRows = result.toArray();
     const rows = new Array(numRows);
-    for (let i = 0; i < numRows; i++) {
-        const rowObj = rawRows[i];
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+
+    if (!hasBigInt) {
+        // Fast path: no BigInts in schema, direct object mapping
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                rowPlain[fields[j]] = rowObj[fields[j]];
+            }
+            rows[i] = rowPlain;
         }
-        rows[i] = rowPlain;
+    } else {
+        // Slow path: selectively stringify only known BigInt columns
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
+                rowPlain[field] = (isBigIntColumn[j] && typeof val === 'bigint') ? val.toString() : val;
+            }
+            rows[i] = rowPlain;
+        }
     }
     return rows;
 }
