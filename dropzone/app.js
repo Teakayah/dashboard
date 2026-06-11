@@ -223,6 +223,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Unregisters any active service workers and forces a page reload.
+ * Used as a fallback mechanism when DuckDB initialization times out,
+ * often due to stale service worker caches preventing WebAssembly loading.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
@@ -337,6 +342,15 @@ async function restoreState() {
     }
 }
 
+/**
+ * Queries the DuckDB database for a table's schema and dynamically generates an interactive UI.
+ * Displays the table's columns and types, and attaches click handlers to each column that:
+ * 1. Insert the column name into the SQL editor at the cursor position.
+ * 2. Asynchronously profile the column by fetching Min, Max, and Count statistics.
+ * 3. Render a mini frequency distribution chart (top 10 values) using Chart.js.
+ *
+ * @param {string} tableName - The name of the table to describe and profile
+ */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
     const statsContainer = document.createElement('div');
@@ -790,6 +804,13 @@ async function processFile(file, path) {
     await onTableLoaded(tableName);
 }
 
+/**
+ * Handles the post-loading workflow for a newly registered DuckDB table.
+ * Updates the schema display, automatically generates heuristic chart previews,
+ * and sets a default SELECT query in the SQL editor to help the user get started.
+ *
+ * @param {string} tableName - The name of the newly loaded table
+ */
 async function onTableLoaded(tableName) {
     // Show schema
     if (loadedTables.size === 1) schemaDisplay.textContent = '';
