@@ -13,3 +13,6 @@
 ## 2026-05-28 - [Optimize Grid.js Large Dataset Initialization]
 **Learning:** When initializing `gridjs.Grid` with large datasets, mapping an array of plain objects into an array of arrays (e.g., `rows.map(...)`) creates significant CPU and memory overhead.
 **Action:** Always pass the plain objects array directly to `data` and configure `columns` to specify `id` keys (e.g., `columns: columns.map(c => ({ id: c, name: c }))`) to utilize Grid.js native object mapping.
+## 2026-06-12 - DuckDB-Wasm Result Mapping Bottleneck
+**Learning:** Checking `typeof === 'bigint'` on every cell of an Apache Arrow result proxy in a nested loop incurs significant overhead, especially for large datasets common in DuckDB-Wasm data dashboards.
+**Action:** When extracting data from Arrow proxies, perform a pre-flight check on the schema (`result.schema.fields`) to detect 64-bit types. If none are present, utilize a fast-path extraction loop that bypasses type checking entirely.

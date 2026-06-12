@@ -168,20 +168,46 @@ function getRows(result) {
     const numFields = fields.length;
     const numRows = result.numRows;
 
+    // Performance optimization: Pre-flight schema check for BigInt types to avoid
+    // expensive typeof === 'bigint' checks on every cell for tables that don't need it.
+    let hasBigInt = false;
+    for (const f of result.schema.fields) {
+        const tStr = String(f.type);
+        if (f.type.bitWidth === 64 || tStr.includes('Int64') || tStr.includes('Timestamp') || tStr.includes('Time64') || tStr.includes('Decimal')) {
+            hasBigInt = true;
+            break;
+        }
+    }
+
     // Performance optimization: Use Arrow's native .toArray() to extract objects first
     // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
     const rawRows = result.toArray();
     const rows = new Array(numRows);
-    for (let i = 0; i < numRows; i++) {
-        const rowObj = rawRows[i];
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+
+    if (!hasBigInt) {
+        // Fast path: No BigInts in schema, skip per-cell type checking entirely.
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                rowPlain[field] = rowObj[field];
+            }
+            rows[i] = rowPlain;
         }
-        rows[i] = rowPlain;
+    } else {
+        // Safe path: Schema indicates possible BigInts, must check and cast.
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
+                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+            }
+            rows[i] = rowPlain;
+        }
     }
     return rows;
 }
