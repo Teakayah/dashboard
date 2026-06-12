@@ -337,6 +337,14 @@ async function restoreState() {
     }
 }
 
+/**
+ * Queries the DuckDB schema for a given table and renders its columns in the UI.
+ * Attaches click handlers to each column pill that insert the column name into the
+ * SQL editor and asynchronously profile the column's data (calculating min, max, count,
+ * and rendering a frequency distribution chart).
+ *
+ * @param {string} tableName - The name of the table to describe and display.
+ */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
     const statsContainer = document.createElement('div');
