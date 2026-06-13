@@ -337,6 +337,13 @@ async function restoreState() {
     }
 }
 
+/**
+ * Queries DuckDB for the schema of a given table and renders it interactively in the UI.
+ * Creates clickable column name elements that can be inserted into the SQL editor
+ * and calculates basic profile statistics (like row count and null count) when clicked.
+ *
+ * @param {string} tableName - The name of the table to describe.
+ */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
     const statsContainer = document.createElement('div');
@@ -790,6 +797,13 @@ async function processFile(file, path) {
     await onTableLoaded(tableName);
 }
 
+/**
+ * Triggers UI updates and downstream processes after a table is successfully loaded into DuckDB.
+ * Clears initial state, renders the new table's schema, generates instant chart previews,
+ * and populates the SQL editor with a default SELECT query for immediate exploration.
+ *
+ * @param {string} tableName - The name of the DuckDB table that was just loaded.
+ */
 async function onTableLoaded(tableName) {
     // Show schema
     if (loadedTables.size === 1) schemaDisplay.textContent = '';
