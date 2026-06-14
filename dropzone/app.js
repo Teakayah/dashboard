@@ -214,6 +214,13 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+/**
+ * Displays an initialization error message and provides a manual escape hatch button.
+ * This is crucial because browsers can sometimes aggressively cache stale or corrupted
+ * DuckDB-Wasm bundles, leading to persistent initialization failures.
+ *
+ * @param {string} message - The error message to display
+ */
 function showInitError(message) {
     statusEl.textContent = message + ' ';
     const btn = document.createElement('button');
@@ -223,6 +230,10 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Unregisters all active Service Workers before reloading the page.
+ * Acts as an emergency fallback to clear corrupted caches when DuckDB-Wasm fails to load.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
