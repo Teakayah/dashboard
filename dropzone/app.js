@@ -19,6 +19,7 @@ let conn = null;
 let lastResult = null;
 let currentTableName = '';
 let loadedTables = new Set();
+let gridInstance = null;
 
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
@@ -1107,11 +1108,11 @@ function renderResults(rows) {
     }
     const columns = Object.keys(rows[0]);
     const resultsContainer = document.getElementById('results');
-    resultsContainer.textContent = '';
     
     // Performance optimization: pass the plain objects array directly to data
     // and map columns with id keys to avoid array mapping overhead.
-    new gridjs.Grid({
+    // Reuse grid instance to prevent memory leaks and improve render speed.
+    const gridConfig = {
         columns: columns.map(c => ({ id: c, name: c })),
         data: rows,
         pagination: { limit: 10 },
@@ -1119,7 +1120,14 @@ function renderResults(rows) {
         search: true,
         resizable: true,
         style: { table: { 'white-space': 'nowrap' } }
-    }).render(resultsContainer);
+    };
+
+    if (gridInstance) {
+        gridInstance.updateConfig(gridConfig).forceRender();
+    } else {
+        resultsContainer.textContent = '';
+        gridInstance = new gridjs.Grid(gridConfig).render(resultsContainer);
+    }
 }
 
 downloadBtn.addEventListener('click', async () => {
@@ -1240,7 +1248,12 @@ clearBtn.addEventListener('click', async () => {
         currentTableName = '';
         schemaDisplay.textContent = '';
         previewsContainer.textContent = '';
-        document.getElementById('results').textContent = '';
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        } else {
+            document.getElementById('results').textContent = '';
+        }
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
         downloadBtn.disabled = true;
