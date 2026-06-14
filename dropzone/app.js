@@ -347,18 +347,19 @@ async function displayTableSchema(tableName) {
     statsContainer.style.minHeight = '1.2em';
 
     const cols = getRows(schemaResult).map(r => {
-        const span = document.createElement('span');
-        span.className = 'clickable-col';
-        span.style.cursor = 'pointer';
-        span.style.textDecoration = 'underline';
-        span.style.marginRight = '8px';
-        span.style.color = 'var(--primary)';
-        span.style.borderRadius = '4px';
-        span.style.padding = '2px 4px';
-        span.textContent = `${r.column_name} (${r.column_type})`;
-        span.tabIndex = 0;
-        span.setAttribute('role', 'button');
-        span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
+        const btn = document.createElement('button');
+        btn.className = 'clickable-col';
+        btn.style.cursor = 'pointer';
+        btn.style.textDecoration = 'underline';
+        btn.style.marginRight = '8px';
+        btn.style.color = 'var(--primary)';
+        btn.style.borderRadius = '4px';
+        btn.style.padding = '2px 4px';
+        btn.style.background = 'transparent';
+        btn.style.border = 'none';
+        btn.style.fontFamily = 'inherit';
+        btn.textContent = `${r.column_name} (${r.column_type})`;
+        btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
         const triggerAction = async (e) => {
             e.stopPropagation();
@@ -415,15 +416,9 @@ async function displayTableSchema(tableName) {
             }
         };
 
-        span.onclick = triggerAction;
-        span.onkeydown = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                triggerAction(e);
-            }
-        };
+        btn.onclick = triggerAction;
 
-        return span;
+        return btn;
     });
     
     const tableDiv = document.createElement('div');

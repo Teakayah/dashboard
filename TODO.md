@@ -97,7 +97,7 @@ The site fails several WCAG 2.1 AA checks. Failures are not edge cases — they 
 - [ ] `dropzone.html` "share" button is rendered via inline `onclick` — keep it but ensure focus styles match the rest of the theme.
 - [x] Analysis tabs in `employment_rate_canada.html` (and `flood_risk_gatineau_ottawa.html`) use `<div class="tab" onclick="…">` — converted to `<button role="tab">` and implemented WAI-ARIA Tabs pattern.
 - [ ] The drop-zone has `role="button"` but the inner `<p>` is also clickable and there is no live region for status messages → screen readers don't announce "Loaded N tables". Add `aria-live="polite"` to `#status`.
-- [ ] Schema "clickable column" spans (`dropzone/app.js:200`) emulate links with `cursor:pointer + underline` but are spans with `role="button"`. Either make them real `<button>`s or accept the role — but add `:hover` and `:focus-visible` styles and an `aria-pressed`/result announcement after click.
+- [x] Schema "clickable column" spans (`dropzone/app.js:200`) emulate links with `cursor:pointer + underline` but are spans with `role="button"`. Either make them real `<button>`s or accept the role — but add `:hover` and `:focus-visible` styles and an `aria-pressed`/result announcement after click.
 - [x] All `alert()` calls in `dropzone/app.js` (and `analysis_utils.js`) should become inline error/info panels for screen-reader friendliness. (Note: `analysis_utils.js` removed, `app.js` still has some `alert()` for user errors, but critical ones are now inline).
 - [x] Added initialization progress bar, column profiling sparklines, and query history visuals to the Analytical Drop-Zone.
 - [x] Hide the "Share" button entirely on browsers that support neither `navigator.share` nor `navigator.clipboard`.
