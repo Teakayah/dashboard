@@ -214,6 +214,12 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+/**
+ * Displays a critical initialization error and provides an emergency UI escape hatch.
+ * Heavy WebAssembly bundles can cause persistent timeouts if cached improperly.
+ *
+ * @param {string} message - The error message to display
+ */
 function showInitError(message) {
     statusEl.textContent = message + ' ';
     const btn = document.createElement('button');
@@ -223,6 +229,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Emergency escape hatch to unregister all Service Workers and reload the page.
+ * Browsers can aggressively cache stale or corrupted Wasm bundles, causing
+ * persistent initialization failures. This forces a fresh network fetch.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
@@ -233,6 +244,11 @@ function reloadWithoutSW() {
     }
 }
 
+/**
+ * Initializes the DuckDB-Wasm instance and establishes the database connection.
+ * Sets up a timeout watchdog to catch initialization hangs (typically caused by
+ * Service Worker caching issues) and attempts to mount an OPFS for persistence.
+ */
 async function init() {
     let timedOut = false;
     const timeoutId = setTimeout(() => {

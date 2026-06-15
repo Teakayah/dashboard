@@ -52,3 +52,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-27 - Documenting undocumented utility functions and preventing misplaced comments
 **Learning:** In `dropzone/app.js`, the `escapeId` function was mistakenly inserted *between* a massive JSDoc comment for `getRows` and the `getRows` function itself, causing IDEs and documentation generators to attach the wrong documentation to `escapeId` and leaving `getRows` (which had a critical explanation about BigInt proxy traps) without correct tooling support.
 **Action:** When auditing or reading codebase utility functions, actively check that JSDoc comments are directly adjacent to the functions they describe, and ensure every utility function (like `escapeId`) has its own clear documentation.
+
+## 2025-06-15 - Documenting Service Worker Wasm Cache Escapes
+**Learning:** Heavy WebAssembly bundles like DuckDB-Wasm can get aggressively cached by Service Workers, leading to persistent initialization timeouts. The codebase implements an emergency escape hatch (`reloadWithoutSW`) but it lacked documentation explaining *why* it was necessary.
+**Action:** When implementing or discovering manual Service Worker unregistered functions, always document the "why" (e.g., stale Wasm caches) to ensure future developers don't mistakenly remove the escape hatch assuming it's dead code.
