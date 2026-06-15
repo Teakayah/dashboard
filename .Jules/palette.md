@@ -34,3 +34,7 @@
 ## 2026-06-01 - Global Keyboard Shortcut Hints and Focus States
 **Learning:** When adding a global keyboard shortcut (like `/` to focus an input), it's crucial to visually indicate the shortcut exists without obstructing the UI. Additionally, a shortcut hint over an input should hide when the input is focused or not empty.
 **Action:** Use CSS pseudo-classes (`:focus` and `:not(:placeholder-shown)`) combined with the adjacent sibling selector (`+`) to hide `.shortcut-hint` when the input is focused or populated, and provide the shortcut in `aria-label` for screen reader discoverability.
+
+## 2026-06-15 - Use native buttons for clickable columns in dropzone schema
+**Learning:** Interactive elements acting like links/buttons should use native `<button>` tags rather than emulating them with `<span>` elements, `role="button"`, and explicit keyboard event listeners. This inherits focus behavior and keyboard events naturally, improving accessibility.
+**Action:** For interactive schema column lists, use native buttons with CSS resets (`background: transparent; border: none; font-family: inherit;`) instead of emulated spans.

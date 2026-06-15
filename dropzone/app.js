@@ -347,7 +347,7 @@ async function displayTableSchema(tableName) {
     statsContainer.style.minHeight = '1.2em';
 
     const cols = getRows(schemaResult).map(r => {
-        const span = document.createElement('span');
+        const span = document.createElement('button');
         span.className = 'clickable-col';
         span.style.cursor = 'pointer';
         span.style.textDecoration = 'underline';
@@ -355,9 +355,11 @@ async function displayTableSchema(tableName) {
         span.style.color = 'var(--primary)';
         span.style.borderRadius = '4px';
         span.style.padding = '2px 4px';
+        span.style.background = 'transparent';
+        span.style.border = 'none';
+        span.style.fontFamily = 'inherit';
+        span.style.fontSize = 'inherit';
         span.textContent = `${r.column_name} (${r.column_type})`;
-        span.tabIndex = 0;
-        span.setAttribute('role', 'button');
         span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
         const triggerAction = async (e) => {
@@ -416,12 +418,6 @@ async function displayTableSchema(tableName) {
         };
 
         span.onclick = triggerAction;
-        span.onkeydown = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                triggerAction(e);
-            }
-        };
 
         return span;
     });
