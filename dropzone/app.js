@@ -19,6 +19,7 @@ let conn = null;
 let lastResult = null;
 let currentTableName = '';
 let loadedTables = new Set();
+let gridInstance = null;
 
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
@@ -1101,17 +1102,19 @@ async function runQuery() {
  * @param {Array<Object>} rows - The plain array of row objects
  */
 function renderResults(rows) {
+    const resultsContainer = document.getElementById('results');
+
     if (rows.length === 0) {
-        document.getElementById('results').textContent = 'No results';
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        }
+        resultsContainer.textContent = 'No results';
         return;
     }
     const columns = Object.keys(rows[0]);
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.textContent = '';
     
-    // Performance optimization: pass the plain objects array directly to data
-    // and map columns with id keys to avoid array mapping overhead.
-    new gridjs.Grid({
+    const gridConfig = {
         columns: columns.map(c => ({ id: c, name: c })),
         data: rows,
         pagination: { limit: 10 },
@@ -1119,7 +1122,16 @@ function renderResults(rows) {
         search: true,
         resizable: true,
         style: { table: { 'white-space': 'nowrap' } }
-    }).render(resultsContainer);
+    };
+
+    // Performance optimization: reuse gridInstance to prevent memory leaks from uncleaned event listeners
+    // and pass the plain objects array directly to data.
+    if (gridInstance) {
+        gridInstance.updateConfig(gridConfig).forceRender();
+    } else {
+        resultsContainer.textContent = '';
+        gridInstance = new gridjs.Grid(gridConfig).render(resultsContainer);
+    }
 }
 
 downloadBtn.addEventListener('click', async () => {
@@ -1240,6 +1252,10 @@ clearBtn.addEventListener('click', async () => {
         currentTableName = '';
         schemaDisplay.textContent = '';
         previewsContainer.textContent = '';
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        }
         document.getElementById('results').textContent = '';
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
