@@ -78,12 +78,11 @@ function renderHistory() {
     queryHistoryEl.appendChild(label);
 
     queryHistory.forEach(sql => {
-        const chip = document.createElement('div');
+        const chip = document.createElement('button');
+        chip.type = 'button';
         chip.className = 'history-chip';
         chip.textContent = sql;
         chip.title = sql;
-        chip.tabIndex = 0;
-        chip.setAttribute('role', 'button');
         chip.setAttribute('aria-label', `Load recent query: ${sql}`);
 
         const triggerAction = () => {
@@ -93,12 +92,6 @@ function renderHistory() {
         };
 
         chip.onclick = triggerAction;
-        chip.onkeydown = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                triggerAction();
-            }
-        };
         queryHistoryEl.appendChild(chip);
     });
 }
@@ -347,8 +340,14 @@ async function displayTableSchema(tableName) {
     statsContainer.style.minHeight = '1.2em';
 
     const cols = getRows(schemaResult).map(r => {
-        const span = document.createElement('span');
+        const span = document.createElement('button');
+        span.type = 'button';
         span.className = 'clickable-col';
+        span.style.background = 'transparent';
+        span.style.border = 'none';
+        span.style.fontFamily = 'inherit';
+        span.style.fontSize = 'inherit';
+        span.style.textAlign = 'left';
         span.style.cursor = 'pointer';
         span.style.textDecoration = 'underline';
         span.style.marginRight = '8px';
@@ -356,8 +355,6 @@ async function displayTableSchema(tableName) {
         span.style.borderRadius = '4px';
         span.style.padding = '2px 4px';
         span.textContent = `${r.column_name} (${r.column_type})`;
-        span.tabIndex = 0;
-        span.setAttribute('role', 'button');
         span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
         const triggerAction = async (e) => {
@@ -416,12 +413,6 @@ async function displayTableSchema(tableName) {
         };
 
         span.onclick = triggerAction;
-        span.onkeydown = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                triggerAction(e);
-            }
-        };
 
         return span;
     });
