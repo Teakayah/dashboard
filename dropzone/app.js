@@ -42,6 +42,12 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+/**
+ * Updates the initialization progress bar UI.
+ * Shows the progress container when between 1% and 99%, otherwise hides it.
+ *
+ * @param {number} percent - The current progress percentage (0-100).
+ */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
         initProgressContainer.style.display = 'block';
@@ -66,6 +72,10 @@ function addToHistory(sql) {
     renderHistory();
 }
 
+/**
+ * Renders the user's recent query history as clickable pill buttons in the UI.
+ * Clicking a history item populates the SQL editor with that query.
+ */
 function renderHistory() {
     queryHistoryEl.textContent = '';
     if (queryHistory.length === 0) return;
@@ -214,6 +224,13 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+/**
+ * Displays a critical initialization error message in the status element.
+ * Appends a fallback button to bypass the Service Worker and reload the page,
+ * providing an escape hatch if the Wasm bundle fails to load from cache.
+ *
+ * @param {string} message - The error message to display.
+ */
 function showInitError(message) {
     statusEl.textContent = message + ' ';
     const btn = document.createElement('button');
@@ -223,6 +240,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Unregisters all active Service Workers and forces a page reload.
+ * Used as a fallback mechanism when browser caches serve stale or corrupted
+ * DuckDB-Wasm bundles, causing persistent initialization failures.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
