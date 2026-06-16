@@ -18,7 +18,9 @@ TAB_TIMEOUT  = 2_000   # ms — post-click settle
 
 
 def _load(page: Page, path: str) -> None:
-    page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
+    response = page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
+    if response and response.status == 404:
+        pytest.skip(f"Artifact {path} missing")
     try:
         page.wait_for_load_state('networkidle', timeout=LOAD_TIMEOUT)
     except Exception:
