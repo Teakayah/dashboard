@@ -13,3 +13,6 @@
 ## 2026-05-28 - [Optimize Grid.js Large Dataset Initialization]
 **Learning:** When initializing `gridjs.Grid` with large datasets, mapping an array of plain objects into an array of arrays (e.g., `rows.map(...)`) creates significant CPU and memory overhead.
 **Action:** Always pass the plain objects array directly to `data` and configure `columns` to specify `id` keys (e.g., `columns: columns.map(c => ({ id: c, name: c }))`) to utilize Grid.js native object mapping.
+## 2024-06-17 - Prevent Grid.js Memory Leaks
+**Learning:** Re-rendering Grid.js by clearing `textContent` and instantiating `new gridjs.Grid()` causes memory leaks from uncleaned event listeners.
+**Action:** Store the Grid instance and use `gridInstance.updateConfig({ columns, data }).forceRender()`. Destroy the grid properly using `.destroy()` when clearing the UI entirely.
