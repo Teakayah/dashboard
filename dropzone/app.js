@@ -42,6 +42,11 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+/**
+ * Updates the initialization progress bar UI.
+ *
+ * @param {number} percent - The current progress percentage (0-100).
+ */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
         initProgressContainer.style.display = 'block';
@@ -66,6 +71,10 @@ function addToHistory(sql) {
     renderHistory();
 }
 
+/**
+ * Renders the SQL query history list as clickable chips in the UI.
+ * Clicking a chip populates the SQL input editor.
+ */
 function renderHistory() {
     queryHistoryEl.textContent = '';
     if (queryHistory.length === 0) return;
@@ -214,6 +223,12 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+/**
+ * Displays an initialization error message in the status bar along with a
+ * fallback button to reload the page bypassing the Service Worker cache.
+ *
+ * @param {string} message - The error message to display.
+ */
 function showInitError(message) {
     statusEl.textContent = message + ' ';
     const btn = document.createElement('button');
