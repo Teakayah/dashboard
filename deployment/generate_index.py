@@ -246,6 +246,27 @@ def inject_favicon(content: str, filename: str) -> str:
     return new_content
 
 
+def inject_csp(content: str, filename: str) -> str:
+    """Inject a Content Security Policy meta tag into an analysis HTML file."""
+    if 'Content-Security-Policy' in content:
+        return content
+
+    csp_block = (
+        '\n  <meta http-equiv="Content-Security-Policy" content="default-src \'self\'; '
+        'script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https://cdn.jsdelivr.net; '
+        'style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; '
+        'font-src \'self\' https://fonts.gstatic.com; '
+        'img-src \'self\' data: https:; '
+        'connect-src \'self\' https: blob:; '
+        'worker-src \'self\' blob:">'
+    )
+
+    new_content = re.sub(r'(<head[^>]*>)', r'\1' + csp_block, content, count=1, flags=re.IGNORECASE)
+    if new_content != content:
+        print(f'  Injected CSP into {filename}')
+    return new_content
+
+
 def inject_og_tags(content: str, filename: str, stem: str) -> str:
     """Inject og:image/twitter:image into an analysis HTML file content if not already present."""
     if 'og:image' in content:
@@ -363,11 +384,11 @@ def build_html(analyses: list[dict]) -> str:
       margin-bottom: 4px;
     }}
     header h1 span {{
-      color: #1e40af;
+      color: #60a5fa;
     }}
     .header-sub {{
       font-size: 0.82rem;
-      color: rgba(255,255,255,0.75);
+      color: rgba(255,255,255,0.85);
     }}
 
     /* ── Search ─────────────────────────────────────────────── */
@@ -420,7 +441,7 @@ def build_html(analyses: list[dict]) -> str:
       border-radius: 12px;
       padding: 18px 18px 14px;
       box-shadow: 0 1px 6px rgba(0,0,0,0.07);
-      border-top: 3px solid var(--accent, #4f8ef7);
+      border-top: 3px solid var(--accent, #1d4ed8);
       text-decoration: none;
       color: inherit;
       transition: transform 0.15s, box-shadow 0.15s;
@@ -508,11 +529,11 @@ def build_html(analyses: list[dict]) -> str:
 
     /* ── Keyboard focus ──────────────────────────────────────── */
     button:focus-visible {{
-      outline: 2px solid #4f8ef7;
+      outline: 2px solid #1d4ed8;
       outline-offset: 2px;
     }}
     .card:focus-visible {{
-      outline: 2px solid #4f8ef7;
+      outline: 2px solid #1d4ed8;
       outline-offset: 2px;
     }}
 
@@ -608,10 +629,12 @@ CONTRAST_FIX_MARKER = 'data-contrast-fix'
 CONTRAST_FIX_STYLE = (
     '\n  <style data-contrast-fix>'
     'body{background:var(--bg)!important;color:var(--text)!important}'
+    'h1,h2,h3,h4,h5,h6{color:var(--text)!important}'
+    'a{color:var(--primary,#2563eb)}'
     '.subtitle,.note,.empty,.tab:not(.active),.related-label,.card-date'
     '{color:var(--text-muted,#4b5563)!important}'
     '.related-link span,footer,footer a{color:var(--text-muted,#4b5563)!important}'
-    'button.tab{background:transparent;border:none;border-bottom:3px solid transparent;font-family:inherit;outline:none}button.tab.active{border-bottom-color:#1a1a2e}button.tab:focus-visible{outline:2px solid var(--primary,#1a1a2e);outline-offset:-2px}'
+    'button.tab{background:transparent;border:none;border-bottom:3px solid transparent;font-family:inherit;outline:none}button.tab.active{border-bottom-color:var(--primary,#1a1a2e)}button.tab:focus-visible{outline:2px solid var(--primary,#1a1a2e);outline-offset:-2px}'
     '</style>'
 )
 
@@ -684,6 +707,7 @@ def main(argv: Optional[list[str]] = None):
         new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
         new_content = inject_share_fix(new_content, meta['filename'])
         new_content = inject_contrast_fix(new_content, meta['filename'])
+        new_content = inject_csp(new_content, meta['filename'])
 
         if new_content != content:
             filepath.write_text(new_content, encoding='utf-8')

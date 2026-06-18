@@ -98,7 +98,7 @@ def main():
 
     # Start local server
     server = subprocess.Popen(
-        ['python3', '-m', 'http.server', str(PORT)],
+        ['python3', '-m', 'http.server', str(PORT), '--bind', '127.0.0.1'],
         cwd=str(ROOT),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
