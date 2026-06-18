@@ -24,7 +24,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest-playwright
           python -m playwright install --with-deps chromium
 
       # Generated HTML pages live on main only (CLAUDE.md §3). The PR merge ref
