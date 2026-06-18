@@ -122,7 +122,8 @@ jobs:
 
       - name: Commit and push to main
         run: |
-          git add index.html feed.xml previews/ *.html favicon.ico descriptions.json
+          git add index.html feed.xml previews/ *.html favicon.ico
+          git add --ignore-unmatch descriptions.json
           git diff --staged --quiet && echo "Nothing new to commit." || \
             git commit -m "chore: update index, feed, previews, og tags [skip ci]"
           git push origin main
