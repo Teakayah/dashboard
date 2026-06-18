@@ -214,6 +214,13 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+/**
+ * Renders a fatal initialization error in the UI.
+ * Includes a recovery button that triggers a Service Worker bypass,
+ * as Wasm initialization failures are commonly caused by stale SW caches.
+ *
+ * @param {string} message - The error message to display
+ */
 function showInitError(message) {
     statusEl.textContent = message + ' ';
     const btn = document.createElement('button');
@@ -223,6 +230,13 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Manual escape hatch to bypass potentially stale or corrupted Service Worker caches.
+ * When DuckDB-Wasm fails to initialize (often due to aggressive browser caching
+ * of heavy WebAssembly bundles), this function forcefully unregisters all active
+ * Service Workers before reloading, ensuring a clean fetch from the network.
+ * Do not remove: required to recover from persistent Wasm caching errors.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
