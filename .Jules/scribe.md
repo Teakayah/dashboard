@@ -52,3 +52,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-05-27 - Documenting undocumented utility functions and preventing misplaced comments
 **Learning:** In `dropzone/app.js`, the `escapeId` function was mistakenly inserted *between* a massive JSDoc comment for `getRows` and the `getRows` function itself, causing IDEs and documentation generators to attach the wrong documentation to `escapeId` and leaving `getRows` (which had a critical explanation about BigInt proxy traps) without correct tooling support.
 **Action:** When auditing or reading codebase utility functions, actively check that JSDoc comments are directly adjacent to the functions they describe, and ensure every utility function (like `escapeId`) has its own clear documentation.
+
+## 2024-06-06 - Documenting hidden asynchronous side-effects in UI renderers
+**Learning:** The `displayTableSchema` function in `dropzone/app.js` implies a simple UI rendering task, but it actually encapsulates complex asynchronous data profiling logic (querying min/max/count and rendering Chart.js distributions) triggered by user clicks. This "hidden" behavior within an otherwise generic-sounding function creates a knowledge silo.
+**Action:** When a UI rendering function attaches heavy asynchronous side-effects (like database queries and chart generation) to its created elements, always explicitly document these behaviors in the JSDoc to prevent maintainers from missing them.
