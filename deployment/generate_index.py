@@ -626,16 +626,6 @@ def inject_contrast_fix(content: str, filename: str) -> str:
     return new_content
 
 
-def strip_analysis_utils(content: str, filename: str) -> str:
-    """Remove any leftover <script src="assets/analysis_utils.js"> tags (idempotent)."""
-    import re as _re
-    pattern = r'<script[^>]+src=["\']assets/analysis_utils\.js["\'][^>]*>\s*</script>'
-    new_content = _re.sub(pattern, '', content, flags=_re.IGNORECASE)
-    if new_content != content:
-        print(f'  Stripped analysis_utils.js script tag from {filename}')
-    return new_content
-
-
 def inject_share_fix(content: str, filename: str) -> str:
     """Replace bare navigator.share onclick with a feature-detected version."""
     unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
@@ -679,7 +669,6 @@ def main(argv: Optional[list[str]] = None):
         # Inject enhancements
         new_content = inject_responsive(content, meta['filename'], args.responsive_preset)
         new_content = strip_back_link(new_content, meta['filename'])
-        new_content = strip_analysis_utils(new_content, meta['filename'])
         new_content = inject_favicon(new_content, meta['filename'])
         new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
         new_content = inject_share_fix(new_content, meta['filename'])
