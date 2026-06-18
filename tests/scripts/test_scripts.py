@@ -80,28 +80,37 @@ def test_dummy_data_gen():
                 assert instance.writerow.call_count == 400000
                 assert instance.writeheader.call_count == 4
 
-def test_generate_icons():
-    with patch('PIL.Image.new') as mock_image_new:
-        with patch('PIL.ImageDraw.Draw'):
-            with patch('os.makedirs'):
-                with patch('builtins.print'):
-                    module = load_script_as_module('generate_icons.py', 'generate_icons')
+def test_generate_icons(tmp_path):
+    from PIL import Image
+    with patch('builtins.print'):
+        module = load_script_as_module('generate_icons.py', 'generate_icons')
 
-                    # Test logic
-                    mock_img = MagicMock()
-                    mock_image_new.return_value = mock_img
+        test_file = tmp_path / "test_100.png"
+        module.generate_icon(100, str(test_file))
 
-                    module.generate_icon(100, "fake.png")
+        assert test_file.exists()
+        with Image.open(test_file) as img:
+            assert img.size == (100, 100)
+            assert img.mode == 'RGBA'
+            assert img.getpixel((50, 50)) == (255, 255, 255, 255)
 
-                    assert mock_image_new.call_count == 1
-                    assert mock_img.save.call_count == 1
-                    mock_img.save.assert_called_with("fake.png")
+def test_generate_icons_main(tmp_path, monkeypatch):
+    from PIL import Image
+    monkeypatch.chdir(tmp_path)
+    with patch('builtins.print'):
+        run_script('generate_icons.py')
 
-def test_generate_icons_main():
-    with patch('PIL.Image.new'):
-        with patch('PIL.ImageDraw.Draw'):
-            with patch('os.makedirs') as mock_makedirs:
-                with patch('builtins.print') as mock_print:
-                    run_script('generate_icons.py')
-                    assert mock_makedirs.call_count == 1
-                    assert mock_print.call_count == 3
+    assert (tmp_path / "assets" / "icons").exists()
+
+    icon_192 = tmp_path / "assets" / "icons" / "icon-192.png"
+    icon_512 = tmp_path / "assets" / "icons" / "icon-512.png"
+    icon_maskable = tmp_path / "assets" / "icons" / "icon-maskable.png"
+
+    assert icon_192.exists()
+    assert icon_512.exists()
+    assert icon_maskable.exists()
+
+    with Image.open(icon_192) as img:
+        assert img.size == (192, 192)
+        assert img.mode == 'RGBA'
+        assert img.getpixel((96, 96)) == (255, 255, 255, 255)
