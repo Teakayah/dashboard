@@ -16,7 +16,7 @@
 
 ## 2026-05-26 - Assertions for Error Cases
 **Learning:** Testing error handling (like `subprocess.CalledProcessError`) should not only verify the fallback return value but also assert that the mocked function was called with the exact expected arguments that led to the error.
-**Action:** Add `assert_called_once_with` to mock exception scenarios to ensure the correct code path and arguments triggered the failure.
+**Action:** Always use `mock.assert_called_once_with` when simulating exceptions (like `subprocess.CalledProcessError`) to explicitly verify the mock was called with the exact parameters expected before it threw the error.
 
 ## 2026-05-28 - Test Exception Handling Validation
 **Learning:** Adding test coverage for exception blocks isn't just about covering lines; it requires asserting *how* the failure was triggered to ensure it's not a generic or unintended exception.
@@ -29,6 +29,7 @@
 ## 2026-06-01 - Testing `__main__` entrypoint with `importlib.util`
 **Learning:** Dynamic module execution using `importlib.util.spec_from_file_location` bypasses mocks defined for that module in the parent testing context, since `exec_module` initializes it in a fresh namespace. Mocking the script's `main()` function from the parent test before `exec_module` does not mock the module's internal `main()` call inside its `if __name__ == "__main__":` block.
 **Action:** Mocking `sys.exit` works for the top-level block, but to avoid executing the module's real `main()`, `sys.argv` mocking or other external mock patterns (or refactoring) should be used if running the real `main()` has side effects.
-## 2026-06-16 - Testing image generation using PIL
-**Learning:** Testing image generation using heavy mocks for `PIL.Image.new`, `PIL.ImageDraw.Draw`, and `img.save` does not verify behavior. It only verifies implementation calls. If Pillow is missing from the environment, these mocked tests falsely pass.
-**Action:** When writing tests for image generation code (e.g., Pillow), use pytest's `tmp_path` fixture to generate actual files instead of mocking the library. Verify the resulting file's existence, size, mode, and sample its pixel colors to prove the code creates valid output.
+
+## 2026-06-03 - [Missing clipboard error handling]
+**Learning:** The clipboard API (`navigator.clipboard.writeText`) returns a Promise that must be `.catch()`'d to handle denials or context issues. Silent failures prevent UI toasts from alerting the user. Mocking `navigator.clipboard` using `Object.defineProperty` within `page.evaluate()` is effective for simulating these failures in Playwright tests.
+**Action:** Always append `.catch()` blocks to clipboard operations and include tests that mock promise rejections.
