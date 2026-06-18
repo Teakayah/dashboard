@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: blob:; worker-src 'self' blob:">
   <!-- responsive-inject-v7 -->
   <style>
     @media (min-width: 769px) {
@@ -14,6 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytical Drop-Zone</title>
     <meta name="description" content="Local-first SQL analysis for CSV, JSON, and Parquet files using DuckDB-Wasm.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https://teakayah.github.io; connect-src 'self' https: blob:; worker-src 'self' blob:;">
     <script type="importmap">
     {
       "imports": {
@@ -260,7 +262,7 @@
 <!-- unified-header-inject -->
 <header class="unified-header">
   <div class="back-link-box">
-    <a href="https://teakayah.github.io/dashboard/" style="font-weight:700; color:var(--primary); font-size:1.2rem;">DataDashboard</a>
+    <a href="https://teakayah.github.io/dashboard/" style="font-weight:700; color:inherit; font-size:1.2rem;">DataDashboard</a>
     <span style="opacity:0.3; margin: 0 4px;">/</span>
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
@@ -351,7 +353,7 @@
                 <button id="export-db" class="secondary" style="background-color: #7c3aed;">Export Database (.db)</button>
             </div>
             <div class="input-wrapper">
-                <textarea id="sql-input" aria-label="SQL query input" placeholder="SELECT * FROM data LIMIT 10"></textarea>
+                <textarea id="sql-input" aria-label="SQL query input (Press / to focus)" placeholder="SELECT * FROM data LIMIT 10"></textarea>
                 <div class="shortcut-hint" aria-hidden="true"><kbd>/</kbd> to focus</div>
             </div>
             <div id="query-history" class="query-history-container"></div>
@@ -390,6 +392,11 @@
         navigator.clipboard.writeText(window.location.href);
       }
     });
+
+    if (!navigator.share && !navigator.clipboard) {
+      const shareBtn = document.getElementById('share-btn');
+      if (shareBtn) shareBtn.style.display = 'none';
+    }
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

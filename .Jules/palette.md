@@ -34,6 +34,11 @@
 ## 2026-06-01 - Global Keyboard Shortcut Hints and Focus States
 **Learning:** When adding a global keyboard shortcut (like `/` to focus an input), it's crucial to visually indicate the shortcut exists without obstructing the UI. Additionally, a shortcut hint over an input should hide when the input is focused or not empty.
 **Action:** Use CSS pseudo-classes (`:focus` and `:not(:placeholder-shown)`) combined with the adjacent sibling selector (`+`) to hide `.shortcut-hint` when the input is focused or populated, and provide the shortcut in `aria-label` for screen reader discoverability.
-## 2026-06-16 - Replacing Custom Interactive Elements with Native Buttons
-**Learning:** Custom interactive elements (like history chips and clickable columns) acting as buttons using `div` or `span` lack native keyboard behavior, even when given a `tabindex`. Changing them to native `<button>` tags fixes this automatically, but requires explicit CSS resets (e.g., `background: transparent; border: none; font-family: inherit; font-size: inherit; margin: 0; padding: 0; text-align: left; display: inline;` or similar depending on context) to prevent the browser's default button styling from completely breaking the visual layout.
-**Action:** When auditing custom interactive elements, convert them to native `<button>` tags for inherent accessibility, ensure manual `keydown` handlers are removed, and always apply explicit CSS style resets to retain the original appearance.
+
+## 2026-06-02 - Converting Schema Columns to Native Buttons with Screen Reader Announcements
+**Learning:** Emulating buttons with `<span>` requires `role="button"`, `tabindex="0"`, and custom keyboard event handlers. Using native `<button>` tags provides these for free, but requires CSS resets (`background: transparent; border: none; font-family: inherit;`) to avoid breaking the design. Additionally, injecting text into an editor is silent to screen readers unless explicitly announced via an `aria-live` region.
+**Action:** Always prefer native `<button>` tags with CSS resets over emulated `<span>` buttons, and explicitly announce dynamic actions (like inserting text) to `aria-live` regions to ensure screen reader users are informed of the result.
+
+## 2026-06-03 - Descriptive ARIA Labels for Dynamic Buttons
+**Learning:** When dynamically generating action buttons that rely on visual abbreviations (like emojis, e.g., "💾 PNG") or concise text, screen reader users may lack the context to understand what the button exports or affects (especially when multiple similar buttons exist in a list of chart cards).
+**Action:** Always add an explicit `aria-label` describing the full action and its target context (e.g., "Download Chart Title as PNG") and pair it with a `title` attribute for visual users who rely on tooltips, ensuring the button is intuitive for all users.
