@@ -1,5 +1,3 @@
-import pytest
-import os
 from playwright.sync_api import Page, expect
 from pathlib import Path
 from helpers import (
@@ -25,7 +23,6 @@ def _load_page(page: Page, url: str) -> None:
         pass
 
 
-@pytest.mark.skipif(not os.path.exists("index.html"), reason="Artifact missing")
 class TestIndexSearch:
     def test_search_filters_cards(self, page: Page):
         _load_page(page, BASE_URL)
@@ -127,7 +124,6 @@ class TestDropzoneButtons:
         expect(dz.locator("#schema-display")).to_contain_text("employees")
 
 
-@pytest.mark.skipif(not os.path.exists("flood_risk_gatineau_ottawa.html"), reason="Artifact missing")
 class TestFloodPageButtons:
     def test_share_button_exists(self, page: Page):
         _load_page(page, FLOOD_URL)
