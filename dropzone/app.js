@@ -164,39 +164,25 @@ function escapeId(str) {
  */
 function getRows(result) {
     if (!result || !result.schema) return [];
-    const fields = result.schema.fields.map(f => f.name);
-    const numFields = fields.length;
-    const numRows = result.numRows;
 
-    // Performance optimization: Pre-flight schema check for BigInt types to avoid
-    // expensive typeof === 'bigint' checks on every cell for tables that don't need it.
     let hasBigInt = false;
     for (const f of result.schema.fields) {
-        const tStr = String(f.type);
-        if (f.type.bitWidth === 64 || tStr.includes('Int64') || tStr.includes('Timestamp') || tStr.includes('Time64') || tStr.includes('Decimal')) {
+        if (f.type && (f.type.bitWidth === 64 || String(f.type).match(/Int64|Timestamp|Time64|Decimal/i))) {
             hasBigInt = true;
             break;
         }
     }
+
+    const fields = result.schema.fields.map(f => f.name);
+    const numFields = fields.length;
+    const numRows = result.numRows;
 
     // Performance optimization: Use Arrow's native .toArray() to extract objects first
     // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
     const rawRows = result.toArray();
     const rows = new Array(numRows);
 
-    if (!hasBigInt) {
-        // Fast path: No BigInts in schema, skip per-cell type checking entirely.
-        for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
-            const rowPlain = {};
-            for (let j = 0; j < numFields; j++) {
-                const field = fields[j];
-                rowPlain[field] = rowObj[field];
-            }
-            rows[i] = rowPlain;
-        }
-    } else {
-        // Safe path: Schema indicates possible BigInts, must check and cast.
+    if (hasBigInt) {
         for (let i = 0; i < numRows; i++) {
             const rowObj = rawRows[i];
             const rowPlain = {};
@@ -205,6 +191,16 @@ function getRows(result) {
                 const val = rowObj[field];
                 // Cast BigInts to strings for UI/JSON compatibility
                 rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+            }
+            rows[i] = rowPlain;
+        }
+    } else {
+        for (let i = 0; i < numRows; i++) {
+            const rowObj = rawRows[i];
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                rowPlain[field] = rowObj[field];
             }
             rows[i] = rowPlain;
         }
@@ -259,6 +255,13 @@ function reloadWithoutSW() {
     }
 }
 
+/**
+ * Initializes the DuckDB-Wasm instance and sets up the Analytical Drop-Zone UI.
+ * This includes instantiating the WebAssembly module, connecting to the database
+ * (preferring OPFS persistence if available), loading the delta extension,
+ * and restoring the offline UI state. Includes a timeout fallback to handle
+ * stale service worker scenarios.
+ */
 async function init() {
     let timedOut = false;
     const timeoutId = setTimeout(() => {
@@ -363,6 +366,15 @@ async function restoreState() {
     }
 }
 
+/**
+ * Retrieves and renders the schema for a specified DuckDB table within the UI.
+ * For each column, it creates an interactive element that, when clicked:
+ * 1. Inserts the column name into the SQL editor.
+ * 2. Asynchronously profiles the column data (fetching min, max, count).
+ * 3. Renders a mini Chart.js bar chart visualizing the top 10 most frequent values.
+ *
+ * @param {string} tableName - The name of the DuckDB table to describe and profile.
+ */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
     const statsContainer = document.createElement('div');
@@ -373,29 +385,28 @@ async function displayTableSchema(tableName) {
     statsContainer.style.minHeight = '1.2em';
 
     const cols = getRows(schemaResult).map(r => {
-        const span = document.createElement('span');
-        span.className = 'clickable-col';
-        span.style.cursor = 'pointer';
-        span.style.textDecoration = 'underline';
-        span.style.marginRight = '8px';
-        span.style.color = 'var(--primary)';
-        span.style.borderRadius = '4px';
-        span.style.padding = '2px 4px';
-        span.textContent = `${r.column_name} (${r.column_type})`;
-        span.tabIndex = 0;
-        span.setAttribute('role', 'button');
-        span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
+        const btn = document.createElement('button');
+        btn.className = 'clickable-col';
+        btn.style.cursor = 'pointer';
+        btn.style.textDecoration = 'underline';
+        btn.style.marginRight = '8px';
+        btn.style.color = 'var(--primary)';
+        btn.style.borderRadius = '4px';
+        btn.style.padding = '2px 4px';
+        btn.style.background = 'transparent';
+        btn.style.border = 'none';
+        btn.style.fontFamily = 'inherit';
+        btn.textContent = `${r.column_name} (${r.column_type})`;
+        btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
         const triggerAction = async (e) => {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${escapeId(r.column_name)}"`);
+            statusEl.textContent = `Inserted column ${r.column_name} into SQL editor`;
             
             // Profiling logic
             try {
-                statsContainer.textContent = '';
-                const calcItalics = document.createElement('i');
-                calcItalics.textContent = 'Calculating stats...';
-                statsContainer.appendChild(calcItalics);
+                statsContainer.textContent = 'Calculating stats...';
                 const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
                 const stats = getRows(profilingResult)[0];
 
@@ -441,15 +452,15 @@ async function displayTableSchema(tableName) {
             }
         };
 
-        span.onclick = triggerAction;
-        span.onkeydown = (e) => {
+        btn.onclick = triggerAction;
+        btn.onkeydown = (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 triggerAction(e);
             }
         };
 
-        return span;
+        return btn;
     });
     
     const tableDiv = document.createElement('div');
@@ -601,6 +612,11 @@ generateJoinBtn.addEventListener('click', () => {
         return;
     }
 
+    if (!loadedTables.has(a) || !loadedTables.has(b)) {
+        showToast('Invalid table selection.');
+        return;
+    }
+
     const sql = `SELECT *\nFROM "${escapeId(a)}"\nJOIN "${escapeId(b)}" ON "${escapeId(a)}"."${escapeId(col)}" = "${escapeId(b)}"."${escapeId(col)}"\nLIMIT 100`;
     sqlInput.value = sql;
     sqlInput.dispatchEvent(new Event('input'));
@@ -621,6 +637,10 @@ generateChartBtn.addEventListener('click', () => {
     
     createPreviewCard(title, async (canvasId) => {
         try {
+            if (!loadedTables.has(currentTableName)) {
+                showToast('Invalid table reference.');
+                return;
+            }
             let sql = '';
             if (type === 'scatter') {
                 sql = `SELECT "${escapeId(xCol)}" as x, "${escapeId(yCol)}" as y\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nLIMIT 500`;
@@ -816,6 +836,13 @@ async function processFile(file, path) {
     await onTableLoaded(tableName);
 }
 
+/**
+ * Orchestrates the UI updates immediately after a new table is registered in DuckDB.
+ * Triggers schema display generation, instant chart previews, and sets a default
+ * query in the SQL editor for the user.
+ *
+ * @param {string} tableName - The name of the newly loaded table
+ */
 async function onTableLoaded(tableName) {
     // Show schema
     if (loadedTables.size === 1) schemaDisplay.textContent = '';
@@ -953,7 +980,7 @@ async function generateInstantCharts(tableName) {
                     datasets: [{
                         label: `${bestPair[0]} vs ${bestPair[1]}`,
                         data: rows.map(r => ({x: r.x, y: r.y})),
-                        backgroundColor: '#4f8ef7'
+                        backgroundColor: '#1d4ed8'
                     }]
                 }, {
                     scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }
@@ -1013,6 +1040,8 @@ function createPreviewCard(title, renderFn) {
 
     const downloadBtn = document.createElement('button');
     downloadBtn.textContent = '💾 PNG';
+    downloadBtn.setAttribute('aria-label', `Download ${title} as PNG`);
+    downloadBtn.title = `Download ${title} as PNG`;
     downloadBtn.style.padding = '2px 6px';
     downloadBtn.style.fontSize = '0.7rem';
     downloadBtn.onclick = () => {
@@ -1070,8 +1099,11 @@ sqlInput.addEventListener('input', () => {
     }
 });
 
+// Global shortcut: press '/' to focus the SQL input field if not already in an input
 document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement !== sqlInput && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'SELECT') {
+    if (e.key === '/' && 
+        document.activeElement !== sqlInput && 
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
         e.preventDefault();
         sqlInput.focus();
     }
@@ -1179,6 +1211,9 @@ copyJsonBtn.addEventListener('click', () => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
+    }).catch(err => {
+        console.error(err);
+        showToast('Clipboard Error: ' + err.message);
     });
 });
 

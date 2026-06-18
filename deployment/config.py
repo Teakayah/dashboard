@@ -82,7 +82,7 @@ EXTRACTION_CONFIGS = {
 
 # --- Dashboard Configuration ---
 ACCENT_COLORS = [
-    '#4f8ef7', '#ff6384', '#4bc0c0', '#ff9f40', '#9966ff', '#36a2eb', '#ffce56', '#2ecc71'
+    '#1d4ed8', '#c53030', '#0f766e', '#c2410c', '#6d28d9', '#0369a1', '#15803d', '#374151'
 ]
 
 LIBRARY_PATTERNS = {
