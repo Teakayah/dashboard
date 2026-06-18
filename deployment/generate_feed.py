@@ -57,22 +57,6 @@ def _get_batched_git_isos(files: list[Path]) -> dict[Path, str]:
     return dates
 
 
-@lru_cache(maxsize=None)
-def _git_iso(filepath: Path) -> str:
-    """Return ISO 8601 timestamp from git log; fall back to current time."""
-    try:
-        result = subprocess.run(
-            ['git', 'log', '-1', '--format=%cI', '--', str(filepath)],
-            capture_output=True, text=True, cwd=str(ROOT),
-        )
-        stamp = result.stdout.strip()
-        if stamp:
-            return stamp   # already ISO 8601 with timezone
-    except Exception:
-        pass
-    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-
-
 def _extract_title(content: str, stem: str) -> str:
     m = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
     raw = m.group(1).strip() if m else stem.replace('_', ' ').title()
