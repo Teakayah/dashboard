@@ -612,6 +612,11 @@ generateJoinBtn.addEventListener('click', () => {
         return;
     }
 
+    if (!loadedTables.has(a) || !loadedTables.has(b)) {
+        showToast('Invalid table selection.');
+        return;
+    }
+
     const sql = `SELECT *\nFROM "${escapeId(a)}"\nJOIN "${escapeId(b)}" ON "${escapeId(a)}"."${escapeId(col)}" = "${escapeId(b)}"."${escapeId(col)}"\nLIMIT 100`;
     sqlInput.value = sql;
     sqlInput.dispatchEvent(new Event('input'));
@@ -632,6 +637,10 @@ generateChartBtn.addEventListener('click', () => {
     
     createPreviewCard(title, async (canvasId) => {
         try {
+            if (!loadedTables.has(currentTableName)) {
+                showToast('Invalid table reference.');
+                return;
+            }
             let sql = '';
             if (type === 'scatter') {
                 sql = `SELECT "${escapeId(xCol)}" as x, "${escapeId(yCol)}" as y\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nLIMIT 500`;
