@@ -38,3 +38,7 @@ Action: To apply this next time, strip trailing semicolons from the user input a
 ## 2024-06-01 - Automated tech debt cleanup with Ruff
 Learning: The project uses `ruff` for Python linting. Routine tech debt such as unused module imports, unused variable assignments in mock context managers, and anti-pattern boolean assertions (e.g. `assert x == False`) can be safely and automatically fixed using the `--fix` and `--unsafe-fixes` flags.
 Action: To apply this next time, proactively use `ruff check . --fix --unsafe-fixes` to sweep the codebase for easy technical debt wins before resorting to manual string replacements.
+
+## 2026-06-18 - Clean up obsolete code processing functions
+**Learning:** Functions related to dead files or features (like removing tags for a script that is completely deleted from the repo) act as dead code. They clutter generation scripts and tests.
+**Action:** Identified `strip_analysis_utils` as dead code because `analysis_utils.js` had been previously deleted. Removed the code and the corresponding tests. Addressed F811 shadowing caused by test copy/pasting.
