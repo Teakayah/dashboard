@@ -19,6 +19,7 @@ let conn = null;
 let lastResult = null;
 let currentTableName = '';
 let loadedTables = new Set();
+let gridInstance = null;
 
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
@@ -1101,25 +1102,36 @@ async function runQuery() {
  * @param {Array<Object>} rows - The plain array of row objects
  */
 function renderResults(rows) {
+    const resultsContainer = document.getElementById('results');
     if (rows.length === 0) {
-        document.getElementById('results').textContent = 'No results';
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        }
+        resultsContainer.textContent = 'No results';
         return;
     }
-    const columns = Object.keys(rows[0]);
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.textContent = '';
+    const columns = Object.keys(rows[0]).map(c => ({ id: c, name: c }));
     
-    // Performance optimization: pass the plain objects array directly to data
-    // and map columns with id keys to avoid array mapping overhead.
-    new gridjs.Grid({
-        columns: columns.map(c => ({ id: c, name: c })),
-        data: rows,
-        pagination: { limit: 10 },
-        sort: true,
-        search: true,
-        resizable: true,
-        style: { table: { 'white-space': 'nowrap' } }
-    }).render(resultsContainer);
+    // Performance optimization: reuse Grid.js instance to prevent memory leaks from orphaned event listeners
+    if (gridInstance) {
+        gridInstance.updateConfig({
+            columns: columns,
+            data: rows
+        }).forceRender();
+    } else {
+        resultsContainer.textContent = '';
+        gridInstance = new gridjs.Grid({
+            columns: columns,
+            data: rows,
+            pagination: { limit: 10 },
+            sort: true,
+            search: true,
+            resizable: true,
+            style: { table: { 'white-space': 'nowrap' } }
+        });
+        gridInstance.render(resultsContainer);
+    }
 }
 
 downloadBtn.addEventListener('click', async () => {
@@ -1240,6 +1252,10 @@ clearBtn.addEventListener('click', async () => {
         currentTableName = '';
         schemaDisplay.textContent = '';
         previewsContainer.textContent = '';
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        }
         document.getElementById('results').textContent = '';
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
