@@ -42,6 +42,12 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+/**
+ * Updates the DuckDB-Wasm initialization progress bar in the UI.
+ * The progress bar is automatically hidden when progress is 0% or 100%.
+ *
+ * @param {number} percent - The current loading progress (0 to 100).
+ */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
         initProgressContainer.style.display = 'block';
@@ -66,6 +72,10 @@ function addToHistory(sql) {
     renderHistory();
 }
 
+/**
+ * Renders the user's recent SQL queries as clickable chips in the UI.
+ * Rebuilds the history container based on the current state of `queryHistory`.
+ */
 function renderHistory() {
     queryHistoryEl.textContent = '';
     if (queryHistory.length === 0) return;
@@ -236,6 +246,13 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+/**
+ * Displays a critical initialization error message to the user.
+ * Appends a recovery button that allows the user to forcefully bypass
+ * potentially stale Service Worker caches.
+ *
+ * @param {string} message - The error message to display.
+ */
 function showInitError(message) {
     statusEl.textContent = message + ' ';
     const btn = document.createElement('button');
