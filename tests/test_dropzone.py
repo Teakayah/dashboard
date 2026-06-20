@@ -20,6 +20,39 @@ from helpers import (
 
 # ── Initialisation ────────────────────────────────────────────────────────────
 
+def test_slash_shortcut_focuses_sql_input(dz: Page):
+    """Pressing '/' on the body must focus the SQL input."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    # Ensure focus is on the body, not an input
+    dz.locator('body').focus()
+    dz.keyboard.press('/')
+
+    # Assert focus changed
+    active_id = dz.evaluate("document.activeElement.id")
+    assert active_id == 'sql-input', 'Slash shortcut failed to focus SQL input'
+
+
+def test_ctrl_enter_shortcut_executes_query(dz: Page):
+    """Pressing Ctrl+Enter within the SQL input must execute the query."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=ACTION_TIMEOUT,
+    )
+
+    sql_input = dz.locator('#sql-input')
+    sql_input.fill('SELECT * FROM "employees" LIMIT 2')
+    sql_input.focus()
+    dz.keyboard.press('Control+Enter')
+
+    expect(dz.locator('.gridjs-tbody tr')).to_have_count(2, timeout=READY_TIMEOUT)
+
+
 def test_duckdb_init_reaches_ready(dz: Page):
     """#status must reach 'DuckDB Ready' — the core P0 regression guard."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)

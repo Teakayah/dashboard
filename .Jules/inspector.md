@@ -33,3 +33,7 @@
 ## 2026-06-03 - [Missing clipboard error handling]
 **Learning:** The clipboard API (`navigator.clipboard.writeText`) returns a Promise that must be `.catch()`'d to handle denials or context issues. Silent failures prevent UI toasts from alerting the user. Mocking `navigator.clipboard` using `Object.defineProperty` within `page.evaluate()` is effective for simulating these failures in Playwright tests.
 **Action:** Always append `.catch()` blocks to clipboard operations and include tests that mock promise rejections.
+
+## 2026-06-20 - Testing Keyboard Shortcuts in Playwright
+**Learning:** Keyboard shortcuts like `/` and `Ctrl+Enter` attached to document listeners were lacking test coverage. Using Playwright's `dz.keyboard.press()` provides an accurate way to assert that these global keybindings focus elements and trigger functionality correctly.
+**Action:** Ensure global or generic keyboard bindings (like slash to search/focus) always have an explicit automated test to prevent regressions.
