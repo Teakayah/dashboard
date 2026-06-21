@@ -352,6 +352,14 @@ async function restoreState() {
     }
 }
 
+/**
+ * Renders the schema (columns and their types) for a given table in the UI.
+ * Also attaches click handlers to each column name that automatically insert
+ * the column into the SQL editor and run background profiling queries
+ * to display statistical distributions (min, max, count, top 10 frequencies).
+ *
+ * @param {string} tableName - The name of the table to display the schema for.
+ */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
     const statsContainer = document.createElement('div');
@@ -805,6 +813,14 @@ async function processFile(file, path) {
     await onTableLoaded(tableName);
 }
 
+/**
+ * Orchestrates the UI updates immediately following the successful ingestion
+ * of a new dataset into DuckDB. It manages displaying the new schema,
+ * triggering automatic chart preview generation, and populating the SQL
+ * editor with a default SELECT query.
+ *
+ * @param {string} tableName - The name of the newly loaded table.
+ */
 async function onTableLoaded(tableName) {
     // Show schema
     if (loadedTables.size === 1) schemaDisplay.textContent = '';

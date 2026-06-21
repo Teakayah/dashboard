@@ -55,3 +55,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-06-18 - Document Service Worker unregister workaround for Wasm failures
 **Learning:** DuckDB-Wasm initialization can persistently fail due to browser caching of large WebAssembly bundles via Service Workers. The `reloadWithoutSW` function exists as an intentional escape hatch to forcefully bypass this cache, but it was undocumented and could easily be mistaken for dead code.
 **Action:** When implementing manual Service Worker unregistration as a fallback for heavy asset initialization (like Wasm), always document the specific "why" to prevent future maintainers from removing the seemingly unused or hacky code.
+## 2026-06-21 - Documenting DuckDB UI rendering lifecycle
+**Learning:** `displayTableSchema` and `onTableLoaded` are critical UI orchestration functions in the Dropzone app, handling the side-effects of DuckDB ingestion such as generating profiling queries, preview charts, and click listeners.
+**Action:** Always add descriptive JSDoc to complex UI side-effect functions that orchestrate multiple state changes, as their impact on performance and DOM behavior is often not obvious from their names alone.
