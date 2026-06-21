@@ -10,7 +10,6 @@ import html as html_lib
 import json
 import re
 import subprocess
-from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
 

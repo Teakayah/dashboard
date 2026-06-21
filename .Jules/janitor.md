@@ -46,3 +46,11 @@ Action: Renamed the second definition to `test_get_git_commit_times_batched_call
 ## 2026-06-07 - Safe URL parsing
 Learning: When using `urllib.request.urlopen`, Bandit raises B310 because allowing arbitrary URL schemes (like `file://`) is potentially unsafe.
 Action: For statically configured developer-controlled URLs, just add `# nosec B310`. For configurable URLs, explicitly check that the URL scheme starts with `http://` or `https://` before calling `urlopen` and then add `# nosec B310`.
+
+## 2026-06-18 - Clean up obsolete code processing functions
+**Learning:** Functions related to dead files or features (like removing tags for a script that is completely deleted from the repo) act as dead code. They clutter generation scripts and tests.
+**Action:** Identified `strip_analysis_utils` as dead code because `analysis_utils.js` had been previously deleted. Removed the code and the corresponding tests. Addressed F811 shadowing caused by test copy/pasting.
+
+## 2026-06-21 - Removed dead code in feed generator
+**Learning:** Found an unused helper function `_git_iso` in `deployment/generate_feed.py` that was left behind after the timestamp fetching logic was batched via `_get_batched_git_isos`.
+**Action:** Always check for left-behind granular fetching functions when a batch version is introduced.
