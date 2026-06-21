@@ -42,3 +42,7 @@
 ## 2026-06-03 - Descriptive ARIA Labels for Dynamic Buttons
 **Learning:** When dynamically generating action buttons that rely on visual abbreviations (like emojis, e.g., "💾 PNG") or concise text, screen reader users may lack the context to understand what the button exports or affects (especially when multiple similar buttons exist in a list of chart cards).
 **Action:** Always add an explicit `aria-label` describing the full action and its target context (e.g., "Download Chart Title as PNG") and pair it with a `title` attribute for visual users who rely on tooltips, ensuring the button is intuitive for all users.
+
+## 2026-06-21 - Disabling Form Controls When Data is Unavailable
+**Learning:** Dropdowns and actionable buttons that depend on global application state (like loaded datasets) should be explicitly disabled when that state is empty. Leaving them enabled but failing silently creates a confusing user experience.
+**Action:** When adding global actions, ensure they have a function (e.g., `updateConsoleActionsUI`) that toggles their `disabled` state and `title` tooltips based on the availability of required data, and call this function during all state changes.

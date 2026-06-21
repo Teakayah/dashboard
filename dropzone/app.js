@@ -129,6 +129,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         await onTableLoaded(tableName);
 
         statusEl.textContent = `Loaded remote table: ${tableName}`;
+        updateConsoleActionsUI();
 
         const originalText = loadRemoteDeltaBtn.textContent;
         loadRemoteDeltaBtn.textContent = 'Table Loaded!';
@@ -360,6 +361,7 @@ async function restoreState() {
             
             updateJoinUI();
             updateChartBuilderUI();
+            updateConsoleActionsUI();
         }
     } catch (err) {
         console.warn('Failed to restore state:', err);
@@ -551,6 +553,16 @@ async function updateJoinColumns() {
     } catch (err) {
         console.error('Error fetching columns for join:', err);
     }
+}
+
+function updateConsoleActionsUI() {
+    const hasData = loadedTables.size > 0;
+    recipeSelect.disabled = !hasData;
+    recipeSelect.title = hasData ? '' : 'Requires loaded data';
+    exportDbBtn.disabled = !hasData;
+    exportDbBtn.title = hasData ? '' : 'Requires loaded data';
+    clearBtn.disabled = !hasData;
+    clearBtn.title = hasData ? '' : 'Requires loaded data';
 }
 
 /**
@@ -792,6 +804,7 @@ async function handleFiles(files) {
 
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
         updateJoinUI();
+        updateConsoleActionsUI();
     } catch (err) {
         console.error(err);
         showToast('Error loading files: ' + err.message);
@@ -1244,6 +1257,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
         updateJoinUI();
         updateChartBuilderUI();
+        updateConsoleActionsUI();
         
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
@@ -1310,6 +1324,7 @@ clearBtn.addEventListener('click', async () => {
         copyJsonBtn.title = 'Requires query results';
         joinAssistant.style.display = 'none';
         updateChartBuilderUI();
+        updateConsoleActionsUI();
         statusEl.textContent = 'Storage cleared';
     } catch (err) {
         console.error(err);
