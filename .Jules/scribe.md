@@ -56,3 +56,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2024-06-06 - Documenting hidden asynchronous side-effects in UI renderers
 **Learning:** The `displayTableSchema` function in `dropzone/app.js` implies a simple UI rendering task, but it actually encapsulates complex asynchronous data profiling logic (querying min/max/count and rendering Chart.js distributions) triggered by user clicks. This "hidden" behavior within an otherwise generic-sounding function creates a knowledge silo.
 **Action:** When a UI rendering function attaches heavy asynchronous side-effects (like database queries and chart generation) to its created elements, always explicitly document these behaviors in the JSDoc to prevent maintainers from missing them.
+
+## 2026-06-18 - Document Service Worker unregister workaround for Wasm failures
+**Learning:** DuckDB-Wasm initialization can persistently fail due to browser caching of large WebAssembly bundles via Service Workers. The `reloadWithoutSW` function exists as an intentional escape hatch to forcefully bypass this cache, but it was undocumented and could easily be mistaken for dead code.
+**Action:** When implementing manual Service Worker unregistration as a fallback for heavy asset initialization (like Wasm), always document the specific "why" to prevent future maintainers from removing the seemingly unused or hacky code.

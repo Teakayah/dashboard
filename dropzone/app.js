@@ -854,11 +854,12 @@ async function processFile(file, path) {
 }
 
 /**
- * Orchestrates the UI updates immediately after a new table is registered in DuckDB.
- * Triggers schema display generation, instant chart previews, and sets a default
- * query in the SQL editor for the user.
+ * Orchestrates UI updates when a new table is successfully loaded into DuckDB.
+ * Clears the schema display (if it's the first table), renders the new schema,
+ * triggers instant chart generation for automatic insights, and populates the
+ * SQL editor with a default SELECT query.
  *
- * @param {string} tableName - The name of the newly loaded table
+ * @param {string} tableName - The name of the newly loaded table.
  */
 async function onTableLoaded(tableName) {
     // Show schema
