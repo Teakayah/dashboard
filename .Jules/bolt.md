@@ -16,3 +16,7 @@
 ## 2026-06-18 - Fix Grid.js memory leak during dynamic rendering
 **Learning:** Re-rendering Grid.js by clearing `.textContent` and instantiating a new `gridjs.Grid` object on every data update leaves uncleaned event listeners, causing a memory leak.
 **Action:** Store the Grid instance and use `gridInstance.updateConfig({ columns, data }).forceRender()` instead of replacing the entire grid. Use `.destroy()` when completely clearing the data.
+
+## 2026-06-22 - [Optimize DuckDB-Wasm Arrow Struct extraction]
+**Learning:** When processing Arrow Struct Proxy objects (e.g., from DuckDB-Wasm `.toArray()`), the primary performance bottleneck during row mapping is the property access/getter invocation (`rowObj[field]`). While `.toArray()` avoids `result.get(i)` overhead, iterating the struct fields manually still hits proxy traps for every cell. Using `.toJSON()` on the Row struct eagerly resolves all getters internally into a plain JavaScript object, drastically speeding up subsequent type checking or serialization loops.
+**Action:** Always call `.toJSON()` on Arrow Struct Proxy rows before mutating or iterating through their fields if further processing (like BigInt serialization) is required.

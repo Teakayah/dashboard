@@ -165,22 +165,20 @@ function escapeId(str) {
  */
 function getRows(result) {
     if (!result || !result.schema) return [];
-    const fields = result.schema.fields.map(f => f.name);
-    const numFields = fields.length;
-    const numRows = result.numRows;
 
-    // Performance optimization: Use Arrow's native .toArray() to extract objects first
-    // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
+    // Performance optimization: Use Arrow's native .toArray() to extract objects first,
+    // then .toJSON() to eagerly bypass the slow Arrow Struct Proxy getters, converting
+    // the heavy proxy into a fast plain object before iterating to serialize BigInts.
     const rawRows = result.toArray();
-    const rows = new Array(numRows);
-    for (let i = 0; i < numRows; i++) {
-        const rowObj = rawRows[i];
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
+    const rows = new Array(rawRows.length);
+    for (let i = 0; i < rawRows.length; i++) {
+        const rowPlain = rawRows[i].toJSON();
+        for (const field in rowPlain) {
+            const val = rowPlain[field];
             // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+            if (typeof val === 'bigint') {
+                rowPlain[field] = val.toString();
+            }
         }
         rows[i] = rowPlain;
     }
