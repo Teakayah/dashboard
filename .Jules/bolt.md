@@ -16,3 +16,9 @@
 ## 2024-05-24 - [Optimize getRows BigInt check]
 **Learning:** DuckDB-Wasm `.toArray()` Arrow Struct Proxy mapping incurs expensive CPU overhead when doing a `typeof === 'bigint'` check on every cell. Most schemas don't contain BigInts.
 **Action:** Inspect schema fields first (e.g., `bitWidth === 64`, or string names like `Int64`, `Timestamp`, `Time64`, `Decimal`). If no BigInt-like types are found, use a fast-path mapping loop to avoid type checking altogether.
+## 2026-06-18 - Fix Grid.js memory leak during dynamic rendering
+**Learning:** Re-rendering Grid.js by clearing `.textContent` and instantiating a new `gridjs.Grid` object on every data update leaves uncleaned event listeners, causing a memory leak.
+**Action:** Store the Grid instance and use `gridInstance.updateConfig({ columns, data }).forceRender()` instead of replacing the entire grid. Use `.destroy()` when completely clearing the data.
+## 2026-06-23 - DuckDB-Wasm Arrow Proxy Extraction Optimization
+**Learning:** Iterating over rows returned by DuckDB-Wasm's `.toArray()` is slow because each row object is an Apache Arrow Struct Proxy. Accessing properties via `rowObj[field]` in a loop triggers heavy proxy getter traps for every single cell. The property access trap overhead is the primary bottleneck, not standard type checks.
+**Action:** When processing Arrow Struct Proxy objects (e.g., from DuckDB-Wasm `.toArray()`), always call `.toJSON()` on each row object before accessing its fields. This eagerly converts the Proxy into a plain JavaScript object using Arrow's internal optimized path, completely bypassing the proxy getter trap overhead.
