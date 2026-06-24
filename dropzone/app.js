@@ -466,6 +466,9 @@ async function restoreState() {
  * Queries and renders the schema for a specific DuckDB table.
  * Analyzes column types to display visual indicators (like PK, FK, or type icons)
  * and attaches click handlers to columns to easily insert them into the SQL editor.
+ * Queries the DuckDB instance for the schema of a specified table and renders
+ * it to the UI. Also attaches click listeners to column names to support interactive
+ * data profiling (calculating min, max, count, and value distributions).
  *
  * @param {string} tableName - The name of the table to describe.
  */
