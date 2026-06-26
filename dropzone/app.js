@@ -174,7 +174,8 @@ function getRows(result) {
     const rawRows = result.toArray();
     const rows = new Array(numRows);
     for (let i = 0; i < numRows; i++) {
-        const rowObj = rawRows[i];
+        // Eagerly convert proxy to plain object to bypass getter trap overhead
+        const rowObj = rawRows[i].toJSON();
         const rowPlain = {};
         for (let j = 0; j < numFields; j++) {
             const field = fields[j];
