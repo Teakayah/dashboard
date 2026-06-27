@@ -66,3 +66,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-06-23 - Added JSDoc for Core DropZone Setup logic
 **Learning:** `dropzone/app.js` contained several critical state-management and UI orchestration functions (`setProgress`, `renderHistory`, `init`, `displayTableSchema`, `onTableLoaded`) that were missing documentation, which made it difficult to understand the complex setup and interactions that allow the Dropzone offline and in-memory databases to function.
 **Action:** Always add complete JSDoc block comments to core setup functions. This demystifies the orchestration logic and clarifies parameter intents (e.g. `tableName`, `percent`) reducing the learning curve for future contributors exploring DuckDB UI bindings.
+
+## 2026-06-27 - Documenting complex UI generation and table lifecycle functions
+**Learning:** `displayTableSchema` and `onTableLoaded` are critical UI generation and orchestration functions in `dropzone/app.js` that lacked JSDoc comments. `displayTableSchema` in particular has hidden asynchronous side-effects, firing off profiling queries when a column is clicked. Without documentation, developers have to read the extensive function body to realize it's attaching complex interaction and charting logic.
+**Action:** Always document complex UI generator functions, explicitly calling out any nested event listeners or asynchronous side-effects (like background queries or charting) to provide a clear mental model without requiring a deep dive into the implementation.
