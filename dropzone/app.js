@@ -42,6 +42,42 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+/**
+ * Utility to clear and populate a <select> element.
+ * @param {HTMLSelectElement} select - The select element to populate.
+ * @param {Array<string|Object>} options - Array of values or column objects.
+ * @param {string} [defaultMsg] - Optional default disabled option.
+ */
+function populateSelect(select, options, defaultMsg) {
+    const currentVal = select.value;
+    select.textContent = '';
+
+    if (defaultMsg) {
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.disabled = true;
+        defaultOpt.selected = true;
+        defaultOpt.textContent = defaultMsg;
+        select.appendChild(defaultOpt);
+    }
+
+    options.forEach(item => {
+        const opt = document.createElement('option');
+        if (typeof item === 'object') {
+            opt.value = item.column_name;
+            opt.textContent = `${item.column_name} (${item.column_type})`;
+        } else {
+            opt.value = item;
+            opt.textContent = item;
+        }
+        select.appendChild(opt);
+    });
+
+    if (!defaultMsg && options.includes(currentVal)) {
+        select.value = currentVal;
+    }
+}
+
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
         initProgressContainer.style.display = 'block';
@@ -501,18 +537,6 @@ function updateJoinUI() {
         joinAssistant.style.display = 'flex';
         const tables = Array.from(loadedTables);
         
-        const populateSelect = (select, options) => {
-            const currentVal = select.value;
-            select.textContent = '';
-            options.forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t;
-                opt.textContent = t;
-                select.appendChild(opt);
-            });
-            if (options.includes(currentVal)) select.value = currentVal;
-        };
-
         populateSelect(joinTableA, tables);
         populateSelect(joinTableB, tables);
         
@@ -587,22 +611,6 @@ async function updateChartBuilderUI() {
         const schemaResult = await conn.query(`DESCRIBE "${escapeId(currentTableName)}"`);
         const cols = getRows(schemaResult);
         
-        const populateSelect = (select, cols, defaultMsg) => {
-            select.textContent = '';
-            const defaultOpt = document.createElement('option');
-            defaultOpt.value = '';
-            defaultOpt.disabled = true;
-            defaultOpt.selected = true;
-            defaultOpt.textContent = defaultMsg;
-            select.appendChild(defaultOpt);
-            cols.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.column_name;
-                opt.textContent = `${c.column_name} (${c.column_type})`;
-                select.appendChild(opt);
-            });
-        };
-
         const numericCols = cols.filter(c => ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase()));
         
         populateSelect(chartXCol, cols, 'Select X-Axis...');

@@ -52,3 +52,6 @@ Action: For statically configured developer-controlled URLs, just add `# nosec B
 ## 2026-06-25 - Consolidated duplicate batched git timestamps
 **Learning:** Three separate scripts (`deployment/generate_index.py`, `deployment/generate_feed.py`, `deployment/screenshot.py`) each had their own nearly identical implementation of `git log` parsing for batched timestamp retrieval.
 **Action:** Created `deployment/git_utils.py` and extracted the shared logic into a single base function `get_git_log_batched`.
+## 2026-06-28 - Consolidate duplicated logic
+Learning: Found duplicated logic handling `select` element DOM manipulation logic using the same `populateSelect` inner function structure in `dropzone/app.js` inside the `updateJoinUI` and `updateChartBuilderUI` scopes.
+Action: Extracted the inner functions into a global `populateSelect` function with optional fallback handling to remove the duplicative functionality in `dropzone/app.js`.
