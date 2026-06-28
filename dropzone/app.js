@@ -138,12 +138,13 @@ function renderHistory() {
     queryHistoryEl.appendChild(label);
 
     queryHistory.forEach(sql => {
-        const chip = document.createElement('div');
+        const chip = document.createElement('button');
         chip.className = 'history-chip';
+        chip.style.fontFamily = 'inherit';
+        chip.style.fontSize = 'inherit';
+        chip.style.textAlign = 'left';
         chip.textContent = sql;
         chip.title = sql;
-        chip.tabIndex = 0;
-        chip.setAttribute('role', 'button');
         chip.setAttribute('aria-label', `Load recent query: ${sql}`);
 
         const triggerAction = () => {
@@ -153,12 +154,6 @@ function renderHistory() {
         };
 
         chip.onclick = triggerAction;
-        chip.onkeydown = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                triggerAction();
-            }
-        };
         queryHistoryEl.appendChild(chip);
     });
 }
@@ -528,12 +523,27 @@ async function displayTableSchema(tableName) {
         btn.style.textAlign = 'left';
         btn.textContent = `${r.column_name} (${r.column_type})`;
         btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
+        const span = document.createElement('button');
+        span.className = 'clickable-col';
+        span.style.cursor = 'pointer';
+        span.style.textDecoration = 'underline';
+        span.style.marginRight = '8px';
+        span.style.color = 'var(--primary)';
+        span.style.borderRadius = '4px';
+        span.style.padding = '2px 4px';
+        span.style.background = 'transparent';
+        span.style.border = 'none';
+        span.style.fontFamily = 'inherit';
+        span.style.fontSize = 'inherit';
+        span.textContent = `${r.column_name} (${r.column_type})`;
+        span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
         const triggerAction = async (e) => {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${escapeId(r.column_name)}"`);
             statusEl.textContent = `Inserted column ${r.column_name} into SQL editor`;
             statusEl.textContent = `Inserted column ${r.column_name}`;
+            showToast(`Inserted column ${r.column_name}`, 'success');
             
             // Profiling logic
             try {
@@ -590,6 +600,7 @@ async function displayTableSchema(tableName) {
                 triggerAction(e);
             }
         };
+        span.onclick = triggerAction;
 
         return btn;
     });
@@ -1472,12 +1483,13 @@ init();
  *
  * @param {string} msg - The message text to display.
  */
-function showToast(msg) {
+function showToast(msg, type = 'error') {
     const panel = document.createElement('div');
     panel.textContent = msg;
     panel.setAttribute('role', 'alert');
     panel.setAttribute('aria-live', 'assertive');
-    panel.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#ef4444;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+    const bgColor = type === 'success' ? '#10b981' : '#ef4444';
+    panel.style.cssText = `position:fixed;bottom:20px;right:20px;background:${bgColor};color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);`;
     document.body.appendChild(panel);
     setTimeout(() => { panel.remove(); }, 5000);
 }
