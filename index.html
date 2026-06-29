@@ -63,7 +63,6 @@
     }
     .search-bar input {
       width: 100%;
-      max-width: 480px;
       padding: 9px 14px;
       border-radius: 8px;
       border: 1px solid #d8d8d4;
@@ -78,6 +77,33 @@
       box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
     }
     .search-bar input::placeholder { color: #6b7280; }
+
+    .input-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+    }
+    .shortcut-hint {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #6b7280;
+      font-size: 0.75rem;
+      transition: opacity 0.15s;
+    }
+    .shortcut-hint kbd {
+      background: #f5f5f2;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #d8d8d4;
+      font-family: inherit;
+    }
+    .input-wrapper:focus-within .shortcut-hint,
+    .search-bar input:not(:placeholder-shown) + .shortcut-hint {
+      opacity: 0;
+    }
 
     /* ── Grid ───────────────────────────────────────────────── */
     main {
@@ -226,7 +252,10 @@
 </header>
 
 <search><div class="search-bar">
-  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
+  <div class="input-wrapper">
+    <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
+    <div class="shortcut-hint" aria-hidden="true"><kbd>/</kbd></div>
+  </div>
 </div></search>
 
 <main>
@@ -267,6 +296,13 @@
       timeout = setTimeout(() => func.apply(this, args), wait);
     };
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== input) {
+      e.preventDefault();
+      input.focus();
+    }
+  });
 
   input.addEventListener('input', debounce(() => {
     const q = input.value.trim().toLowerCase();
