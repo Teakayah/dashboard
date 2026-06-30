@@ -91,6 +91,10 @@ function populateSelect(select, options, defaultMsg) {
  * and hides it otherwise.
  *
  * @param {number} percent - The completion percentage to display (0-100)
+ * Updates the DuckDB-Wasm initialization progress bar UI.
+ * Toggles visibility of the progress container based on the percentage.
+ *
+ * @param {number} percent - The progress percentage (0-100)
  */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
@@ -346,6 +350,10 @@ function reloadWithoutSW() {
  * Sets up a timeout fallback if the Service Worker cache serves a stale or
  * corrupted Wasm bundle, offering the user a recovery button. Restores
  * previously loaded tables from OPFS on successful initialization.
+ * Initializes the DuckDB-Wasm instance, establishing a connection and
+ * instantiating the worker with the selected bundle.
+ * Also configures a timeout to prompt users to bypass service workers if
+ * the WebAssembly bundle fails to load.
  */
 async function init() {
     let timedOut = false;
@@ -489,6 +497,12 @@ async function restoreState() {
  * its name into the active SQL editor.
  *
  * @param {string} tableName - The name of the DuckDB table to describe.
+ * Queries the schema of a loaded table and renders its columns in the UI.
+ * Attaches click handlers to each column pill that not only insert the column
+ * name into the SQL editor but also execute hidden profiling queries (MIN, MAX, COUNT,
+ * and top 10 frequencies) to dynamically render inline summary statistics.
+ *
+ * @param {string} tableName - The name of the table to describe
  */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
@@ -997,6 +1011,11 @@ async function processFile(file, path) {
  * preview charts based on column types, and populates a default SELECT query.
  *
  * @param {string} tableName - The name of the newly loaded DuckDB table.
+ * Orchestrates the post-load UI sequence for a newly registered DuckDB table.
+ * Triggers schema discovery, generates instant chart previews, and resets
+ * the SQL editor to a default SELECT query.
+ *
+ * @param {string} tableName - The name of the newly loaded table
  */
 async function onTableLoaded(tableName) {
     // Show schema
