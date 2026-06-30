@@ -817,7 +817,7 @@ async function processFile(file, path) {
     const buffer = await file.arrayBuffer();
     await db.registerFileBuffer(path, new Uint8Array(buffer));
     
-    let query = '';
+    let query;
     const ext = file.name.split('.').pop().toLowerCase();
     const escapedPath = path.replace(/'/g, "''");
     
@@ -983,7 +983,7 @@ async function generateInstantCharts(tableName) {
                         backgroundColor: '#1d4ed8'
                     }]
                 }, {
-                    scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }
+                    scales: { x: { title: {display: true, text: bestPair[0]} }, y: { title: {display: true, text: bestPair[1]} } }
                 });
             });
         } catch (e) { console.warn('Correlation check failed', e); }
