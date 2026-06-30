@@ -73,3 +73,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-06-28 - Documenting undocumented utility functions in DuckDB dropzone
 **Learning:** `displayTableSchema` and `onTableLoaded` were heavily used utility functions inside `dropzone/app.js` that handle critical UI updates when a table is loaded, but they lacked JSDoc comments. This required developers to read the function bodies to understand what UI elements are updated and how.
 **Action:** Added complete JSDoc block comments to these utility functions to clarify their parameters and UI side-effects, reducing cognitive load for developers working within the feature.
+## 2025-05-06 - Document hidden UI profiling side-effects
+**Learning:** Functions like `displayTableSchema` often perform significantly more work than their names imply. It renders the schema, but also binds click handlers to columns that execute hidden DuckDB profiling queries (aggregations and top-10 frequencies) upon interaction.
+**Action:** When a UI function binds complex side-effect logic (like executing database queries) to elements it creates, explicitly document these hidden behaviors in the JSDoc to alert future developers to the full scope of the function's responsibilities.
