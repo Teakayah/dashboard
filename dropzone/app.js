@@ -485,6 +485,12 @@ async function restoreState() {
  * and generate a miniature distribution chart.
  *
  * @param {string} tableName - The name of the table to describe and render
+ * Queries and renders the schema (column names and types) for a given table.
+ * Attaches click handlers to each column name to allow quick insertion into the SQL editor.
+ * Clicking a column also asynchronously triggers lightweight statistical profiling (min, max, count, and top 10 values)
+ * and renders a mini-chart inline.
+ *
+ * @param {string} tableName - The name of the DuckDB table to describe.
  */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
@@ -965,6 +971,11 @@ async function processFile(file, path) {
  * automatically generates heuristic preview charts, and sets a default query in the editor.
  *
  * @param {string} tableName - The name of the newly loaded table
+ * Handles the UI lifecycle events triggered after a new table is successfully loaded into DuckDB.
+ * Updates the schema display, auto-generates heuristic chart previews, and populates
+ * the SQL editor with a default SELECT query for the new dataset.
+ *
+ * @param {string} tableName - The name of the newly loaded table.
  */
 async function onTableLoaded(tableName) {
     // Show schema
