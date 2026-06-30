@@ -225,6 +225,14 @@ body {
 
 .clickable-col:hover {
   background-color: rgba(79, 142, 247, 0.1);
+.clickable-col {
+  text-decoration: underline;
+  transition: background-color 0.2s, text-decoration 0.2s;
+}
+
+.clickable-col:hover {
+  text-decoration: none;
+  background-color: rgba(79, 142, 247, 0.1) !important;
 }
 
 .chart-fullscreen {
