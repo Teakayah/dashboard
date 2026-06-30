@@ -551,6 +551,9 @@ async function displayTableSchema(tableName) {
         span.style.fontSize = 'inherit';
         span.textContent = `${r.column_name} (${r.column_type})`;
         span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
+        btn.style.fontSize = 'inherit';
+        btn.textContent = `${r.column_name} (${r.column_type})`;
+        btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
         const triggerAction = async (e) => {
             e.stopPropagation();
