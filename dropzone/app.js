@@ -177,8 +177,9 @@ function getRows(result) {
     const numFields = fields.length;
     const numRows = result.numRows;
 
-    // Performance optimization: Use Arrow's native .toArray() to extract objects first
-    // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
+    // Performance optimization: Use Arrow's native .toArray() to extract objects first,
+    // and eagerly convert the row Proxy into a plain JavaScript object using .toJSON().
+    // This completely bypasses the heavy proxy getter trap overhead for every cell.
     const rawRows = result.toArray();
     const rows = new Array(numRows);
 
@@ -210,6 +211,7 @@ function getRows(result) {
         const rowObj = rawRows[i].toJSON();
         // Bolt: Extract into plain object via .toJSON() to bypass proxy getter overhead on every cell
         const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
+        const rowObj = rawRows[i].toJSON();
         const rowPlain = {};
         for (let j = 0; j < numFields; j++) {
             const field = fields[j];
