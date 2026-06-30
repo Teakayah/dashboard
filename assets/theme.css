@@ -234,6 +234,7 @@ body {
   text-decoration: none;
   background-color: rgba(79, 142, 247, 0.1) !important;
   background: rgba(79, 142, 247, 0.1);
+  background: rgba(79, 142, 247, 0.1) !important;
 }
 
 .chart-fullscreen {
