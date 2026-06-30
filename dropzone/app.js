@@ -481,6 +481,7 @@ async function displayTableSchema(tableName) {
         btn.style.borderRadius = '4px';
         btn.style.padding = '2px 4px';
         btn.style.transition = 'background-color 0.2s';
+        btn.style.fontSize = 'inherit';
         btn.textContent = `${r.column_name} (${r.column_type})`;
         btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
