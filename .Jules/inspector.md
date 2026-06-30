@@ -36,3 +36,6 @@
 ## 2026-06-30 - UI Tests: Avoid invoking global UI functions
 **Learning:** Calling `page.evaluate("showTab('...')")` caused tests to break when the JS function was removed, even though the UI (buttons and click events) remained functional.
 **Action:** Use native Playwright locators and `.click()` to simulate user interactions instead of directly evaluating global JS methods to prevent tight coupling to implementation details.
+## 2026-06-28 - Flaky tests due to missing wait options in Playwright's goto
+**Learning:** Calling `page.goto(url)` without `wait_until="domcontentloaded"` and a suitable timeout can lead to flaky tests, especially when testing WASM modules or other heavy resources. Playwright tests could fail with timeouts or errors related to opaque origins when trying to grant permissions (e.g., clipboard) because the navigation hasn't completed or has barely started.
+**Action:** Always provide explicit wait options like `wait_until="domcontentloaded"` and `timeout=60000` when calling `page.goto()` in Playwright tests to ensure the page is adequately loaded before interacting with elements or granting permissions.
