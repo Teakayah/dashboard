@@ -86,6 +86,11 @@ function populateSelect(select, options, defaultMsg) {
  * Hides the progress container if the percent is 0 or 100.
  *
  * @param {number} percent - The initialization progress percentage (0-100).
+ * Updates the initialization progress bar in the UI.
+ * Shows the progress bar if the percentage is between 0 and 100 (exclusive),
+ * and hides it otherwise.
+ *
+ * @param {number} percent - The completion percentage to display (0-100)
  */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
@@ -117,6 +122,9 @@ function addToHistory(sql) {
  * Renders the query history chips in the UI based on local storage state.
  * Creates clickable chips for up to 10 recent queries, allowing users to
  * quickly re-populate the SQL editor.
+ * Renders the local query history as interactive UI chips.
+ * Clears the existing history container and populates it with clickable chips
+ * for up to 10 recent unique queries.
  */
 function renderHistory() {
     queryHistoryEl.textContent = '';
@@ -471,6 +479,12 @@ async function restoreState() {
  * data profiling (calculating min, max, count, and value distributions).
  *
  * @param {string} tableName - The name of the table to describe.
+ * Queries the DuckDB instance for a table's schema and renders an interactive column display.
+ * Columns are presented as clickable elements that insert their name into the SQL editor.
+ * Also performs async profiling on the selected column to calculate stats (min/max/count)
+ * and generate a miniature distribution chart.
+ *
+ * @param {string} tableName - The name of the table to describe and render
  */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
@@ -946,6 +960,11 @@ async function processFile(file, path) {
  * and populates the SQL editor with a default query.
  *
  * @param {string} tableName - The name of the newly loaded table.
+ * Orchestrates the UI updates required when a new dataset table is loaded into DuckDB.
+ * Clears prior schemas if this is the first table, renders the new schema,
+ * automatically generates heuristic preview charts, and sets a default query in the editor.
+ *
+ * @param {string} tableName - The name of the newly loaded table
  */
 async function onTableLoaded(tableName) {
     // Show schema
