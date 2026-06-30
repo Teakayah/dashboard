@@ -10,3 +10,7 @@ Assertion: To reliably test this, change `goto` calls to use `wait_until='domcon
 Coverage Gap: The exception block `except StopIteration:` in `_read_csv_stripped` was not covered by any test because an empty CSV wasn't being passed.
 Learning: To properly trigger a `StopIteration` from a `csv.reader`, we need to mock the file opening to return an empty string (`read_data=''`). The iteration over headers `next(reader)` immediately throws a `StopIteration` exception because the file has no lines.
 Assertion: By mocking `builtins.open` with `mock_open(read_data='')`, we can verify that the function catches the error and gracefully returns an empty list.
+## 2026-06-23 - Fix Missing Coverage for Empty CSV Files in `_read_csv_stripped`
+Coverage Gap: The `_read_csv_stripped` function in `scripts/benchmark_final_test.py` lacked test coverage for the `StopIteration` branch, which occurs when an empty CSV file is read and `next(reader)` fails to fetch the headers.
+Learning: Python's `csv.reader` raises a `StopIteration` error on an empty file. This edge case in helper scripts requires mocking `builtins.open` with empty data (`""`) to trigger correctly without producing file side effects.
+Assertion: Added a test utilizing `patch('builtins.open', mock_open(read_data=""))` to explicitly execute the `try/except StopIteration` block and verify it returns an empty list as intended.
