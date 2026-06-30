@@ -338,7 +338,7 @@
 
         <div class="sql-console">
             <div class="console-actions">
-                <select id="query-recipes" aria-label="Select a query recipe" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.85rem; cursor: pointer;">
+                <select id="query-recipes" disabled title="Requires loaded data" aria-label="Select a query recipe" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.85rem; cursor: pointer;">
                     <option value="" disabled selected>Query Recipes...</option>
                     <option value="SELECT * FROM {{TABLE}} LIMIT 10">Show Top 10 Rows</option>
                     <option value="SELECT count(*) FROM {{TABLE}}">Count Total Rows</option>
@@ -346,11 +346,11 @@
                     <option value="SELECT column_name, data_type FROM (DESCRIBE {{TABLE}})">Show Schema Details</option>
                 </select>
                 <div style="flex: 1"></div>
-                <button id="clear-data" class="secondary" style="background-color: #dc2626;">Clear All Data</button>
+                <button id="clear-data" disabled title="Requires loaded data" class="secondary" style="background-color: #dc2626;">Clear All Data</button>
                 <button id="run-query" disabled title="Requires a valid query">Run Query</button>
                 <button id="download-csv" class="secondary" disabled title="Requires query results">Download Results as CSV</button>
                 <button id="copy-json" class="secondary" disabled title="Requires query results">Copy JSON</button>
-                <button id="export-db" class="secondary" style="background-color: #7c3aed;">Export Database (.db)</button>
+                <button id="export-db" disabled title="Requires loaded data" class="secondary" style="background-color: #7c3aed;">Export Database (.db)</button>
             </div>
             <div class="input-wrapper">
                 <textarea id="sql-input" aria-label="SQL query input (Press / to focus)" placeholder="SELECT * FROM data LIMIT 10"></textarea>

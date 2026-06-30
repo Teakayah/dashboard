@@ -45,3 +45,6 @@
 ## 2024-05-16 - Accessible interactive elements and focus states
 **Learning:** Native browser styles for interactive elements like `<button>` override custom layout when converted from emulated `<span>` buttons. CSS resets are strictly required (background, border, font), but `outline: none;` should explicitly be avoided to maintain default focus rings or custom `:focus-visible` states.
 **Action:** Always provide explicit CSS resets (e.g., `background: transparent; border: none; font-family: inherit; font-size: inherit;`) when replacing `<span>` with `<button>`, and verify focus indicators are visually consistent.
+## 2026-06-21 - Disabling Form Controls When Data is Unavailable
+**Learning:** Dropdowns and actionable buttons that depend on global application state (like loaded datasets) should be explicitly disabled when that state is empty. Leaving them enabled but failing silently creates a confusing user experience.
+**Action:** When adding global actions, ensure they have a function (e.g., `updateConsoleActionsUI`) that toggles their `disabled` state and `title` tooltips based on the availability of required data, and call this function during all state changes.
