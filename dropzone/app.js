@@ -203,6 +203,15 @@ function getRows(result) {
                 rowPlain[field] = rowObj[field];
             }
             rows[i] = rowPlain;
+    for (let i = 0; i < numRows; i++) {
+        // Eagerly convert Arrow Struct Proxy to plain object to bypass getter traps
+        const rowObj = rawRows[i].toJSON();
+        const rowPlain = {};
+        for (let j = 0; j < numFields; j++) {
+            const field = fields[j];
+            const val = rowObj[field];
+            // Cast BigInts to strings for UI/JSON compatibility
+            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
     }
     return rows;
