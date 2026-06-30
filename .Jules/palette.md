@@ -54,3 +54,6 @@
 ## 2026-06-28 - ARIA Live Announcements Require Dynamic Color States
 **Learning:** Toast messages triggered by successful actions (like inserting a column into the query editor) must have distinct visual styling from error messages to assist sighted users, while remaining properly configured with `aria-live` for screen readers. Using a single `showToast` function with a hardcoded red color fails to convey success visually.
 **Action:** When adding UX feedback toasts, ensure the toast function accepts an optional `type` parameter (e.g., 'success' vs 'error') and dynamically maps it to appropriate CSS colors (like green `#10b981` for success) so the visual experience aligns with the semantic screen reader announcement.
+## 2026-06-29 - Keyboard Shortcut Discoverability
+**Learning:** Global keyboard shortcuts (like `/` to search) significantly improve navigation for power users but remain undiscoverable. Adding a visual `<kbd>` hint directly within the input makes it discoverable, while using CSS `:not(:placeholder-shown)` ensures it automatically disappears when typing, keeping the UI clean without JavaScript overhead.
+**Action:** Pair global keyboard shortcuts with visual `<kbd>` hints positioned absolutely over inputs, and use CSS sibling selectors with `:placeholder-shown` to manage their visibility cleanly.
