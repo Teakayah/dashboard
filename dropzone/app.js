@@ -208,6 +208,8 @@ function getRows(result) {
         // Eagerly convert proxy to plain object for faster cell access
         // Eagerly convert proxy to plain object to bypass heavy getter trap overhead
         const rowObj = rawRows[i].toJSON();
+        // Bolt: Extract into plain object via .toJSON() to bypass proxy getter overhead on every cell
+        const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
         const rowPlain = {};
         for (let j = 0; j < numFields; j++) {
             const field = fields[j];
