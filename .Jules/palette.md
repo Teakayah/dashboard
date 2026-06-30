@@ -57,3 +57,6 @@
 ## 2026-06-29 - Keyboard Shortcut Discoverability
 **Learning:** Global keyboard shortcuts (like `/` to search) significantly improve navigation for power users but remain undiscoverable. Adding a visual `<kbd>` hint directly within the input makes it discoverable, while using CSS `:not(:placeholder-shown)` ensures it automatically disappears when typing, keeping the UI clean without JavaScript overhead.
 **Action:** Pair global keyboard shortcuts with visual `<kbd>` hints positioned absolutely over inputs, and use CSS sibling selectors with `:placeholder-shown` to manage their visibility cleanly.
+## 2026-06-30 - Convert emulated buttons to native button tags
+**Learning:** Using `span` elements with `role="button"` and `tabIndex="0"` is bad for accessibility as it requires manually managing keyboard events (Enter/Space) and often misses out on native screen reader benefits.
+**Action:** Always prefer semantic HTML tags like `<button>` over generic container tags (`span`, `div`) with ARIA roles when creating interactive click targets, using CSS resets (`background: transparent`, `border: none`) to bypass native styling if necessary.
