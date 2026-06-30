@@ -131,7 +131,7 @@ def test_get_batched_git_isos_success():
     mock_path = MagicMock(spec=Path)
     mock_path.name = "test.html"
 
-    with patch('subprocess.run', return_value=mock_result):
+    with patch('deployment.git_utils.subprocess.run', return_value=mock_result):
         result = module._get_batched_git_isos([mock_path])
         assert result == {mock_path: "2023-10-27T10:00:00+00:00"}
 
@@ -141,7 +141,7 @@ def test_get_batched_git_isos_fallback():
     mock_path = MagicMock(spec=Path)
     mock_path.name = "test2.html"
 
-    with patch('subprocess.run', side_effect=Exception("Git error")):
+    with patch('deployment.git_utils.subprocess.run', side_effect=Exception("Git error")):
         result = module._get_batched_git_isos([mock_path])
         assert result == {}
 
@@ -151,7 +151,7 @@ def test_get_batched_git_isos_handles_git_failure():
     mock_path = MagicMock(spec=Path)
     mock_path.name = "dummy.html"
 
-    with patch('subprocess.run', side_effect=Exception("git failed")):
+    with patch('deployment.git_utils.subprocess.run', side_effect=Exception("git failed")):
         result = module._get_batched_git_isos([mock_path])
         assert result == {}
 
@@ -231,7 +231,7 @@ def test_get_batched_git_isos_empty_line():
     mock_path = MagicMock(spec=Path)
     mock_path.name = "test.html"
 
-    with patch('subprocess.run', return_value=mock_result):
+    with patch('deployment.git_utils.subprocess.run', return_value=mock_result):
         result = module._get_batched_git_isos([mock_path])
         assert result == {mock_path: "2023-10-27T10:00:00+00:00"}
 
