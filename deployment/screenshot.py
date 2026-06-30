@@ -21,25 +21,7 @@ except ImportError:
 PORT = 8765
 
 
-def get_git_commit_times_batched(paths: list[str]) -> dict[str, int]:
-    """Return the Unix timestamp of the last commit touching each path."""
-    if not paths:
-        return {}
-    times = {}
-    try:
-        cmd = ['git', 'log', '--format=TS:%ct', '--name-only', '--'] + paths
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
-        current_ts = None
-        for line in result.stdout.splitlines():
-            line = line.strip()
-            if line.startswith('TS:'):
-                current_ts = int(line[3:])
-            elif line and current_ts is not None:
-                if line not in times:
-                    times[line] = current_ts
-    except Exception:
-        pass
-    return times
+from .git_utils import get_git_commit_times_batched
 
 
 def needs_screenshot(name: str, html_ts: int, png_ts: int, force: bool = False) -> bool:

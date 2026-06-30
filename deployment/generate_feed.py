@@ -27,34 +27,7 @@ def _load_descriptions() -> dict:
     return {}
 
 
-def _get_batched_git_isos(files: list[Path]) -> dict[Path, str]:
-    """Return ISO 8601 timestamps for multiple files from git log."""
-    if not files:
-        return {}
-
-    dates = {}
-    try:
-        result = subprocess.run(
-            ['git', 'log', '--format=TS:%cI', '--name-only', '--'] + [f.name for f in files],
-            capture_output=True, text=True, cwd=str(ROOT), check=True
-        )
-
-        current_ts = None
-        file_names = {f.name: f for f in files}
-
-        for line in result.stdout.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith('TS:'):
-                current_ts = line[3:]
-            elif current_ts:
-                if line in file_names and file_names[line] not in dates:
-                    dates[file_names[line]] = current_ts
-    except Exception:
-        pass
-
-    return dates
+from .git_utils import _get_batched_git_isos
 
 
 def _extract_title(content: str, stem: str) -> str:
