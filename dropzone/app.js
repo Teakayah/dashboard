@@ -82,6 +82,10 @@ function populateSelect(select, options, defaultMsg) {
  * The progress bar is automatically hidden when progress is 0% or 100%.
  *
  * @param {number} percent - The current loading progress (0 to 100).
+ * Updates the initialization progress bar UI during DuckDB-Wasm instantiation.
+ * Hides the progress container if the percent is 0 or 100.
+ *
+ * @param {number} percent - The initialization progress percentage (0-100).
  */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
@@ -110,6 +114,9 @@ function addToHistory(sql) {
 /**
  * Renders the user's recent SQL queries as clickable chips in the UI.
  * Rebuilds the history container based on the current state of `queryHistory`.
+ * Renders the query history chips in the UI based on local storage state.
+ * Creates clickable chips for up to 10 recent queries, allowing users to
+ * quickly re-populate the SQL editor.
  */
 function renderHistory() {
     queryHistoryEl.textContent = '';
@@ -332,6 +339,10 @@ function reloadWithoutSW() {
  * (preferring OPFS persistence if available), loading the delta extension,
  * and restoring the offline UI state. Includes a timeout fallback to handle
  * stale service worker scenarios.
+ * Initializes the DuckDB-Wasm instance and configures the environment.
+ * Sets up a timeout fallback if the Service Worker cache serves a stale or
+ * corrupted Wasm bundle, offering the user a recovery button. Restores
+ * previously loaded tables from OPFS on successful initialization.
  */
 async function init() {
     let timedOut = false;
@@ -452,6 +463,11 @@ async function restoreState() {
  * (calculating min, max, count, and rendering a top-10 distribution chart).
  *
  * @param {string} tableName - The name of the table to inspect and display.
+ * Queries and renders the schema for a specific DuckDB table.
+ * Analyzes column types to display visual indicators (like PK, FK, or type icons)
+ * and attaches click handlers to columns to easily insert them into the SQL editor.
+ *
+ * @param {string} tableName - The name of the table to describe.
  */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
@@ -564,6 +580,8 @@ async function displayTableSchema(tableName) {
  * Toggles and populates the Join Assistant UI based on the current state of loaded tables.
  * The Join Assistant requires at least two tables to be loaded in the local DuckDB instance
  * to become visible. It prevents the user from joining a table to itself by default.
+ * Requires at least 2 loaded tables to be active to re-populate the select dropdowns
+ * with the available table names for joining.
  */
 function updateJoinUI() {
     if (loadedTables.size >= 2) {
@@ -588,6 +606,8 @@ function updateJoinUI() {
  * Dynamically queries the DuckDB schema to populate the join column dropdowns
  * based on the selected tables in the Join Assistant. Attempts to auto-detect
  * and pre-select matching column names between the two tables for convenience.
+ * Requires 2 loaded tables to activate. Analyzes the schema of the two selected tables
+ * to find shared columns to populate the join column dropdown.
  */
 async function updateJoinColumns() {
     const tableA = joinTableA.value;
@@ -643,6 +663,8 @@ function updateConsoleActionsUI() {
  * Scans the currently active table's schema to categorize columns into
  * X-axis (all columns) and Y-axis (numeric columns only) options.
  * Hides the builder entirely if no table is currently active.
+ * Depends on a currently active table (currentTableName) to query the DuckDB information
+ * schema.
  */
 async function updateChartBuilderUI() {
     if (!currentTableName) {
@@ -916,6 +938,9 @@ async function processFile(file, path) {
  * Clears the schema display (if it's the first table), renders the new schema,
  * triggers instant chart generation for automatic insights, and populates the
  * SQL editor with a default SELECT query.
+ * Orchestrates the UI updates required immediately after a new table is successfully
+ * loaded into DuckDB. Triggers schema rendering, instant preview chart generation,
+ * and populates the SQL editor with a default query.
  *
  * @param {string} tableName - The name of the newly loaded table.
  */
