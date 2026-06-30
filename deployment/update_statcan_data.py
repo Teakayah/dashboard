@@ -60,7 +60,7 @@ def _load_last_checked() -> Optional[date]:
 
 def _normalize_pid(raw: Union[str, int]) -> str:
     """Stats Canada API returns 10-digit PIDs (8-digit + '01'). Strip to 8."""
-    s = str(raw).strip()
+    s = str(raw).strip().replace('-', '')
     if len(s) == 10 and s.endswith('01'):
         return s[:8]
     return s
@@ -72,10 +72,12 @@ def fetch_changed_since(since: date) -> Optional[set[str]]:
     since `since`. Returns None if the API call fails (caller should fall back).
     """
     url = _CHANGED_URL.format(date=since.isoformat())
+    if not url.startswith(('http://', 'https://')):
+        raise ValueError(f"Insecure URL scheme: {url}")
     print(f'  Checking Stats Canada for tables changed since {since} ...')
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'DataDashboard/1.0'})
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
             payload = json.loads(resp.read())
     except Exception as exc:
         print(f'  WARNING: changed-cubes API call failed ({exc}) — will download all.')
@@ -113,12 +115,14 @@ def download_table(table: dict) -> dict:
     prev_end = _get_end_period(meta_path)
 
     url = _DL_URL.format(pid=pid)
+    if not url.startswith(('http://', 'https://')):
+        raise ValueError(f"Insecure URL scheme: {url}")
     print(f'  [{pid}] {table["desc"]}')
     print('         Downloading ...')
 
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'DataDashboard/1.0'})
-        with urllib.request.urlopen(req, timeout=180) as resp:
+        with urllib.request.urlopen(req, timeout=180) as resp:  # nosec B310
             data = resp.read()
     except Exception as exc:
         print(f'         ERROR: {exc}')

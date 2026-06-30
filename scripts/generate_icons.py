@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw
 import os
 
-def generate_icon(size, filename, color="#4f8ef7"):
+def generate_icon(size, filename, color="#1d4ed8"):
     # Create a base image with the primary color background
     img = Image.new('RGBA', (size, size), color=color)
     draw = ImageDraw.Draw(img)
