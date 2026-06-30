@@ -489,6 +489,9 @@ async function restoreState() {
  * Attaches click handlers to each column name to allow quick insertion into the SQL editor.
  * Clicking a column also asynchronously triggers lightweight statistical profiling (min, max, count, and top 10 values)
  * and renders a mini-chart inline.
+ * Queries DuckDB for the schema of a specific table and dynamically renders
+ * a clickable UI list of its columns and types. Clicking a column inserts
+ * its name into the active SQL editor.
  *
  * @param {string} tableName - The name of the DuckDB table to describe.
  */
@@ -978,6 +981,11 @@ async function processFile(file, path) {
  * the SQL editor with a default SELECT query for the new dataset.
  *
  * @param {string} tableName - The name of the newly loaded table.
+ * Orchestrates the UI updates immediately following the successful registration
+ * of a new table in DuckDB. Refreshes the schema display, generates instant
+ * preview charts based on column types, and populates a default SELECT query.
+ *
+ * @param {string} tableName - The name of the newly loaded DuckDB table.
  */
 async function onTableLoaded(tableName) {
     // Show schema
