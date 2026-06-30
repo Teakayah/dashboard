@@ -42,3 +42,6 @@
 ## 2026-06-03 - Descriptive ARIA Labels for Dynamic Buttons
 **Learning:** When dynamically generating action buttons that rely on visual abbreviations (like emojis, e.g., "💾 PNG") or concise text, screen reader users may lack the context to understand what the button exports or affects (especially when multiple similar buttons exist in a list of chart cards).
 **Action:** Always add an explicit `aria-label` describing the full action and its target context (e.g., "Download Chart Title as PNG") and pair it with a `title` attribute for visual users who rely on tooltips, ensuring the button is intuitive for all users.
+## 2024-05-16 - Accessible interactive elements and focus states
+**Learning:** Native browser styles for interactive elements like `<button>` override custom layout when converted from emulated `<span>` buttons. CSS resets are strictly required (background, border, font), but `outline: none;` should explicitly be avoided to maintain default focus rings or custom `:focus-visible` states.
+**Action:** Always provide explicit CSS resets (e.g., `background: transparent; border: none; font-family: inherit; font-size: inherit;`) when replacing `<span>` with `<button>`, and verify focus indicators are visually consistent.
