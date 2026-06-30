@@ -786,7 +786,7 @@ async function processFile(file, path) {
     const buffer = await file.arrayBuffer();
     await db.registerFileBuffer(path, new Uint8Array(buffer));
     
-    let query = '';
+    let query;
     const ext = file.name.split('.').pop().toLowerCase();
     const escapedPath = path.replace(/'/g, "''");
     
@@ -1226,7 +1226,6 @@ exportDbBtn.addEventListener('click', async () => {
     try {
         // We can't directly download the indexeddb file from here, 
         // so we export to a temporary buffer and download.
-        const exportPath = 'duckdb_export.db';
         await conn.query(`CHECKPOINT`); // Ensure all data is flushed
         
         // DuckDB-Wasm doesn't support 'EXPORT DATABASE' to a single file easily via SQL yet,
