@@ -466,6 +466,13 @@ async function displayTableSchema(tableName) {
         btn.style.background = 'transparent';
         btn.style.border = 'none';
         btn.style.fontFamily = 'inherit';
+        btn.style.background = 'transparent';
+        btn.style.border = 'none';
+        btn.style.fontFamily = 'inherit';
+        btn.style.fontSize = 'inherit';
+        btn.style.borderRadius = '4px';
+        btn.style.padding = '2px 4px';
+        btn.style.transition = 'background-color 0.2s';
         btn.textContent = `${r.column_name} (${r.column_type})`;
         btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
@@ -473,6 +480,7 @@ async function displayTableSchema(tableName) {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${escapeId(r.column_name)}"`);
             statusEl.textContent = `Inserted column ${r.column_name} into SQL editor`;
+            statusEl.textContent = `Inserted column ${r.column_name}`;
             
             // Profiling logic
             try {
