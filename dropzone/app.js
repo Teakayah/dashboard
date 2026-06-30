@@ -446,6 +446,12 @@ async function restoreState() {
  * 3. Renders a mini Chart.js bar chart visualizing the top 10 most frequent values.
  *
  * @param {string} tableName - The name of the DuckDB table to describe and profile.
+ * Fetches and renders the schema for a given DuckDB table in the UI.
+ * Attaches click handlers to each column name that automatically insert
+ * the column into the SQL editor and asynchronously profile the column
+ * (calculating min, max, count, and rendering a top-10 distribution chart).
+ *
+ * @param {string} tableName - The name of the table to inspect and display.
  */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
@@ -905,6 +911,12 @@ async function processFile(file, path) {
  * query in the SQL editor for the user.
  *
  * @param {string} tableName - The name of the newly loaded table
+ * Orchestrates UI updates when a new table is successfully loaded into DuckDB.
+ * Clears the schema display (if it's the first table), renders the new schema,
+ * triggers instant chart generation for automatic insights, and populates the
+ * SQL editor with a default SELECT query.
+ *
+ * @param {string} tableName - The name of the newly loaded table.
  */
 async function onTableLoaded(tableName) {
     // Show schema
