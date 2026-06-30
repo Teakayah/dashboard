@@ -48,3 +48,6 @@
 ## 2026-06-21 - Disabling Form Controls When Data is Unavailable
 **Learning:** Dropdowns and actionable buttons that depend on global application state (like loaded datasets) should be explicitly disabled when that state is empty. Leaving them enabled but failing silently creates a confusing user experience.
 **Action:** When adding global actions, ensure they have a function (e.g., `updateConsoleActionsUI`) that toggles their `disabled` state and `title` tooltips based on the availability of required data, and call this function during all state changes.
+## 2026-06-27 - Improve schema column keyboard accessibility and feedback
+**Learning:** Native `<button>` elements intrinsically support keyboard events (`click` fired by Enter/Space), negating the need for custom `keydown` handlers when converting semantic `span` buttons (like those found in data table schema representations).
+**Action:** Use native `<button>` tags with CSS resets (`background: transparent; border: none;`) instead of `span` tags with `role="button"` to provide robust keyboard accessibility out-of-the-box. Add hover states to provide clear visual feedback to users that the element is interactive.
