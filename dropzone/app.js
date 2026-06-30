@@ -211,6 +211,9 @@ function getRows(result) {
         const rowObj = rawRows[i].toJSON();
         // Bolt: Extract into plain object via .toJSON() to bypass proxy getter overhead on every cell
         const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
+        // Performance optimization: call .toJSON() to eagerly convert the Arrow Proxy
+        // to a plain object using Arrow's internal optimized path, completely bypassing
+        // the heavy proxy getter trap overhead for every cell.
         const rowObj = rawRows[i].toJSON();
         const rowPlain = {};
         for (let j = 0; j < numFields; j++) {
