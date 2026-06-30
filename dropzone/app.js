@@ -205,6 +205,7 @@ function getRows(result) {
             rows[i] = rowPlain;
     for (let i = 0; i < numRows; i++) {
         // Eagerly convert Arrow Struct Proxy to plain object to bypass getter traps
+        // Eagerly convert proxy to plain object for faster cell access
         const rowObj = rawRows[i].toJSON();
         const rowPlain = {};
         for (let j = 0; j < numFields; j++) {
