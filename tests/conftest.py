@@ -31,7 +31,7 @@ WasmHandler.extensions_map.update({
 @pytest.fixture(scope='session', autouse=True)
 def local_server():
     """Serve the repo root over HTTP for the duration of the test session."""
-    server = HTTPServer(('localhost', PORT), WasmHandler)
+    server = HTTPServer(('127.0.0.1', PORT), WasmHandler)
     thread = threading.Thread(target=server.serve_forever)
     thread.daemon = True
     thread.start()
