@@ -330,6 +330,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Manually unregisters all Service Workers and reloads the page.
+ * Acts as an intentional escape hatch to forcefully bypass aggressive browser caching
+ * of large WebAssembly (Wasm) bundles, which can cause persistent initialization failures.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
