@@ -82,19 +82,6 @@ function populateSelect(select, options, defaultMsg) {
  * The progress bar is automatically hidden when progress is 0% or 100%.
  *
  * @param {number} percent - The current loading progress (0 to 100).
- * Updates the initialization progress bar UI during DuckDB-Wasm instantiation.
- * Hides the progress container if the percent is 0 or 100.
- *
- * @param {number} percent - The initialization progress percentage (0-100).
- * Updates the initialization progress bar in the UI.
- * Shows the progress bar if the percentage is between 0 and 100 (exclusive),
- * and hides it otherwise.
- *
- * @param {number} percent - The completion percentage to display (0-100)
- * Updates the DuckDB-Wasm initialization progress bar UI.
- * Toggles visibility of the progress container based on the percentage.
- *
- * @param {number} percent - The progress percentage (0-100)
  */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
@@ -123,12 +110,6 @@ function addToHistory(sql) {
 /**
  * Renders the user's recent SQL queries as clickable chips in the UI.
  * Rebuilds the history container based on the current state of `queryHistory`.
- * Renders the query history chips in the UI based on local storage state.
- * Creates clickable chips for up to 10 recent queries, allowing users to
- * quickly re-populate the SQL editor.
- * Renders the local query history as interactive UI chips.
- * Clears the existing history container and populates it with clickable chips
- * for up to 10 recent unique queries.
  */
 function renderHistory() {
     queryHistoryEl.textContent = '';
@@ -243,38 +224,11 @@ function getRows(result) {
     const rawRows = result.toArray();
     const rows = new Array(numRows);
 
-    if (hasBigInt) {
-        for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
-            const rowPlain = {};
-            for (let j = 0; j < numFields; j++) {
-                const field = fields[j];
-                const val = rowObj[field];
-                // Cast BigInts to strings for UI/JSON compatibility
-                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
-            }
-            rows[i] = rowPlain;
-        }
-    } else {
-        for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
-            const rowPlain = {};
-            for (let j = 0; j < numFields; j++) {
-                const field = fields[j];
-                rowPlain[field] = rowObj[field];
-            }
-            rows[i] = rowPlain;
     for (let i = 0; i < numRows; i++) {
-        // Eagerly convert Arrow Struct Proxy to plain object to bypass getter traps
-        // Eagerly convert proxy to plain object for faster cell access
-        // Eagerly convert proxy to plain object to bypass heavy getter trap overhead
-        const rowObj = rawRows[i].toJSON();
-        // Bolt: Extract into plain object via .toJSON() to bypass proxy getter overhead on every cell
-        const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
         // Performance optimization: call .toJSON() to eagerly convert the Arrow Proxy
         // to a plain object using Arrow's internal optimized path, completely bypassing
         // the heavy proxy getter trap overhead for every cell.
-        const rowObj = rawRows[i].toJSON();
+        const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
         const rowPlain = {};
         for (let j = 0; j < numFields; j++) {
             const field = fields[j];
@@ -282,6 +236,7 @@ function getRows(result) {
             // Cast BigInts to strings for UI/JSON compatibility
             rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
+        rows[i] = rowPlain;
     }
     return rows;
 }
