@@ -60,3 +60,6 @@
 ## 2026-06-30 - Convert emulated buttons to native button tags
 **Learning:** Using `span` elements with `role="button"` and `tabIndex="0"` is bad for accessibility as it requires manually managing keyboard events (Enter/Space) and often misses out on native screen reader benefits.
 **Action:** Always prefer semantic HTML tags like `<button>` over generic container tags (`span`, `div`) with ARIA roles when creating interactive click targets, using CSS resets (`background: transparent`, `border: none`) to bypass native styling if necessary.
+## 2026-07-01 - Structured Empty States for Data Grids
+**Learning:** Using plain text like "No results" for empty data states lacks visual hierarchy and can be confusing. Replacing it with structured HTML (including a decorative icon, bold heading, and helpful description) significantly improves the UX. Furthermore, when using decorative icons, explicitly hiding them from screen readers using `aria-hidden="true"` prevents confusion for users utilizing assistive technologies.
+**Action:** Always replace plain text empty states with visually structured HTML that includes an explicitly hidden decorative icon (`aria-hidden="true"`), a bold heading, and a descriptive paragraph suggesting next steps.
