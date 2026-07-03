@@ -76,3 +76,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2025-05-06 - Document hidden UI profiling side-effects
 **Learning:** Functions like `displayTableSchema` often perform significantly more work than their names imply. It renders the schema, but also binds click handlers to columns that execute hidden DuckDB profiling queries (aggregations and top-10 frequencies) upon interaction.
 **Action:** When a UI function binds complex side-effect logic (like executing database queries) to elements it creates, explicitly document these hidden behaviors in the JSDoc to alert future developers to the full scope of the function's responsibilities.
+
+## 2026-06-28 - Document Service Worker unregister workaround for Wasm failures
+**Learning:** DuckDB-Wasm initialization can persistently fail due to browser caching of large WebAssembly bundles via Service Workers. The `reloadWithoutSW` function in `dropzone/app.js` exists as an intentional escape hatch to forcefully bypass this cache, but it was undocumented and could easily be mistaken for dead code.
+**Action:** When implementing manual Service Worker unregistration as a fallback for heavy asset initialization (like Wasm), always document the specific "why" to prevent future maintainers from removing the seemingly unused or hacky code.
