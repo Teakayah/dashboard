@@ -14,3 +14,7 @@ Assertion: By mocking `builtins.open` with `mock_open(read_data='')`, we can ver
 Coverage Gap: The `_read_csv_stripped` function in `scripts/benchmark_final_test.py` lacked test coverage for the `StopIteration` branch, which occurs when an empty CSV file is read and `next(reader)` fails to fetch the headers.
 Learning: Python's `csv.reader` raises a `StopIteration` error on an empty file. This edge case in helper scripts requires mocking `builtins.open` with empty data (`""`) to trigger correctly without producing file side effects.
 Assertion: Added a test utilizing `patch('builtins.open', mock_open(read_data=""))` to explicitly execute the `try/except StopIteration` block and verify it returns an empty list as intended.
+## 2026-07-04 - Pytest Parallelism Port Conflict in Session-Scoped Fixtures
+Coverage Gap: `deployment/git_utils.py` had missing edge case coverage, and the entire test suite timed out or threw address conflicts.
+Learning: In this repository, running the test suite in parallel using pytest-xdist (e.g., `pytest -n auto`) causes an `OSError: [Errno 98] Address already in use`. This occurs because `tests/conftest.py` sets up a local session-scoped `HTTPServer` on a hardcoded port (8765) that conflicts when initialized simultaneously by multiple worker processes.
+Assertion: Do not use pytest-xdist (`-n auto`) for the full suite in this repository unless the `conftest.py` is refactored. Run subsets of tests sequentially or mock side effects to keep runs fast.
