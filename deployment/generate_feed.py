@@ -10,6 +10,7 @@ import html as html_lib
 import json
 import re
 import subprocess
+import concurrent.futures
 from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
@@ -145,7 +146,11 @@ def main() -> None:
         reverse=True,
     )
 
-    entries = [_build_entry(f, descriptions, git_isos.get(f, fallback_time)) for f in html_files]
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        entries = list(executor.map(
+            lambda f: _build_entry(f, descriptions, git_isos.get(f, fallback_time)),
+            html_files
+        ))
 
     feed_xml = build_feed(entries)
     FEED_PATH.write_text(feed_xml, encoding='utf-8')
