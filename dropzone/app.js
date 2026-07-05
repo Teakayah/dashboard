@@ -1337,7 +1337,16 @@ async function runQuery() {
  */
 function renderResults(rows) {
     if (rows.length === 0) {
-        document.getElementById('results').textContent = 'No results';
+        document.getElementById('results').innerHTML = `
+            <div style="padding: 3rem; text-align: center; color: var(--text-muted, #64748b);">
+                <svg aria-hidden="true" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 1rem; opacity: 0.5; display: block;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--text, #1e293b); margin: 0 0 0.5rem 0;">No results found</h3>
+                <p style="margin: 0;">Try adjusting your SQL query or loading different data.</p>
+            </div>
+        `;
         return;
     }
     const columns = Object.keys(rows[0]);
