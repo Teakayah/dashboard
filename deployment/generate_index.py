@@ -8,10 +8,9 @@ import argparse
 import html
 import json
 import re
-import subprocess
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from .git_utils import get_git_dates_batched
 
 # Import centralized configuration
 try:
@@ -31,7 +30,6 @@ def load_descriptions() -> dict:
     return {}
 
 
-from .git_utils import get_git_dates_batched
 
 
 def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None, git_date: Optional[str] = None) -> dict:

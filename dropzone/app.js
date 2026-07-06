@@ -245,7 +245,7 @@ function getRows(result) {
 
     if (hasBigInt) {
         for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
+            const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
@@ -257,30 +257,13 @@ function getRows(result) {
         }
     } else {
         for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
+            const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
                 rowPlain[field] = rowObj[field];
             }
             rows[i] = rowPlain;
-    for (let i = 0; i < numRows; i++) {
-        // Eagerly convert Arrow Struct Proxy to plain object to bypass getter traps
-        // Eagerly convert proxy to plain object for faster cell access
-        // Eagerly convert proxy to plain object to bypass heavy getter trap overhead
-        const rowObj = rawRows[i].toJSON();
-        // Bolt: Extract into plain object via .toJSON() to bypass proxy getter overhead on every cell
-        const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
-        // Performance optimization: call .toJSON() to eagerly convert the Arrow Proxy
-        // to a plain object using Arrow's internal optimized path, completely bypassing
-        // the heavy proxy getter trap overhead for every cell.
-        const rowObj = rawRows[i].toJSON();
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
     }
     return rows;

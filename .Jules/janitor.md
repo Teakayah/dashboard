@@ -55,3 +55,6 @@ Action: For statically configured developer-controlled URLs, just add `# nosec B
 ## 2026-06-28 - Consolidate duplicated logic
 Learning: Found duplicated logic handling `select` element DOM manipulation logic using the same `populateSelect` inner function structure in `dropzone/app.js` inside the `updateJoinUI` and `updateChartBuilderUI` scopes.
 Action: Extracted the inner functions into a global `populateSelect` function with optional fallback handling to remove the duplicative functionality in `dropzone/app.js`.
+## $(date +%Y-%m-%d) - Consolidated duplicated git log utilities and cleaned up dead syntax
+**Learning:** Found scattered git log timestamp fetching functions across deployment scripts which duplicated functionality and left unused imports after cleanup. Also noticed duplicated, broken logic in `getRows` inside `dropzone/app.js` likely from previous bad merge conflicts.
+**Action:** Cleaned up unused module imports in `deployment/generate_feed.py`, `deployment/generate_index.py`, and `deployment/screenshot.py` that occurred after pulling git utilities out to `deployment/git_utils.py`. Fixed the duplicated `getRows` merge conflict fragments in `dropzone/app.js`.
