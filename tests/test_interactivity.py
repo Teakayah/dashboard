@@ -123,6 +123,26 @@ class TestDropzoneButtons:
 
         expect(dz.locator("#schema-display")).to_contain_text("employees")
 
+    def test_run_query_button_executes_sql(self, dz: Page):
+        dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
+        wait_for_duckdb_ready(dz)
+        load_samples(dz)
+
+        # Clear existing query and type a new one
+        sql_input = dz.locator("#sql-input")
+        sql_input.fill("SELECT COUNT(*) AS total FROM employees")
+
+        # Wait for the button to be enabled after typing
+        run_btn = dz.locator("#run-query")
+        expect(run_btn).to_be_enabled(timeout=ACTION_TIMEOUT)
+
+        # Click run and verify results appear
+        run_btn.click()
+
+        # Verify the Grid.js table appears with our results
+        expect(dz.locator("#results")).to_contain_text("total")
+        expect(dz.locator("#results")).to_contain_text("5")
+
 
 class TestFloodPageButtons:
     def test_share_button_exists(self, page: Page):

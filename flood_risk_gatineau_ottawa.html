@@ -63,7 +63,7 @@
     }
 
     .gauge-hero { display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
-    
+
     /* ── River Vitals ── */
     .vitals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; width: 100%; margin-bottom: 16px; }
     @media (max-width: 500px) {
@@ -332,9 +332,9 @@ const gaugeChart = new Chart(document.getElementById('gaugeChart'), {
   },
   options: {
     responsive: true, maintainAspectRatio: false,
-    scales: { 
-      y: { type: 'linear', title: { display: true, text: 'Level (m MASL)' } }, 
-      x: { grid: { display: false } } 
+    scales: {
+      y: { type: 'linear', title: { display: true, text: 'Level (m MASL)' } },
+      x: { grid: { display: false } }
     },
     plugins: {
       legend: { display: false },
@@ -372,7 +372,7 @@ const IMPACT_DATA = [
   { threshold: 0, text: "Levels are normal. No immediate flood impacts expected.", color: "#f1f8e9", textColor: "#1b5e20" }
 ];
 
-let liveLevels = {}; 
+let liveLevels = {};
 let currentOffset = 0.0;
 
 function resetLevel() {
@@ -394,7 +394,7 @@ function updateAllGauges(offset) {
 
   const ids = ['levelDisplay', 'hullDisplay', 'rideauDisplay'];
   const badges = ['riskBadge', 'hullBadge', 'rideauBadge'];
-  
+
   updatedLevels.forEach((val, i) => {
     const risk = getRiskForStation(val, REGIONAL_STATIONS[i]);
     const el = document.getElementById(ids[i]);
@@ -412,7 +412,7 @@ function updateAllGauges(offset) {
   comparisonChart.data.datasets[0].data = updatedLevels.map((val, i) => val - REGIONAL_STATIONS[i].watch);
   comparisonChart.data.datasets[0].backgroundColor = updatedLevels.map((val, i) => getRiskForStation(val, REGIONAL_STATIONS[i]).color);
   comparisonChart.update('none');
-  
+
   const impactBox = document.getElementById('impactStatement');
   if (impactBox) {
     const impact = IMPACT_DATA.find(d => britLive >= d.threshold);
@@ -498,7 +498,7 @@ function loadLiveData() {
     const pEl = document.getElementById('precipDisplay');
     if (pEl) pEl.textContent = DATA.precip.total_7d;
   }
-  
+
   if (DATA.reservoirs) {
     const resEl = document.getElementById('reservoirDisplay');
     if (resEl) resEl.textContent = DATA.reservoirs.percentage_full + '%';
@@ -561,6 +561,6 @@ document.getElementById('levelSlider').addEventListener('input', function() { up
     }
   </script>
 
-  
+
 </body>
 </html>

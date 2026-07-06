@@ -457,7 +457,9 @@ def test_get_git_dates_batched_success(monkeypatch, tmp_path):
     def mock_run(*args, **kwargs):
         return MockResult()
 
-    monkeypatch.setattr(module.subprocess, 'run', mock_run)
+    import deployment.git_utils
+    monkeypatch.setattr(deployment.git_utils.subprocess, 'run', mock_run)
+    monkeypatch.setattr(deployment.git_utils, 'ROOT', tmp_path)
 
     dates = module.get_git_dates_batched([file1])
     assert dates == {file1: 'Jan 2023'}
@@ -474,7 +476,8 @@ def test_get_git_dates_batched_fallback_mtime(monkeypatch, tmp_path):
     def mock_run(*args, **kwargs):
         raise Exception("Git command failed")
 
-    monkeypatch.setattr(module.subprocess, 'run', mock_run)
+    import deployment.git_utils
+    monkeypatch.setattr(deployment.git_utils.subprocess, 'run', mock_run)
 
     dates = module.get_git_dates_batched([file1])
     assert file1 in dates
@@ -714,7 +717,8 @@ def test_get_git_dates_batched_invalid_iso_format(monkeypatch, tmp_path):
     def mock_run(*args, **kwargs):
         return MockResult()
 
-    monkeypatch.setattr(module.subprocess, 'run', mock_run)
+    import deployment.git_utils
+    monkeypatch.setattr(deployment.git_utils.subprocess, 'run', mock_run)
 
     dates = module.get_git_dates_batched([file1])
     # Because fromisoformat fails, it falls back to mtime string

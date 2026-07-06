@@ -311,7 +311,7 @@ def test_flood_dashboard_height_stabilizes(page: Page):
 
     tabs = ['gauge', 'history', 'snowpack']
     for tab in tabs:
-        page.evaluate(f"showTab('{tab}')")
+        page.locator(f".tab[onclick*=\"'{tab}'\"]").click()
         page.wait_for_timeout(300)
         heights = []
         for _ in range(5):
