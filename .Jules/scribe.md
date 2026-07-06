@@ -56,3 +56,23 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2024-06-06 - Documenting hidden asynchronous side-effects in UI renderers
 **Learning:** The `displayTableSchema` function in `dropzone/app.js` implies a simple UI rendering task, but it actually encapsulates complex asynchronous data profiling logic (querying min/max/count and rendering Chart.js distributions) triggered by user clicks. This "hidden" behavior within an otherwise generic-sounding function creates a knowledge silo.
 **Action:** When a UI rendering function attaches heavy asynchronous side-effects (like database queries and chart generation) to its created elements, always explicitly document these behaviors in the JSDoc to prevent maintainers from missing them.
+## 2026-06-18 - Document Service Worker unregister workaround for Wasm failures
+**Learning:** DuckDB-Wasm initialization can persistently fail due to browser caching of large WebAssembly bundles via Service Workers. The `reloadWithoutSW` function exists as an intentional escape hatch to forcefully bypass this cache, but it was undocumented and could easily be mistaken for dead code.
+**Action:** When implementing manual Service Worker unregistration as a fallback for heavy asset initialization (like Wasm), always document the specific "why" to prevent future maintainers from removing the seemingly unused or hacky code.
+## 2026-06-22 - Documenting UI orchestration and profiling functions
+**Learning:** Functions like `displayTableSchema` and `onTableLoaded` in `dropzone/app.js` handle critical UI orchestration (updating query input, profiling data distributions on click) but lacked JSDoc comments, making their complex side-effects opaque.
+**Action:** When working with functions that orchestrate multiple UI components or trigger heavy async operations (like data profiling) as side-effects, always add JSDoc to explicitly outline these behaviors.
+
+## 2026-06-23 - Added JSDoc for Core DropZone Setup logic
+**Learning:** `dropzone/app.js` contained several critical state-management and UI orchestration functions (`setProgress`, `renderHistory`, `init`, `displayTableSchema`, `onTableLoaded`) that were missing documentation, which made it difficult to understand the complex setup and interactions that allow the Dropzone offline and in-memory databases to function.
+**Action:** Always add complete JSDoc block comments to core setup functions. This demystifies the orchestration logic and clarifies parameter intents (e.g. `tableName`, `percent`) reducing the learning curve for future contributors exploring DuckDB UI bindings.
+
+## 2026-06-27 - Documenting complex UI generation and table lifecycle functions
+**Learning:** `displayTableSchema` and `onTableLoaded` are critical UI generation and orchestration functions in `dropzone/app.js` that lacked JSDoc comments. `displayTableSchema` in particular has hidden asynchronous side-effects, firing off profiling queries when a column is clicked. Without documentation, developers have to read the extensive function body to realize it's attaching complex interaction and charting logic.
+**Action:** Always document complex UI generator functions, explicitly calling out any nested event listeners or asynchronous side-effects (like background queries or charting) to provide a clear mental model without requiring a deep dive into the implementation.
+## 2026-06-28 - Documenting undocumented utility functions in DuckDB dropzone
+**Learning:** `displayTableSchema` and `onTableLoaded` were heavily used utility functions inside `dropzone/app.js` that handle critical UI updates when a table is loaded, but they lacked JSDoc comments. This required developers to read the function bodies to understand what UI elements are updated and how.
+**Action:** Added complete JSDoc block comments to these utility functions to clarify their parameters and UI side-effects, reducing cognitive load for developers working within the feature.
+## 2025-05-06 - Document hidden UI profiling side-effects
+**Learning:** Functions like `displayTableSchema` often perform significantly more work than their names imply. It renders the schema, but also binds click handlers to columns that execute hidden DuckDB profiling queries (aggregations and top-10 frequencies) upon interaction.
+**Action:** When a UI function binds complex side-effect logic (like executing database queries) to elements it creates, explicitly document these hidden behaviors in the JSDoc to alert future developers to the full scope of the function's responsibilities.

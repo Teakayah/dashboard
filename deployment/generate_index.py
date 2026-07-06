@@ -31,37 +31,7 @@ def load_descriptions() -> dict:
     return {}
 
 
-def get_git_dates_batched(files: list[Path]) -> dict[Path, str]:
-    """Return 'Mon YYYY' from git log for multiple files in a single call; fall back to mtime."""
-    if not files:
-        return {}
-    dates = {}
-    try:
-        # Use relative paths for git log
-        rel_paths = [str(f.relative_to(ROOT)) if f.is_absolute() else str(f) for f in files]
-        cmd = ['git', 'log', '--format=TS:%ci', '--name-only', '--'] + rel_paths
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
-        current_ts = None
-        for line in result.stdout.splitlines():
-            line = line.strip()
-            if line.startswith('TS:'):
-                current_ts = line[3:]
-            elif line and current_ts:
-                p = ROOT / line
-                if p not in dates:
-                    try:
-                        dates[p] = datetime.fromisoformat(current_ts).strftime('%b %Y')
-                    except Exception:
-                        pass
-    except Exception:
-        pass
-
-    # Fallback to mtime for files not in git or not returned
-    for f in files:
-        if f not in dates:
-            dates[f] = datetime.fromtimestamp(f.stat().st_mtime).strftime('%b %Y')
-
-    return dates
+from .git_utils import get_git_dates_batched
 
 
 def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None, git_date: Optional[str] = None) -> dict:

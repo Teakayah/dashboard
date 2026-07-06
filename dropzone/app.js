@@ -42,6 +42,61 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+/**
+ * Utility to clear and populate a <select> element.
+ * @param {HTMLSelectElement} select - The select element to populate.
+ * @param {Array<string|Object>} options - Array of values or column objects.
+ * @param {string} [defaultMsg] - Optional default disabled option.
+ */
+function populateSelect(select, options, defaultMsg) {
+    const currentVal = select.value;
+    select.textContent = '';
+
+    if (defaultMsg) {
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.disabled = true;
+        defaultOpt.selected = true;
+        defaultOpt.textContent = defaultMsg;
+        select.appendChild(defaultOpt);
+    }
+
+    options.forEach(item => {
+        const opt = document.createElement('option');
+        if (typeof item === 'object') {
+            opt.value = item.column_name;
+            opt.textContent = `${item.column_name} (${item.column_type})`;
+        } else {
+            opt.value = item;
+            opt.textContent = item;
+        }
+        select.appendChild(opt);
+    });
+
+    if (!defaultMsg && options.includes(currentVal)) {
+        select.value = currentVal;
+    }
+}
+
+/**
+ * Updates the DuckDB-Wasm initialization progress bar in the UI.
+ * The progress bar is automatically hidden when progress is 0% or 100%.
+ *
+ * @param {number} percent - The current loading progress (0 to 100).
+ * Updates the initialization progress bar UI during DuckDB-Wasm instantiation.
+ * Hides the progress container if the percent is 0 or 100.
+ *
+ * @param {number} percent - The initialization progress percentage (0-100).
+ * Updates the initialization progress bar in the UI.
+ * Shows the progress bar if the percentage is between 0 and 100 (exclusive),
+ * and hides it otherwise.
+ *
+ * @param {number} percent - The completion percentage to display (0-100)
+ * Updates the DuckDB-Wasm initialization progress bar UI.
+ * Toggles visibility of the progress container based on the percentage.
+ *
+ * @param {number} percent - The progress percentage (0-100)
+ */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
         initProgressContainer.style.display = 'block';
@@ -66,6 +121,16 @@ function addToHistory(sql) {
     renderHistory();
 }
 
+/**
+ * Renders the user's recent SQL queries as clickable chips in the UI.
+ * Rebuilds the history container based on the current state of `queryHistory`.
+ * Renders the query history chips in the UI based on local storage state.
+ * Creates clickable chips for up to 10 recent queries, allowing users to
+ * quickly re-populate the SQL editor.
+ * Renders the local query history as interactive UI chips.
+ * Clears the existing history container and populates it with clickable chips
+ * for up to 10 recent unique queries.
+ */
 function renderHistory() {
     queryHistoryEl.textContent = '';
     if (queryHistory.length === 0) return;
@@ -78,12 +143,13 @@ function renderHistory() {
     queryHistoryEl.appendChild(label);
 
     queryHistory.forEach(sql => {
-        const chip = document.createElement('div');
+        const chip = document.createElement('button');
         chip.className = 'history-chip';
+        chip.style.fontFamily = 'inherit';
+        chip.style.fontSize = 'inherit';
+        chip.style.textAlign = 'left';
         chip.textContent = sql;
         chip.title = sql;
-        chip.tabIndex = 0;
-        chip.setAttribute('role', 'button');
         chip.setAttribute('aria-label', `Load recent query: ${sql}`);
 
         const triggerAction = () => {
@@ -93,12 +159,6 @@ function renderHistory() {
         };
 
         chip.onclick = triggerAction;
-        chip.onkeydown = (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                triggerAction();
-            }
-        };
         queryHistoryEl.appendChild(chip);
     });
 }
@@ -129,6 +189,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         await onTableLoaded(tableName);
 
         statusEl.textContent = `Loaded remote table: ${tableName}`;
+        updateConsoleActionsUI();
 
         const originalText = loadRemoteDeltaBtn.textContent;
         loadRemoteDeltaBtn.textContent = 'Table Loaded!';
@@ -177,14 +238,16 @@ function getRows(result) {
     const numFields = fields.length;
     const numRows = result.numRows;
 
-    // Performance optimization: Use Arrow's native .toArray() to extract objects first
-    // avoiding the heavy proxy trap overhead of result.get(i) in a loop.
+    // Performance optimization: Use Arrow's native .toArray() to extract objects first,
+    // and eagerly convert the row Proxy into a plain JavaScript object using .toJSON().
+    // This completely bypasses the heavy proxy getter trap overhead for every cell.
     const rawRows = result.toArray();
     const rows = new Array(numRows);
 
     if (hasBigInt) {
         for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
+            const rawObj = rawRows[i];
+            const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
@@ -196,7 +259,8 @@ function getRows(result) {
         }
     } else {
         for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
+            const rawObj = rawRows[i];
+            const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
@@ -236,6 +300,13 @@ const SAMPLE_DATA = {
 104,Sales,Montreal`
 };
 
+/**
+ * Displays a critical initialization error message to the user.
+ * Appends a recovery button that allows the user to forcefully bypass
+ * potentially stale Service Worker caches.
+ *
+ * @param {string} message - The error message to display.
+ */
 function showInitError(message) {
     statusEl.textContent = message + ' ';
     const btn = document.createElement('button');
@@ -261,6 +332,14 @@ function reloadWithoutSW() {
  * (preferring OPFS persistence if available), loading the delta extension,
  * and restoring the offline UI state. Includes a timeout fallback to handle
  * stale service worker scenarios.
+ * Initializes the DuckDB-Wasm instance and configures the environment.
+ * Sets up a timeout fallback if the Service Worker cache serves a stale or
+ * corrupted Wasm bundle, offering the user a recovery button. Restores
+ * previously loaded tables from OPFS on successful initialization.
+ * Initializes the DuckDB-Wasm instance, establishing a connection and
+ * instantiating the worker with the selected bundle.
+ * Also configures a timeout to prompt users to bypass service workers if
+ * the WebAssembly bundle fails to load.
  */
 async function init() {
     let timedOut = false;
@@ -360,6 +439,7 @@ async function restoreState() {
             
             updateJoinUI();
             updateChartBuilderUI();
+            updateConsoleActionsUI();
         }
     } catch (err) {
         console.warn('Failed to restore state:', err);
@@ -396,6 +476,33 @@ async function displayTableSchema(tableName) {
         btn.style.background = 'transparent';
         btn.style.border = 'none';
         btn.style.fontFamily = 'inherit';
+        btn.style.background = 'transparent';
+        btn.style.border = 'none';
+        btn.style.fontFamily = 'inherit';
+        btn.style.fontSize = 'inherit';
+        btn.style.borderRadius = '4px';
+        btn.style.padding = '2px 4px';
+        btn.style.transition = 'background-color 0.2s';
+        btn.style.fontSize = 'inherit';
+        btn.style.fontSize = 'inherit';
+        btn.style.textAlign = 'left';
+        btn.textContent = `${r.column_name} (${r.column_type})`;
+        btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
+        const span = document.createElement('button');
+        span.className = 'clickable-col';
+        span.style.cursor = 'pointer';
+        span.style.textDecoration = 'underline';
+        span.style.marginRight = '8px';
+        span.style.color = 'var(--primary)';
+        span.style.borderRadius = '4px';
+        span.style.padding = '2px 4px';
+        span.style.background = 'transparent';
+        span.style.border = 'none';
+        span.style.fontFamily = 'inherit';
+        span.style.fontSize = 'inherit';
+        span.textContent = `${r.column_name} (${r.column_type})`;
+        span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
+        btn.style.fontSize = 'inherit';
         btn.textContent = `${r.column_name} (${r.column_type})`;
         btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
@@ -403,6 +510,8 @@ async function displayTableSchema(tableName) {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${escapeId(r.column_name)}"`);
             statusEl.textContent = `Inserted column ${r.column_name} into SQL editor`;
+            statusEl.textContent = `Inserted column ${r.column_name}`;
+            showToast(`Inserted column ${r.column_name}`, 'success');
             
             // Profiling logic
             try {
@@ -459,6 +568,7 @@ async function displayTableSchema(tableName) {
                 triggerAction(e);
             }
         };
+        span.onclick = triggerAction;
 
         return btn;
     });
@@ -477,24 +587,14 @@ async function displayTableSchema(tableName) {
  * Toggles and populates the Join Assistant UI based on the current state of loaded tables.
  * The Join Assistant requires at least two tables to be loaded in the local DuckDB instance
  * to become visible. It prevents the user from joining a table to itself by default.
+ * Requires at least 2 loaded tables to be active to re-populate the select dropdowns
+ * with the available table names for joining.
  */
 function updateJoinUI() {
     if (loadedTables.size >= 2) {
         joinAssistant.style.display = 'flex';
         const tables = Array.from(loadedTables);
         
-        const populateSelect = (select, options) => {
-            const currentVal = select.value;
-            select.textContent = '';
-            options.forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t;
-                opt.textContent = t;
-                select.appendChild(opt);
-            });
-            if (options.includes(currentVal)) select.value = currentVal;
-        };
-
         populateSelect(joinTableA, tables);
         populateSelect(joinTableB, tables);
         
@@ -513,6 +613,8 @@ function updateJoinUI() {
  * Dynamically queries the DuckDB schema to populate the join column dropdowns
  * based on the selected tables in the Join Assistant. Attempts to auto-detect
  * and pre-select matching column names between the two tables for convenience.
+ * Requires 2 loaded tables to activate. Analyzes the schema of the two selected tables
+ * to find shared columns to populate the join column dropdown.
  */
 async function updateJoinColumns() {
     const tableA = joinTableA.value;
@@ -553,11 +655,23 @@ async function updateJoinColumns() {
     }
 }
 
+function updateConsoleActionsUI() {
+    const hasData = loadedTables.size > 0;
+    recipeSelect.disabled = !hasData;
+    recipeSelect.title = hasData ? '' : 'Requires loaded data';
+    exportDbBtn.disabled = !hasData;
+    exportDbBtn.title = hasData ? '' : 'Requires loaded data';
+    clearBtn.disabled = !hasData;
+    clearBtn.title = hasData ? '' : 'Requires loaded data';
+}
+
 /**
  * Initializes and populates the Chart Builder UI drop-downs.
  * Scans the currently active table's schema to categorize columns into
  * X-axis (all columns) and Y-axis (numeric columns only) options.
  * Hides the builder entirely if no table is currently active.
+ * Depends on a currently active table (currentTableName) to query the DuckDB information
+ * schema.
  */
 async function updateChartBuilderUI() {
     if (!currentTableName) {
@@ -569,22 +683,6 @@ async function updateChartBuilderUI() {
         const schemaResult = await conn.query(`DESCRIBE "${escapeId(currentTableName)}"`);
         const cols = getRows(schemaResult);
         
-        const populateSelect = (select, cols, defaultMsg) => {
-            select.textContent = '';
-            const defaultOpt = document.createElement('option');
-            defaultOpt.value = '';
-            defaultOpt.disabled = true;
-            defaultOpt.selected = true;
-            defaultOpt.textContent = defaultMsg;
-            select.appendChild(defaultOpt);
-            cols.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.column_name;
-                opt.textContent = `${c.column_name} (${c.column_type})`;
-                select.appendChild(opt);
-            });
-        };
-
         const numericCols = cols.filter(c => ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase()));
         
         populateSelect(chartXCol, cols, 'Select X-Axis...');
@@ -792,6 +890,7 @@ async function handleFiles(files) {
 
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
         updateJoinUI();
+        updateConsoleActionsUI();
     } catch (err) {
         console.error(err);
         showToast('Error loading files: ' + err.message);
@@ -817,7 +916,7 @@ async function processFile(file, path) {
     const buffer = await file.arrayBuffer();
     await db.registerFileBuffer(path, new Uint8Array(buffer));
     
-    let query = '';
+    let query;
     const ext = file.name.split('.').pop().toLowerCase();
     const escapedPath = path.replace(/'/g, "''");
     
@@ -840,6 +939,35 @@ async function processFile(file, path) {
  * Orchestrates the UI updates immediately after a new table is registered in DuckDB.
  * Triggers schema display generation, instant chart previews, and sets a default
  * query in the SQL editor for the user.
+ *
+ * @param {string} tableName - The name of the newly loaded table
+ * Orchestrates UI updates when a new table is successfully loaded into DuckDB.
+ * Clears the schema display (if it's the first table), renders the new schema,
+ * triggers instant chart generation for automatic insights, and populates the
+ * SQL editor with a default SELECT query.
+ * Orchestrates the UI updates required immediately after a new table is successfully
+ * loaded into DuckDB. Triggers schema rendering, instant preview chart generation,
+ * and populates the SQL editor with a default query.
+ *
+ * @param {string} tableName - The name of the newly loaded table.
+ * Orchestrates the UI updates required when a new dataset table is loaded into DuckDB.
+ * Clears prior schemas if this is the first table, renders the new schema,
+ * automatically generates heuristic preview charts, and sets a default query in the editor.
+ *
+ * @param {string} tableName - The name of the newly loaded table
+ * Handles the UI lifecycle events triggered after a new table is successfully loaded into DuckDB.
+ * Updates the schema display, auto-generates heuristic chart previews, and populates
+ * the SQL editor with a default SELECT query for the new dataset.
+ *
+ * @param {string} tableName - The name of the newly loaded table.
+ * Orchestrates the UI updates immediately following the successful registration
+ * of a new table in DuckDB. Refreshes the schema display, generates instant
+ * preview charts based on column types, and populates a default SELECT query.
+ *
+ * @param {string} tableName - The name of the newly loaded DuckDB table.
+ * Orchestrates the post-load UI sequence for a newly registered DuckDB table.
+ * Triggers schema discovery, generates instant chart previews, and resets
+ * the SQL editor to a default SELECT query.
  *
  * @param {string} tableName - The name of the newly loaded table
  */
@@ -983,7 +1111,7 @@ async function generateInstantCharts(tableName) {
                         backgroundColor: '#1d4ed8'
                     }]
                 }, {
-                    scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }
+                    scales: { x: { title: {display: true, text: bestPair[0]} }, y: { title: {display: true, text: bestPair[1]} } }
                 });
             });
         } catch (e) { console.warn('Correlation check failed', e); }
@@ -1101,8 +1229,8 @@ sqlInput.addEventListener('input', () => {
 
 // Global shortcut: press '/' to focus the SQL input field if not already in an input
 document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && 
-        document.activeElement !== sqlInput && 
+    if (e.key === '/' &&
+        document.activeElement !== sqlInput &&
         !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
         e.preventDefault();
         sqlInput.focus();
@@ -1160,7 +1288,15 @@ async function runQuery() {
  */
 function renderResults(rows) {
     if (rows.length === 0) {
-        document.getElementById('results').textContent = 'No results';
+        document.getElementById('results').innerHTML = \`
+            <div class="empty" style="text-align: center; padding: 40px 20px;">
+                <svg aria-hidden="true" style="width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                </svg>
+                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 8px 0;">No results found</h3>
+                <p style="font-size: 0.9rem; margin: 0; color: var(--text-muted);">Your query executed successfully but returned 0 rows. Try adjusting your SQL conditions.</p>
+            </div>
+        \`;
         return;
     }
     const columns = Object.keys(rows[0]);
@@ -1244,6 +1380,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
         updateJoinUI();
         updateChartBuilderUI();
+        updateConsoleActionsUI();
         
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
@@ -1261,7 +1398,6 @@ exportDbBtn.addEventListener('click', async () => {
     try {
         // We can't directly download the indexeddb file from here, 
         // so we export to a temporary buffer and download.
-        const exportPath = 'duckdb_export.db';
         await conn.query(`CHECKPOINT`); // Ensure all data is flushed
         
         // DuckDB-Wasm doesn't support 'EXPORT DATABASE' to a single file easily via SQL yet,
@@ -1310,6 +1446,7 @@ clearBtn.addEventListener('click', async () => {
         copyJsonBtn.title = 'Requires query results';
         joinAssistant.style.display = 'none';
         updateChartBuilderUI();
+        updateConsoleActionsUI();
         statusEl.textContent = 'Storage cleared';
     } catch (err) {
         console.error(err);
@@ -1327,12 +1464,13 @@ init();
  *
  * @param {string} msg - The message text to display.
  */
-function showToast(msg) {
+function showToast(msg, type = 'error') {
     const panel = document.createElement('div');
     panel.textContent = msg;
     panel.setAttribute('role', 'alert');
     panel.setAttribute('aria-live', 'assertive');
-    panel.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#ef4444;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+    const bgColor = type === 'success' ? '#10b981' : '#ef4444';
+    panel.style.cssText = `position:fixed;bottom:20px;right:20px;background:${bgColor};color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);`;
     document.body.appendChild(panel);
     setTimeout(() => { panel.remove(); }, 5000);
 }

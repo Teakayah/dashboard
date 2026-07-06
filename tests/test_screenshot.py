@@ -18,13 +18,13 @@ def test_get_git_commit_times_batched_no_paths():
 
 def test_get_git_commit_times_batched_exception():
     module = load_screenshot_module()
-    with patch('subprocess.run', side_effect=Exception("Git error")):
+    with patch('deployment.git_utils.subprocess.run', side_effect=Exception("Git error")):
         times = module.get_git_commit_times_batched(['test.html'])
         assert times == {}
 
 def test_get_git_commit_times_batched_success():
     module = load_screenshot_module()
-    with patch('subprocess.run') as mock_run:
+    with patch('deployment.git_utils.subprocess.run') as mock_run:
         mock_run.return_value = MagicMock(stdout='TS:1234567890\ntest.html\npreviews/test.png\n')
         times = module.get_git_commit_times_batched(['test.html', 'previews/test.png'])
         assert times == {'test.html': 1234567890, 'previews/test.png': 1234567890}
@@ -37,7 +37,7 @@ def test_get_git_commit_times_batched_empty_paths():
 
 def test_get_git_commit_times_batched_called_process_error():
     module = load_screenshot_module()
-    with patch('subprocess.run') as mock_run:
+    with patch('deployment.git_utils.subprocess.run') as mock_run:
         import subprocess
         mock_run.side_effect = subprocess.CalledProcessError(1, 'git')
         times = module.get_git_commit_times_batched(['test.html'])
@@ -51,7 +51,7 @@ def test_get_git_commit_times_batched_called_process_error():
 
 def test_get_git_commit_times_batched_empty():
     module = load_screenshot_module()
-    with patch('subprocess.run') as mock_run:
+    with patch('deployment.git_utils.subprocess.run') as mock_run:
         mock_run.return_value = MagicMock(stdout='')
         times = module.get_git_commit_times_batched(['test.html'])
         assert times == {}

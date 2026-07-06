@@ -42,3 +42,21 @@
 ## 2026-06-03 - Descriptive ARIA Labels for Dynamic Buttons
 **Learning:** When dynamically generating action buttons that rely on visual abbreviations (like emojis, e.g., "💾 PNG") or concise text, screen reader users may lack the context to understand what the button exports or affects (especially when multiple similar buttons exist in a list of chart cards).
 **Action:** Always add an explicit `aria-label` describing the full action and its target context (e.g., "Download Chart Title as PNG") and pair it with a `title` attribute for visual users who rely on tooltips, ensuring the button is intuitive for all users.
+## 2024-05-16 - Accessible interactive elements and focus states
+**Learning:** Native browser styles for interactive elements like `<button>` override custom layout when converted from emulated `<span>` buttons. CSS resets are strictly required (background, border, font), but `outline: none;` should explicitly be avoided to maintain default focus rings or custom `:focus-visible` states.
+**Action:** Always provide explicit CSS resets (e.g., `background: transparent; border: none; font-family: inherit; font-size: inherit;`) when replacing `<span>` with `<button>`, and verify focus indicators are visually consistent.
+## 2026-06-21 - Disabling Form Controls When Data is Unavailable
+**Learning:** Dropdowns and actionable buttons that depend on global application state (like loaded datasets) should be explicitly disabled when that state is empty. Leaving them enabled but failing silently creates a confusing user experience.
+**Action:** When adding global actions, ensure they have a function (e.g., `updateConsoleActionsUI`) that toggles their `disabled` state and `title` tooltips based on the availability of required data, and call this function during all state changes.
+## 2026-06-27 - Improve schema column keyboard accessibility and feedback
+**Learning:** Native `<button>` elements intrinsically support keyboard events (`click` fired by Enter/Space), negating the need for custom `keydown` handlers when converting semantic `span` buttons (like those found in data table schema representations).
+**Action:** Use native `<button>` tags with CSS resets (`background: transparent; border: none;`) instead of `span` tags with `role="button"` to provide robust keyboard accessibility out-of-the-box. Add hover states to provide clear visual feedback to users that the element is interactive.
+## 2026-06-28 - ARIA Live Announcements Require Dynamic Color States
+**Learning:** Toast messages triggered by successful actions (like inserting a column into the query editor) must have distinct visual styling from error messages to assist sighted users, while remaining properly configured with `aria-live` for screen readers. Using a single `showToast` function with a hardcoded red color fails to convey success visually.
+**Action:** When adding UX feedback toasts, ensure the toast function accepts an optional `type` parameter (e.g., 'success' vs 'error') and dynamically maps it to appropriate CSS colors (like green `#10b981` for success) so the visual experience aligns with the semantic screen reader announcement.
+## 2026-06-29 - Keyboard Shortcut Discoverability
+**Learning:** Global keyboard shortcuts (like `/` to search) significantly improve navigation for power users but remain undiscoverable. Adding a visual `<kbd>` hint directly within the input makes it discoverable, while using CSS `:not(:placeholder-shown)` ensures it automatically disappears when typing, keeping the UI clean without JavaScript overhead.
+**Action:** Pair global keyboard shortcuts with visual `<kbd>` hints positioned absolutely over inputs, and use CSS sibling selectors with `:placeholder-shown` to manage their visibility cleanly.
+## 2026-06-30 - Convert emulated buttons to native button tags
+**Learning:** Using `span` elements with `role="button"` and `tabIndex="0"` is bad for accessibility as it requires manually managing keyboard events (Enter/Space) and often misses out on native screen reader benefits.
+**Action:** Always prefer semantic HTML tags like `<button>` over generic container tags (`span`, `div`) with ARIA roles when creating interactive click targets, using CSS resets (`background: transparent`, `border: none`) to bypass native styling if necessary.

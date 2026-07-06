@@ -133,6 +133,11 @@ def download_table(table: dict) -> dict:
 
     try:
         with zipfile.ZipFile(BytesIO(data)) as zf:
+            dest_resolved = dest_dir.resolve()
+            for member in zf.infolist():
+                member_path = (dest_dir / member.filename).resolve()
+                if not member_path.is_relative_to(dest_resolved):
+                    raise zipfile.BadZipFile(f"Path traversal attempt detected in ZIP: {member.filename}")
             zf.extractall(dest_dir)
     except zipfile.BadZipFile as exc:
         print(f'         ERROR extracting ZIP: {exc}')

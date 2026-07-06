@@ -205,20 +205,20 @@ def test_flood_all_tabs_switch_panels(page: Page):
     _load(page, FLOOD_URL)
 
     for tab_id in FLOOD_TABS:
-        page.evaluate(f"showTab('{tab_id}')")
+        page.locator(f".tab[onclick*=\"'{tab_id}'\"]").click()
         page.wait_for_timeout(TAB_TIMEOUT)
 
         active = page.locator(f'#panel-{tab_id}')
         classes = active.get_attribute('class') or ''
         assert 'active' in classes, (
-            f'#panel-{tab_id} not active after showTab("{tab_id}")'
+            f'#panel-{tab_id} not active after clicking tab "{tab_id}"'
         )
 
 
 def test_flood_gauge_chart_has_height(page: Page):
     """The gauge chart canvas must render with non-zero height."""
     _load(page, FLOOD_URL)
-    page.evaluate("showTab('gauge')")
+    page.locator(".tab[onclick*=\"'gauge'\"]").click()
     page.wait_for_timeout(TAB_TIMEOUT)
 
     height = page.evaluate(
@@ -230,7 +230,7 @@ def test_flood_gauge_chart_has_height(page: Page):
 def test_flood_slider_updates_britannia_level(page: Page):
     """Moving the slider must update the #levelDisplay value."""
     _load(page, FLOOD_URL)
-    page.evaluate("showTab('gauge')")
+    page.locator(".tab[onclick*=\"'gauge'\"]").click()
     page.wait_for_timeout(TAB_TIMEOUT)
 
     # Slider range is min=-1.00 max=3.00 (relative offset from base level)
@@ -256,7 +256,7 @@ def test_flood_slider_updates_britannia_level(page: Page):
 def test_flood_slider_updates_hull_level(page: Page):
     """Hull level (#hullDisplay) must co-update with the slider."""
     _load(page, FLOOD_URL)
-    page.evaluate("showTab('gauge')")
+    page.locator(".tab[onclick*=\"'gauge'\"]").click()
     page.wait_for_timeout(TAB_TIMEOUT)
 
     initial_hull = page.locator('#hullDisplay').inner_text()
@@ -275,7 +275,7 @@ def test_flood_slider_updates_hull_level(page: Page):
 def test_flood_history_chart_renders(page: Page):
     """Historical chart canvas must have non-zero height."""
     _load(page, FLOOD_URL)
-    page.evaluate("showTab('history')")
+    page.locator(".tab[onclick*=\"'history'\"]").click()
     page.wait_for_timeout(TAB_TIMEOUT)
 
     height = page.evaluate(
@@ -287,7 +287,7 @@ def test_flood_history_chart_renders(page: Page):
 def test_flood_snowpack_chart_renders(page: Page):
     """Snowpack chart must render on its tab."""
     _load(page, FLOOD_URL)
-    page.evaluate("showTab('snowpack')")
+    page.locator(".tab[onclick*=\"'snowpack'\"]").click()
     page.wait_for_timeout(TAB_TIMEOUT)
 
     height = page.evaluate("""
