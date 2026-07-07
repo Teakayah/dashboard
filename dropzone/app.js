@@ -346,14 +346,6 @@ function reloadWithoutSW() {
  * (preferring OPFS persistence if available), loading the delta extension,
  * and restoring the offline UI state. Includes a timeout fallback to handle
  * stale service worker scenarios.
- * Initializes the DuckDB-Wasm instance and configures the environment.
- * Sets up a timeout fallback if the Service Worker cache serves a stale or
- * corrupted Wasm bundle, offering the user a recovery button. Restores
- * previously loaded tables from OPFS on successful initialization.
- * Initializes the DuckDB-Wasm instance, establishing a connection and
- * instantiating the worker with the selected bundle.
- * Also configures a timeout to prompt users to bypass service workers if
- * the WebAssembly bundle fails to load.
  */
 async function init() {
     let timedOut = false;
@@ -468,41 +460,6 @@ async function restoreState() {
  * 3. Renders a mini Chart.js bar chart visualizing the top 10 most frequent values.
  *
  * @param {string} tableName - The name of the DuckDB table to describe and profile.
- * Fetches and renders the schema for a given DuckDB table in the UI.
- * Attaches click handlers to each column name that automatically insert
- * the column into the SQL editor and asynchronously profile the column
- * (calculating min, max, count, and rendering a top-10 distribution chart).
- *
- * @param {string} tableName - The name of the table to inspect and display.
- * Queries and renders the schema for a specific DuckDB table.
- * Analyzes column types to display visual indicators (like PK, FK, or type icons)
- * and attaches click handlers to columns to easily insert them into the SQL editor.
- * Queries the DuckDB instance for the schema of a specified table and renders
- * it to the UI. Also attaches click listeners to column names to support interactive
- * data profiling (calculating min, max, count, and value distributions).
- *
- * @param {string} tableName - The name of the table to describe.
- * Queries the DuckDB instance for a table's schema and renders an interactive column display.
- * Columns are presented as clickable elements that insert their name into the SQL editor.
- * Also performs async profiling on the selected column to calculate stats (min/max/count)
- * and generate a miniature distribution chart.
- *
- * @param {string} tableName - The name of the table to describe and render
- * Queries and renders the schema (column names and types) for a given table.
- * Attaches click handlers to each column name to allow quick insertion into the SQL editor.
- * Clicking a column also asynchronously triggers lightweight statistical profiling (min, max, count, and top 10 values)
- * and renders a mini-chart inline.
- * Queries DuckDB for the schema of a specific table and dynamically renders
- * a clickable UI list of its columns and types. Clicking a column inserts
- * its name into the active SQL editor.
- *
- * @param {string} tableName - The name of the DuckDB table to describe.
- * Queries the schema of a loaded table and renders its columns in the UI.
- * Attaches click handlers to each column pill that not only insert the column
- * name into the SQL editor but also execute hidden profiling queries (MIN, MAX, COUNT,
- * and top 10 frequencies) to dynamically render inline summary statistics.
- *
- * @param {string} tableName - The name of the table to describe
  */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
@@ -988,35 +945,6 @@ async function processFile(file, path) {
  * Orchestrates the UI updates immediately after a new table is registered in DuckDB.
  * Triggers schema display generation, instant chart previews, and sets a default
  * query in the SQL editor for the user.
- *
- * @param {string} tableName - The name of the newly loaded table
- * Orchestrates UI updates when a new table is successfully loaded into DuckDB.
- * Clears the schema display (if it's the first table), renders the new schema,
- * triggers instant chart generation for automatic insights, and populates the
- * SQL editor with a default SELECT query.
- * Orchestrates the UI updates required immediately after a new table is successfully
- * loaded into DuckDB. Triggers schema rendering, instant preview chart generation,
- * and populates the SQL editor with a default query.
- *
- * @param {string} tableName - The name of the newly loaded table.
- * Orchestrates the UI updates required when a new dataset table is loaded into DuckDB.
- * Clears prior schemas if this is the first table, renders the new schema,
- * automatically generates heuristic preview charts, and sets a default query in the editor.
- *
- * @param {string} tableName - The name of the newly loaded table
- * Handles the UI lifecycle events triggered after a new table is successfully loaded into DuckDB.
- * Updates the schema display, auto-generates heuristic chart previews, and populates
- * the SQL editor with a default SELECT query for the new dataset.
- *
- * @param {string} tableName - The name of the newly loaded table.
- * Orchestrates the UI updates immediately following the successful registration
- * of a new table in DuckDB. Refreshes the schema display, generates instant
- * preview charts based on column types, and populates a default SELECT query.
- *
- * @param {string} tableName - The name of the newly loaded DuckDB table.
- * Orchestrates the post-load UI sequence for a newly registered DuckDB table.
- * Triggers schema discovery, generates instant chart previews, and resets
- * the SQL editor to a default SELECT query.
  *
  * @param {string} tableName - The name of the newly loaded table
  */
