@@ -9,8 +9,7 @@ The feed is regenerated on every deploy so subscribers always see the latest upd
 import html as html_lib
 import json
 import re
-import subprocess
-from functools import lru_cache
+from deployment.git_utils import _get_batched_git_isos
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -27,7 +26,6 @@ def _load_descriptions() -> dict:
     return {}
 
 
-from .git_utils import _get_batched_git_isos
 
 
 def _extract_title(content: str, stem: str) -> str:

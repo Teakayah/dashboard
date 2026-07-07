@@ -10,6 +10,7 @@ import socket
 import sys
 import time
 import subprocess
+from deployment.git_utils import get_git_commit_times_batched
 from pathlib import Path
 
 # Import centralized configuration
@@ -21,7 +22,6 @@ except ImportError:
 PORT = 8765
 
 
-from .git_utils import get_git_commit_times_batched
 
 
 def needs_screenshot(name: str, html_ts: int, png_ts: int, force: bool = False) -> bool:
