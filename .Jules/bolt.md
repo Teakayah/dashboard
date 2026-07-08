@@ -43,3 +43,6 @@
 ## 2024-06-30 - Optimize DuckDB Arrow Struct Proxy Extraction
 **Learning:** When processing Arrow Struct Proxy objects (e.g., from DuckDB-Wasm `.toArray()`), the heavy property access overhead can be entirely bypassed. Calling `.toJSON()` on each row object converts the Proxy into a plain JavaScript object eagerly using Arrow's internal optimized path, which avoids the heavy proxy getter trap overhead for every cell.
 **Action:** When extracting data from DuckDB-Wasm Arrow result proxies, always call `.toJSON()` on the row objects before accessing fields.
+## 2024-05-18 - [Optimization of DuckDB-Wasm row extraction using toJSON]
+**Learning:** Extracting data from DuckDB-Wasm Arrow tables by iterating over the Proxies and accessing properties one-by-one is slow due to the overhead of proxy traps on every property access. By using `.toJSON()` we bypass these heavy proxy getter traps and improve extraction speed significantly.
+**Action:** Always call `.toJSON()` on each row object when extracting data from an Arrow Proxy to eagerly convert it to a plain object, bypassing getter traps.
