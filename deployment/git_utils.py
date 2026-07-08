@@ -57,11 +57,10 @@ def get_git_dates_batched(files: list[Path]) -> dict[Path, str]:
 
     for line, current_ts in raw_dates.items():
         p = ROOT / line
-        if p not in dates:
-            try:
-                dates[p] = datetime.fromisoformat(current_ts).strftime('%b %Y')
-            except Exception:
-                pass
+        try:
+            dates[p] = datetime.fromisoformat(current_ts).strftime('%b %Y')
+        except Exception:
+            pass
 
     # Fallback to mtime for files not in git or not returned
     for f in files:

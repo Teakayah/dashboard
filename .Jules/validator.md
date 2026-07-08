@@ -14,3 +14,7 @@ Assertion: By mocking `builtins.open` with `mock_open(read_data='')`, we can ver
 Coverage Gap: The `_read_csv_stripped` function in `scripts/benchmark_final_test.py` lacked test coverage for the `StopIteration` branch, which occurs when an empty CSV file is read and `next(reader)` fails to fetch the headers.
 Learning: Python's `csv.reader` raises a `StopIteration` error on an empty file. This edge case in helper scripts requires mocking `builtins.open` with empty data (`""`) to trigger correctly without producing file side effects.
 Assertion: Added a test utilizing `patch('builtins.open', mock_open(read_data=""))` to explicitly execute the `try/except StopIteration` block and verify it returns an empty list as intended.
+## 2024-07-08 - Cover deployment/git_utils.py
+Coverage Gap: The deployment/git_utils.py module had 0% coverage and lacked unit tests entirely. Within it, an unreachable else-branch caused coverage gaps when tested.
+Learning: Unreachable structural branches (like checking if a newly initialized dict contains a key immediately after iterating through a unique set of items) should be removed to simplify code and improve coverage reliably.
+Assertion: Added comprehensive pytest unit tests using unittest.mock.patch to mock subprocess.run, ensuring stable and deterministic testing of git log interactions across all functions.
