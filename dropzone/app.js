@@ -330,6 +330,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Forcefully unregisters all Service Workers and reloads the page.
+ * Acts as an escape hatch for when DuckDB-Wasm initialization persistently fails
+ * due to the browser aggressively caching stale or corrupted WebAssembly bundles.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
