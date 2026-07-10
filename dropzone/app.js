@@ -330,6 +330,12 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Unregisters all active Service Workers and forces a page reload.
+ * This serves as an intentional escape hatch to bypass persistently cached,
+ * potentially corrupted WebAssembly bundles (like DuckDB-Wasm) that can
+ * wedge the application initialization.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
