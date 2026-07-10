@@ -8,8 +8,6 @@ import argparse
 import html
 import json
 import re
-import subprocess
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
