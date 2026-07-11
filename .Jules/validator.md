@@ -14,3 +14,7 @@ Assertion: By mocking `builtins.open` with `mock_open(read_data='')`, we can ver
 Coverage Gap: The `_read_csv_stripped` function in `scripts/benchmark_final_test.py` lacked test coverage for the `StopIteration` branch, which occurs when an empty CSV file is read and `next(reader)` fails to fetch the headers.
 Learning: Python's `csv.reader` raises a `StopIteration` error on an empty file. This edge case in helper scripts requires mocking `builtins.open` with empty data (`""`) to trigger correctly without producing file side effects.
 Assertion: Added a test utilizing `patch('builtins.open', mock_open(read_data=""))` to explicitly execute the `try/except StopIteration` block and verify it returns an empty list as intended.
+## 2026-07-11 - Fix flaky wait parameter on page goto for WASM loads
+Coverage Gap: test_copy_json_shows_error_toast_on_failure in tests/test_dropzone.py timed out randomly during CI runs due to opaque origins.
+Learning: In Playwright UI tests, calling `page.goto()` without explicit wait options can cause flakiness or timeouts. For pages with heavy assets like WASM modules, we always need explicit configuration such as `wait_until="domcontentloaded"` and an extended timeout (e.g., `timeout=60000`).
+Assertion: Updated the `goto` call to include `wait_until="domcontentloaded", timeout=60000` to ensure stable test execution.
