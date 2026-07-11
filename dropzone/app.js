@@ -704,6 +704,11 @@ async function updateJoinColumns() {
     }
 }
 
+/**
+ * Updates the disabled state and tooltip text of console action buttons
+ * (Recipe Select, Export Database, Clear Storage) based on whether any
+ * tables are currently loaded.
+ */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
     recipeSelect.disabled = !hasData;
