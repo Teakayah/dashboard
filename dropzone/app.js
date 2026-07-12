@@ -1337,7 +1337,7 @@ async function runQuery() {
  */
 function renderResults(rows) {
     if (rows.length === 0) {
-        document.getElementById('results').textContent = 'No results';
+        document.getElementById('results').innerHTML = '<div style="padding: 3rem; text-align: center; color: var(--text-muted);"><div aria-hidden="true" style="font-size: 2rem; margin-bottom: 1rem;">📭</div><h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--text);">No results found</h3><p style="margin: 0; font-size: 0.9rem;">Try adjusting your query or loading different data.</p></div>';
         return;
     }
     const columns = Object.keys(rows[0]);
