@@ -19,6 +19,7 @@ let conn = null;
 let lastResult = null;
 let currentTableName = '';
 let loadedTables = new Set();
+let gridInstance = null;
 
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
@@ -78,6 +79,7 @@ function populateSelect(select, options, defaultMsg) {
     }
 }
 
+/**
  * Updates the DuckDB-Wasm initialization progress bar in the UI.
  * The progress bar is automatically hidden when progress is 0% or 100%.
  *
@@ -257,30 +259,15 @@ function getRows(result) {
         }
     } else {
         for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
+            const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
-                rowPlain[field] = rowObj[field];
+                const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
+                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
             }
             rows[i] = rowPlain;
-    for (let i = 0; i < numRows; i++) {
-        // Eagerly convert Arrow Struct Proxy to plain object to bypass getter traps
-        // Eagerly convert proxy to plain object for faster cell access
-        // Eagerly convert proxy to plain object to bypass heavy getter trap overhead
-        const rowObj = rawRows[i].toJSON();
-        // Bolt: Extract into plain object via .toJSON() to bypass proxy getter overhead on every cell
-        const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
-        // Performance optimization: call .toJSON() to eagerly convert the Arrow Proxy
-        // to a plain object using Arrow's internal optimized path, completely bypassing
-        // the heavy proxy getter trap overhead for every cell.
-        const rowObj = rawRows[i].toJSON();
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
     }
     return rows;
@@ -1336,25 +1323,33 @@ async function runQuery() {
  * @param {Array<Object>} rows - The plain array of row objects
  */
 function renderResults(rows) {
+    const resultsContainer = document.getElementById('results');
     if (rows.length === 0) {
-        document.getElementById('results').textContent = 'No results';
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        }
+        resultsContainer.textContent = 'No results';
         return;
     }
-    const columns = Object.keys(rows[0]);
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.textContent = '';
+    const columns = Object.keys(rows[0]).map(c => ({ id: c, name: c }));
     
     // Performance optimization: pass the plain objects array directly to data
     // and map columns with id keys to avoid array mapping overhead.
-    new gridjs.Grid({
-        columns: columns.map(c => ({ id: c, name: c })),
-        data: rows,
-        pagination: { limit: 10 },
-        sort: true,
-        search: true,
-        resizable: true,
-        style: { table: { 'white-space': 'nowrap' } }
-    }).render(resultsContainer);
+    if (gridInstance) {
+        gridInstance.updateConfig({ columns, data: rows }).forceRender();
+    } else {
+        resultsContainer.textContent = '';
+        gridInstance = new gridjs.Grid({
+            columns: columns,
+            data: rows,
+            pagination: { limit: 10 },
+            sort: true,
+            search: true,
+            resizable: true,
+            style: { table: { 'white-space': 'nowrap' } }
+        }).render(resultsContainer);
+    }
 }
 
 downloadBtn.addEventListener('click', async () => {
@@ -1478,6 +1473,10 @@ clearBtn.addEventListener('click', async () => {
         currentTableName = '';
         schemaDisplay.textContent = '';
         previewsContainer.textContent = '';
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        }
         document.getElementById('results').textContent = '';
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
