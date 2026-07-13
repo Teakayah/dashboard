@@ -330,6 +330,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Forcibly unregisters all active service workers before reloading the page.
+ * This is used as a fallback recovery mechanism to bypass stale or corrupt
+ * service worker caches that may be blocking DuckDB-Wasm initialization.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
