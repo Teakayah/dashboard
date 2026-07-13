@@ -679,25 +679,10 @@ async function updateJoinColumns() {
         
         const sharedCols = colsB.filter(c => colsA.has(c));
         
-        joinCol.textContent = '';
-        const defaultOpt = document.createElement('option');
-        defaultOpt.value = '';
-        defaultOpt.disabled = true;
-        defaultOpt.selected = true;
-        defaultOpt.textContent = 'Select Common Column...';
-        joinCol.appendChild(defaultOpt);
-        sharedCols.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c;
-            opt.textContent = c;
-            joinCol.appendChild(opt);
-        });
-
         if (sharedCols.length === 0) {
-            const opt = document.createElement('option');
-            opt.textContent = 'No shared columns found';
-            opt.disabled = true;
-            joinCol.appendChild(opt);
+            populateSelect(joinCol, [], 'No shared columns found');
+        } else {
+            populateSelect(joinCol, sharedCols, 'Select Common Column...');
         }
     } catch (err) {
         console.error('Error fetching columns for join:', err);
