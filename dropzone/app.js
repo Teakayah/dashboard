@@ -1337,7 +1337,13 @@ async function runQuery() {
  */
 function renderResults(rows) {
     if (rows.length === 0) {
-        document.getElementById('results').textContent = 'No results';
+        document.getElementById('results').innerHTML = `
+            <div class="empty">
+                <div aria-hidden="true">📊</div>
+                <strong>No results found</strong>
+                <p>The executed query returned zero rows. Adjust your SQL and try again.</p>
+            </div>
+        `;
         return;
     }
     const columns = Object.keys(rows[0]);
