@@ -330,6 +330,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Forcefully unregisters all Service Workers and reloads the page.
+ * Acts as a critical escape hatch for users stuck with a corrupted or
+ * incompatible DuckDB-Wasm bundle cached by the Service Worker.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
@@ -704,6 +709,10 @@ async function updateJoinColumns() {
     }
 }
 
+/**
+ * Updates the enabled/disabled state of console action buttons (recipes, export, clear).
+ * These actions require at least one table to be loaded into DuckDB to be functional.
+ */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
     recipeSelect.disabled = !hasData;

@@ -76,3 +76,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2025-05-06 - Document hidden UI profiling side-effects
 **Learning:** Functions like `displayTableSchema` often perform significantly more work than their names imply. It renders the schema, but also binds click handlers to columns that execute hidden DuckDB profiling queries (aggregations and top-10 frequencies) upon interaction.
 **Action:** When a UI function binds complex side-effect logic (like executing database queries) to elements it creates, explicitly document these hidden behaviors in the JSDoc to alert future developers to the full scope of the function's responsibilities.
+## $(date +%Y-%m-%d) - Documenting UI disabled state orchestration and Service Worker fallbacks
+**Learning:** Functions like `updateConsoleActionsUI` manage complex UI disabled states based on DuckDB state (e.g. data loaded), and `reloadWithoutSW` exists as a hidden but critical escape hatch for Wasm initialization failures. Without JSDoc, the prerequisites for the UI state and the critical "why" for the Service Worker workaround remain opaque to future maintainers.
+**Action:** When adding or maintaining UI orchestration logic tied to data state, or fallback mechanisms for heavy asset caching, always add explicit JSDoc comments to document prerequisites and the rationale for workarounds.
