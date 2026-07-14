@@ -43,3 +43,7 @@
 ## 2024-06-30 - Optimize DuckDB Arrow Struct Proxy Extraction
 **Learning:** When processing Arrow Struct Proxy objects (e.g., from DuckDB-Wasm `.toArray()`), the heavy property access overhead can be entirely bypassed. Calling `.toJSON()` on each row object converts the Proxy into a plain JavaScript object eagerly using Arrow's internal optimized path, which avoids the heavy proxy getter trap overhead for every cell.
 **Action:** When extracting data from DuckDB-Wasm Arrow result proxies, always call `.toJSON()` on the row objects before accessing fields.
+
+## 2026-06-30 - [Optimize Grid.js Virtual DOM Reuse]
+**Learning:** Re-rendering Grid.js by wiping the DOM container (`.textContent = ''`) and instantiating a new `gridjs.Grid` object on every query causes severe memory leaks because internal event listeners are never cleaned up.
+**Action:** Always store the grid instance and leverage its Virtual DOM by calling `gridInstance.updateConfig(gridConfig).forceRender()` for data updates, and strictly call `gridInstance.destroy()` when clearing the table entirely.
