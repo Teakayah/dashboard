@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, mock_open
 import importlib.util
 
 def run_script(script_name):
