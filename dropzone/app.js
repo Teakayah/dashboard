@@ -1337,7 +1337,7 @@ async function runQuery() {
  */
 function renderResults(rows) {
     if (rows.length === 0) {
-        document.getElementById('results').textContent = 'No results';
+        document.getElementById('results').innerHTML = '<div class="empty"><span aria-hidden="true">📭</span><br><br><strong>No results found</strong><br><br><span>Your query executed successfully but returned 0 rows.</span></div>';
         return;
     }
     const columns = Object.keys(rows[0]);
