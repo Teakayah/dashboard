@@ -76,3 +76,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2025-05-06 - Document hidden UI profiling side-effects
 **Learning:** Functions like `displayTableSchema` often perform significantly more work than their names imply. It renders the schema, but also binds click handlers to columns that execute hidden DuckDB profiling queries (aggregations and top-10 frequencies) upon interaction.
 **Action:** When a UI function binds complex side-effect logic (like executing database queries) to elements it creates, explicitly document these hidden behaviors in the JSDoc to alert future developers to the full scope of the function's responsibilities.
+## 2026-07-16 - Consolidating stacked malformed JSDoc comments
+**Learning:** Found multiple stacked, duplicate JSDoc comment blocks that were malformed (missing closing tags or improperly starting mid-block) above the `setProgress` and `renderHistory` functions in `dropzone/app.js`. These stacked comments actually caused a `SyntaxError: Unexpected token '*'` when the file was loaded as an ES module via `node --check`.
+**Action:** Always ensure JSDoc comments are a single, cleanly formatted block `/** ... */` immediately preceding the function. Duplicate or malformed stacked comments not only confuse documentation generators but can break module loading.

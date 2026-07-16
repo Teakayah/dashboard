@@ -78,23 +78,11 @@ function populateSelect(select, options, defaultMsg) {
     }
 }
 
+/**
  * Updates the DuckDB-Wasm initialization progress bar in the UI.
  * The progress bar is automatically hidden when progress is 0% or 100%.
  *
  * @param {number} percent - The current loading progress (0 to 100).
- * Updates the initialization progress bar UI during DuckDB-Wasm instantiation.
- * Hides the progress container if the percent is 0 or 100.
- *
- * @param {number} percent - The initialization progress percentage (0-100).
- * Updates the initialization progress bar in the UI.
- * Shows the progress bar if the percentage is between 0 and 100 (exclusive),
- * and hides it otherwise.
- *
- * @param {number} percent - The completion percentage to display (0-100)
- * Updates the DuckDB-Wasm initialization progress bar UI.
- * Toggles visibility of the progress container based on the percentage.
- *
- * @param {number} percent - The progress percentage (0-100)
  */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
@@ -123,12 +111,6 @@ function addToHistory(sql) {
 /**
  * Renders the user's recent SQL queries as clickable chips in the UI.
  * Rebuilds the history container based on the current state of `queryHistory`.
- * Renders the query history chips in the UI based on local storage state.
- * Creates clickable chips for up to 10 recent queries, allowing users to
- * quickly re-populate the SQL editor.
- * Renders the local query history as interactive UI chips.
- * Clears the existing history container and populates it with clickable chips
- * for up to 10 recent unique queries.
  */
 function renderHistory() {
     queryHistoryEl.textContent = '';
