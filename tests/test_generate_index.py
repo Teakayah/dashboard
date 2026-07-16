@@ -160,6 +160,24 @@ def test_inject_contrast_fix_is_idempotent():
     assert second.count('data-contrast-fix') == 1
 
 
+def test_inject_csp_adds_meta_tag():
+    module = load_generate_index_module()
+    content = '<html><head><title>Test</title></head><body></body></html>'
+    res = module.inject_csp(content, 'test.html')
+    assert 'Content-Security-Policy' in res
+    assert 'default-src' in res
+    assert 'script-src' in res
+
+
+def test_inject_csp_is_idempotent():
+    module = load_generate_index_module()
+    content = '<html><head><title>Test</title></head><body></body></html>'
+    first = module.inject_csp(content, 'test.html')
+    second = module.inject_csp(first, 'test.html')
+    assert first == second
+    assert second.count('Content-Security-Policy') == 1
+
+
 def test_inject_functions_handle_missing_tags():
     module = load_generate_index_module()
     content_no_tags = "<html><body>No head here</body></html>"
@@ -184,6 +202,11 @@ def test_inject_functions_handle_missing_tags():
     res4 = module.inject_favicon(content_no_tags, "test.html")
     assert res4 == content_no_tags
     assert isinstance(res4, str)
+
+    # inject_csp expects <head>
+    res5 = module.inject_csp(content_no_tags, "test.html")
+    assert res5 == content_no_tags
+    assert isinstance(res5, str)
 
 
 def test_inject_responsive_returns_early_if_marker_present():
