@@ -78,23 +78,11 @@ function populateSelect(select, options, defaultMsg) {
     }
 }
 
+/**
  * Updates the DuckDB-Wasm initialization progress bar in the UI.
  * The progress bar is automatically hidden when progress is 0% or 100%.
  *
  * @param {number} percent - The current loading progress (0 to 100).
- * Updates the initialization progress bar UI during DuckDB-Wasm instantiation.
- * Hides the progress container if the percent is 0 or 100.
- *
- * @param {number} percent - The initialization progress percentage (0-100).
- * Updates the initialization progress bar in the UI.
- * Shows the progress bar if the percentage is between 0 and 100 (exclusive),
- * and hides it otherwise.
- *
- * @param {number} percent - The completion percentage to display (0-100)
- * Updates the DuckDB-Wasm initialization progress bar UI.
- * Toggles visibility of the progress container based on the percentage.
- *
- * @param {number} percent - The progress percentage (0-100)
  */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
@@ -245,7 +233,7 @@ function getRows(result) {
 
     if (hasBigInt) {
         for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
+            const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
@@ -257,30 +245,13 @@ function getRows(result) {
         }
     } else {
         for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
+            const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
                 rowPlain[field] = rowObj[field];
             }
             rows[i] = rowPlain;
-    for (let i = 0; i < numRows; i++) {
-        // Eagerly convert Arrow Struct Proxy to plain object to bypass getter traps
-        // Eagerly convert proxy to plain object for faster cell access
-        // Eagerly convert proxy to plain object to bypass heavy getter trap overhead
-        const rowObj = rawRows[i].toJSON();
-        // Bolt: Extract into plain object via .toJSON() to bypass proxy getter overhead on every cell
-        const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
-        // Performance optimization: call .toJSON() to eagerly convert the Arrow Proxy
-        // to a plain object using Arrow's internal optimized path, completely bypassing
-        // the heavy proxy getter trap overhead for every cell.
-        const rowObj = rawRows[i].toJSON();
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
     }
     return rows;
