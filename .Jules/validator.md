@@ -14,3 +14,7 @@ Assertion: By mocking `builtins.open` with `mock_open(read_data='')`, we can ver
 Coverage Gap: The `_read_csv_stripped` function in `scripts/benchmark_final_test.py` lacked test coverage for the `StopIteration` branch, which occurs when an empty CSV file is read and `next(reader)` fails to fetch the headers.
 Learning: Python's `csv.reader` raises a `StopIteration` error on an empty file. This edge case in helper scripts requires mocking `builtins.open` with empty data (`""`) to trigger correctly without producing file side effects.
 Assertion: Added a test utilizing `patch('builtins.open', mock_open(read_data=""))` to explicitly execute the `try/except StopIteration` block and verify it returns an empty list as intended.
+## 2026-07-18 - Cover Insecure URL Scheme Checks in deployment scripts
+Coverage Gap: The `ValueError` exception branches for insecure URL schemes in `deployment/update_statcan_data.py` were missing test coverage.
+Learning: Testing branches that guard against modified constants (like hardcoded HTTPS URLs) requires explicitly patching those module-level constants (e.g., `_CHANGED_URL`, `_DL_URL`) in the tests to simulate the insecure configuration.
+Assertion: By using `patch('deployment.update_statcan_data._CHANGED_URL', 'ftp://...')` and `pytest.raises(ValueError)`, we can reliably trigger and test the security checks for URL schemes.
