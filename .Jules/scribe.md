@@ -76,3 +76,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2025-05-06 - Document hidden UI profiling side-effects
 **Learning:** Functions like `displayTableSchema` often perform significantly more work than their names imply. It renders the schema, but also binds click handlers to columns that execute hidden DuckDB profiling queries (aggregations and top-10 frequencies) upon interaction.
 **Action:** When a UI function binds complex side-effect logic (like executing database queries) to elements it creates, explicitly document these hidden behaviors in the JSDoc to alert future developers to the full scope of the function's responsibilities.
+
+## 2026-07-18 - Document DuckDB COPY Subquery Semicolon Syntax Error
+**Learning:** DuckDB's `COPY (<query>)` command wraps an inner subquery in parentheses. If the original user-provided `query` contains a trailing semicolon (e.g., `SELECT * FROM tbl;`), it causes a syntax error because semicolons are not allowed inside parentheses in DuckDB SQL.
+**Action:** Always strip trailing semicolons from user-provided SQL queries before wrapping them inside another DuckDB command or subquery, and document the regex stripping (e.g., `.replace(/;+$/, '')`) to prevent others from removing the "hack".
