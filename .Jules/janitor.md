@@ -55,3 +55,6 @@ Action: For statically configured developer-controlled URLs, just add `# nosec B
 ## 2026-06-28 - Consolidate duplicated logic
 Learning: Found duplicated logic handling `select` element DOM manipulation logic using the same `populateSelect` inner function structure in `dropzone/app.js` inside the `updateJoinUI` and `updateChartBuilderUI` scopes.
 Action: Extracted the inner functions into a global `populateSelect` function with optional fallback handling to remove the duplicative functionality in `dropzone/app.js`.
+## 2026-07-18 - Preserving Arrow Proxy optimizations during nested loop removal
+Learning: When cleaning up duplicated nested loops caused by merge conflicts in functions iterating over DuckDB-Wasm Arrow data structures (e.g., `getRows`), the surviving block must retain all critical performance optimizations, specifically the `.toJSON()` call used to eager-evaluate Arrow Proxies and bypass heavy getter traps.
+Action: Always meticulously verify that the deduplicated code block preserves any type casting or optimizations (like `.toJSON()`) from the deleted variants.
