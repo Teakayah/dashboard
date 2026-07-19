@@ -111,12 +111,6 @@ function addToHistory(sql) {
 /**
  * Renders the user's recent SQL queries as clickable chips in the UI.
  * Rebuilds the history container based on the current state of `queryHistory`.
- * Renders the query history chips in the UI based on local storage state.
- * Creates clickable chips for up to 10 recent queries, allowing users to
- * quickly re-populate the SQL editor.
- * Renders the local query history as interactive UI chips.
- * Clears the existing history container and populates it with clickable chips
- * for up to 10 recent unique queries.
  */
 function renderHistory() {
     queryHistoryEl.textContent = '';
@@ -254,7 +248,9 @@ function getRows(result) {
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
-                rowPlain[field] = rowObj[field];
+                const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
+                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
             }
             rows[i] = rowPlain;
         }
@@ -322,14 +318,6 @@ function reloadWithoutSW() {
  * (preferring OPFS persistence if available), loading the delta extension,
  * and restoring the offline UI state. Includes a timeout fallback to handle
  * stale service worker scenarios.
- * Initializes the DuckDB-Wasm instance and configures the environment.
- * Sets up a timeout fallback if the Service Worker cache serves a stale or
- * corrupted Wasm bundle, offering the user a recovery button. Restores
- * previously loaded tables from OPFS on successful initialization.
- * Initializes the DuckDB-Wasm instance, establishing a connection and
- * instantiating the worker with the selected bundle.
- * Also configures a timeout to prompt users to bypass service workers if
- * the WebAssembly bundle fails to load.
  */
 async function init() {
     let timedOut = false;
@@ -466,40 +454,15 @@ async function displayTableSchema(tableName) {
         btn.style.background = 'transparent';
         btn.style.border = 'none';
         btn.style.fontFamily = 'inherit';
-        btn.style.background = 'transparent';
-        btn.style.border = 'none';
-        btn.style.fontFamily = 'inherit';
         btn.style.fontSize = 'inherit';
-        btn.style.borderRadius = '4px';
-        btn.style.padding = '2px 4px';
         btn.style.transition = 'background-color 0.2s';
-        btn.style.fontSize = 'inherit';
-        btn.style.fontSize = 'inherit';
         btn.style.textAlign = 'left';
-        btn.textContent = `${r.column_name} (${r.column_type})`;
-        btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
-        const span = document.createElement('button');
-        span.className = 'clickable-col';
-        span.style.cursor = 'pointer';
-        span.style.textDecoration = 'underline';
-        span.style.marginRight = '8px';
-        span.style.color = 'var(--primary)';
-        span.style.borderRadius = '4px';
-        span.style.padding = '2px 4px';
-        span.style.background = 'transparent';
-        span.style.border = 'none';
-        span.style.fontFamily = 'inherit';
-        span.style.fontSize = 'inherit';
-        span.textContent = `${r.column_name} (${r.column_type})`;
-        span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
-        btn.style.fontSize = 'inherit';
         btn.textContent = `${r.column_name} (${r.column_type})`;
         btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
         const triggerAction = async (e) => {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${escapeId(r.column_name)}"`);
-            statusEl.textContent = `Inserted column ${r.column_name} into SQL editor`;
             statusEl.textContent = `Inserted column ${r.column_name}`;
             showToast(`Inserted column ${r.column_name}`, 'success');
             
@@ -558,7 +521,6 @@ async function displayTableSchema(tableName) {
                 triggerAction(e);
             }
         };
-        span.onclick = triggerAction;
 
         return btn;
     });
@@ -929,35 +891,6 @@ async function processFile(file, path) {
  * Orchestrates the UI updates immediately after a new table is registered in DuckDB.
  * Triggers schema display generation, instant chart previews, and sets a default
  * query in the SQL editor for the user.
- *
- * @param {string} tableName - The name of the newly loaded table
- * Orchestrates UI updates when a new table is successfully loaded into DuckDB.
- * Clears the schema display (if it's the first table), renders the new schema,
- * triggers instant chart generation for automatic insights, and populates the
- * SQL editor with a default SELECT query.
- * Orchestrates the UI updates required immediately after a new table is successfully
- * loaded into DuckDB. Triggers schema rendering, instant preview chart generation,
- * and populates the SQL editor with a default query.
- *
- * @param {string} tableName - The name of the newly loaded table.
- * Orchestrates the UI updates required when a new dataset table is loaded into DuckDB.
- * Clears prior schemas if this is the first table, renders the new schema,
- * automatically generates heuristic preview charts, and sets a default query in the editor.
- *
- * @param {string} tableName - The name of the newly loaded table
- * Handles the UI lifecycle events triggered after a new table is successfully loaded into DuckDB.
- * Updates the schema display, auto-generates heuristic chart previews, and populates
- * the SQL editor with a default SELECT query for the new dataset.
- *
- * @param {string} tableName - The name of the newly loaded table.
- * Orchestrates the UI updates immediately following the successful registration
- * of a new table in DuckDB. Refreshes the schema display, generates instant
- * preview charts based on column types, and populates a default SELECT query.
- *
- * @param {string} tableName - The name of the newly loaded DuckDB table.
- * Orchestrates the post-load UI sequence for a newly registered DuckDB table.
- * Triggers schema discovery, generates instant chart previews, and resets
- * the SQL editor to a default SELECT query.
  *
  * @param {string} tableName - The name of the newly loaded table
  */
