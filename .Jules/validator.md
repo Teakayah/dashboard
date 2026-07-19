@@ -22,3 +22,7 @@ Assertion: Do not use pytest-xdist (`-n auto`) for the full suite in this reposi
 Coverage Gap: test_copy_json_shows_error_toast_on_failure in tests/test_dropzone.py timed out randomly during CI runs due to opaque origins.
 Learning: In Playwright UI tests, calling `page.goto()` without explicit wait options can cause flakiness or timeouts. For pages with heavy assets like WASM modules, we always need explicit configuration such as `wait_until="domcontentloaded"` and an extended timeout (e.g., `timeout=60000`).
 Assertion: Updated the `goto` call to include `wait_until="domcontentloaded", timeout=60000` to ensure stable test execution.
+## 2026-07-15 - Fix Flaky Test Execution with pytest-xdist
+Coverage Gap: The test suite failed when run in parallel using pytest-xdist (e.g., `pytest -n auto`) because `tests/conftest.py` set up a local session-scoped `HTTPServer` on a hardcoded port (8765) that conflicted when initialized simultaneously by multiple worker processes, causing an `OSError: [Errno 98] Address already in use`.
+Learning: Pytest-xdist spins up multiple independent worker processes that re-evaluate session-scoped fixtures. If those fixtures bind to a specific static resource like a network port, conflicts will occur.
+Assertion: By moving the server initialization logic into the `pytest_configure` and `pytest_unconfigure` hooks and restricting its execution to the master node (checking for `hasattr(config, "workerinput")`), we can reliably spin up a single server instance accessible across all workers.
