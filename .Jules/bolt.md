@@ -43,3 +43,14 @@
 ## 2024-06-30 - Optimize DuckDB Arrow Struct Proxy Extraction
 **Learning:** When processing Arrow Struct Proxy objects (e.g., from DuckDB-Wasm `.toArray()`), the heavy property access overhead can be entirely bypassed. Calling `.toJSON()` on each row object converts the Proxy into a plain JavaScript object eagerly using Arrow's internal optimized path, which avoids the heavy proxy getter trap overhead for every cell.
 **Action:** When extracting data from DuckDB-Wasm Arrow result proxies, always call `.toJSON()` on the row objects before accessing fields.
+## 2024-07-04 - Concurrent Feed Generation
+**Learning:** Using list comprehensions for I/O bound tasks like reading local files can be inefficient compared to reading them concurrently. Using `concurrent.futures.ThreadPoolExecutor.map` provides a drop-in replacement that retains the order of elements while executing concurrently.
+**Action:** When mapping over items and executing blocking I/O tasks like `Path.read_text()` or `requests.get()`, apply concurrent execution via thread pools instead of sequential processing, especially if the impact is measurable.
+
+## 2026-07-04 - [Arrow Struct Proxy Optimization]
+**Learning:** In DuckDB-Wasm, query results returned as Apache Arrow Struct Proxy objects incur massive getter trap overhead for every cell access, causing UI crashes or severe lag during serialization or grid rendering.
+**Action:** Extract the rows using `.toArray()` and eagerly convert each row Proxy to a plain JavaScript object using `.toJSON()` before cell iteration, completely bypassing the proxy getter overhead.
+
+## 2026-07-18 - Prevent Grid.js Memory Leaks
+**Learning:** Wiping the DOM container (`.textContent = ''`) and creating a new `gridjs.Grid` instance for dynamic data causes severe memory leaks due to uncleaned event listeners.
+**Action:** Always maintain a reference to the initialized grid instance. Use `gridInstance.updateConfig({...}).forceRender()` to update data efficiently via its Virtual DOM, and explicitly call `gridInstance.destroy()` before clearing the container.

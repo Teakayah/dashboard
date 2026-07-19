@@ -28,18 +28,6 @@ WasmHandler.extensions_map.update({
 })
 
 
-@pytest.fixture(scope='session', autouse=True)
-def local_server():
-    """Serve the repo root over HTTP for the duration of the test session."""
-    server = HTTPServer(('127.0.0.1', PORT), WasmHandler)
-    thread = threading.Thread(target=server.serve_forever)
-    thread.daemon = True
-    thread.start()
-    yield server
-    server.shutdown()
-    server.server_close()
-
-
 @pytest.fixture()
 def dz(browser: Browser) -> Page:
     """Fresh browser context for Drop-Zone tests — clean IndexedDB, no stale SW."""
@@ -52,6 +40,18 @@ def dz(browser: Browser) -> Page:
     ctx.close()
 
 
-
 def pytest_configure(config):
     config.addinivalue_line('markers', 'mobile: mark test as a mobile-viewport test')
+    if not hasattr(config, "workerinput"):
+        # We are the master node (or not using xdist)
+        server = HTTPServer(('127.0.0.1', PORT), WasmHandler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.daemon = True
+        thread.start()
+        config._local_server = server
+
+def pytest_unconfigure(config):
+    server = getattr(config, "_local_server", None)
+    if server is not None:
+        server.shutdown()
+        server.server_close()
