@@ -246,6 +246,9 @@ function getRows(result) {
         }
     } else {
         for (let i = 0; i < numRows; i++) {
+            // Performance optimization: call .toJSON() to eagerly convert the Arrow Proxy
+            // to a plain object using Arrow's internal optimized path, completely bypassing
+            // the heavy proxy getter trap overhead for every cell.
             const rawObj = rawRows[i];
             const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
             const rowPlain = {};
@@ -1319,6 +1322,8 @@ downloadBtn.addEventListener('click', async () => {
     loadingOverlay.style.display = 'flex';
     try {
         const csvPath = 'export.csv';
+        // The user's query might end with a semicolon (e.g. `SELECT * FROM table;`).
+        // DuckDB's COPY wraps the query in parentheses, and a nested semicolon causes a syntax error.
         const userQuery = sqlInput.value.trim().replace(/;+$/, '');
         await conn.query(`COPY (${userQuery}) TO '${csvPath}' (HEADER, DELIMITER ',')`);
         
