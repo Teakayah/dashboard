@@ -17,6 +17,7 @@ const INIT_TIMEOUT_MS = 30000;
 let db = null;
 let conn = null;
 let lastResult = null;
+let gridInstance = null;
 let currentTableName = '';
 let loadedTables = new Set();
 
@@ -77,24 +78,11 @@ function populateSelect(select, options, defaultMsg) {
         select.value = currentVal;
     }
 }
-
+/**
  * Updates the DuckDB-Wasm initialization progress bar in the UI.
  * The progress bar is automatically hidden when progress is 0% or 100%.
  *
  * @param {number} percent - The current loading progress (0 to 100).
- * Updates the initialization progress bar UI during DuckDB-Wasm instantiation.
- * Hides the progress container if the percent is 0 or 100.
- *
- * @param {number} percent - The initialization progress percentage (0-100).
- * Updates the initialization progress bar in the UI.
- * Shows the progress bar if the percentage is between 0 and 100 (exclusive),
- * and hides it otherwise.
- *
- * @param {number} percent - The completion percentage to display (0-100)
- * Updates the DuckDB-Wasm initialization progress bar UI.
- * Toggles visibility of the progress container based on the percentage.
- *
- * @param {number} percent - The progress percentage (0-100)
  */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
@@ -123,12 +111,6 @@ function addToHistory(sql) {
 /**
  * Renders the user's recent SQL queries as clickable chips in the UI.
  * Rebuilds the history container based on the current state of `queryHistory`.
- * Renders the query history chips in the UI based on local storage state.
- * Creates clickable chips for up to 10 recent queries, allowing users to
- * quickly re-populate the SQL editor.
- * Renders the local query history as interactive UI chips.
- * Clears the existing history container and populates it with clickable chips
- * for up to 10 recent unique queries.
  */
 function renderHistory() {
     queryHistoryEl.textContent = '';
@@ -245,7 +227,8 @@ function getRows(result) {
 
     if (hasBigInt) {
         for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
+            const rawObj = rawRows[i];
+            const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
@@ -257,30 +240,19 @@ function getRows(result) {
         }
     } else {
         for (let i = 0; i < numRows; i++) {
-            const rowObj = rawRows[i];
+            // Performance optimization: call .toJSON() to eagerly convert the Arrow Proxy
+            // to a plain object using Arrow's internal optimized path, completely bypassing
+            // the heavy proxy getter trap overhead for every cell.
+            const rawObj = rawRows[i];
+            const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
-                rowPlain[field] = rowObj[field];
+                const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
+                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
             }
             rows[i] = rowPlain;
-    for (let i = 0; i < numRows; i++) {
-        // Eagerly convert Arrow Struct Proxy to plain object to bypass getter traps
-        // Eagerly convert proxy to plain object for faster cell access
-        // Eagerly convert proxy to plain object to bypass heavy getter trap overhead
-        const rowObj = rawRows[i].toJSON();
-        // Bolt: Extract into plain object via .toJSON() to bypass proxy getter overhead on every cell
-        const rowObj = rawRows[i].toJSON ? rawRows[i].toJSON() : rawRows[i];
-        // Performance optimization: call .toJSON() to eagerly convert the Arrow Proxy
-        // to a plain object using Arrow's internal optimized path, completely bypassing
-        // the heavy proxy getter trap overhead for every cell.
-        const rowObj = rawRows[i].toJSON();
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
     }
     return rows;
@@ -346,14 +318,6 @@ function reloadWithoutSW() {
  * (preferring OPFS persistence if available), loading the delta extension,
  * and restoring the offline UI state. Includes a timeout fallback to handle
  * stale service worker scenarios.
- * Initializes the DuckDB-Wasm instance and configures the environment.
- * Sets up a timeout fallback if the Service Worker cache serves a stale or
- * corrupted Wasm bundle, offering the user a recovery button. Restores
- * previously loaded tables from OPFS on successful initialization.
- * Initializes the DuckDB-Wasm instance, establishing a connection and
- * instantiating the worker with the selected bundle.
- * Also configures a timeout to prompt users to bypass service workers if
- * the WebAssembly bundle fails to load.
  */
 async function init() {
     let timedOut = false;
@@ -468,41 +432,6 @@ async function restoreState() {
  * 3. Renders a mini Chart.js bar chart visualizing the top 10 most frequent values.
  *
  * @param {string} tableName - The name of the DuckDB table to describe and profile.
- * Fetches and renders the schema for a given DuckDB table in the UI.
- * Attaches click handlers to each column name that automatically insert
- * the column into the SQL editor and asynchronously profile the column
- * (calculating min, max, count, and rendering a top-10 distribution chart).
- *
- * @param {string} tableName - The name of the table to inspect and display.
- * Queries and renders the schema for a specific DuckDB table.
- * Analyzes column types to display visual indicators (like PK, FK, or type icons)
- * and attaches click handlers to columns to easily insert them into the SQL editor.
- * Queries the DuckDB instance for the schema of a specified table and renders
- * it to the UI. Also attaches click listeners to column names to support interactive
- * data profiling (calculating min, max, count, and value distributions).
- *
- * @param {string} tableName - The name of the table to describe.
- * Queries the DuckDB instance for a table's schema and renders an interactive column display.
- * Columns are presented as clickable elements that insert their name into the SQL editor.
- * Also performs async profiling on the selected column to calculate stats (min/max/count)
- * and generate a miniature distribution chart.
- *
- * @param {string} tableName - The name of the table to describe and render
- * Queries and renders the schema (column names and types) for a given table.
- * Attaches click handlers to each column name to allow quick insertion into the SQL editor.
- * Clicking a column also asynchronously triggers lightweight statistical profiling (min, max, count, and top 10 values)
- * and renders a mini-chart inline.
- * Queries DuckDB for the schema of a specific table and dynamically renders
- * a clickable UI list of its columns and types. Clicking a column inserts
- * its name into the active SQL editor.
- *
- * @param {string} tableName - The name of the DuckDB table to describe.
- * Queries the schema of a loaded table and renders its columns in the UI.
- * Attaches click handlers to each column pill that not only insert the column
- * name into the SQL editor but also execute hidden profiling queries (MIN, MAX, COUNT,
- * and top 10 frequencies) to dynamically render inline summary statistics.
- *
- * @param {string} tableName - The name of the table to describe
  */
 async function displayTableSchema(tableName) {
     const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
@@ -525,40 +454,15 @@ async function displayTableSchema(tableName) {
         btn.style.background = 'transparent';
         btn.style.border = 'none';
         btn.style.fontFamily = 'inherit';
-        btn.style.background = 'transparent';
-        btn.style.border = 'none';
-        btn.style.fontFamily = 'inherit';
         btn.style.fontSize = 'inherit';
-        btn.style.borderRadius = '4px';
-        btn.style.padding = '2px 4px';
         btn.style.transition = 'background-color 0.2s';
-        btn.style.fontSize = 'inherit';
-        btn.style.fontSize = 'inherit';
         btn.style.textAlign = 'left';
-        btn.textContent = `${r.column_name} (${r.column_type})`;
-        btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
-        const span = document.createElement('button');
-        span.className = 'clickable-col';
-        span.style.cursor = 'pointer';
-        span.style.textDecoration = 'underline';
-        span.style.marginRight = '8px';
-        span.style.color = 'var(--primary)';
-        span.style.borderRadius = '4px';
-        span.style.padding = '2px 4px';
-        span.style.background = 'transparent';
-        span.style.border = 'none';
-        span.style.fontFamily = 'inherit';
-        span.style.fontSize = 'inherit';
-        span.textContent = `${r.column_name} (${r.column_type})`;
-        span.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
-        btn.style.fontSize = 'inherit';
         btn.textContent = `${r.column_name} (${r.column_type})`;
         btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
         
         const triggerAction = async (e) => {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${escapeId(r.column_name)}"`);
-            statusEl.textContent = `Inserted column ${r.column_name} into SQL editor`;
             statusEl.textContent = `Inserted column ${r.column_name}`;
             showToast(`Inserted column ${r.column_name}`, 'success');
             
@@ -617,7 +521,6 @@ async function displayTableSchema(tableName) {
                 triggerAction(e);
             }
         };
-        span.onclick = triggerAction;
 
         return btn;
     });
@@ -990,35 +893,6 @@ async function processFile(file, path) {
  * query in the SQL editor for the user.
  *
  * @param {string} tableName - The name of the newly loaded table
- * Orchestrates UI updates when a new table is successfully loaded into DuckDB.
- * Clears the schema display (if it's the first table), renders the new schema,
- * triggers instant chart generation for automatic insights, and populates the
- * SQL editor with a default SELECT query.
- * Orchestrates the UI updates required immediately after a new table is successfully
- * loaded into DuckDB. Triggers schema rendering, instant preview chart generation,
- * and populates the SQL editor with a default query.
- *
- * @param {string} tableName - The name of the newly loaded table.
- * Orchestrates the UI updates required when a new dataset table is loaded into DuckDB.
- * Clears prior schemas if this is the first table, renders the new schema,
- * automatically generates heuristic preview charts, and sets a default query in the editor.
- *
- * @param {string} tableName - The name of the newly loaded table
- * Handles the UI lifecycle events triggered after a new table is successfully loaded into DuckDB.
- * Updates the schema display, auto-generates heuristic chart previews, and populates
- * the SQL editor with a default SELECT query for the new dataset.
- *
- * @param {string} tableName - The name of the newly loaded table.
- * Orchestrates the UI updates immediately following the successful registration
- * of a new table in DuckDB. Refreshes the schema display, generates instant
- * preview charts based on column types, and populates a default SELECT query.
- *
- * @param {string} tableName - The name of the newly loaded DuckDB table.
- * Orchestrates the post-load UI sequence for a newly registered DuckDB table.
- * Triggers schema discovery, generates instant chart previews, and resets
- * the SQL editor to a default SELECT query.
- *
- * @param {string} tableName - The name of the newly loaded table
  */
 async function onTableLoaded(tableName) {
     // Show schema
@@ -1336,25 +1210,44 @@ async function runQuery() {
  * @param {Array<Object>} rows - The plain array of row objects
  */
 function renderResults(rows) {
+    const resultsContainer = document.getElementById('results');
     if (rows.length === 0) {
-        document.getElementById('results').textContent = 'No results';
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        }
+        document.getElementById('results').innerHTML = \`
+            <div class="empty" style="text-align: center; padding: 40px 20px;">
+                <svg aria-hidden="true" style="width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                </svg>
+                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 8px 0;">No results found</h3>
+                <p style="font-size: 0.9rem; margin: 0; color: var(--text-muted);">Your query executed successfully but returned 0 rows. Try adjusting your SQL conditions.</p>
+            </div>
+        \`;
         return;
     }
     const columns = Object.keys(rows[0]);
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.textContent = '';
     
     // Performance optimization: pass the plain objects array directly to data
     // and map columns with id keys to avoid array mapping overhead.
-    new gridjs.Grid({
-        columns: columns.map(c => ({ id: c, name: c })),
-        data: rows,
-        pagination: { limit: 10 },
-        sort: true,
-        search: true,
-        resizable: true,
-        style: { table: { 'white-space': 'nowrap' } }
-    }).render(resultsContainer);
+    if (gridInstance) {
+        gridInstance.updateConfig({
+            columns: columns.map(c => ({ id: c, name: c })),
+            data: rows
+        }).forceRender();
+    } else {
+        resultsContainer.textContent = '';
+        gridInstance = new gridjs.Grid({
+            columns: columns.map(c => ({ id: c, name: c })),
+            data: rows,
+            pagination: { limit: 10 },
+            sort: true,
+            search: true,
+            resizable: true,
+            style: { table: { 'white-space': 'nowrap' } }
+        }).render(resultsContainer);
+    }
 }
 
 downloadBtn.addEventListener('click', async () => {
@@ -1362,6 +1255,8 @@ downloadBtn.addEventListener('click', async () => {
     loadingOverlay.style.display = 'flex';
     try {
         const csvPath = 'export.csv';
+        // The user's query might end with a semicolon (e.g. `SELECT * FROM table;`).
+        // DuckDB's COPY wraps the query in parentheses, and a nested semicolon causes a syntax error.
         const userQuery = sqlInput.value.trim().replace(/;+$/, '');
         await conn.query(`COPY (${userQuery}) TO '${csvPath}' (HEADER, DELIMITER ',')`);
         
@@ -1478,6 +1373,10 @@ clearBtn.addEventListener('click', async () => {
         currentTableName = '';
         schemaDisplay.textContent = '';
         previewsContainer.textContent = '';
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        }
         document.getElementById('results').textContent = '';
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
