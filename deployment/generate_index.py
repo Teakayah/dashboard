@@ -31,7 +31,10 @@ def load_descriptions() -> dict:
     return {}
 
 
-from .git_utils import get_git_dates_batched
+try:
+    from git_utils import get_git_dates_batched
+except ImportError:
+    from deployment.git_utils import get_git_dates_batched
 
 
 def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None, git_date: Optional[str] = None) -> dict:
