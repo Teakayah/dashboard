@@ -17,6 +17,7 @@ const INIT_TIMEOUT_MS = 30000;
 let db = null;
 let conn = null;
 let lastResult = null;
+let gridInstance = null;
 let currentTableName = '';
 let loadedTables = new Set();
 
@@ -77,25 +78,11 @@ function populateSelect(select, options, defaultMsg) {
         select.value = currentVal;
     }
 }
-
 /**
  * Updates the DuckDB-Wasm initialization progress bar in the UI.
  * The progress bar is automatically hidden when progress is 0% or 100%.
  *
  * @param {number} percent - The current loading progress (0 to 100).
- * Updates the initialization progress bar UI during DuckDB-Wasm instantiation.
- * Hides the progress container if the percent is 0 or 100.
- *
- * @param {number} percent - The initialization progress percentage (0-100).
- * Updates the initialization progress bar in the UI.
- * Shows the progress bar if the percentage is between 0 and 100 (exclusive),
- * and hides it otherwise.
- *
- * @param {number} percent - The completion percentage to display (0-100)
- * Updates the DuckDB-Wasm initialization progress bar UI.
- * Toggles visibility of the progress container based on the percentage.
- *
- * @param {number} percent - The progress percentage (0-100)
  */
 function setProgress(percent) {
     if (percent > 0 && percent < 100) {
@@ -1287,7 +1274,12 @@ async function runQuery() {
  * @param {Array<Object>} rows - The plain array of row objects
  */
 function renderResults(rows) {
+    const resultsContainer = document.getElementById('results');
     if (rows.length === 0) {
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        }
         document.getElementById('results').innerHTML = \`
             <div class="empty" style="text-align: center; padding: 40px 20px;">
                 <svg aria-hidden="true" style="width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1300,20 +1292,26 @@ function renderResults(rows) {
         return;
     }
     const columns = Object.keys(rows[0]);
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.textContent = '';
     
     // Performance optimization: pass the plain objects array directly to data
     // and map columns with id keys to avoid array mapping overhead.
-    new gridjs.Grid({
-        columns: columns.map(c => ({ id: c, name: c })),
-        data: rows,
-        pagination: { limit: 10 },
-        sort: true,
-        search: true,
-        resizable: true,
-        style: { table: { 'white-space': 'nowrap' } }
-    }).render(resultsContainer);
+    if (gridInstance) {
+        gridInstance.updateConfig({
+            columns: columns.map(c => ({ id: c, name: c })),
+            data: rows
+        }).forceRender();
+    } else {
+        resultsContainer.textContent = '';
+        gridInstance = new gridjs.Grid({
+            columns: columns.map(c => ({ id: c, name: c })),
+            data: rows,
+            pagination: { limit: 10 },
+            sort: true,
+            search: true,
+            resizable: true,
+            style: { table: { 'white-space': 'nowrap' } }
+        }).render(resultsContainer);
+    }
 }
 
 downloadBtn.addEventListener('click', async () => {
@@ -1437,6 +1435,10 @@ clearBtn.addEventListener('click', async () => {
         currentTableName = '';
         schemaDisplay.textContent = '';
         previewsContainer.textContent = '';
+        if (gridInstance) {
+            gridInstance.destroy();
+            gridInstance = null;
+        }
         document.getElementById('results').textContent = '';
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
