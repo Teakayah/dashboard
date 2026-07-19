@@ -88,15 +88,14 @@ class TestDropzoneButtons:
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
-        try:
-            with dz.expect_download(timeout=8_000) as dl_info:
-                dz.locator("#export-db").click()
-            dl = dl_info.value
-            assert dl.suggested_filename.endswith(".db"), (
-                f"Unexpected filename: {dl.suggested_filename!r}"
-            )
-        except Exception:
-            pass
+        import os
+        with dz.expect_download(timeout=8_000) as dl_info:
+            dz.locator("#export-db").click()
+        dl = dl_info.value
+        assert dl.suggested_filename.endswith(".db"), (
+            f"Unexpected filename: {dl.suggested_filename!r}"
+        )
+        assert os.path.getsize(dl.path()) > 0, "Downloaded file is empty"
 
     def test_clear_data_button_wipes_schema(self, dz: Page):
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)

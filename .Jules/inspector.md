@@ -39,3 +39,7 @@
 ## 2026-06-28 - Flaky tests due to missing wait options in Playwright's goto
 **Learning:** Calling `page.goto(url)` without `wait_until="domcontentloaded"` and a suitable timeout can lead to flaky tests, especially when testing WASM modules or other heavy resources. Playwright tests could fail with timeouts or errors related to opaque origins when trying to grant permissions (e.g., clipboard) because the navigation hasn't completed or has barely started.
 **Action:** Always provide explicit wait options like `wait_until="domcontentloaded"` and `timeout=60000` when calling `page.goto()` in Playwright tests to ensure the page is adequately loaded before interacting with elements or granting permissions.
+
+## 2026-07-17 - Testing Playwright File Downloads
+**Learning:** Testing file downloads in Playwright requires verifying that the downloaded file is not an empty artifact. Catch-all `try...except Exception: pass` blocks can silently hide download failures.
+**Action:** Always assert the file size of the downloaded file using `os.path.getsize(dl.path()) > 0` (ensure to use synchronous `dl.path()` instead of `await dl.path()` in synchronous tests) and avoid swallowing exceptions when testing file downloads.
