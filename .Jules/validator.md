@@ -18,3 +18,7 @@ Assertion: Added a test utilizing `patch('builtins.open', mock_open(read_data=""
 Coverage Gap: `deployment/git_utils.py` had missing edge case coverage, and the entire test suite timed out or threw address conflicts.
 Learning: In this repository, running the test suite in parallel using pytest-xdist (e.g., `pytest -n auto`) causes an `OSError: [Errno 98] Address already in use`. This occurs because `tests/conftest.py` sets up a local session-scoped `HTTPServer` on a hardcoded port (8765) that conflicts when initialized simultaneously by multiple worker processes.
 Assertion: Do not use pytest-xdist (`-n auto`) for the full suite in this repository unless the `conftest.py` is refactored. Run subsets of tests sequentially or mock side effects to keep runs fast.
+## 2026-07-11 - Fix flaky wait parameter on page goto for WASM loads
+Coverage Gap: test_copy_json_shows_error_toast_on_failure in tests/test_dropzone.py timed out randomly during CI runs due to opaque origins.
+Learning: In Playwright UI tests, calling `page.goto()` without explicit wait options can cause flakiness or timeouts. For pages with heavy assets like WASM modules, we always need explicit configuration such as `wait_until="domcontentloaded"` and an extended timeout (e.g., `timeout=60000`).
+Assertion: Updated the `goto` call to include `wait_until="domcontentloaded", timeout=60000` to ensure stable test execution.

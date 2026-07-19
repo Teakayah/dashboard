@@ -321,7 +321,7 @@ def test_copy_json_copies_to_clipboard(dz: Page):
 
 def test_copy_json_shows_error_toast_on_failure(dz: Page):
     """Clicking Copy JSON when clipboard fails must show an error toast."""
-    dz.goto(DROPZONE)
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
     dz.locator('#load-samples').click()
