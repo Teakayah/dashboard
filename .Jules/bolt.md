@@ -51,3 +51,6 @@
 **Learning:** In DuckDB-Wasm, query results returned as Apache Arrow Struct Proxy objects incur massive getter trap overhead for every cell access, causing UI crashes or severe lag during serialization or grid rendering.
 **Action:** Extract the rows using `.toArray()` and eagerly convert each row Proxy to a plain JavaScript object using `.toJSON()` before cell iteration, completely bypassing the proxy getter overhead.
 
+## 2026-07-18 - Prevent Grid.js Memory Leaks
+**Learning:** Wiping the DOM container (`.textContent = ''`) and creating a new `gridjs.Grid` instance for dynamic data causes severe memory leaks due to uncleaned event listeners.
+**Action:** Always maintain a reference to the initialized grid instance. Use `gridInstance.updateConfig({...}).forceRender()` to update data efficiently via its Virtual DOM, and explicitly call `gridInstance.destroy()` before clearing the container.
