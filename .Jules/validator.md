@@ -26,3 +26,7 @@ Assertion: Updated the `goto` call to include `wait_until="domcontentloaded", ti
 Coverage Gap: The test suite failed when run in parallel using pytest-xdist (e.g., `pytest -n auto`) because `tests/conftest.py` set up a local session-scoped `HTTPServer` on a hardcoded port (8765) that conflicted when initialized simultaneously by multiple worker processes, causing an `OSError: [Errno 98] Address already in use`.
 Learning: Pytest-xdist spins up multiple independent worker processes that re-evaluate session-scoped fixtures. If those fixtures bind to a specific static resource like a network port, conflicts will occur.
 Assertion: By moving the server initialization logic into the `pytest_configure` and `pytest_unconfigure` hooks and restricting its execution to the master node (checking for `hasattr(config, "workerinput")`), we can reliably spin up a single server instance accessible across all workers.
+## 2026-07-18 - Cover Insecure URL Scheme Checks in deployment scripts
+Coverage Gap: The `ValueError` exception branches for insecure URL schemes in `deployment/update_statcan_data.py` were missing test coverage.
+Learning: Testing branches that guard against modified constants (like hardcoded HTTPS URLs) requires explicitly patching those module-level constants (e.g., `_CHANGED_URL`, `_DL_URL`) in the tests to simulate the insecure configuration.
+Assertion: By using `patch('deployment.update_statcan_data._CHANGED_URL', 'ftp://...')` and `pytest.raises(ValueError)`, we can reliably trigger and test the security checks for URL schemes.

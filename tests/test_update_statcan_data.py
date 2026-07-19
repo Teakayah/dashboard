@@ -66,6 +66,19 @@ def test_fetch_changed_since_url_error(capsys):
         captured = capsys.readouterr()
         assert "WARNING: changed-cubes API call failed (<urlopen error Network unreachable>) — will download all." in captured.out
 
+def test_fetch_changed_since_insecure_url():
+    from deployment.update_statcan_data import fetch_changed_since
+    with patch('deployment.update_statcan_data._CHANGED_URL', 'ftp://example.com/{date}'):
+        with pytest.raises(ValueError, match="Insecure URL scheme"):
+            fetch_changed_since(date(2023, 1, 1))
+
+def test_download_table_insecure_url(tmp_path):
+    from deployment.update_statcan_data import download_table
+    table = {'id': '12345678', 'desc': 'Test Table', 'path': tmp_path / '12345678'}
+    with patch('deployment.update_statcan_data._DL_URL', 'file:///etc/passwd/{pid}'):
+        with pytest.raises(ValueError, match="Insecure URL scheme"):
+            download_table(table)
+
 def test_fetch_changed_since_invalid_json():
     """Test that invalid JSON from Stats Canada API returns None."""
     with patch('urllib.request.urlopen') as mock_urlopen:
