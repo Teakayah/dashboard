@@ -28,7 +28,10 @@ def _load_descriptions() -> dict:
     return {}
 
 
-from .git_utils import _get_batched_git_isos
+try:
+    from git_utils import _get_batched_git_isos
+except ImportError:
+    from deployment.git_utils import _get_batched_git_isos
 
 
 def _extract_title(content: str, stem: str) -> str:
