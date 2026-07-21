@@ -217,6 +217,29 @@ function getRows(result) {
     const rawRows = result.toArray();
     const rows = new Array(numRows);
 
+    // Fast path: Check if there are any BigInt-like fields in the schema.
+    let hasBigInt = false;
+    for (const f of result.schema.fields) {
+        if (f.type) {
+            const bitWidth = f.type.bitWidth;
+            const tStr = typeof f.type.toString === 'function' ? f.type.toString() : '';
+            if (bitWidth === 64 || tStr.includes('Int64') || tStr.includes('Timestamp') || tStr.includes('Time64') || tStr.includes('Decimal')) {
+                hasBigInt = true;
+                break;
+            }
+        }
+    }
+
+    if (!hasBigInt) {
+        // Fast mapping path: No BigInt casting needed
+        for (let i = 0; i < numRows; i++) {
+            const rawObj = rawRows[i];
+            rows[i] = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
+        }
+        return rows;
+    }
+
+    // Fallback path: Cell-level BigInt checking required
     for (let i = 0; i < numRows; i++) {
         const rawObj = rawRows[i];
         const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;

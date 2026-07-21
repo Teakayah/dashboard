@@ -54,3 +54,6 @@
 ## 2026-07-18 - Prevent Grid.js Memory Leaks
 **Learning:** Wiping the DOM container (`.textContent = ''`) and creating a new `gridjs.Grid` instance for dynamic data causes severe memory leaks due to uncleaned event listeners.
 **Action:** Always maintain a reference to the initialized grid instance. Use `gridInstance.updateConfig({...}).forceRender()` to update data efficiently via its Virtual DOM, and explicitly call `gridInstance.destroy()` before clearing the container.
+## $(date +%Y-%m-%d) - [Optimize DuckDB-Wasm Arrow data extraction]
+**Learning:** Iterating over every cell of a DuckDB-Wasm result to perform a `typeof === 'bigint'` check incurs heavy CPU overhead during table rendering. However, you can inspect `result.schema.fields` first for 64-bit width or types like 'Int64', 'Timestamp', or 'Decimal'. If absent, you can completely bypass the nested cell iteration and directly map rows using `.toJSON()`.
+**Action:** When extracting data from DuckDB-Wasm Arrow results, implement a fast-path mapping that avoids per-cell BigInt type-checks for schemas that only contain standard primitive types.
