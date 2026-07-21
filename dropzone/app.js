@@ -276,6 +276,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Unregisters all active service workers and forcefully reloads the page.
+ * This acts as an intentional escape hatch to bypass stale or corrupt
+ * service worker caches that can cause DuckDB-Wasm initialization to hang.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
