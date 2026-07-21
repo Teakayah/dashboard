@@ -207,14 +207,6 @@ function escapeId(str) {
 function getRows(result) {
     if (!result || !result.schema) return [];
 
-    let hasBigInt = false;
-    for (const f of result.schema.fields) {
-        if (f.type && (f.type.bitWidth === 64 || String(f.type).match(/Int64|Timestamp|Time64|Decimal/i))) {
-            hasBigInt = true;
-            break;
-        }
-    }
-
     const fields = result.schema.fields.map(f => f.name);
     const numFields = fields.length;
     const numRows = result.numRows;
@@ -225,35 +217,17 @@ function getRows(result) {
     const rawRows = result.toArray();
     const rows = new Array(numRows);
 
-    if (hasBigInt) {
-        for (let i = 0; i < numRows; i++) {
-            const rawObj = rawRows[i];
-            const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
-            const rowPlain = {};
-            for (let j = 0; j < numFields; j++) {
-                const field = fields[j];
-                const val = rowObj[field];
-                // Cast BigInts to strings for UI/JSON compatibility
-                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
-            }
-            rows[i] = rowPlain;
+    for (let i = 0; i < numRows; i++) {
+        const rawObj = rawRows[i];
+        const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
+        const rowPlain = {};
+        for (let j = 0; j < numFields; j++) {
+            const field = fields[j];
+            const val = rowObj[field];
+            // Cast BigInts to strings for UI/JSON compatibility
+            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
         }
-    } else {
-        for (let i = 0; i < numRows; i++) {
-            // Performance optimization: call .toJSON() to eagerly convert the Arrow Proxy
-            // to a plain object using Arrow's internal optimized path, completely bypassing
-            // the heavy proxy getter trap overhead for every cell.
-            const rawObj = rawRows[i];
-            const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
-            const rowPlain = {};
-            for (let j = 0; j < numFields; j++) {
-                const field = fields[j];
-                const val = rowObj[field];
-                // Cast BigInts to strings for UI/JSON compatibility
-                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
-            }
-            rows[i] = rowPlain;
-        }
+        rows[i] = rowPlain;
     }
     return rows;
 }
@@ -1216,7 +1190,7 @@ function renderResults(rows) {
             gridInstance.destroy();
             gridInstance = null;
         }
-        document.getElementById('results').innerHTML = \`
+        document.getElementById('results').innerHTML = `
             <div class="empty" style="text-align: center; padding: 40px 20px;">
                 <svg aria-hidden="true" style="width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
@@ -1224,7 +1198,7 @@ function renderResults(rows) {
                 <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 8px 0;">No results found</h3>
                 <p style="font-size: 0.9rem; margin: 0; color: var(--text-muted);">Your query executed successfully but returned 0 rows. Try adjusting your SQL conditions.</p>
             </div>
-        \`;
+        `;
         return;
     }
     const columns = Object.keys(rows[0]);
