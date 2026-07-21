@@ -586,6 +586,10 @@ async function updateJoinColumns() {
     }
 }
 
+/**
+ * Toggles the disabled state of the Console Actions buttons (e.g. Export, Clear).
+ * Requires at least 1 loaded table to be active to enable the buttons.
+ */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
     recipeSelect.disabled = !hasData;
