@@ -586,6 +586,12 @@ async function updateJoinColumns() {
     }
 }
 
+/**
+ * Updates the disabled state and tooltip text of console action buttons
+ * based on whether any tables are currently loaded into the DuckDB instance.
+ * Prevents users from attempting to run recipes, export, or clear data
+ * when the workspace is empty.
+ */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
     recipeSelect.disabled = !hasData;

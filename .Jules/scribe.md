@@ -80,3 +80,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-07-18 - Document DuckDB COPY Subquery Semicolon Syntax Error
 **Learning:** DuckDB's `COPY (<query>)` command wraps an inner subquery in parentheses. If the original user-provided `query` contains a trailing semicolon (e.g., `SELECT * FROM tbl;`), it causes a syntax error because semicolons are not allowed inside parentheses in DuckDB SQL.
 **Action:** Always strip trailing semicolons from user-provided SQL queries before wrapping them inside another DuckDB command or subquery, and document the regex stripping (e.g., `.replace(/;+$/, '')`) to prevent others from removing the "hack".
+
+## $(date +%Y-%m-%d) - Documenting Console Action UI state dependencies
+**Learning:** Functions like `updateConsoleActionsUI` in `dropzone/app.js` tightly couple multiple UI element states (e.g., buttons being disabled/enabled) directly to the internal data state (like whether tables are loaded). Without documentation, it's not immediately obvious to readers why or when these buttons unlock.
+**Action:** Always document functions that act as centralized UI state syncs. Explain the conditions that trigger the state changes (e.g., "when the workspace is empty") to make the user experience design clear to future maintainers without them having to trace the `disabled` property assignments.
