@@ -170,6 +170,29 @@ def test_load_last_checked_invalid_date(tmp_path):
         assert _load_last_checked() is None
 
 @patch('deployment.update_statcan_data._get_end_period')
+@patch('urllib.request.urlopen')
+def test_download_table_path_traversal(mock_urlopen, mock_get_end_period, tmp_path):
+    from deployment.update_statcan_data import download_table
+    table = {'id': '12345678', 'desc': 'Test Table', 'path': tmp_path / '12345678'}
+    mock_get_end_period.return_value = '2023-01'
+
+    import zipfile
+    from io import BytesIO
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w') as zf:
+        zf.writestr('../traversal.csv', 'dummy data')
+
+    mock_resp = MagicMock()
+    mock_resp.read.return_value = zip_buffer.getvalue()
+    mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+    result = download_table(table)
+
+    assert result['id'] == '12345678'
+    assert result['updated'] is False
+    assert "Path traversal attempt detected" in result['error']
+
+@patch('deployment.update_statcan_data._get_end_period')
 @patch('zipfile.ZipFile')
 @patch('urllib.request.urlopen')
 def test_download_table_success(mock_urlopen, mock_zipfile, mock_get_end_period, tmp_path):
