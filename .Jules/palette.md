@@ -60,3 +60,6 @@
 ## 2026-06-30 - Convert emulated buttons to native button tags
 **Learning:** Using `span` elements with `role="button"` and `tabIndex="0"` is bad for accessibility as it requires manually managing keyboard events (Enter/Space) and often misses out on native screen reader benefits.
 **Action:** Always prefer semantic HTML tags like `<button>` over generic container tags (`span`, `div`) with ARIA roles when creating interactive click targets, using CSS resets (`background: transparent`, `border: none`) to bypass native styling if necessary.
+## 2026-07-22 - Added loading state to Run Query button
+**Learning:** For async operations taking variable time (like DuckDB WASM queries), relying purely on full-page loading overlays can be jarring. Adding localized inline button loading text ("Running...") keeps context on the action while preventing double-submission.
+**Action:** Always complement generic loading overlays with specific button-level feedback for primary user actions.
