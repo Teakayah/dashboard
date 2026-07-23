@@ -30,3 +30,7 @@ Assertion: By moving the server initialization logic into the `pytest_configure`
 Coverage Gap: The `ValueError` exception branches for insecure URL schemes in `deployment/update_statcan_data.py` were missing test coverage.
 Learning: Testing branches that guard against modified constants (like hardcoded HTTPS URLs) requires explicitly patching those module-level constants (e.g., `_CHANGED_URL`, `_DL_URL`) in the tests to simulate the insecure configuration.
 Assertion: By using `patch('deployment.update_statcan_data._CHANGED_URL', 'ftp://...')` and `pytest.raises(ValueError)`, we can reliably trigger and test the security checks for URL schemes.
+## 2026-07-23 - Remove Unreachable URL Check in Flood Data Fetch
+Coverage Gap: The `ValueError` exception block in `deployment/update_flood_data.py` (`fetch_gauge_data`) for insecure URLs had 0% coverage and could not be tested because the `url` was locally initialized with a hardcoded `https://` prefix.
+Learning: Code with hardcoded initialization of trusted values (like URLs) often contains redundant security checks that are impossible to hit in practice, creating permanent line coverage gaps.
+Assertion: When encountering untestable line coverage gaps caused by unreachable logical branches, refactor the code to remove the redundant condition instead of attempting to write impossible mock tests.
