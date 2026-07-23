@@ -586,6 +586,11 @@ async function updateJoinColumns() {
     }
 }
 
+/**
+ * Updates the disabled state and tooltips for global console action buttons
+ * (Query Recipes, Export DB, Clear Data). These actions require at least one
+ * loaded table to function; otherwise, they are disabled with an explanatory tooltip.
+ */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
     recipeSelect.disabled = !hasData;
