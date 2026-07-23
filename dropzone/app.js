@@ -215,6 +215,15 @@ function getRows(result) {
     // and eagerly convert the row Proxy into a plain JavaScript object using .toJSON().
     // This completely bypasses the heavy proxy getter trap overhead for every cell.
     const rawRows = result.toArray();
+
+    // Check if the schema has any fields that could be BigInts
+    const hasBigInt = result.schema.fields.some(f => (f.type && f.type.bitWidth === 64) || ['Int64', 'Timestamp', 'Time64', 'Decimal'].some(sig => String(f.type).includes(sig)));
+
+    // Fast path: bypass per-cell checking if no BigInts exist
+    if (!hasBigInt) {
+        return rawRows.map(r => (r && typeof r.toJSON === 'function') ? r.toJSON() : r);
+    }
+
     const rows = new Array(numRows);
 
     for (let i = 0; i < numRows; i++) {
