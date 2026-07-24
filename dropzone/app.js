@@ -281,11 +281,11 @@ function showInitError(message) {
  * This acts as an intentional escape hatch to bypass stale or corrupt
  * service worker caches that can cause DuckDB-Wasm initialization to hang.
  */
-function reloadWithoutSW() {
+async function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations()
-            .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-            .then(() => location.reload());
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+        location.reload();
     } else {
         location.reload();
     }
@@ -1255,17 +1255,18 @@ downloadBtn.addEventListener('click', async () => {
     }
 });
 
-copyJsonBtn.addEventListener('click', () => {
+copyJsonBtn.addEventListener('click', async () => {
     if (!lastResult) return;
     const json = JSON.stringify(lastResult, null, 2);
-    navigator.clipboard.writeText(json).then(() => {
+    try {
+        await navigator.clipboard.writeText(json);
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
-    }).catch(err => {
+    } catch (err) {
         console.error(err);
         showToast('Clipboard Error: ' + err.message);
-    });
+    }
 });
 
 loadSamplesBtn.addEventListener('click', async () => {
