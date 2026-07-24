@@ -58,3 +58,6 @@ Action: Extracted the inner functions into a global `populateSelect` function wi
 ## 2026-07-18 - Preserving Arrow Proxy optimizations during nested loop removal
 Learning: When cleaning up duplicated nested loops caused by merge conflicts in functions iterating over DuckDB-Wasm Arrow data structures (e.g., `getRows`), the surviving block must retain all critical performance optimizations, specifically the `.toJSON()` call used to eager-evaluate Arrow Proxies and bypass heavy getter traps.
 Action: Always meticulously verify that the deduplicated code block preserves any type casting or optimizations (like `.toJSON()`) from the deleted variants.
+## 2026-07-25 - Modernized promise chains to async/await
+Learning: The application used Promise chains (`.then().catch()`) for standard asynchronous API methods like `navigator.serviceWorker.getRegistrations()` and `navigator.clipboard.writeText()`. This mixes legacy promise handling with modern `async/await` patterns used throughout the rest of the file.
+Action: To apply this next time, proactively use `try/catch` and `async/await` to wrap asynchronous functions instead of relying on `.then().catch()`.
