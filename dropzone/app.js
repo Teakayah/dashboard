@@ -338,7 +338,6 @@ async function init() {
         setProgress(10);
         statusEl.textContent = 'Selecting bundle...';
         const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
-        console.log('Selected bundle:', bundle);
 
         setProgress(30);
         statusEl.textContent = 'Instantiating DuckDB...';
@@ -353,8 +352,6 @@ async function init() {
         const opfsSupported = !!(navigator.storage && navigator.storage.getDirectory);
         // We use a versioned name for OPFS to avoid conflicts with older incompatible files
         const dbPath = opfsSupported ? 'opfs://duckdb_v1.db' : null;
-        
-        console.log('DuckDB init:', { accessMode, dbPath, opfsSupported });
         
         try {
             await db.open({ path: dbPath, accessMode });
@@ -384,7 +381,6 @@ async function init() {
         if (!timedOut) {
             statusEl.textContent = 'DuckDB Ready';
         }
-        console.log('DuckDB-Wasm initialized');
 
         // Restore loaded tables
         await restoreState();
@@ -793,12 +789,14 @@ async function handleFiles(files) {
     previewsContainer.textContent = '';
     
     try {
+        const getFilePath = (file) => file.webkitRelativePath || file.name;
+
         // Group files by their relative path to detect Delta Lake tables
         const fileGroups = {};
         const standaloneFiles = [];
 
         for (const file of files) {
-            const relPath = file.webkitRelativePath || file.name;
+            const relPath = getFilePath(file);
             const pathParts = relPath.split('/');
             
             if (pathParts.length > 1) {
@@ -817,11 +815,11 @@ async function handleFiles(files) {
 
         // Process directory groups (Potential Delta Lake or multi-part datasets)
         for (const [dirName, dirFiles] of Object.entries(fileGroups)) {
-            const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
+            const isDelta = dirFiles.some(f => getFilePath(f).includes('_delta_log'));
             const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
             
             for (const file of dirFiles) {
-                const fullPath = file.webkitRelativePath || file.name;
+                const fullPath = getFilePath(file);
                 const buffer = await file.arrayBuffer();
                 await db.registerFileBuffer(fullPath, new Uint8Array(buffer));
             }
@@ -841,7 +839,7 @@ async function handleFiles(files) {
             } else {
                 // If not delta, just treat as individual files (default behavior)
                 for (const file of dirFiles) {
-                    await processFile(file, file.webkitRelativePath || file.name);
+                    await processFile(file, getFilePath(file));
                 }
             }
         }
