@@ -611,6 +611,11 @@ async function updateJoinColumns() {
     }
 }
 
+/**
+ * Enables or disables the core console action buttons and dropdowns based on
+ * whether any data tables are currently loaded in the active DuckDB instance.
+ * Updates tooltips to guide users on prerequisites when actions are disabled.
+ */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
     recipeSelect.disabled = !hasData;
