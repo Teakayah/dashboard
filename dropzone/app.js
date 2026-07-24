@@ -21,6 +21,8 @@ let gridInstance = null;
 let currentTableName = '';
 let loadedTables = new Set();
 
+const getFilePath = (file) => file.webkitRelativePath || file.name;
+
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
