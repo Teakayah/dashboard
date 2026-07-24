@@ -211,6 +211,16 @@ function getRows(result) {
     const numFields = fields.length;
     const numRows = result.numRows;
 
+    // Check if any fields might contain BigInts (64-bit types)
+    let hasBigInt = false;
+    for (const f of result.schema.fields) {
+        const typeStr = f.type ? f.type.toString() : '';
+        if (typeStr.includes('Int64') || typeStr.includes('Uint64') || typeStr.includes('Timestamp') || typeStr.includes('Time64') || typeStr.includes('Decimal')) {
+            hasBigInt = true;
+            break;
+        }
+    }
+
     // Performance optimization: Use Arrow's native .toArray() to extract objects first,
     // and eagerly convert the row Proxy into a plain JavaScript object using .toJSON().
     // This completely bypasses the heavy proxy getter trap overhead for every cell.
@@ -226,17 +236,25 @@ function getRows(result) {
 
     const rows = new Array(numRows);
 
-    for (let i = 0; i < numRows; i++) {
-        const rawObj = rawRows[i];
-        const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
-        const rowPlain = {};
-        for (let j = 0; j < numFields; j++) {
-            const field = fields[j];
-            const val = rowObj[field];
-            // Cast BigInts to strings for UI/JSON compatibility
-            rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+    if (!hasBigInt) {
+        // Fast path: no BigInts, bypass the expensive per-cell loop
+        for (let i = 0; i < numRows; i++) {
+            const rawObj = rawRows[i];
+            rows[i] = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
         }
-        rows[i] = rowPlain;
+    } else {
+        // Slow path: check and cast BigInts to strings for UI/JSON compatibility
+        for (let i = 0; i < numRows; i++) {
+            const rawObj = rawRows[i];
+            const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
+            const rowPlain = {};
+            for (let j = 0; j < numFields; j++) {
+                const field = fields[j];
+                const val = rowObj[field];
+                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+            }
+            rows[i] = rowPlain;
+        }
     }
     return rows;
 }
