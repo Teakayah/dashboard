@@ -260,6 +260,8 @@ def test_csv_export_downloads_file(dz: Page):
     assert download.suggested_filename.endswith('.csv'), "Downloaded file name should end with '.csv'"
 
     path = download.path()
+    import os
+    assert os.path.getsize(path) > 0, "Downloaded CSV file should not be empty"
     with open(path, 'r') as f:
         content = f.read()
 

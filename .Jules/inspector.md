@@ -43,3 +43,7 @@
 ## 2026-07-17 - Testing Playwright File Downloads
 **Learning:** Testing file downloads in Playwright requires verifying that the downloaded file is not an empty artifact. Catch-all `try...except Exception: pass` blocks can silently hide download failures.
 **Action:** Always assert the file size of the downloaded file using `os.path.getsize(dl.path()) > 0` (ensure to use synchronous `dl.path()` instead of `await dl.path()` in synchronous tests) and avoid swallowing exceptions when testing file downloads.
+
+## 2026-07-25 - Testing CSV File Downloads
+**Learning:** Testing file downloads in Playwright requires verifying that the downloaded file is not an empty artifact. Catch-all assertions on the content can mask empty file downloads if the fallback handles empty strings gracefully or if the file isn't verified for size first.
+**Action:** Always assert the file size of the downloaded file using `os.path.getsize(dl.path()) > 0` before attempting to read its contents when testing file downloads.
