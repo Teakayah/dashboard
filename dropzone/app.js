@@ -1192,6 +1192,10 @@ async function runQuery() {
     const sql = sqlInput.value.trim();
     if (!sql) return;
     
+    const originalBtnText = runBtn.textContent;
+    runBtn.textContent = 'Running...';
+    runBtn.disabled = true;
+
     loadingOverlay.style.display = 'flex';
     try {
         const start = performance.now();
@@ -1210,6 +1214,8 @@ async function runQuery() {
         console.error(err);
         showToast('Query Error: ' + err.message);
     } finally {
+        runBtn.textContent = originalBtnText;
+        runBtn.disabled = false;
         loadingOverlay.style.display = 'none';
     }
 }
