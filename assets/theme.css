@@ -217,9 +217,6 @@ body {
 .fullscreen-btn:focus-visible,
 .clickable-col:focus-visible {
   outline: 2px solid var(--primary, #1d4ed8);
-  outline-offset: 2px;
-}
-
 .clickable-col:focus-visible,
 .share-btn:focus-visible {
   outline: 2px solid var(--primary, #4f8ef7);
@@ -228,8 +225,6 @@ body {
 
 .clickable-col:hover {
   background-color: rgba(79, 142, 247, 0.1);
-}
-
 .clickable-col {
   text-decoration: underline;
   transition: background-color 0.2s, text-decoration 0.2s;

@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: blob:; worker-src 'self' blob:">
   <!-- responsive-inject-v7 -->
   <style>
     @media (min-width: 769px) {
@@ -480,7 +479,7 @@ function initSWE() {
 }
 
 /* ── DATA ── */
-const DATA={"timestamp":"2026-07-19T17:05:47.157828+00:00","gauges":{"02LA015":{"level":41.634,"discharge":null,"datetime":"2026-06-19T05:00:00Z","station_id":"02LA015"},"02LA027":{"level":4.859,"discharge":null,"datetime":"2026-06-19T05:00:00Z","station_id":"02LA027"},"02KF005":{"level":58.36,"discharge":1290.0,"datetime":"2026-06-19T05:00:00Z","station_id":"02KF005"}},"precip":{"total_7d":3.2,"latest_date":"1992-12-08 00:00:00"},"swe":{"current_season":[38,60,88,105,120,135,142],"label":"2025-2026 season","updated":"2026-07-19T17:05:47.157818+00:00"},"forecast":[0.08,0.15,0.22,0.18],"reservoirs":{"percentage_full":82,"label":"Principal Reservoirs (Baskatong, Cabonga, Dozois)","status":"Normal for season"}};
+const DATA={"timestamp":"2026-05-26T00:08:51.141283+00:00","gauges":{"02KF005":{"level":60.099,"discharge":4570.0,"datetime":"2026-04-25T05:00:00Z","station_id":"02KF005"},"02LA027":{"level":4.968,"discharge":null,"datetime":"2026-04-25T05:00:00Z","station_id":"02LA027"},"02LA015":{"level":44.237,"discharge":null,"datetime":"2026-04-25T05:00:00Z","station_id":"02LA015"}},"precip":{"total_7d":3.2,"latest_date":"1992-12-08 00:00:00"},"swe":{"current_season":[38,60,88,105,120,135,142],"label":"2025-2026 season","updated":"2026-05-26T00:08:51.141267+00:00"},"forecast":[0.08,0.15,0.22,0.18],"reservoirs":{"percentage_full":82,"label":"Principal Reservoirs (Baskatong, Cabonga, Dozois)","status":"Normal for season"}};
 function loadLiveData() {
   if (!DATA.gauges) return;
   REGIONAL_STATIONS.forEach(s => { if (DATA.gauges[s.id]) liveLevels[s.id] = DATA.gauges[s.id].level; });

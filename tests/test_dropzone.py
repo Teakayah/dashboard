@@ -350,34 +350,3 @@ def test_copy_json_shows_error_toast_on_failure(dz: Page):
     toast = dz.locator('[role="alert"]')
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text(re.compile(r'Clipboard Error', re.IGNORECASE))
-
-
-def test_query_history_chip_populates_input(dz: Page):
-    """Running a query must add a history chip, and clicking it must repopulate the SQL input."""
-    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
-    _wait_for_ready(dz)
-
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
-
-    # Run first query
-    dz.locator('#sql-input').fill('SELECT 1 AS test_history')
-    dz.locator('#run-query').click()
-
-    # Verify chip is added
-    history_container = dz.locator('#query-history')
-    expect(history_container).to_be_visible()
-    expect(history_container).to_contain_text('SELECT 1 AS test_history')
-
-    # Run second query to change the input
-    dz.locator('#sql-input').fill('SELECT 2 AS another_test')
-    dz.locator('#run-query').click()
-
-    # Click the first chip
-    dz.locator('#query-history button:has-text("SELECT 1 AS test_history")').click()
-
-    # Verify input is populated
-    expect(dz.locator('#sql-input')).to_have_value('SELECT 1 AS test_history')

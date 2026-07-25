@@ -21,8 +21,6 @@ let gridInstance = null;
 let currentTableName = '';
 let loadedTables = new Set();
 
-const getFilePath = (file) => file.webkitRelativePath || file.name;
-
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
@@ -209,43 +207,25 @@ function escapeId(str) {
 function getRows(result) {
     if (!result || !result.schema) return [];
 
-    const fields = result.schema.fields.map(f => f.name);
-    const numFields = fields.length;
-    const numRows = result.numRows;
-
-    // Check if any fields might contain BigInts (64-bit types)
     let hasBigInt = false;
     for (const f of result.schema.fields) {
-        const typeStr = f.type ? f.type.toString() : '';
-        if (typeStr.includes('Int64') || typeStr.includes('Uint64') || typeStr.includes('Timestamp') || typeStr.includes('Time64') || typeStr.includes('Decimal')) {
+        if (f.type && (f.type.bitWidth === 64 || String(f.type).match(/Int64|Timestamp|Time64|Decimal/i))) {
             hasBigInt = true;
             break;
         }
     }
 
+    const fields = result.schema.fields.map(f => f.name);
+    const numFields = fields.length;
+    const numRows = result.numRows;
+
     // Performance optimization: Use Arrow's native .toArray() to extract objects first,
     // and eagerly convert the row Proxy into a plain JavaScript object using .toJSON().
     // This completely bypasses the heavy proxy getter trap overhead for every cell.
     const rawRows = result.toArray();
-
-    // Check if the schema has any fields that could be BigInts
-    const hasBigInt = result.schema.fields.some(f => (f.type && f.type.bitWidth === 64) || ['Int64', 'Timestamp', 'Time64', 'Decimal'].some(sig => String(f.type).includes(sig)));
-
-    // Fast path: bypass per-cell checking if no BigInts exist
-    if (!hasBigInt) {
-        return rawRows.map(r => (r && typeof r.toJSON === 'function') ? r.toJSON() : r);
-    }
-
     const rows = new Array(numRows);
 
-    if (!hasBigInt) {
-        // Fast path: no BigInts, bypass the expensive per-cell loop
-        for (let i = 0; i < numRows; i++) {
-            const rawObj = rawRows[i];
-            rows[i] = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
-        }
-    } else {
-        // Slow path: check and cast BigInts to strings for UI/JSON compatibility
+    if (hasBigInt) {
         for (let i = 0; i < numRows; i++) {
             const rawObj = rawRows[i];
             const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
@@ -253,9 +233,18 @@ function getRows(result) {
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
                 const val = rowObj[field];
+                // Cast BigInts to strings for UI/JSON compatibility
                 rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
             }
             rows[i] = rowPlain;
+        }
+    } else {
+        for (let i = 0; i < numRows; i++) {
+            // Performance optimization: call .toJSON() to eagerly convert the Arrow Proxy
+            // to a plain object using Arrow's internal optimized path, completely bypassing
+            // the heavy proxy getter trap overhead for every cell.
+            const rawObj = rawRows[i];
+            rows[i] = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
         }
     }
     return rows;
@@ -305,16 +294,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
-/**
- * Unregisters all active service workers and forcefully reloads the page.
- * This acts as an intentional escape hatch to bypass stale or corrupt
- * service worker caches that can cause DuckDB-Wasm initialization to hang.
- */
-async function reloadWithoutSW() {
+function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map((r) => r.unregister()));
-        location.reload();
+        navigator.serviceWorker.getRegistrations()
+            .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+            .then(() => location.reload());
     } else {
         location.reload();
     }
@@ -340,6 +324,7 @@ async function init() {
         setProgress(10);
         statusEl.textContent = 'Selecting bundle...';
         const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+        console.log('Selected bundle:', bundle);
 
         setProgress(30);
         statusEl.textContent = 'Instantiating DuckDB...';
@@ -355,6 +340,8 @@ async function init() {
         // We use a versioned name for OPFS to avoid conflicts with older incompatible files
         const dbPath = opfsSupported ? 'opfs://duckdb_v1.db' : null;
         
+        console.log('DuckDB init:', { accessMode, dbPath, opfsSupported });
+
         try {
             await db.open({ path: dbPath, accessMode });
         } catch (err) {
@@ -383,6 +370,7 @@ async function init() {
         if (!timedOut) {
             statusEl.textContent = 'DuckDB Ready';
         }
+        console.log('DuckDB-Wasm initialized');
 
         // Restore loaded tables
         await restoreState();
@@ -611,11 +599,6 @@ async function updateJoinColumns() {
     }
 }
 
-/**
- * Enables or disables the core console action buttons and dropdowns based on
- * whether any data tables are currently loaded in the active DuckDB instance.
- * Updates tooltips to guide users on prerequisites when actions are disabled.
- */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
     recipeSelect.disabled = !hasData;
@@ -796,14 +779,12 @@ async function handleFiles(files) {
     previewsContainer.textContent = '';
     
     try {
-        const getFilePath = (file) => file.webkitRelativePath || file.name;
-
         // Group files by their relative path to detect Delta Lake tables
         const fileGroups = {};
         const standaloneFiles = [];
 
         for (const file of files) {
-            const relPath = getFilePath(file);
+            const relPath = file.webkitRelativePath || file.name;
             const pathParts = relPath.split('/');
             
             if (pathParts.length > 1) {
@@ -822,11 +803,11 @@ async function handleFiles(files) {
 
         // Process directory groups (Potential Delta Lake or multi-part datasets)
         for (const [dirName, dirFiles] of Object.entries(fileGroups)) {
-            const isDelta = dirFiles.some(f => getFilePath(f).includes('_delta_log'));
+            const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
             const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
             
             for (const file of dirFiles) {
-                const fullPath = getFilePath(file);
+                const fullPath = file.webkitRelativePath || file.name;
                 const buffer = await file.arrayBuffer();
                 await db.registerFileBuffer(fullPath, new Uint8Array(buffer));
             }
@@ -846,7 +827,7 @@ async function handleFiles(files) {
             } else {
                 // If not delta, just treat as individual files (default behavior)
                 for (const file of dirFiles) {
-                    await processFile(file, getFilePath(file));
+                    await processFile(file, file.webkitRelativePath || file.name);
                 }
             }
         }
@@ -1192,10 +1173,6 @@ async function runQuery() {
     const sql = sqlInput.value.trim();
     if (!sql) return;
     
-    const originalBtnText = runBtn.textContent;
-    runBtn.textContent = 'Running...';
-    runBtn.disabled = true;
-
     loadingOverlay.style.display = 'flex';
     try {
         const start = performance.now();
@@ -1214,8 +1191,6 @@ async function runQuery() {
         console.error(err);
         showToast('Query Error: ' + err.message);
     } finally {
-        runBtn.textContent = originalBtnText;
-        runBtn.disabled = false;
         loadingOverlay.style.display = 'none';
     }
 }
@@ -1293,18 +1268,17 @@ downloadBtn.addEventListener('click', async () => {
     }
 });
 
-copyJsonBtn.addEventListener('click', async () => {
+copyJsonBtn.addEventListener('click', () => {
     if (!lastResult) return;
     const json = JSON.stringify(lastResult, null, 2);
-    try {
-        await navigator.clipboard.writeText(json);
+    navigator.clipboard.writeText(json).then(() => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
-    } catch (err) {
+    }).catch(err => {
         console.error(err);
         showToast('Clipboard Error: ' + err.message);
-    }
+    });
 });
 
 loadSamplesBtn.addEventListener('click', async () => {

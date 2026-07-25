@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DataDashboard</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://teakayah.github.io; connect-src 'self' https: blob:; worker-src 'self' blob:;">
   <link rel="icon" href="https://teakayah.github.io/dashboard/favicon.ico" type="image/x-icon">
 
   <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://teakayah.github.io/dashboard/">
   <meta property="og:title" content="DataDashboard">
-  <meta property="og:description" content="4 analyses from various datasets and projects.">
+  <meta property="og:description" content="1 analysis from various datasets and projects.">
   <meta property="og:image" content="https://teakayah.github.io/dashboard/previews/index.png">
   <meta property="og:image:width" content="600">
   <meta property="og:image:height" content="315">
@@ -19,7 +20,7 @@
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="https://teakayah.github.io/dashboard/">
   <meta property="twitter:title" content="DataDashboard">
-  <meta property="twitter:description" content="4 analyses from various datasets and projects.">
+  <meta property="twitter:description" content="1 analysis from various datasets and projects.">
   <meta property="twitter:image" content="https://teakayah.github.io/dashboard/previews/index.png">
 
   <!-- RSS / Atom feed -->
@@ -47,11 +48,11 @@
       margin-bottom: 4px;
     }
     header h1 span {
-      color: #60a5fa;
+      color: #1e40af;
     }
     .header-sub {
       font-size: 0.82rem;
-      color: rgba(255,255,255,0.85);
+      color: rgba(255,255,255,0.75);
     }
 
     /* ── Search ─────────────────────────────────────────────── */
@@ -62,7 +63,6 @@
     }
     .search-bar input {
       width: 100%;
-      max-width: 480px;
       padding: 9px 14px;
       border-radius: 8px;
       border: 1px solid #d8d8d4;
@@ -77,6 +77,33 @@
       box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
     }
     .search-bar input::placeholder { color: #6b7280; }
+
+    .input-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+    }
+    .shortcut-hint {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #6b7280;
+      font-size: 0.75rem;
+      transition: opacity 0.15s;
+    }
+    .shortcut-hint kbd {
+      background: #f5f5f2;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #d8d8d4;
+      font-family: inherit;
+    }
+    .input-wrapper:focus-within .shortcut-hint,
+    .search-bar input:not(:placeholder-shown) + .shortcut-hint {
+      opacity: 0;
+    }
 
     /* ── Grid ───────────────────────────────────────────────── */
     main {
@@ -104,7 +131,7 @@
       border-radius: 12px;
       padding: 18px 18px 14px;
       box-shadow: 0 1px 6px rgba(0,0,0,0.07);
-      border-top: 3px solid var(--accent, #1d4ed8);
+      border-top: 3px solid var(--accent, #4f8ef7);
       text-decoration: none;
       color: inherit;
       transition: transform 0.15s, box-shadow 0.15s;
@@ -192,11 +219,11 @@
 
     /* ── Keyboard focus ──────────────────────────────────────── */
     button:focus-visible {
-      outline: 2px solid #1d4ed8;
+      outline: 2px solid #4f8ef7;
       outline-offset: 2px;
     }
     .card:focus-visible {
-      outline: 2px solid #1d4ed8;
+      outline: 2px solid #4f8ef7;
       outline-offset: 2px;
     }
 
@@ -221,50 +248,20 @@
 
 <header>
   <h1>Data<span>Dashboard</span></h1>
-  <div class="header-sub">4 analyses</div>
+  <div class="header-sub">1 analysis</div>
 </header>
 
 <search><div class="search-bar">
-  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
+  <div class="input-wrapper">
+    <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
+    <div class="shortcut-hint" aria-hidden="true"><kbd>/</kbd></div>
+  </div>
 </div></search>
 
 <main>
   <div class="grid-label">Analyses</div>
   <div class="grid" id="grid">
-      <a class="card" href="flood_risk_gatineau_ottawa.html" style="--accent:#1d4ed8">
-        <div class="card-top">
-          <div class="card-title">Ottawa-Gatineau Flood Risk — Station 02KF005</div>
-          <div class="badges"><span class="badge">Chart.js</span></div>
-        </div>
-        <p class="card-desc">Ottawa River at Britannia (02KF005) · Live &amp; Historical · Water Survey of Canada</p>
-        <div class="card-footer">
-          <span class="card-date">Jun 2026</span>
-          <span class="card-link">View analysis →</span>
-        </div>
-      </a>
-      <a class="card" href="employment_rate_canada.html" style="--accent:#c53030">
-        <div class="card-top">
-          <div class="card-title">Canadian Labour &amp; Fiscal Dashboard</div>
-          <div class="badges"><span class="badge">Chart.js</span></div>
-        </div>
-        <p class="card-desc">Statistics Canada — Seasonally adjusted where applicable · Total gender · Provincial governments</p>
-        <div class="card-footer">
-          <span class="card-date">Jun 2026</span>
-          <span class="card-link">View analysis →</span>
-        </div>
-      </a>
-      <a class="card" href="nhpi_big6_comparison.html" style="--accent:#0f766e">
-        <div class="card-top">
-          <div class="card-title">NHPI — Big-6 City Comparison (Vancouver · Toronto · Montréal · Edmonton · Calgary · Ottawa)</div>
-          <div class="badges"><span class="badge">Chart.js</span></div>
-        </div>
-        <p class="card-desc">Statistics Canada · Table 18-10-0205-01 · Base: December 2016 = 100</p>
-        <div class="card-footer">
-          <span class="card-date">Jun 2026</span>
-          <span class="card-link">View analysis →</span>
-        </div>
-      </a>
-      <a class="card" href="dropzone.html" style="--accent:#c2410c">
+      <a class="card" href="dropzone.html" style="--accent:#4f8ef7">
         <div class="card-top">
           <div class="card-title">Analytical Drop-Zone</div>
           <div class="badges"><span class="badge">Chart.js</span><span class="badge">DuckDB</span><span class="badge">Grid.js</span></div>
@@ -299,6 +296,13 @@
       timeout = setTimeout(() => func.apply(this, args), wait);
     };
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== input) {
+      e.preventDefault();
+      input.focus();
+    }
+  });
 
   input.addEventListener('input', debounce(() => {
     const q = input.value.trim().toLowerCase();
