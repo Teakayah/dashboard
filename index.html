@@ -224,6 +224,7 @@
   <div class="header-sub">4 analyses</div>
 </header>
 
+<div id="search-announcer" aria-live="polite" style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;"></div>
 <search><div class="search-bar">
   <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
 </div></search>
@@ -291,6 +292,7 @@
   const cards = document.querySelectorAll('.card');
   const noResults = document.getElementById('no-results');
   const noResultsQuery = noResults.querySelector('strong');
+  const searchAnnouncer = document.getElementById('search-announcer');
 
   function debounce(func, wait) {
     let timeout;
@@ -319,8 +321,14 @@
     if (visibleCount === 0 && q !== '') {
       noResultsQuery.textContent = input.value;
       noResults.classList.remove('hidden');
+      searchAnnouncer.textContent = `No analyses found matching "${input.value}".`;
     } else {
       noResults.classList.add('hidden');
+      if (q !== '') {
+        searchAnnouncer.textContent = `${visibleCount} analys${visibleCount === 1 ? 'is' : 'es'} found.`;
+      } else {
+        searchAnnouncer.textContent = 'Search cleared.';
+      }
     }
   }, 250));
 </script>

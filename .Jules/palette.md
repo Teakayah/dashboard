@@ -63,3 +63,6 @@
 ## 2026-07-23 - Restore keyboard focus indicators
 **Learning:** Missing closing braces in CSS can silently disable keyboard accessibility states (`:focus-visible`) for multiple components without causing build or syntax errors.
 **Action:** When auditing accessibility, manually test keyboard navigation and verify CSS parsing around pseudo-classes.
+## 2026-07-25 - Add dynamic search result announcer
+**Learning:** When client-side filtering hides list elements visually, screen readers are unaware. Adding a visually hidden `aria-live="polite"` region that announces "X results found" is a critical accessibility pattern for dynamic searches.
+**Action:** Always pair visual client-side filtering with an aria-live announcement region.
