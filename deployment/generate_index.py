@@ -193,11 +193,17 @@ def strip_back_link(content: str, filename: str) -> str:
     if BACK_LINK_MARKER not in content:
         return content
     new_content = re.sub(
-        r'\n?<!-- back-link-inject -->(?:<div[^>]*>.*?</div>)?',
+        r'''
+        \n?                            # Match an optional newline
+        <!--\ back-link-inject\ -->    # Match the specific HTML comment marker
+        (?:                            # Optional non-capturing group for the div
+            <div[^>]*>.*?</div>        # Match the div and its contents non-greedily
+        )?
+        ''',
         '',
         content,
         count=1,
-        flags=re.DOTALL,
+        flags=re.DOTALL | re.VERBOSE,
     )
     if new_content != content:
         print(f'  Stripped legacy back-link from {filename}')
@@ -625,8 +631,13 @@ def inject_contrast_fix(content: str, filename: str) -> str:
 def strip_analysis_utils(content: str, filename: str) -> str:
     """Remove any leftover <script src="assets/analysis_utils.js"> tags (idempotent)."""
     import re as _re
-    pattern = r'<script[^>]+src=["\']assets/analysis_utils\.js["\'][^>]*>\s*</script>'
-    new_content = _re.sub(pattern, '', content, flags=_re.IGNORECASE)
+    pattern = r'''
+        <script[^>]+             # Match the opening <script tag and any attributes
+        src=["']assets/analysis_utils\.js["'] # Match the specific src attribute
+        [^>]*>                   # Match any remaining attributes and the closing >
+        \s*</script>             # Match any whitespace and the closing </script> tag
+    '''
+    new_content = _re.sub(pattern, '', content, flags=_re.IGNORECASE | _re.VERBOSE)
     if new_content != content:
         print(f'  Stripped analysis_utils.js script tag from {filename}')
     return new_content

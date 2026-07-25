@@ -80,3 +80,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-07-18 - Document DuckDB COPY Subquery Semicolon Syntax Error
 **Learning:** DuckDB's `COPY (<query>)` command wraps an inner subquery in parentheses. If the original user-provided `query` contains a trailing semicolon (e.g., `SELECT * FROM tbl;`), it causes a syntax error because semicolons are not allowed inside parentheses in DuckDB SQL.
 **Action:** Always strip trailing semicolons from user-provided SQL queries before wrapping them inside another DuckDB command or subquery, and document the regex stripping (e.g., `.replace(/;+$/, '')`) to prevent others from removing the "hack".
+
+## 2026-07-25 - Documenting complex regex extractions using re.VERBOSE
+**Learning:** Regular expressions used for manipulating HTML structure (e.g., stripping injected links or scripts) are often dense and difficult to read.
+**Action:** When writing complex regular expressions in Python scripts for file manipulation, always utilize the `re.VERBOSE` flag and format the regex as a multiline string with inline comments to explain each specific capture group and match requirement.
