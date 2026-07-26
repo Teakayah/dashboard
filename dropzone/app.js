@@ -174,6 +174,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 
         const originalText = loadRemoteDeltaBtn.textContent;
         loadRemoteDeltaBtn.textContent = 'Table Loaded!';
+        showToast('Remote Delta table loaded successfully', 'success');
         setTimeout(() => { loadRemoteDeltaBtn.textContent = originalText; }, 2000);
     } catch (err) {
         console.error(err);
@@ -1259,6 +1260,7 @@ downloadBtn.addEventListener('click', async () => {
         a.href = url;
         a.download = `query_results_${new Date().getTime()}.csv`;
         a.click();
+        showToast('CSV downloaded successfully', 'success');
         URL.revokeObjectURL(url);
     } catch (err) {
         console.error(err);
@@ -1274,6 +1276,7 @@ copyJsonBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(json).then(() => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
+        showToast('JSON copied to clipboard', 'success');
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
     }).catch(err => {
         console.error(err);
@@ -1312,6 +1315,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
+        showToast('Sample datasets loaded successfully', 'success');
         setTimeout(() => { loadSamplesBtn.textContent = originalText; }, 2000);
     } catch (err) {
         console.error(err);
@@ -1340,6 +1344,7 @@ exportDbBtn.addEventListener('click', async () => {
         a.href = url;
         a.download = `datadashboard_export_${new Date().getTime()}.db`;
         a.click();
+        showToast('Database exported successfully', 'success');
         URL.revokeObjectURL(url);
     } catch (err) {
         console.error(err);

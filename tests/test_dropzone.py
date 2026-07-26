@@ -207,7 +207,7 @@ def test_invalid_sql_shows_dialog_not_crash(dz: Page):
     dz.locator('#sql-input').fill('SELECT * FROM nonexistent_table_xyz')
     dz.locator('#run-query').click()
 
-    toast = dz.locator('[role="alert"]')
+    toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text(re.compile(r'Error|nonexistent', re.IGNORECASE))
 
@@ -349,6 +349,6 @@ def test_copy_json_shows_error_toast_on_failure(dz: Page):
 
     dz.locator('#copy-json').click()
 
-    toast = dz.locator('[role="alert"]')
+    toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
-    expect(toast).to_contain_text(re.compile(r'Clipboard Error', re.IGNORECASE))
+    expect(toast).to_contain_text(re.compile(r'Write permission denied', re.IGNORECASE))

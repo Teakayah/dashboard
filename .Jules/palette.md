@@ -60,3 +60,10 @@
 ## 2026-06-30 - Convert emulated buttons to native button tags
 **Learning:** Using `span` elements with `role="button"` and `tabIndex="0"` is bad for accessibility as it requires manually managing keyboard events (Enter/Space) and often misses out on native screen reader benefits.
 **Action:** Always prefer semantic HTML tags like `<button>` over generic container tags (`span`, `div`) with ARIA roles when creating interactive click targets, using CSS resets (`background: transparent`, `border: none`) to bypass native styling if necessary.
+## $(date +%Y-%m-%d) - Explicit Accessibility Feedback for Native Actions
+**Learning:** Actions that rely on native browser features (like copying to clipboard or downloading a file) or that only temporarily change button text (e.g., "Copied!") do not naturally shift focus or trigger screen reader announcements. This leaves screen reader users completely unaware if the action succeeded.
+**Action:** Always dispatch explicit `aria-live` announcements (e.g., using a success toast) when completing silent or native-browser actions to ensure clear, accessible feedback.
+
+## $(date +%Y-%m-%d) - Securing Disabled States Against Inline Styles
+**Learning:** Elements styled dynamically with inline CSS (e.g., `style="background-color: red;"`) will override general class or pseudo-class rules (like `:disabled`), causing disabled buttons to look active and confusing users.
+**Action:** When designing a system where buttons might receive inline styling, enforce critical state styles (like `:disabled`) with `!important` to ensure they universally apply.
