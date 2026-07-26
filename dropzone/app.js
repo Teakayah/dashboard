@@ -207,13 +207,9 @@ function escapeId(str) {
 function getRows(result) {
     if (!result || !result.schema) return [];
 
-    let hasBigInt = false;
-    for (const f of result.schema.fields) {
-        if (f.type && (f.type.bitWidth === 64 || String(f.type).match(/Int64|Timestamp|Time64|Decimal/i))) {
-            hasBigInt = true;
-            break;
-        }
-    }
+    const hasBigInt = result.schema.fields.some(f =>
+        f.type?.bitWidth === 64 || /Int64|Timestamp|Time64|Decimal/i.test(String(f.type))
+    );
 
     const fields = result.schema.fields.map(f => f.name);
     const numFields = fields.length;
@@ -228,7 +224,7 @@ function getRows(result) {
     if (hasBigInt) {
         for (let i = 0; i < numRows; i++) {
             const rawObj = rawRows[i];
-            const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
+            const rowObj = rawObj?.toJSON?.() ?? rawObj;
             const rowPlain = {};
             for (let j = 0; j < numFields; j++) {
                 const field = fields[j];
@@ -244,7 +240,7 @@ function getRows(result) {
             // to a plain object using Arrow's internal optimized path, completely bypassing
             // the heavy proxy getter trap overhead for every cell.
             const rawObj = rawRows[i];
-            rows[i] = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
+            rows[i] = rawObj?.toJSON?.() ?? rawObj;
         }
     }
     return rows;
@@ -294,14 +290,12 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
-function reloadWithoutSW() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations()
-            .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-            .then(() => location.reload());
-    } else {
-        location.reload();
+async function reloadWithoutSW() {
+    if (navigator.serviceWorker) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
     }
+    location.reload();
 }
 
 /**
@@ -336,7 +330,7 @@ async function init() {
         setProgress(50);
         statusEl.textContent = 'Opening database...';
         const accessMode = duckdb.DuckDBAccessMode?.READ_WRITE ?? 3;
-        const opfsSupported = !!(navigator.storage && navigator.storage.getDirectory);
+        const opfsSupported = !!navigator.storage?.getDirectory;
         // We use a versioned name for OPFS to avoid conflicts with older incompatible files
         const dbPath = opfsSupported ? 'opfs://duckdb_v1.db' : null;
         
@@ -1146,7 +1140,7 @@ sqlInput.addEventListener('input', () => {
 document.addEventListener('keydown', (e) => {
     if (e.key === '/' &&
         document.activeElement !== sqlInput &&
-        !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
         e.preventDefault();
         sqlInput.focus();
     }
