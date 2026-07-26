@@ -193,6 +193,32 @@ def test_download_table_success(mock_urlopen, mock_zipfile, mock_get_end_period,
 
 @patch('deployment.update_statcan_data._get_end_period')
 @patch('urllib.request.urlopen')
+def test_download_table_path_traversal(mock_urlopen, mock_get_end_period, tmp_path):
+    from deployment.update_statcan_data import download_table
+    import zipfile
+    from io import BytesIO
+
+    table = {'id': '12345678', 'desc': 'Test Table', 'path': tmp_path / '12345678'}
+    mock_get_end_period.return_value = '2023-01'
+
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, 'w') as zf:
+        zf.writestr('../evil.txt', 'evil content')
+
+    mock_resp = MagicMock()
+    mock_resp.read.return_value = buf.getvalue()
+    mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+    result = download_table(table)
+
+    assert result['id'] == '12345678'
+    assert 'Path traversal attempt detected in ZIP: ../evil.txt' in result['error']
+    assert result['updated'] is False
+    assert result['prev_end'] == '2023-01'
+
+
+@patch('deployment.update_statcan_data._get_end_period')
+@patch('urllib.request.urlopen')
 def test_download_table_bad_zip(mock_urlopen, mock_get_end_period, tmp_path):
     from deployment.update_statcan_data import download_table
     table = {'id': '12345678', 'desc': 'Test Table', 'path': tmp_path / '12345678'}
