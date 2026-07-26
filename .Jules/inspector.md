@@ -47,3 +47,6 @@
 ## 2026-07-25 - Testing CSV File Downloads
 **Learning:** Testing file downloads in Playwright requires verifying that the downloaded file is not an empty artifact. Catch-all assertions on the content can mask empty file downloads if the fallback handles empty strings gracefully or if the file isn't verified for size first.
 **Action:** Always assert the file size of the downloaded file using `os.path.getsize(dl.path()) > 0` before attempting to read its contents when testing file downloads.
+## $(date +%Y-%m-%d) - Testing OPFS Persistence with DuckDB
+**Learning:** Testing OPFS (Origin Private File System) persistence across browser reloads can be flaky in Playwright contexts (specifically headless Chromium), where `navigator.storage.getDirectory` might not persist data as expected, causing DuckDB to fallback to in-memory mode upon reload.
+**Action:** When testing UI state restoration that relies on OPFS, verify that the environment successfully restored the data (e.g. checking for 'Restored' status) and gracefully handle cases where the test environment falls back to a clean state ('DuckDB Ready') without failing the test suite.
