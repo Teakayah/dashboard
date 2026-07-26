@@ -294,6 +294,14 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Forcefully bypasses Service Worker caching by unregistering all active
+ * Service Workers before reloading the page.
+ *
+ * This serves as an intentional escape hatch for when DuckDB-Wasm initialization
+ * persistently fails due to browsers caching stale or corrupted large WebAssembly
+ * bundles. It ensures the next load fetches fresh assets.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()

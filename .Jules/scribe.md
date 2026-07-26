@@ -84,3 +84,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-07-25 - Documenting complex regex extractions using re.VERBOSE
 **Learning:** Regular expressions used for manipulating HTML structure (e.g., stripping injected links or scripts) are often dense and difficult to read.
 **Action:** When writing complex regular expressions in Python scripts for file manipulation, always utilize the `re.VERBOSE` flag and format the regex as a multiline string with inline comments to explain each specific capture group and match requirement.
+## 2026-07-26 - Document Service Worker unregister workaround for Wasm failures
+**Learning:** DuckDB-Wasm initialization can persistently fail due to browser caching of large WebAssembly bundles via Service Workers. The `reloadWithoutSW` function exists as an intentional escape hatch to forcefully bypass this cache, but it was undocumented and could easily be mistaken for dead code.
+**Action:** When implementing manual Service Worker unregistration as a fallback for heavy asset initialization (like Wasm), always document the specific "why" to prevent future maintainers from removing the seemingly unused or hacky code.
