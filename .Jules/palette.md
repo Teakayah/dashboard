@@ -60,3 +60,6 @@
 ## 2026-06-30 - Convert emulated buttons to native button tags
 **Learning:** Using `span` elements with `role="button"` and `tabIndex="0"` is bad for accessibility as it requires manually managing keyboard events (Enter/Space) and often misses out on native screen reader benefits.
 **Action:** Always prefer semantic HTML tags like `<button>` over generic container tags (`span`, `div`) with ARIA roles when creating interactive click targets, using CSS resets (`background: transparent`, `border: none`) to bypass native styling if necessary.
+## 2026-07-27 - CSS Syntax Errors Break Focus Styles
+**Learning:** Malformed CSS blocks (like missing closing braces `}`) not only fail to apply their own styles but also cause the browser to ignore subsequent rules. In this case, a missing brace silently broke the `:focus-visible` accessibility styles for all custom buttons, hiding keyboard focus rings from users.
+**Action:** Always validate CSS syntax to ensure critical accessibility properties like focus outlines remain active.
