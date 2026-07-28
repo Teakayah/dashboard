@@ -58,3 +58,6 @@ Action: Extracted the inner functions into a global `populateSelect` function wi
 ## 2026-07-18 - Preserving Arrow Proxy optimizations during nested loop removal
 Learning: When cleaning up duplicated nested loops caused by merge conflicts in functions iterating over DuckDB-Wasm Arrow data structures (e.g., `getRows`), the surviving block must retain all critical performance optimizations, specifically the `.toJSON()` call used to eager-evaluate Arrow Proxies and bypass heavy getter traps.
 Action: Always meticulously verify that the deduplicated code block preserves any type casting or optimizations (like `.toJSON()`) from the deleted variants.
+## 2026-07-28 - Extracted dead analysis code
+Learning: Discovered obsolete string replacement logic for dead `analysis_utils.js` script in deployment code, which cluttered the script and tests.
+Action: Removed dead python logic to simplify deployment and testing footprint.
