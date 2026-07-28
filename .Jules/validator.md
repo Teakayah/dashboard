@@ -30,3 +30,7 @@ Assertion: By moving the server initialization logic into the `pytest_configure`
 Coverage Gap: The `ValueError` exception branches for insecure URL schemes in `deployment/update_statcan_data.py` were missing test coverage.
 Learning: Testing branches that guard against modified constants (like hardcoded HTTPS URLs) requires explicitly patching those module-level constants (e.g., `_CHANGED_URL`, `_DL_URL`) in the tests to simulate the insecure configuration.
 Assertion: By using `patch('deployment.update_statcan_data._CHANGED_URL', 'ftp://...')` and `pytest.raises(ValueError)`, we can reliably trigger and test the security checks for URL schemes.
+## 2026-07-28 - Test ZIP path traversal logic
+Coverage Gap: The exception block for catching ZIP path traversal attempts (BadZipFile) during stats data download lacked test coverage.
+Learning: Testing path traversal defenses in ZIP extraction is difficult because it requires creating a malicious archive without relying on external files.
+Assertion: Use `io.BytesIO()` and `zipfile.ZipFile(buffer, 'w')` to create an in-memory archive, and use `zf.writestr('../malicious.csv', 'data')` to manually inject an entry with a relative traversal path.
