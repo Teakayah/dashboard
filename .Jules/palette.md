@@ -60,3 +60,5 @@
 ## 2026-06-30 - Convert emulated buttons to native button tags
 **Learning:** Using `span` elements with `role="button"` and `tabIndex="0"` is bad for accessibility as it requires manually managing keyboard events (Enter/Space) and often misses out on native screen reader benefits.
 **Action:** Always prefer semantic HTML tags like `<button>` over generic container tags (`span`, `div`) with ARIA roles when creating interactive click targets, using CSS resets (`background: transparent`, `border: none`) to bypass native styling if necessary.
+## $(date +%Y-%m-%d) - Convert emulated drop-zone div to native button
+**Learning:** Even though `div` elements can emulate buttons using `role="button"` and `tabindex="0"`, nesting an `<input>` inside them is semantically questionable and they require manual keyboard event handlers. Using a native `<button>` element provides robust keyboard accessibility out-of-the-box and ensures semantic HTML.
