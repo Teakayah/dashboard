@@ -356,3 +356,28 @@ def test_download_table_no_change(tmp_path, monkeypatch):
             assert not result['updated']
             assert result['prev_end'] == '2023-01'
             assert result['new_end'] == '2023-01'
+
+
+@patch('deployment.update_statcan_data._get_end_period')
+def test_download_table_path_traversal(mock_get_end_period, tmp_path):
+    import zipfile
+    import io
+    from deployment.update_statcan_data import download_table
+    table = {'id': '12345678', 'desc': 'Test Table', 'path': tmp_path / '12345678'}
+    mock_get_end_period.return_value = '2023-01'
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w') as zf:
+        zf.writestr('../malicious.csv', 'some csv data')
+
+    mock_resp = MagicMock()
+    mock_resp.read.return_value = buffer.getvalue()
+
+    with patch('deployment.update_statcan_data.urllib.request.urlopen') as mock_urlopen:
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
+        result = download_table(table)
+
+    assert result['id'] == '12345678'
+    assert 'Path traversal attempt detected in ZIP' in result['error']
+    assert result['updated'] is False
+    assert result['prev_end'] == '2023-01'
