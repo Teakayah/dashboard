@@ -54,3 +54,6 @@
 ## 2026-07-18 - Prevent Grid.js Memory Leaks
 **Learning:** Wiping the DOM container (`.textContent = ''`) and creating a new `gridjs.Grid` instance for dynamic data causes severe memory leaks due to uncleaned event listeners.
 **Action:** Always maintain a reference to the initialized grid instance. Use `gridInstance.updateConfig({...}).forceRender()` to update data efficiently via its Virtual DOM, and explicitly call `gridInstance.destroy()` before clearing the container.
+## 2026-07-28 - Conditionally Bypass BigInt Checks for Arrow Proxies
+**Learning:** DuckDB-Wasm queries with large row counts spend significant time executing `typeof val === 'bigint'` checks on every single cell of every row if any column in the table has a BigInt. Because Arrow Proxies are already converted to plain objects via `.toJSON()`, we can just identify which columns are BigInt from the schema, and directly mutate only those specific columns, bypassing full row iteration and redundant `typeof` checks for strings/numbers.
+**Action:** When extracting data from Arrow proxies, inspect `result.schema.fields` for 64-bit widths to collect specific BigInt columns. Reuse the plain object from `.toJSON()` (or shallow copy it) and iterate only the known BigInt columns to stringify them.

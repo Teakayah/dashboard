@@ -208,15 +208,14 @@ function getRows(result) {
     if (!result || !result.schema) return [];
 
     let hasBigInt = false;
+    const bigIntCols = [];
     for (const f of result.schema.fields) {
         if (f.type && (f.type.bitWidth === 64 || String(f.type).match(/Int64|Timestamp|Time64|Decimal/i))) {
             hasBigInt = true;
-            break;
+            bigIntCols.push(f.name);
         }
     }
 
-    const fields = result.schema.fields.map(f => f.name);
-    const numFields = fields.length;
     const numRows = result.numRows;
 
     // Performance optimization: Use Arrow's native .toArray() to extract objects first,
@@ -226,17 +225,23 @@ function getRows(result) {
     const rows = new Array(numRows);
 
     if (hasBigInt) {
+        const numBigIntCols = bigIntCols.length;
         for (let i = 0; i < numRows; i++) {
             const rawObj = rawRows[i];
-            const rowObj = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
-            const rowPlain = {};
-            for (let j = 0; j < numFields; j++) {
-                const field = fields[j];
-                const val = rowObj[field];
+            // If rowObj is a Proxy, toJSON() produces a plain object we can mutate.
+            // If it's already a plain object without toJSON, we shallow copy it to avoid mutating the original source row.
+            const rowObjPlain = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : (typeof rawObj === 'object' && rawObj !== null ? {...rawObj} : rawObj);
+
+            // Fast path: Only iterate the known BigInt columns instead of all fields.
+            for (let j = 0; j < numBigIntCols; j++) {
+                const field = bigIntCols[j];
+                const val = rowObjPlain[field];
                 // Cast BigInts to strings for UI/JSON compatibility
-                rowPlain[field] = typeof val === 'bigint' ? val.toString() : val;
+                if (typeof val === 'bigint') {
+                    rowObjPlain[field] = val.toString();
+                }
             }
-            rows[i] = rowPlain;
+            rows[i] = rowObjPlain;
         }
     } else {
         for (let i = 0; i < numRows; i++) {
