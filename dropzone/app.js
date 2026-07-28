@@ -299,6 +299,11 @@ function showInitError(message) {
     statusEl.appendChild(btn);
 }
 
+/**
+ * Forcefully reloads the application while unregistering any active Service Workers.
+ * This serves as an escape hatch when the DuckDB-Wasm initialization times out,
+ * which is often caused by the browser caching a stale or broken WebAssembly bundle.
+ */
 function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations()
@@ -604,6 +609,11 @@ async function updateJoinColumns() {
     }
 }
 
+/**
+ * Updates the disabled state and tooltips of the console action buttons
+ * (Recipes, Export, Clear) based on whether any tables are currently loaded.
+ * Prevents users from interacting with data-dependent actions when the workspace is empty.
+ */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
     recipeSelect.disabled = !hasData;
