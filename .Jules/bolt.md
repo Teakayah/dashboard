@@ -57,3 +57,6 @@
 ## 2026-07-28 - Conditionally Bypass BigInt Checks for Arrow Proxies
 **Learning:** DuckDB-Wasm queries with large row counts spend significant time executing `typeof val === 'bigint'` checks on every single cell of every row if any column in the table has a BigInt. Because Arrow Proxies are already converted to plain objects via `.toJSON()`, we can just identify which columns are BigInt from the schema, and directly mutate only those specific columns, bypassing full row iteration and redundant `typeof` checks for strings/numbers.
 **Action:** When extracting data from Arrow proxies, inspect `result.schema.fields` for 64-bit widths to collect specific BigInt columns. Reuse the plain object from `.toJSON()` (or shallow copy it) and iterate only the known BigInt columns to stringify them.
+## 2026-07-29 - Parallelize multi-file read operations
+**Learning:** In browser environments handling multi-part datasets (like Delta Lake with many parquet files), iterating files with a standard `for...of` loop and sequentially awaiting `file.arrayBuffer()` creates an O(N) I/O bottleneck.
+**Action:** Always use `await Promise.all(array.map(async item => ...))` to concurrently fetch and register file buffers when processing directory structures, maximizing throughput.

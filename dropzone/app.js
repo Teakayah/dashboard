@@ -813,11 +813,14 @@ async function handleFiles(files) {
             const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
             const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
             
-            for (const file of dirFiles) {
+            // ⚡ Bolt Performance: Parallelize file reading and buffer registration
+            // This changes O(N) sequential file I/O to concurrent I/O, which massively
+            // reduces load times for partitioned datasets (like Delta Lake) with many files.
+            await Promise.all(dirFiles.map(async file => {
                 const fullPath = file.webkitRelativePath || file.name;
                 const buffer = await file.arrayBuffer();
                 await db.registerFileBuffer(fullPath, new Uint8Array(buffer));
-            }
+            }));
 
             if (isDelta) {
                 if (!window.deltaSupported) {
