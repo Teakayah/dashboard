@@ -334,7 +334,6 @@ async function init() {
         setProgress(10);
         statusEl.textContent = 'Selecting bundle...';
         const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
-        console.log('Selected bundle:', bundle);
 
         setProgress(30);
         statusEl.textContent = 'Instantiating DuckDB...';
@@ -349,8 +348,6 @@ async function init() {
         const opfsSupported = !!(navigator.storage && navigator.storage.getDirectory);
         // We use a versioned name for OPFS to avoid conflicts with older incompatible files
         const dbPath = opfsSupported ? 'opfs://duckdb_v1.db' : null;
-        
-        console.log('DuckDB init:', { accessMode, dbPath, opfsSupported });
 
         try {
             await db.open({ path: dbPath, accessMode });
@@ -380,7 +377,6 @@ async function init() {
         if (!timedOut) {
             statusEl.textContent = 'DuckDB Ready';
         }
-        console.log('DuckDB-Wasm initialized');
 
         // Restore loaded tables
         await restoreState();

@@ -9,9 +9,7 @@ The feed is regenerated on every deploy so subscribers always see the latest upd
 import html as html_lib
 import json
 import re
-import subprocess
 import concurrent.futures
-from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
 
