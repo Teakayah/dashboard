@@ -116,3 +116,67 @@ def test_generate_icons_main(tmp_path, monkeypatch):
         assert img.size == (192, 192)
         assert img.mode == 'RGBA'
         assert img.getpixel((96, 96)) == (255, 255, 255, 255)
+
+def test_debug_browser_run_server():
+    module = load_script_as_module('debug_browser.py', 'scripts.debug_browser')
+    with patch.object(module, 'HTTPServer') as mock_server:
+        module.run_server()
+        mock_server.assert_called_once()
+        mock_server.return_value.serve_forever.assert_called_once()
+
+def test_debug_browser_main():
+    module = load_script_as_module('debug_browser.py', 'scripts.debug_browser')
+    with patch.object(module, 'threading') as mock_threading:
+        with patch.object(module, 'sync_playwright') as mock_pw:
+            with patch('builtins.print'):
+                mock_p = mock_pw.return_value.__enter__.return_value
+                mock_browser = mock_p.chromium.launch.return_value
+                mock_context = mock_browser.new_context.return_value
+                mock_page = mock_context.new_page.return_value
+                mock_page.locator.return_value.inner_text.return_value = "Ready"
+
+                module.main()
+
+                mock_threading.Thread.assert_called_once_with(target=module.run_server, daemon=True)
+                mock_threading.Thread.return_value.start.assert_called_once()
+                mock_p.chromium.launch.assert_called_once_with(headless=True)
+                mock_page.goto.assert_called_once()
+
+def test_debug_browser_callbacks():
+    module = load_script_as_module('debug_browser.py', 'scripts.debug_browser')
+    with patch.object(module, 'threading'):
+        with patch.object(module, 'sync_playwright') as mock_pw:
+            with patch('builtins.print') as mock_print:
+                mock_p = mock_pw.return_value.__enter__.return_value
+                mock_browser = mock_p.chromium.launch.return_value
+                mock_context = mock_browser.new_context.return_value
+                mock_page = mock_context.new_page.return_value
+
+                module.main()
+
+                # Check that on was called for console and pageerror
+                calls = mock_page.on.call_args_list
+                assert len(calls) == 2
+                assert calls[0][0][0] == 'console'
+                assert calls[1][0][0] == 'pageerror'
+
+                # Test the lambdas
+                console_lambda = calls[0][0][1]
+                error_lambda = calls[1][0][1]
+
+                mock_msg = MagicMock()
+                mock_msg.type = "log"
+                mock_msg.text = "Hello world"
+                console_lambda(mock_msg)
+                mock_print.assert_any_call("CONSOLE: [log] Hello world")
+
+                error_lambda("Test error")
+                mock_print.assert_any_call("PAGE ERROR: Test error")
+
+def test_debug_browser_entrypoint():
+    with patch('threading.Thread') as mock_thread:
+        with patch('playwright.sync_api.sync_playwright') as mock_pw:
+            with patch('builtins.print'):
+                run_script('debug_browser.py')
+                mock_thread.assert_called_once()
+                mock_pw.assert_called_once()

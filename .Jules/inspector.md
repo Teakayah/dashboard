@@ -47,3 +47,7 @@
 ## 2026-07-25 - Testing CSV File Downloads
 **Learning:** Testing file downloads in Playwright requires verifying that the downloaded file is not an empty artifact. Catch-all assertions on the content can mask empty file downloads if the fallback handles empty strings gracefully or if the file isn't verified for size first.
 **Action:** Always assert the file size of the downloaded file using `os.path.getsize(dl.path()) > 0` before attempting to read its contents when testing file downloads.
+
+## 2026-07-29 - Testing Event Listener Lambdas in Playwright Mocks
+**Learning:** When mocking Playwright objects that accept lambda functions as event handlers (e.g., `page.on("console", lambda msg: ...)`), the lambdas themselves must be explicitly executed in the test using `mock_page.on.call_args_list` to verify their internal behavior (like logging statements) and ensure full coverage.
+**Action:** Always extract lambda arguments from mock call logs and invoke them with dummy `MagicMock` event objects to test their inner assertions/side-effects.
