@@ -6,7 +6,7 @@ import sys
 
 # Add root folder to path so we can import conftest
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from tests.conftest import PORT, WasmHandler, REPO_ROOT
+from tests.conftest import PORT, WasmHandler
 
 def run_server():
     server = HTTPServer(('127.0.0.1', PORT), WasmHandler)

@@ -61,3 +61,6 @@ Action: Always meticulously verify that the deduplicated code block preserves an
 ## 2026-07-28 - Extracted dead analysis code
 Learning: Discovered obsolete string replacement logic for dead `analysis_utils.js` script in deployment code, which cluttered the script and tests.
 Action: Removed dead python logic to simplify deployment and testing footprint.
+## $(date +%Y-%m-%d) - Removed unused library imports
+Learning: Removed unused python standard library imports across the project which acts as dead code.
+Action: To apply this next time I can run ruff check --select F401,F841 to verify dead code before running to fix unused variables.
