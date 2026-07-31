@@ -88,3 +88,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-07-27 - Documenting UI orchestration and Service Worker fallbacks
 **Learning:** Utility functions like `updateConsoleActionsUI` that toggle interactive states across multiple UI elements, and `reloadWithoutSW` which handles critical caching fallbacks, lacked JSDoc documentation in `dropzone/app.js`. This creates knowledge silos where developers must read the full implementation to understand a function's side effects or why it exists (e.g. escaping stale Wasm caches).
 **Action:** Always provide explicit JSDoc comments for UI state orchestrators and critical environment escape-hatches to ensure their purpose and side effects are immediately clear to maintainers.
+## $(date +%Y-%m-%d) - Document complete test environment setup
+**Learning:** The README missed critical Playwright installation steps and directed users to use global \`pytest\`, which fails with \`ModuleNotFoundError\` due to path mismatches in this repository.
+**Action:** Always document full dependency bootstrapping (including OS-level UI testing deps) and mandate module-based test execution (\`python3 -m pytest\`) in project setup guides to prevent contributor friction.
