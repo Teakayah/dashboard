@@ -148,6 +148,34 @@ class TestFloodPageButtons:
         _load_page(page, FLOOD_URL)
         expect(page.locator(".share-btn")).to_be_visible()
 
+    def test_share_button_fallback_to_clipboard(self, page: Page):
+        _load_page(page, FLOOD_URL)
+
+        from urllib.parse import urlparse
+        origin = f"{urlparse(page.url).scheme}://{urlparse(page.url).netloc}"
+        page.context.grant_permissions(['clipboard-read', 'clipboard-write'], origin=origin)
+
+        # Properly disable navigator.share on the prototype so it falls back to clipboard
+        page.evaluate("delete Navigator.prototype.share")
+
+        # Clear clipboard first to avoid false positives
+        page.evaluate("navigator.clipboard.writeText('')")
+
+        share_btn = page.locator(".share-btn")
+        expect(share_btn).to_be_visible()
+
+        # Use native Playwright click to dispatch a trusted event (required by clipboard APIs)
+        share_btn.click()
+
+        # Poll the clipboard to handle the async write
+        page.wait_for_function(
+            "navigator.clipboard.readText().then(text => text.includes('flood_risk_gatineau_ottawa.html'))",
+            timeout=3000
+        )
+
+        clipboard_content = page.evaluate("navigator.clipboard.readText()")
+        assert "flood_risk_gatineau_ottawa.html" in clipboard_content
+
     def test_reset_button_reverts_offset(self, page: Page):
         _load_page(page, FLOOD_URL)
         slider = page.locator("#levelSlider")

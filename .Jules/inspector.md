@@ -47,3 +47,7 @@
 ## 2026-07-25 - Testing CSV File Downloads
 **Learning:** Testing file downloads in Playwright requires verifying that the downloaded file is not an empty artifact. Catch-all assertions on the content can mask empty file downloads if the fallback handles empty strings gracefully or if the file isn't verified for size first.
 **Action:** Always assert the file size of the downloaded file using `os.path.getsize(dl.path()) > 0` before attempting to read its contents when testing file downloads.
+
+## 2026-07-31 - Testing navigator.share Fallback
+**Learning:** Testing fallback logic for missing Web APIs (like `navigator.share`) can be reliably achieved in Playwright by explicitly deleting the API from the `window` or `navigator` object using `page.evaluate("delete navigator.share")` before triggering the interaction.
+**Action:** Always delete the primary Web API in Playwright tests when attempting to cover fallback logic (like clipboard copy) to ensure the fallback branch is executed and testable.
