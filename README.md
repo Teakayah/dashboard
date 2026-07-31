@@ -53,9 +53,11 @@ Before proposing changes, please read the [TODO.md](TODO.md) file to check for c
     git clone https://github.com/Teakayah/dashboard.git
     cd dashboard
     ```
-2.  Install dependencies (for data updates):
+2.  Install dependencies (for data extraction and testing):
     ```bash
-    pip install -r requirements.txt
+    python3 -m pip install -r requirements.txt
+    playwright install
+    playwright install-deps
     ```
 3.  Configure environment variables (required for AI descriptions):
     ```bash
@@ -79,9 +81,10 @@ This project uses a dual-branch workflow:
 *   `main`: Reserved exclusively for CI-generated production artifacts (HTML, XML, PNGs). **Do not commit directly to `main`.**
 
 ## 🧪 Development & Testing
-Run the test suite to verify data extraction (UI testing is a work in progress):
+Run the test suite to verify data extraction and UI components.
+Always use `python3 -m pytest` rather than the global `pytest` command to ensure the local environment and Playwright dependencies resolve correctly:
 ```bash
-pytest
+python3 -m pytest
 ```
 
 ---
