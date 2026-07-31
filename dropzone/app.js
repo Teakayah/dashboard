@@ -1267,6 +1267,7 @@ downloadBtn.addEventListener('click', async () => {
         a.download = `query_results_${new Date().getTime()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
+        showToast('CSV downloaded successfully', 'success');
     } catch (err) {
         console.error(err);
         showToast('Export Error: ' + err.message);
@@ -1282,6 +1283,7 @@ copyJsonBtn.addEventListener('click', () => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
+        showToast('JSON copied to clipboard', 'success');
     }).catch(err => {
         console.error(err);
         showToast('Clipboard Error: ' + err.message);
@@ -1348,6 +1350,7 @@ exportDbBtn.addEventListener('click', async () => {
         a.download = `datadashboard_export_${new Date().getTime()}.db`;
         a.click();
         URL.revokeObjectURL(url);
+        showToast('Database exported successfully', 'success');
     } catch (err) {
         console.error(err);
         showToast('Database Export Error: ' + err.message);
