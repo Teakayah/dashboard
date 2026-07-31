@@ -75,8 +75,6 @@ def ollama_describe(content: str, filename: str) -> str:
         method='POST',
     )
     try:
-        if not OLLAMA_URL.lower().startswith(('http://', 'https://')):
-            raise ValueError(f"Invalid URL scheme: {OLLAMA_URL}")
         with urllib.request.urlopen(req, timeout=OLLAMA_TIMEOUT) as resp:  # nosec B310
             result = json.loads(resp.read()).get('response', '').strip()
             return result[:117] + '…' if len(result) > 120 else result
