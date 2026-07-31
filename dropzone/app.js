@@ -804,20 +804,20 @@ async function handleFiles(files) {
         }
 
         // Process standalone files
-        for (const file of standaloneFiles) {
-            await processFile(file, file.name);
-        }
+        // ⚡ Bolt: Process files concurrently to avoid O(N) I/O bottlenecks
+        await Promise.all(standaloneFiles.map(file => processFile(file, file.name)));
 
         // Process directory groups (Potential Delta Lake or multi-part datasets)
         for (const [dirName, dirFiles] of Object.entries(fileGroups)) {
             const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
             const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
             
-            for (const file of dirFiles) {
+            // ⚡ Bolt: Concurrent file buffering drastically reduces load times for partitioned datasets
+            await Promise.all(dirFiles.map(async file => {
                 const fullPath = file.webkitRelativePath || file.name;
                 const buffer = await file.arrayBuffer();
                 await db.registerFileBuffer(fullPath, new Uint8Array(buffer));
-            }
+            }));
 
             if (isDelta) {
                 if (!window.deltaSupported) {
@@ -833,9 +833,8 @@ async function handleFiles(files) {
                 await onTableLoaded(tableName);
             } else {
                 // If not delta, just treat as individual files (default behavior)
-                for (const file of dirFiles) {
-                    await processFile(file, file.webkitRelativePath || file.name);
-                }
+                // ⚡ Bolt: Process fallback individual files concurrently
+                await Promise.all(dirFiles.map(file => processFile(file, file.webkitRelativePath || file.name)));
             }
         }
 
