@@ -477,6 +477,8 @@ async function displayTableSchema(tableName) {
                     chartCont.className = 'mini-chart-container';
                     chartCont.style.height = '100px';
                     const canvas = document.createElement('canvas');
+                    canvas.setAttribute('role', 'img');
+                    canvas.setAttribute('aria-label', `Distribution chart for ${r.column_name}`);
                     chartCont.appendChild(canvas);
                     statsContainer.appendChild(chartCont);
 
@@ -1094,6 +1096,8 @@ function createPreviewCard(title, renderFn) {
     
     const canvas = document.createElement('canvas');
     canvas.id = id;
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute('aria-label', `Chart preview: ${title}`);
     card.appendChild(canvas);
     
     previewsContainer.appendChild(card);
