@@ -155,8 +155,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         return;
     }
 
-    loadingOverlay.style.display = 'flex';
-    try {
+    await withLoading('Error loading remote Delta table', async () => {
         const tableName = 'remote_delta_' + Math.random().toString(36).substr(2, 5);
         // httpfs is required for remote URLs, DuckDB-Wasm usually autoloads it, 
         // but we can ensure it's there if needed.
@@ -175,12 +174,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         const originalText = loadRemoteDeltaBtn.textContent;
         loadRemoteDeltaBtn.textContent = 'Table Loaded!';
         setTimeout(() => { loadRemoteDeltaBtn.textContent = originalText; }, 2000);
-    } catch (err) {
-        console.error(err);
-        showToast('Error loading remote Delta table: ' + err.message);
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
+    });
 });
 
 /**
@@ -782,10 +776,9 @@ fileInput.addEventListener('change', () => {
  * @param {FileList|Array<File>} files - The files selected or dropped by the user.
  */
 async function handleFiles(files) {
-    loadingOverlay.style.display = 'flex';
     previewsContainer.textContent = '';
     
-    try {
+    await withLoading('Error loading files', async () => {
         // Group files by their relative path to detect Delta Lake tables
         const fileGroups = {};
         const standaloneFiles = [];
@@ -844,12 +837,7 @@ async function handleFiles(files) {
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
         updateJoinUI();
         updateConsoleActionsUI();
-    } catch (err) {
-        console.error(err);
-        showToast('Error loading files: ' + err.message);
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
+    });
 }
 
 /**
@@ -1182,8 +1170,7 @@ async function runQuery() {
     const sql = sqlInput.value.trim();
     if (!sql) return;
     
-    loadingOverlay.style.display = 'flex';
-    try {
+    await withLoading('Query Error', async () => {
         const start = performance.now();
         const result = await conn.query(sql);
         const duration = Math.round(performance.now() - start);
@@ -1196,12 +1183,7 @@ async function runQuery() {
         copyJsonBtn.title = '';
         statusEl.textContent = `Query executed in ${duration}ms`;
         addToHistory(sql);
-    } catch (err) {
-        console.error(err);
-        showToast('Query Error: ' + err.message);
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
+    });
 }
 
 /**
@@ -1253,8 +1235,7 @@ function renderResults(rows) {
 
 downloadBtn.addEventListener('click', async () => {
     if (!lastResult || lastResult.length === 0) return;
-    loadingOverlay.style.display = 'flex';
-    try {
+    await withLoading('Export Error', async () => {
         const csvPath = 'export.csv';
         // The user's query might end with a semicolon (e.g. `SELECT * FROM table;`).
         // DuckDB's COPY wraps the query in parentheses, and a nested semicolon causes a syntax error.
@@ -1269,12 +1250,7 @@ downloadBtn.addEventListener('click', async () => {
         a.download = `query_results_${new Date().getTime()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
-    } catch (err) {
-        console.error(err);
-        showToast('Export Error: ' + err.message);
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
+    });
 });
 
 copyJsonBtn.addEventListener('click', () => {
@@ -1291,8 +1267,7 @@ copyJsonBtn.addEventListener('click', () => {
 });
 
 loadSamplesBtn.addEventListener('click', async () => {
-    loadingOverlay.style.display = 'flex';
-    try {
+    await withLoading('Sample Loading Error', async () => {
         for (const [name, content] of Object.entries(SAMPLE_DATA)) {
             const tableName = name.replace('.csv', '');
             await db.registerFileText(name, content);
@@ -1322,17 +1297,11 @@ loadSamplesBtn.addEventListener('click', async () => {
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
         setTimeout(() => { loadSamplesBtn.textContent = originalText; }, 2000);
-    } catch (err) {
-        console.error(err);
-        showToast('Sample Loading Error: ' + err.message);
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
+    });
 });
 
 exportDbBtn.addEventListener('click', async () => {
-    loadingOverlay.style.display = 'flex';
-    try {
+    await withLoading('Database Export Error', async () => {
         // We can't directly download the indexeddb file from here, 
         // so we export to a temporary buffer and download.
         await conn.query(`CHECKPOINT`); // Ensure all data is flushed
@@ -1350,19 +1319,13 @@ exportDbBtn.addEventListener('click', async () => {
         a.download = `datadashboard_export_${new Date().getTime()}.db`;
         a.click();
         URL.revokeObjectURL(url);
-    } catch (err) {
-        console.error(err);
-        showToast('Database Export Error: ' + err.message);
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
+    });
 });
 
 clearBtn.addEventListener('click', async () => {
     if (!confirm('This will permanently delete all loaded tables from your local storage. Continue?')) return;
     
-    loadingOverlay.style.display = 'flex';
-    try {
+    await withLoading('Clear Error', async () => {
         const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
         const tables = getRows(tablesResult).map(r => r.table_name);
         
@@ -1389,13 +1352,26 @@ clearBtn.addEventListener('click', async () => {
         updateChartBuilderUI();
         updateConsoleActionsUI();
         statusEl.textContent = 'Storage cleared';
+    });
+});
+
+/**
+ * Wraps an async function with loading overlay state management.
+ *
+ * @param {string} errorPrefix - Prefix for the error toast message.
+ * @param {Function} asyncFn - The async function to execute.
+ */
+async function withLoading(errorPrefix, asyncFn) {
+    loadingOverlay.style.display = 'flex';
+    try {
+        await asyncFn();
     } catch (err) {
         console.error(err);
-        showToast('Clear Error: ' + err.message);
+        showToast(errorPrefix + ': ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
     }
-});
+}
 
 init();
 
