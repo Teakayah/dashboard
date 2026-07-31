@@ -61,3 +61,6 @@ Action: Always meticulously verify that the deduplicated code block preserves an
 ## 2026-07-28 - Extracted dead analysis code
 Learning: Discovered obsolete string replacement logic for dead `analysis_utils.js` script in deployment code, which cluttered the script and tests.
 Action: Removed dead python logic to simplify deployment and testing footprint.
+## 2026-07-29 - Removed leftover debug logs
+**Learning:** Found leftover `console.log()` statements across front-end files (`dropzone/app.js`, `dropzone.html`, `employment_rate_canada.html`, `flood_risk_gatineau_ottawa.html`, `nhpi_big6_comparison.html`). These logs clutter the console and act as tech debt.
+**Action:** Removed all unnecessary `console.log()` calls from JS and HTML files.
