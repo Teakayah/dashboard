@@ -51,3 +51,7 @@
 ## 2026-07-29 - Testing Event Listener Lambdas in Playwright Mocks
 **Learning:** When mocking Playwright objects that accept lambda functions as event handlers (e.g., `page.on("console", lambda msg: ...)`), the lambdas themselves must be explicitly executed in the test using `mock_page.on.call_args_list` to verify their internal behavior (like logging statements) and ensure full coverage.
 **Action:** Always extract lambda arguments from mock call logs and invoke them with dummy `MagicMock` event objects to test their inner assertions/side-effects.
+
+## 2026-08-01 - Testing Chart.js Canvas Exports
+**Learning:** File downloads triggered by dynamically generated canvas elements using `canvas.toDataURL()` and `a.download` can be captured and verified with Playwright's `expect_download`. This proves the visual chart builder produces tangible output.
+**Action:** Always assert the exported canvas artifact has a non-zero size (`os.path.getsize(dl.path()) > 0`) instead of just assuming the click event successfully encoded the image.
