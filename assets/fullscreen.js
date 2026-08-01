@@ -1,4 +1,19 @@
+/**
+ * Automatically wraps all <canvas> elements on the page with a container
+ * and injects a "Full Screen" toggle button.
+ *
+ * This script is intended to be included globally. It relies on specific CSS
+ * classes (`chart-container`, `chart-fullscreen`, `fullscreen-btn`) defined in
+ * `theme.css` to handle the actual visual transitions and layout.
+ */
 (function() {
+  /**
+   * Scans the DOM for unwrapped <canvas> elements, wraps them in a
+   * `.chart-container`, and appends a fullscreen toggle button.
+   *
+   * Binds click handlers that toggle the `.chart-fullscreen` class and dispatch
+   * a global `resize` event to force Chart.js to re-render at the new dimensions.
+   */
   function initFullscreen() {
     const canvases = document.querySelectorAll('canvas');
     canvases.forEach(canvas => {

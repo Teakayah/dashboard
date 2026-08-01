@@ -91,3 +91,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## $(date +%Y-%m-%d) - Document complete test environment setup
 **Learning:** The README missed critical Playwright installation steps and directed users to use global \`pytest\`, which fails with \`ModuleNotFoundError\` due to path mismatches in this repository.
 **Action:** Always document full dependency bootstrapping (including OS-level UI testing deps) and mandate module-based test execution (\`python3 -m pytest\`) in project setup guides to prevent contributor friction.
+
+## 2026-08-01 - Documenting Global UI Injection Scripts
+**Learning:** `assets/fullscreen.js` injects a fullscreen toggle button into every `<canvas>` on the page automatically. Without JSDoc or comments explaining this global side-effect and the specific CSS classes it relies on (`chart-container`, `chart-fullscreen`), it creates a knowledge silo where developers might be confused by where the fullscreen button comes from or how to style it.
+**Action:** When creating scripts that globally select elements and inject new UI components (like wrapping canvases), always provide a header comment explaining the script's overall side-effect and document the specific DOM mutations and CSS classes it expects.
