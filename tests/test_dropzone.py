@@ -8,6 +8,8 @@ Run with:  pytest tests/test_dropzone.py -v
 from pathlib import Path
 import re
 
+import os
+
 from playwright.sync_api import Page, expect
 
 from helpers import (
@@ -380,3 +382,30 @@ def test_copy_json_shows_error_toast_on_failure(dz: Page):
     toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text(re.compile(r'Clipboard Error', re.IGNORECASE))
+
+
+def test_chart_export_downloads_png(dz: Page):
+    """Clicking 💾 PNG must trigger a file download containing the chart image."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=ACTION_TIMEOUT,
+    )
+
+    dz.select_option('#chart-x-col', index=1)
+    dz.select_option('#chart-y-col', index=1)
+    dz.locator('#generate-chart').click()
+
+    dz.wait_for_selector('.preview-card button:has-text("💾 PNG")', timeout=ACTION_TIMEOUT)
+
+    with dz.expect_download() as download_info:
+        dz.locator('.preview-card button:has-text("💾 PNG")').click()
+
+    download = download_info.value
+    assert download.suggested_filename.endswith('.png'), "Downloaded file name should end with '.png'"
+
+    path = download.path()
+    assert os.path.getsize(path) > 0, "Downloaded PNG image should not be empty"
