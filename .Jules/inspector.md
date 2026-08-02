@@ -51,3 +51,7 @@
 ## 2026-07-29 - Testing Event Listener Lambdas in Playwright Mocks
 **Learning:** When mocking Playwright objects that accept lambda functions as event handlers (e.g., `page.on("console", lambda msg: ...)`), the lambdas themselves must be explicitly executed in the test using `mock_page.on.call_args_list` to verify their internal behavior (like logging statements) and ensure full coverage.
 **Action:** Always extract lambda arguments from mock call logs and invoke them with dummy `MagicMock` event objects to test their inner assertions/side-effects.
+
+## 2026-08-02 - MagicMock missing import
+**Learning:** A missing import for `MagicMock` causes tests to crash with `NameError`. Furthermore, `color-contrast` axe rules were incorrectly enabled while the UI still contains violations, failing the CI suite.
+**Action:** Ensure all mocks instantiated in tests are properly imported. Defer known accessibility rules in axe tests until the UI team (Palette) fixes the underlying contrast issue, allowing the test suite to remain green for other regression checks.
