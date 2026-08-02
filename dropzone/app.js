@@ -461,11 +461,24 @@ async function displayTableSchema(tableName) {
             // Profiling logic
             try {
                 statsContainer.textContent = 'Calculating stats...';
-                const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
-                const stats = getRows(profilingResult)[0];
-
-                const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
-                const distRows = getRows(distResult);
+                // ⚡ Bolt: Execute independent profiling queries concurrently using multiple connections to maximize DuckDB connection pool concurrency and avoid unnecessary waterfall I/O latency.
+                // Connections are safely managed and closed in a finally block to prevent resource leaks.
+                let conn1, conn2;
+                let stats, distRows;
+                try {
+                    [conn1, conn2] = await Promise.all([db.connect(), db.connect()]);
+                    const [profilingResult, distResult] = await Promise.all([
+                        conn1.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`),
+                        conn2.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`)
+                    ]);
+                    stats = getRows(profilingResult)[0];
+                    distRows = getRows(distResult);
+                } finally {
+                    const closePromises = [];
+                    if (conn1) closePromises.push(conn1.close());
+                    if (conn2) closePromises.push(conn2.close());
+                    await Promise.all(closePromises);
+                }
 
                 statsContainer.textContent = '';
                 const text = document.createElement('div');
@@ -568,8 +581,21 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await conn.query(`DESCRIBE "${escapeId(tableA)}"`);
-        const schemaBResult = await conn.query(`DESCRIBE "${escapeId(tableB)}"`);
+        // ⚡ Bolt: Fetch table schemas concurrently using multiple connections to reduce waterfall latency
+        let connA, connB;
+        let schemaAResult, schemaBResult;
+        try {
+            [connA, connB] = await Promise.all([db.connect(), db.connect()]);
+            [schemaAResult, schemaBResult] = await Promise.all([
+                connA.query(`DESCRIBE "${escapeId(tableA)}"`),
+                connB.query(`DESCRIBE "${escapeId(tableB)}"`)
+            ]);
+        } finally {
+            const closePromises = [];
+            if (connA) closePromises.push(connA.close());
+            if (connB) closePromises.push(connB.close());
+            await Promise.all(closePromises);
+        }
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
