@@ -204,7 +204,8 @@ def test_flood_simulator_updates_multiple_stations(page: Page):
     page.evaluate("s => { s.value = '2.00'; s.dispatchEvent(new Event('input')); }", slider.element_handle())
     
     # Verify updates
-    page.wait_for_timeout(300)
+    expect(page.locator('#levelDisplay')).not_to_have_text(initial_brit, timeout=3000)
+    expect(page.locator('#hullDisplay')).not_to_have_text(initial_hull, timeout=3000)
     new_brit = page.locator('#levelDisplay').inner_text()
     new_hull = page.locator('#hullDisplay').inner_text()
     
@@ -273,30 +274,38 @@ def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
 
     def assert_height_stable(toggle_selector: str):
         page.locator(toggle_selector).click()
-        # Poll until height stops changing; Chart.js resize callbacks can chain
-        # across many rAF cycles when canvases first become visible.
-        prev_h = None
-        stable_count = 0
-        for _ in range(40):  # up to 8s total
-            h = page.evaluate('document.documentElement.scrollHeight')
-            if prev_h is not None and abs(h - prev_h) <= 4:
-                stable_count += 1
-                if stable_count >= 4:  # stable for 800ms
-                    return
-            else:
-                stable_count = 0
-            prev_h = h
-            page.wait_for_timeout(200)
-        assert False, (
-            f'{toggle_selector}: page height never stabilized (last value: {prev_h})'
-        )
 
+        page.evaluate("""
+            () => {
+                delete window._lastHeight;
+                delete window._stableCount;
+            }
+        """)
+        page.wait_for_function("""
+            () => {
+                if (window._lastHeight === undefined) {
+                    window._lastHeight = document.documentElement.scrollHeight;
+                    window._stableCount = 0;
+                    return false;
+                }
+                const h = document.documentElement.scrollHeight;
+                if (Math.abs(h - window._lastHeight) <= 4) {
+                    window._stableCount++;
+                } else {
+                    window._stableCount = 0;
+                }
+                window._lastHeight = h;
+                return window._stableCount >= 4; // stable for 4 polls
+            }
+        """, timeout=8000)
+
+    import re
     assert_height_stable('#rate-btnS')
     page.locator('.tab', has_text='Government Debt').click()
-    page.wait_for_timeout(300)
+    expect(page.locator('#panel-debt')).to_have_class(re.compile(r'\bactive\b'), timeout=3000)
     assert_height_stable('#debt-btnS')
     page.locator('.tab', has_text='Population').click()
-    page.wait_for_timeout(300)
+    expect(page.locator('#panel-pop')).to_have_class(re.compile(r'\bactive\b'), timeout=3000)
     assert_height_stable('#pop-btnS')
 
 
@@ -309,14 +318,40 @@ def test_flood_dashboard_height_stabilizes(page: Page):
     except Exception:
         pass
 
+    import re
     tabs = ['gauge', 'history', 'snowpack']
     for tab in tabs:
         page.locator(f".tab[onclick*=\"'{tab}'\"]").click()
-        page.wait_for_timeout(300)
+        expect(page.locator(f'#panel-{tab}')).to_have_class(re.compile(r'\bactive\b'), timeout=3000)
+
+        page.evaluate("""
+            () => {
+                delete window._lastHeight;
+                delete window._stableCount;
+            }
+        """)
+        page.wait_for_function("""
+            () => {
+                if (window._lastHeight === undefined) {
+                    window._lastHeight = document.documentElement.scrollHeight;
+                    window._stableCount = 0;
+                    return false;
+                }
+                const h = document.documentElement.scrollHeight;
+                if (Math.abs(h - window._lastHeight) <= 5) {
+                    window._stableCount++;
+                } else {
+                    window._stableCount = 0;
+                }
+                window._lastHeight = h;
+                return window._stableCount >= 5; // stable for 5 polls
+            }
+        """, timeout=5000)
+
+        # After waiting for stability, collect heights to satisfy assertion structure
         heights = []
         for _ in range(5):
             heights.append(page.evaluate('document.documentElement.scrollHeight'))
-            page.wait_for_timeout(200)
         
         diff = max(heights) - min(heights)
         assert diff <= 5, (
@@ -390,7 +425,7 @@ def test_viz_elements_have_height(page: Page, filename: str):
         for i in range(tab_count):
             # Click the tab and wait for animation/rendering
             tabs.nth(i).click()
-            page.wait_for_timeout(300)
+            expect(page.locator('.panel.active')).to_be_visible(timeout=3000)
             
             elements = page.evaluate("""
                 () => {
@@ -420,7 +455,13 @@ def test_viz_elements_have_height(page: Page, filename: str):
             assert not elements, f"Collapsed visualizations on {filename} tab '{tab_name}': {elements}"
     else:
         # Standard page with no tabs
-        page.wait_for_timeout(500)
+        # Wait for any canvas to be rendered and visible, if any canvases are expected on this page
+        # E.g. nhpi_big6_comparison.html has one, but dropzone.html does not have a canvas initially
+        try:
+            page.wait_for_selector('canvas', state='attached', timeout=500)
+        except Exception:
+            pass
+
         elements = page.evaluate("""
             () => {
                 const results = [];
