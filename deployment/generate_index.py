@@ -49,20 +49,31 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
 
     # Meta description
     desc_match = re.search(
-        r'<meta[^>]*name=["\']description["\'][^>]*content=["\'](.*?)["\']',
-        content, re.IGNORECASE
+        r'''
+        <meta[^>]*                              # Match the opening <meta tag and any preceding attributes
+        name=["\']description["\']              # Match the name attribute ensuring it is 'description'
+        [^>]*                                   # Match any attributes between name and content
+        content=["\'](.*?)["\']                 # Group 1: Non-greedily capture the description text
+        ''',
+        content,
+        re.IGNORECASE | re.VERBOSE
     )
     description = desc_match.group(1).strip() if desc_match else ''
 
     # If no meta description, look for a subtitle element (common pattern in your files)
     if not description:
-        # Regex breakdown:
-        # <([a-zA-Z0-9]+)   - Group 1: Captures the HTML tag name (e.g., div, span, p)
-        # [^>]*class=...    - Ensures the tag has a class attribute containing 'subtitle'
-        # >(.*?)</\1>       - Group 2: Non-greedily captures the inner content.
-        #                     The \1 backreference dynamically matches the exact closing tag
-        #                     captured in Group 1, preventing premature matches if inner tags exist.
-        sub_match = re.search(r'<([a-zA-Z0-9]+)[^>]*class=["\'][^"\']*subtitle[^"\']*["\'][^>]*>(.*?)</\1>', content, re.IGNORECASE | re.DOTALL)
+        sub_match = re.search(
+            r'''
+            <([a-zA-Z0-9]+)                         # Group 1: Match the opening HTML tag name (e.g., div, span, p)
+            [^>]*                                   # Match any preceding attributes before 'class'
+            class=["\'][^"\']*subtitle[^"\']*["\']  # Match the class attribute ensuring it contains 'subtitle'
+            [^>]*>                                  # Match any remaining attributes and the closing angle bracket
+            (.*?)                                   # Group 2: Non-greedily capture the inner HTML content
+            </\1>                                   # Match the exact closing tag using backreference to Group 1
+            ''',
+            content,
+            re.IGNORECASE | re.DOTALL | re.VERBOSE
+        )
         if sub_match:
             description = re.sub(r'<[^>]+>', '', sub_match.group(2)).strip()
             description = re.sub(r'\s+', ' ', description)
