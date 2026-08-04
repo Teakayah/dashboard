@@ -191,10 +191,13 @@ class TestFloodPageButtons:
 
         # Get initial values
         low_hull = float(page.locator("#hullDisplay").inner_text())
+        low_hull_text = page.locator("#hullDisplay").inner_text()
 
         # Move slider up
         page.locator("#levelSlider").evaluate("el => { el.value = '2.0'; el.dispatchEvent(new Event('input')); }")
-        page.wait_for_timeout(300)
+
+        # Use auto-waiting assertion instead of explicit wait_for_timeout
+        expect(page.locator("#hullDisplay")).not_to_have_text(low_hull_text, timeout=3000)
 
         high_hull = float(page.locator("#hullDisplay").inner_text())
 

@@ -164,9 +164,10 @@ def test_debug_browser_callbacks():
                 console_lambda = calls[0][0][1]
                 error_lambda = calls[1][0][1]
 
-                mock_msg = MagicMock()
-                mock_msg.type = "log"
-                mock_msg.text = "Hello world"
+                class MockMsg:
+                    type = "log"
+                    text = "Hello world"
+                mock_msg = MockMsg()
                 console_lambda(mock_msg)
                 mock_print.assert_any_call("CONSOLE: [log] Hello world")
 
