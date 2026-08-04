@@ -1,10 +1,17 @@
-import pytest
+import csv
 import json
 from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 
-from deployment.update_statcan_data import fetch_changed_since, _get_end_period, _normalize_pid, _load_last_checked
-import csv
+import pytest
+
+from deployment.update_statcan_data import (
+    _get_end_period,
+    _load_last_checked,
+    _normalize_pid,
+    fetch_changed_since,
+)
+
 
 @pytest.mark.parametrize("raw_pid,expected", [
     ('1010001501', '10100015'),
@@ -227,6 +234,7 @@ def test_download_table_network_error(mock_urlopen, mock_get_end_period, tmp_pat
 
 def test_write_status_success(tmp_path):
     from datetime import datetime, timezone
+
     from deployment.update_statcan_data import _write_status
     now = datetime.now(timezone.utc)
     today = date.today()
@@ -322,6 +330,7 @@ def test_download_table_no_change(tmp_path, monkeypatch):
     import sys
     import zipfile
     from unittest.mock import MagicMock
+
     from deployment import update_statcan_data
     monkeypatch.setattr(update_statcan_data, 'ROOT', tmp_path)
 
@@ -360,8 +369,9 @@ def test_download_table_no_change(tmp_path, monkeypatch):
 
 @patch('deployment.update_statcan_data._get_end_period')
 def test_download_table_path_traversal(mock_get_end_period, tmp_path):
-    import zipfile
     import io
+    import zipfile
+
     from deployment.update_statcan_data import download_table
     table = {'id': '12345678', 'desc': 'Test Table', 'path': tmp_path / '12345678'}
     mock_get_end_period.return_value = '2023-01'

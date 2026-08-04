@@ -1,6 +1,7 @@
-from pathlib import Path
-from unittest.mock import patch, mock_open
 import importlib.util
+from pathlib import Path
+from unittest.mock import mock_open, patch
+
 
 def run_script(script_name):
     path = Path(__file__).parent.parent.parent / 'scripts' / script_name

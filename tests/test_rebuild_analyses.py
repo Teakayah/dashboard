@@ -1,14 +1,16 @@
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from deployment.rebuild_analyses import (
-    extract_nhpi,
-    extract_statcan_data,
     _clean,
     _inject_const,
     _read_csv,
-    rebuild_employment
+    extract_nhpi,
+    extract_statcan_data,
+    rebuild_employment,
 )
-from pathlib import Path
 
 
 def create_row(
@@ -1012,9 +1014,9 @@ def test_main_exception_handling(mock_root, capsys):
     assert "ERROR rebuilding test.html: Test Exception" in captured.out
 
 def test_extract_statcan_data_invalid_ref_date():
-    from deployment.rebuild_analyses import extract_statcan_data
     # Need to match ALL default filters for 17100005 to process REF_DATE
     from deployment.config import EXTRACTION_CONFIGS
+    from deployment.rebuild_analyses import extract_statcan_data
     row = {"REF_DATE": "bad_", "GEO": "Ontario", "VALUE": "16000000"}
     row.update(EXTRACTION_CONFIGS["17100005"]["default_filters"])
 
@@ -1040,8 +1042,8 @@ def test_extract_statcan_data_nhpi(mock_extract_nhpi):
     assert res == {"nhpi": "data"}
 
 def test_extract_statcan_data_strip_optimization():
-    from deployment.rebuild_analyses import extract_statcan_data
     from deployment.config import EXTRACTION_CONFIGS
+    from deployment.rebuild_analyses import extract_statcan_data
 
     # 14100287 has default_filters and variants we can target
     row = {
@@ -1063,8 +1065,8 @@ def test_extract_statcan_data_strip_optimization():
         assert row[k] == v  # Value should be modified in place
 
 def test_extract_statcan_data_general_buckets():
-    from deployment.rebuild_analyses import extract_statcan_data
     from deployment.config import EXTRACTION_CONFIGS
+    from deployment.rebuild_analyses import extract_statcan_data
 
     # Target table_id without variant that falls through to return buckets directly
     EXTRACTION_CONFIGS["88888888"] = {"default_filters": {"test": "val"}}

@@ -1,10 +1,11 @@
-import pytest
-import sys
+import importlib.util
 import json
 import subprocess
+import sys
 from unittest.mock import Mock, patch
 
-import importlib.util
+import pytest
+
 
 def load_refresh_module():
     spec = importlib.util.spec_from_file_location("deployment.refresh", "deployment/refresh.py")

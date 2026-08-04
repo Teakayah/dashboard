@@ -9,13 +9,12 @@ import html
 import json
 import re
 from pathlib import Path
-from typing import Optional
 
 # Import centralized configuration
 try:
-    from config import ROOT, SITE_URL, LIBRARY_PATTERNS, ACCENT_COLORS
+    from config import ACCENT_COLORS, LIBRARY_PATTERNS, ROOT, SITE_URL
 except ImportError:
-    from deployment.config import ROOT, SITE_URL, LIBRARY_PATTERNS, ACCENT_COLORS
+    from deployment.config import ACCENT_COLORS, LIBRARY_PATTERNS, ROOT, SITE_URL
 
 EXCLUDE = {'index.html'}
 
@@ -35,7 +34,7 @@ except ImportError:
     from deployment.git_utils import get_git_dates_batched
 
 
-def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None, git_date: Optional[str] = None) -> dict:
+def extract_meta(filepath: Path, content: str, descriptions: dict | None = None, git_date: str | None = None) -> dict:
     """Extract title, description, and tags from an HTML file content.
 
     Falls back to pre-generated descriptions from descriptions.json when no
@@ -119,7 +118,7 @@ RESPONSIVE_PRESETS = {
 }
 
 
-def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.strip())
     parser.add_argument(
         '--responsive-preset',
@@ -642,7 +641,7 @@ def inject_share_fix(content: str, filename: str) -> str:
     return new_content
 
 
-def main(argv: Optional[list[str]] = None):
+def main(argv: list[str] | None = None):
     args = parse_args(argv)
     descriptions = load_descriptions()
     analyses = []

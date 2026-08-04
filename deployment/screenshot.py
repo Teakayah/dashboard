@@ -7,9 +7,9 @@ Called by GitHub Actions after the local HTTP server is started.
 
 import argparse
 import socket
+import subprocess
 import sys
 import time
-import subprocess
 from pathlib import Path
 
 # Import centralized configuration

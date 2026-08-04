@@ -14,9 +14,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import Page
-
 from helpers import BASE
+from playwright.sync_api import Page
 
 AXE_CDN = (
     'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js'

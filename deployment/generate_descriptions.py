@@ -16,8 +16,8 @@ Usage:
 """
 
 import argparse
-import json
 import concurrent.futures
+import json
 import os
 import sys
 import urllib.request

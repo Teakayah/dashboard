@@ -11,13 +11,13 @@ import sys
 from collections import defaultdict
 from itertools import zip_longest
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any
 
 # Import centralized configuration
 try:
-    from config import ROOT, SRC, EXTRACTION_CONFIGS
+    from config import EXTRACTION_CONFIGS, ROOT, SRC
 except ImportError:
-    from deployment.config import ROOT, SRC, EXTRACTION_CONFIGS
+    from deployment.config import EXTRACTION_CONFIGS, ROOT, SRC
 
 
 # ── CSV helpers ────────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ def _read_csv(path: Path) -> list[dict]:
         return [dict(zip_longest(headers, row)) for row in reader if any(row)]
 
 
-def _clean(val: str) -> Optional[float]:
+def _clean(val: str) -> float | None:
     """
     Return float or None for Stats Canada VALUE cells.
 
@@ -67,7 +67,7 @@ def _clean(val: str) -> Optional[float]:
 
 
 def extract_statcan_data(
-    rows: list[dict], table_id: str, variant: Optional[str] = None
+    rows: list[dict], table_id: str, variant: str | None = None
 ) -> Any:
     """Generic engine to filter and group StatCan data based on config."""
     config = EXTRACTION_CONFIGS.get(table_id)
@@ -245,22 +245,34 @@ def _inject_const(html: str, var_name: str, new_value: object) -> tuple[str, boo
     new_json = (
         new_json.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     )
-    pattern = rf"const {re.escape(var_name)}\s*=\s*\{{.*?\}};"
+    pattern = rf'''
+        const\s+                        # Match the 'const' keyword and any trailing whitespace
+        {re.escape(var_name)}           # Match the specific variable name explicitly
+        \s*=\s*                         # Match the assignment operator surrounded by optional whitespace
+        \{{                             # Match the opening brace of the JSON object
+        .*?                             # Non-greedily match the internal JSON content
+        \}}                             # Match the closing brace of the JSON object
+        ;                               # Match the trailing semicolon
+    '''
     new_html, n = re.subn(
         pattern,
         lambda m: f"const {var_name}={new_json};",
         html,
         count=1,
-        flags=re.DOTALL,
+        flags=re.DOTALL | re.VERBOSE,
     )
     return new_html, n > 0 and new_html != html
 
 
 def _inject_insight(html: str, insight: str) -> tuple[str, bool]:
     """Replace content between <!-- insight-inject --> markers."""
-    pattern = r"<!-- insight-inject -->.*?<!-- /insight-inject -->"
+    pattern = r'''
+        <!--\ insight-inject\ -->      # Match the exact opening comment marker
+        .*?                            # Non-greedily match all content inside the marker block
+        <!--\ /insight-inject\ -->     # Match the exact closing comment marker
+    '''
     replacement = f'<!-- insight-inject --><div class="insight-badge">{insight}</div><!-- /insight-inject -->'
-    new_html, n = re.subn(pattern, replacement, html, flags=re.DOTALL)
+    new_html, n = re.subn(pattern, replacement, html, flags=re.DOTALL | re.VERBOSE)
     return new_html, n > 0 and new_html != html
 
 
