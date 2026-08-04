@@ -461,10 +461,21 @@ async function displayTableSchema(tableName) {
             // Profiling logic
             try {
                 statsContainer.textContent = 'Calculating stats...';
-                const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
-                const stats = getRows(profilingResult)[0];
 
-                const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
+                // Performance optimization: Spawning temporary connections and using Promise.all
+                // to execute independent DuckDB-Wasm queries concurrently, preventing UI thread
+                // blocking and drastically reducing load times. Connections must be closed in finally.
+                const [conn1, conn2] = await Promise.all([db.connect(), db.connect()]);
+                let profilingResult, distResult;
+                try {
+                    [profilingResult, distResult] = await Promise.all([
+                        conn1.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`),
+                        conn2.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`)
+                    ]);
+                } finally {
+                    await Promise.all([conn1.close(), conn2.close()]);
+                }
+                const stats = getRows(profilingResult)[0];
                 const distRows = getRows(distResult);
 
                 statsContainer.textContent = '';
@@ -568,8 +579,19 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await conn.query(`DESCRIBE "${escapeId(tableA)}"`);
-        const schemaBResult = await conn.query(`DESCRIBE "${escapeId(tableB)}"`);
+        // Performance optimization: Use multiple temporary connections and Promise.all to fetch
+        // schemas concurrently. This significantly reduces IO bottlenecks compared to sequential
+        // queries on a single connection.
+        const [connA, connB] = await Promise.all([db.connect(), db.connect()]);
+        let schemaAResult, schemaBResult;
+        try {
+            [schemaAResult, schemaBResult] = await Promise.all([
+                connA.query(`DESCRIBE "${escapeId(tableA)}"`),
+                connB.query(`DESCRIBE "${escapeId(tableB)}"`)
+            ]);
+        } finally {
+            await Promise.all([connA.close(), connB.close()]);
+        }
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
