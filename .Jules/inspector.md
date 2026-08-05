@@ -51,3 +51,7 @@
 ## 2026-07-29 - Testing Event Listener Lambdas in Playwright Mocks
 **Learning:** When mocking Playwright objects that accept lambda functions as event handlers (e.g., `page.on("console", lambda msg: ...)`), the lambdas themselves must be explicitly executed in the test using `mock_page.on.call_args_list` to verify their internal behavior (like logging statements) and ensure full coverage.
 **Action:** Always extract lambda arguments from mock call logs and invoke them with dummy `MagicMock` event objects to test their inner assertions/side-effects.
+
+## 2026-08-05 - Fix NameError in tests/scripts/test_scripts.py
+**Learning:** `MagicMock` was used in `test_debug_browser_callbacks` without being imported from `unittest.mock`, causing a `NameError` and failing the test suite.
+**Action:** Always ensure all used testing mocks and utilities are explicitly imported at the top of the file before using them, especially when adding tests to an existing test file.
