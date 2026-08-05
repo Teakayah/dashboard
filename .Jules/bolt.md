@@ -61,3 +61,7 @@
 ## 2026-07-30 - Concurrent I/O for Multi-Part Datasets
 **Learning:** Sequentially awaiting `file.arrayBuffer()` and `db.registerFileBuffer()` for multi-part datasets (like Delta Lake) causes an O(N) I/O bottleneck in DuckDB-Wasm, severely impacting total load time.
 **Action:** Use `Promise.all` with `Array.prototype.map` to concurrently process and register file buffers, maximizing browser I/O throughput.
+
+## 2026-08-05 - [Concurrent DuckDB-Wasm Queries]
+**Learning:** Executing multiple independent DuckDB-Wasm queries sequentially limits throughput. A single AsyncDuckDBConnection cannot execute queries concurrently.
+**Action:** Spawn separate temporary connections via db.connect() for each query, group them with await Promise.all(), and guarantee they are closed in a finally block to maximize connection pool concurrency without resource leaks.

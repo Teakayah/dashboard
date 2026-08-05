@@ -461,10 +461,21 @@ async function displayTableSchema(tableName) {
             // Profiling logic
             try {
                 statsContainer.textContent = 'Calculating stats...';
-                const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
-                const stats = getRows(profilingResult)[0];
 
-                const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
+                // Performance optimization: Execute independent profiling queries concurrently
+                // using separate connections to maximize connection pool concurrency.
+                const [conn1, conn2] = await Promise.all([db.connect(), db.connect()]);
+                let profilingResult, distResult;
+                try {
+                    [profilingResult, distResult] = await Promise.all([
+                        conn1.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`),
+                        conn2.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`)
+                    ]);
+                } finally {
+                    await Promise.all([conn1.close(), conn2.close()]);
+                }
+
+                const stats = getRows(profilingResult)[0];
                 const distRows = getRows(distResult);
 
                 statsContainer.textContent = '';
