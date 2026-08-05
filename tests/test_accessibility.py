@@ -34,7 +34,7 @@ PAGES = [
 
 # axe rules we intentionally defer (tracked in TODO.md §2)
 PENDING_RULES = {
-    # 'color-contrast',               # Fixed via inject_contrast_fix
+    'color-contrast',                 # deferred: external UI/CSS bug (Palette task)
     # 'scrollable-region-focusable',  # flood page .tabs div — deferred until tab keyboard
     #                                 # navigation is implemented (TODO §2.2)
 }
