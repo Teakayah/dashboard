@@ -91,3 +91,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## $(date +%Y-%m-%d) - Document complete test environment setup
 **Learning:** The README missed critical Playwright installation steps and directed users to use global \`pytest\`, which fails with \`ModuleNotFoundError\` due to path mismatches in this repository.
 **Action:** Always document full dependency bootstrapping (including OS-level UI testing deps) and mandate module-based test execution (\`python3 -m pytest\`) in project setup guides to prevent contributor friction.
+
+## 2026-08-06 - Documenting complex regex extractions using re.VERBOSE
+**Learning:** Regular expressions used for extracting metadata from HTML structure (e.g., finding subtitles with specific classes) are often dense and difficult to read when written as a single line, separating the explanation from the logic itself.
+**Action:** When writing complex regular expressions in Python scripts for file manipulation or metadata extraction, always utilize the `re.VERBOSE` flag and format the regex as a multiline string with inline comments to explicitly explain each specific capture group and match requirement directly alongside the regex parts.
