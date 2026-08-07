@@ -461,10 +461,22 @@ async function displayTableSchema(tableName) {
             // Profiling logic
             try {
                 statsContainer.textContent = 'Calculating stats...';
-                const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
-                const stats = getRows(profilingResult)[0];
 
-                const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
+                // Performance optimization: Group independent profiling queries concurrently using
+                // separate temporary connections to maximize connection pool concurrency.
+                const conn1 = await db.connect();
+                const conn2 = await db.connect();
+                let profilingResult, distResult;
+                try {
+                    [profilingResult, distResult] = await Promise.all([
+                        conn1.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`),
+                        conn2.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`)
+                    ]);
+                } finally {
+                    await conn1.close();
+                    await conn2.close();
+                }
+                const stats = getRows(profilingResult)[0];
                 const distRows = getRows(distResult);
 
                 statsContainer.textContent = '';
@@ -568,8 +580,20 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await conn.query(`DESCRIBE "${escapeId(tableA)}"`);
-        const schemaBResult = await conn.query(`DESCRIBE "${escapeId(tableB)}"`);
+        // Performance optimization: Group independent schema queries concurrently using
+        // separate temporary connections to maximize connection pool concurrency.
+        const conn1 = await db.connect();
+        const conn2 = await db.connect();
+        let schemaAResult, schemaBResult;
+        try {
+            [schemaAResult, schemaBResult] = await Promise.all([
+                conn1.query(`DESCRIBE "${escapeId(tableA)}"`),
+                conn2.query(`DESCRIBE "${escapeId(tableB)}"`)
+            ]);
+        } finally {
+            await conn1.close();
+            await conn2.close();
+        }
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
