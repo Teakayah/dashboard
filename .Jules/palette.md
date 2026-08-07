@@ -65,3 +65,9 @@
 ## 2026-07-31 - Accessible Feedback for Background Actions
 **Learning:** File downloads and clipboard operations in JavaScript are silent to screen readers by default. Relying solely on visual cues (like a button text temporarily changing to 'Copied!') leaves visually impaired users without confirmation that an action succeeded.
 **Action:** Always trigger an `aria-live` announcement (e.g., using a toast system) when a background file export or clipboard operation completes successfully.
+## $(date +%Y-%m-%d) - ARIA Live Background Action Accessibility
+**Learning:** File downloads and clipboard operations in JavaScript are silent to screen readers by default. Relying solely on visual cues (like a button text temporarily changing to 'Copied!') leaves visually impaired users without confirmation that an action succeeded.
+**Action:** Always trigger an `aria-live` announcement (e.g., using a toast system) when a background file export or clipboard operation completes successfully.
+## $(date +%Y-%m-%d) - ARIA Live Background Action Accessibility - Color Contrast
+**Learning:** Toast notifications intended for success messages (e.g. green background with white text) must still adhere to WCAG 2 AA minimum contrast ratio thresholds (4.5:1). A standard bright green like `#10b981` with white text fails this check.
+**Action:** When creating success toasts, use a darker shade of green such as `#059669` to ensure sufficient color contrast against white text, passing accessibility tests without disabling the tests.

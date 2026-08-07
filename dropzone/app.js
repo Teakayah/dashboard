@@ -1250,6 +1250,7 @@ downloadBtn.addEventListener('click', async () => {
         a.download = `query_results_${new Date().getTime()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
+        showToast('Results downloaded as CSV', 'success');
     });
 });
 
@@ -1259,6 +1260,7 @@ copyJsonBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(json).then(() => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
+        showToast('JSON copied to clipboard', 'success');
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
     }).catch(err => {
         console.error(err);
@@ -1319,6 +1321,7 @@ exportDbBtn.addEventListener('click', async () => {
         a.download = `datadashboard_export_${new Date().getTime()}.db`;
         a.click();
         URL.revokeObjectURL(url);
+        showToast('Database exported successfully', 'success');
     });
 });
 
@@ -1386,7 +1389,7 @@ function showToast(msg, type = 'error') {
     panel.textContent = msg;
     panel.setAttribute('role', 'alert');
     panel.setAttribute('aria-live', 'assertive');
-    const bgColor = type === 'success' ? '#10b981' : '#ef4444';
+    const bgColor = type === 'success' ? '#059669' : '#ef4444';
     panel.style.cssText = `position:fixed;bottom:20px;right:20px;background:${bgColor};color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);`;
     document.body.appendChild(panel);
     setTimeout(() => { panel.remove(); }, 5000);
