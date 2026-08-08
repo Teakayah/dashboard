@@ -91,3 +91,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## $(date +%Y-%m-%d) - Document complete test environment setup
 **Learning:** The README missed critical Playwright installation steps and directed users to use global \`pytest\`, which fails with \`ModuleNotFoundError\` due to path mismatches in this repository.
 **Action:** Always document full dependency bootstrapping (including OS-level UI testing deps) and mandate module-based test execution (\`python3 -m pytest\`) in project setup guides to prevent contributor friction.
+
+## 2026-08-08 - Standardize HTML Extractions with re.VERBOSE
+**Learning:** Build scripts like `generate_feed.py` used dense, single-line regular expressions for HTML parsing that were hard to read and prone to edge-case failures (e.g. nested tags breaking `</[a-z]+>`).
+**Action:** When parsing HTML with regex across all deployment scripts, standardize on using the `re.VERBOSE` flag with multiline strings and inline comments, and always use backreferences (`\1`) for closing tags to ensure safety and clarity for future maintainers.
