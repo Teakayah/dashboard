@@ -1083,6 +1083,30 @@ def test_extract_statcan_data_general_buckets():
     # Cleanup
     del EXTRACTION_CONFIGS["88888888"]
 
+def test_clean_value_error():
+    """Test that _clean handles ValueError correctly for unparseable float strings."""
+    assert _clean("invalid") is None
+
+def test_extract_statcan_data_invalid_date():
+    """Test that invalid REF_DATE triggering ValueError in int() is skipped."""
+    from deployment.config import EXTRACTION_CONFIGS
+    EXTRACTION_CONFIGS["99999999"] = {"default_filters": {"test": "val"}}
+
+    rows = [
+        # Valid row
+        {"REF_DATE": "2023-01", "GEO": "Ontario", "VALUE": "100", "test": "val"},
+        # Invalid date string (cannot be cast to int)
+        {"REF_DATE": "20XX-01", "GEO": "Ontario", "VALUE": "150", "test": "val"},
+    ]
+
+    result = extract_statcan_data(rows, '99999999')
+
+    assert result["Ontario"][2023] == [100.0]
+    # Verify no 20XX year was added
+    assert "20XX" not in result["Ontario"]
+
+    del EXTRACTION_CONFIGS["99999999"]
+
 @patch("sys.exit")
 def test_script_entrypoint(mock_exit):
     import importlib.util
