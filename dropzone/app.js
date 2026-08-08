@@ -43,6 +43,8 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+const getFilePath = (file) => file.webkitRelativePath || file.name;
+
 /**
  * Utility to clear and populate a <select> element.
  * @param {HTMLSelectElement} select - The select element to populate.
@@ -782,7 +784,7 @@ async function handleFiles(files) {
         const standaloneFiles = [];
 
         for (const file of files) {
-            const relPath = file.webkitRelativePath || file.name;
+            const relPath = getFilePath(file);
             const pathParts = relPath.split('/');
             
             if (pathParts.length > 1) {
@@ -801,13 +803,13 @@ async function handleFiles(files) {
 
         // Process directory groups (Potential Delta Lake or multi-part datasets)
         for (const [dirName, dirFiles] of Object.entries(fileGroups)) {
-            const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
+            const isDelta = dirFiles.some(f => getFilePath(f).includes('_delta_log'));
             const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
             
             // Performance optimization: Concurrently buffer and register files
             // to drastically reduce total loading times for multi-part datasets.
             await Promise.all(dirFiles.map(async file => {
-                const fullPath = file.webkitRelativePath || file.name;
+                const fullPath = getFilePath(file);
                 const buffer = await file.arrayBuffer();
                 await db.registerFileBuffer(fullPath, new Uint8Array(buffer));
             }));
@@ -827,7 +829,7 @@ async function handleFiles(files) {
             } else {
                 // If not delta, just treat as individual files (default behavior)
                 for (const file of dirFiles) {
-                    await processFile(file, file.webkitRelativePath || file.name);
+                    await processFile(file, getFilePath(file));
                 }
             }
         }
