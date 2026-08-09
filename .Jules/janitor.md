@@ -64,3 +64,7 @@ Action: Removed dead python logic to simplify deployment and testing footprint.
 ## 2026-07-29 - Removed leftover debug logs
 **Learning:** Found leftover `console.log()` statements across front-end files (`dropzone/app.js`, `dropzone.html`, `employment_rate_canada.html`, `flood_risk_gatineau_ottawa.html`, `nhpi_big6_comparison.html`). These logs clutter the console and act as tech debt.
 **Action:** Removed all unnecessary `console.log()` calls from JS and HTML files.
+
+## 2026-08-09 - Consolidated duplicated page.wait_for_load_state
+Learning: Discovered multiple tests in `tests/test_usability.py` duplicating the `try-except` block to wait for `networkidle` state and suppress errors. This added noise and repeated linter ignore directives.
+Action: Extracted the logic into a shared helper function `_wait_for_networkidle` to DRY up the tests and cleanly consolidate the `BLE001` and `S110` ruff ignores in one place.
