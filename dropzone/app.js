@@ -459,12 +459,21 @@ async function displayTableSchema(tableName) {
             showToast(`Inserted column ${r.column_name}`, 'success');
             
             // Profiling logic
+            let connStats = null;
+            let connDist = null;
             try {
                 statsContainer.textContent = 'Calculating stats...';
-                const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
-                const stats = getRows(profilingResult)[0];
 
-                const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
+                // Performance optimization: Maximize connection pool concurrency by spawning separate temporary connections to fetch profiling stats and distribution in parallel.
+                connStats = await db.connect();
+                connDist = await db.connect();
+
+                const [profilingResult, distResult] = await Promise.all([
+                    connStats.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`),
+                    connDist.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`)
+                ]);
+
+                const stats = getRows(profilingResult)[0];
                 const distRows = getRows(distResult);
 
                 statsContainer.textContent = '';
@@ -505,6 +514,9 @@ async function displayTableSchema(tableName) {
                 }
             } catch (err) {
                 statsContainer.textContent = `Profiling failed: ${err.message}`;
+            } finally {
+                if (connStats) await connStats.close();
+                if (connDist) await connDist.close();
             }
         };
 
