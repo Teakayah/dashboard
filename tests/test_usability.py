@@ -390,7 +390,25 @@ def test_viz_elements_have_height(page: Page, filename: str):
         for i in range(tab_count):
             # Click the tab and wait for animation/rendering
             tabs.nth(i).click()
-            page.wait_for_timeout(300)
+
+            # Wait for any visible canvas/map in the active panel to have a height >= 10,
+            # or for no such elements to exist. This avoids hardcoded timeouts.
+            page.wait_for_function("""
+                () => {
+                    const activePanel = document.querySelector('.panel.active');
+                    const container = activePanel || document.body;
+                    const canvases = container.querySelectorAll('canvas');
+                    const maps = container.querySelectorAll('#floodMap, .leaflet-container');
+
+                    for (let c of canvases) {
+                        if (c.offsetParent !== null && c.offsetHeight < 10) return false;
+                    }
+                    for (let m of maps) {
+                        if (m.offsetParent !== null && m.offsetHeight < 10) return false;
+                    }
+                    return true;
+                }
+            """, timeout=5000)
             
             elements = page.evaluate("""
                 () => {
@@ -420,7 +438,16 @@ def test_viz_elements_have_height(page: Page, filename: str):
             assert not elements, f"Collapsed visualizations on {filename} tab '{tab_name}': {elements}"
     else:
         # Standard page with no tabs
-        page.wait_for_timeout(500)
+        page.wait_for_function("""
+            () => {
+                const canvases = document.querySelectorAll('canvas');
+                for (let c of canvases) {
+                    if (c.offsetParent !== null && c.offsetHeight < 10) return false;
+                }
+                return true;
+            }
+        """, timeout=5000)
+
         elements = page.evaluate("""
             () => {
                 const results = [];
