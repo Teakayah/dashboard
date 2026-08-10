@@ -51,3 +51,6 @@
 ## 2026-07-29 - Testing Event Listener Lambdas in Playwright Mocks
 **Learning:** When mocking Playwright objects that accept lambda functions as event handlers (e.g., `page.on("console", lambda msg: ...)`), the lambdas themselves must be explicitly executed in the test using `mock_page.on.call_args_list` to verify their internal behavior (like logging statements) and ensure full coverage.
 **Action:** Always extract lambda arguments from mock call logs and invoke them with dummy `MagicMock` event objects to test their inner assertions/side-effects.
+## 2026-08-10 - Replace fixed timeouts with auto-waiting assertions
+**Learning:** Hardcoded timeouts (`page.wait_for_timeout()`) in Playwright UI tests cause flakiness when visualization rendering (e.g. Chart.js animations) takes longer than the arbitrary timeout.
+**Action:** Use `page.wait_for_function()` to repeatedly poll the DOM for layout stability (e.g. element height >= 10px) instead of arbitrary timeouts.
