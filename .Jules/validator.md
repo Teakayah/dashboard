@@ -38,3 +38,7 @@ Assertion: By patching `urllib.request.urlopen` to return this in-memory malicio
 Coverage Gap: The `deployment/update_flood_data.py` and `deployment/generate_descriptions.py` scripts missed line coverage for exception branches that guarded against insecure URLs, as those URLs were locally hardcoded or already checked earlier in the function.
 Learning: Unreachable logical branches, such as checking a locally hardcoded URL prefix, are impossible to mock or test because the application state strictly prevents that code path from executing.
 Assertion: When encountering untestable line coverage gaps caused by unreachable logical branches (like validating a locally hardcoded URL prefix), refactor the code to remove the redundant condition instead of attempting to write impossible mock tests.
+## 2026-08-10 - Fix Missing Mock Import Breaking CI
+Coverage Gap: The test `test_debug_browser_callbacks` in `tests/scripts/test_scripts.py` failed due to a missing `MagicMock` import, masking real test logic.
+Learning: Unresolved `NameError` in test suites acts as a complete blocker for validation. Mocks must always be fully imported and consolidated alongside existing imports (e.g. `patch`, `mock_open`).
+Assertion: Consolidated the `MagicMock` import into the existing `from unittest.mock import ...` line rather than creating a separate import line.
