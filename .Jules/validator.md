@@ -38,3 +38,7 @@ Assertion: By patching `urllib.request.urlopen` to return this in-memory malicio
 Coverage Gap: The `deployment/update_flood_data.py` and `deployment/generate_descriptions.py` scripts missed line coverage for exception branches that guarded against insecure URLs, as those URLs were locally hardcoded or already checked earlier in the function.
 Learning: Unreachable logical branches, such as checking a locally hardcoded URL prefix, are impossible to mock or test because the application state strictly prevents that code path from executing.
 Assertion: When encountering untestable line coverage gaps caused by unreachable logical branches (like validating a locally hardcoded URL prefix), refactor the code to remove the redundant condition instead of attempting to write impossible mock tests.
+## 2026-08-11 - Lambda testing in Playwright Mocks
+Coverage Gap: Playwright event handlers (lambdas for 'console' and 'pageerror') were written but caused NameError when invoked because MagicMock was not imported, meaning the test was broken.
+Learning: When extracting lambdas from `mock_page.on.call_args_list` to test their internal side effects, standard mock assertions need explicit setup for the message objects they receive.
+Assertion: Extract the lambdas manually and execute them with a `MagicMock()` containing the expected properties (e.g., `mock_msg.text` or `mock_msg.type`), and explicitly verify the side effect (like `print`).
