@@ -461,10 +461,22 @@ async function displayTableSchema(tableName) {
             // Profiling logic
             try {
                 statsContainer.textContent = 'Calculating stats...';
-                const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
+                // Performance optimization: Spawning separate temporary connections to execute multiple queries concurrently.
+                let c1 = null, c2 = null;
+                let profilingResult, distResult;
+                try {
+                    c1 = await db.connect();
+                    c2 = await db.connect();
+                    [profilingResult, distResult] = await Promise.all([
+                        c1.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`),
+                        c2.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`)
+                    ]);
+                } finally {
+                    if (c1) await c1.close();
+                    if (c2) await c2.close();
+                }
                 const stats = getRows(profilingResult)[0];
 
-                const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
                 statsContainer.textContent = '';
@@ -568,8 +580,20 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await conn.query(`DESCRIBE "${escapeId(tableA)}"`);
-        const schemaBResult = await conn.query(`DESCRIBE "${escapeId(tableB)}"`);
+        // Performance optimization: Spawning separate temporary connections to execute multiple queries concurrently.
+        let c1 = null, c2 = null;
+        let schemaAResult, schemaBResult;
+        try {
+            c1 = await db.connect();
+            c2 = await db.connect();
+            [schemaAResult, schemaBResult] = await Promise.all([
+                c1.query(`DESCRIBE "${escapeId(tableA)}"`),
+                c2.query(`DESCRIBE "${escapeId(tableB)}"`)
+            ]);
+        } finally {
+            if (c1) await c1.close();
+            if (c2) await c2.close();
+        }
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
