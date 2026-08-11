@@ -91,3 +91,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## $(date +%Y-%m-%d) - Document complete test environment setup
 **Learning:** The README missed critical Playwright installation steps and directed users to use global \`pytest\`, which fails with \`ModuleNotFoundError\` due to path mismatches in this repository.
 **Action:** Always document full dependency bootstrapping (including OS-level UI testing deps) and mandate module-based test execution (\`python3 -m pytest\`) in project setup guides to prevent contributor friction.
+## 2026-08-11 - Implicit DOM Resizing for Chart.js
+**Learning:** The application handles responsive chart scaling not by explicit re-initialization, but by dynamically wrapping `<canvas>` elements and firing synthetic `window.dispatchEvent(new Event('resize'))` events to trick Chart.js into recalculating dimensions when toggling fullscreen. This is a recurring architectural pattern for external visualization libraries in this codebase.
+**Action:** Document this synthetic event pattern via JSDoc whenever wrapping or injecting wrapper containers around third-party components to prevent confusion about how reactive layouts are triggered.
