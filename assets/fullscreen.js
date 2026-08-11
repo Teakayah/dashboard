@@ -1,4 +1,11 @@
 (function() {
+  /**
+   * Initializes a fullscreen toggle for all unguarded <canvas> elements on the page.
+   * Wraps standalone canvases in a container and injects a button that toggles a
+   * 'chart-fullscreen' class. This provides an accessible, immersive viewing mode
+   * for data visualizations like Chart.js, explicitly triggering window resize
+   * events to force chart recalculations upon toggling.
+   */
   function initFullscreen() {
     const canvases = document.querySelectorAll('canvas');
     canvases.forEach(canvas => {
