@@ -636,6 +636,27 @@ def test_build_card_accent_color_wrap_around():
     assert accent_0 == accent_8
 
 
+def test_build_card_accent_color_wrap_around_boundary():
+    module = load_generate_index_module()
+    analysis = {
+        'title': 'Wrap Around Boundary Analysis',
+        'description': '',
+        'date': None,
+        'filename': 'wrap_boundary.html',
+        'tags': []
+    }
+    # Testing index strictly greater than len(ACCENT_COLORS)
+    # len(ACCENT_COLORS) is 8. index 9 should wrap to 1.
+    html_1 = module.build_card(analysis, 1)
+    html_9 = module.build_card(analysis, 9)
+
+    import re
+    accent_1 = re.search(r'--accent:([^" ]+)', html_1).group(1)
+    accent_9 = re.search(r'--accent:([^" ]+)', html_9).group(1)
+
+    assert accent_1 == accent_9
+
+
 def test_build_card_html_escaping():
     module = load_generate_index_module()
     analysis = {

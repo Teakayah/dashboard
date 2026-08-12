@@ -51,3 +51,6 @@
 ## 2026-07-29 - Testing Event Listener Lambdas in Playwright Mocks
 **Learning:** When mocking Playwright objects that accept lambda functions as event handlers (e.g., `page.on("console", lambda msg: ...)`), the lambdas themselves must be explicitly executed in the test using `mock_page.on.call_args_list` to verify their internal behavior (like logging statements) and ensure full coverage.
 **Action:** Always extract lambda arguments from mock call logs and invoke them with dummy `MagicMock` event objects to test their inner assertions/side-effects.
+## $(date +%Y-%m-%d) - Array Cycle Boundary Testing
+**Learning:** When UI components like cards use modulo operators (`index % len(COLORS)`) to cycle through predefined styles based on an index, these boundaries must be explicitly tested. Often, testing just indices 0, 1, or 2 fails to prove that the wrap-around logic works correctly or prevents `IndexError`.
+**Action:** Always add a specific test case that passes an index strictly greater than or equal to the length of the target array (e.g., `len(COLORS)`) and assert that the resulting style perfectly matches the output of `index % len(COLORS)` (like index 0).
