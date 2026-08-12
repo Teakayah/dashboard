@@ -44,6 +44,24 @@ const queryHistoryEl = document.getElementById('query-history');
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
 /**
+ * Safely clears a container's DOM content while explicitly destroying any
+ * attached Chart.js instances.
+ * Performance optimization: Prevents memory leaks caused by dangling chart instances
+ * and uncleaned event listeners when replacing or wiping chart canvases.
+ *
+ * @param {HTMLElement} container - The DOM element to clear.
+ */
+function clearContainerAndDestroyCharts(container) {
+    if (!container) return;
+    const canvases = container.querySelectorAll('canvas');
+    for (let i = 0; i < canvases.length; i++) {
+        const chart = Chart.getChart(canvases[i]);
+        if (chart) chart.destroy();
+    }
+    container.textContent = '';
+}
+
+/**
  * Utility to clear and populate a <select> element.
  * @param {HTMLSelectElement} select - The select element to populate.
  * @param {Array<string|Object>} options - Array of values or column objects.
@@ -399,7 +417,7 @@ async function restoreState() {
             currentTableName = tables[tables.length - 1];
             statusEl.textContent = `Restored ${tables.length} table(s)`;
             
-            schemaDisplay.textContent = '';
+            clearContainerAndDestroyCharts(schemaDisplay);
             for (const table of tables) {
                 await displayTableSchema(table);
             }
@@ -774,7 +792,7 @@ fileInput.addEventListener('change', () => {
  * @param {FileList|Array<File>} files - The files selected or dropped by the user.
  */
 async function handleFiles(files) {
-    previewsContainer.textContent = '';
+    clearContainerAndDestroyCharts(previewsContainer);
     
     await withLoading('Error loading files', async () => {
         // Group files by their relative path to detect Delta Lake tables
@@ -883,7 +901,7 @@ async function processFile(file, path) {
  */
 async function onTableLoaded(tableName) {
     // Show schema
-    if (loadedTables.size === 1) schemaDisplay.textContent = '';
+    if (loadedTables.size === 1) clearContainerAndDestroyCharts(schemaDisplay);
     await displayTableSchema(tableName);
     
     // Generate Previews
@@ -1284,7 +1302,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
         sqlInput.dispatchEvent(new Event('input'));
 
-        schemaDisplay.textContent = '';
+        clearContainerAndDestroyCharts(schemaDisplay);
         for (const table of loadedTables) {
             await displayTableSchema(table);
         }
@@ -1335,8 +1353,8 @@ clearBtn.addEventListener('click', async () => {
         
         loadedTables.clear();
         currentTableName = '';
-        schemaDisplay.textContent = '';
-        previewsContainer.textContent = '';
+        clearContainerAndDestroyCharts(schemaDisplay);
+        clearContainerAndDestroyCharts(previewsContainer);
         if (gridInstance) {
             gridInstance.destroy();
             gridInstance = null;

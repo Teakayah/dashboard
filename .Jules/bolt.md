@@ -61,3 +61,11 @@
 ## 2026-07-30 - Concurrent I/O for Multi-Part Datasets
 **Learning:** Sequentially awaiting `file.arrayBuffer()` and `db.registerFileBuffer()` for multi-part datasets (like Delta Lake) causes an O(N) I/O bottleneck in DuckDB-Wasm, severely impacting total load time.
 **Action:** Use `Promise.all` with `Array.prototype.map` to concurrently process and register file buffers, maximizing browser I/O throughput.
+
+## 2026-08-12 - [Optimize Independent DuckDB-Wasm Queries]
+**Learning:** A single AsyncDuckDBConnection cannot execute queries concurrently. Attempting to use `Promise.all()` with the same connection or directly instantiating `db.connect()` inside the array can lead to unclosable connection leaks if a promise rejects.
+**Action:** When executing independent DuckDB-Wasm queries, sequentially spawn temporary connections (e.g., `const c1 = await db.connect();`), group their queries in `Promise.all()`, and ensure they are closed in a `finally` block to maximize connection pool concurrency safely.
+
+## 2026-08-12 - [Prevent Chart.js Memory Leaks]
+**Learning:** Wiping a DOM container (e.g., `container.textContent = ''`) that contains Chart.js canvases leaves the Chart instances dangling in memory because their internal event listeners are not cleaned up.
+**Action:** Always retrieve and explicitly destroy Chart instances using `Chart.getChart(canvas).destroy()` before wiping their parent containers from the DOM to prevent severe memory leaks in dynamic UIs.
