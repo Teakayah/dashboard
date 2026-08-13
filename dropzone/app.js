@@ -399,7 +399,7 @@ async function restoreState() {
             currentTableName = tables[tables.length - 1];
             statusEl.textContent = `Restored ${tables.length} table(s)`;
             
-            schemaDisplay.textContent = '';
+            safeClearContainer(schemaDisplay);
             for (const table of tables) {
                 await displayTableSchema(table);
             }
@@ -460,6 +460,7 @@ async function displayTableSchema(tableName) {
             
             // Profiling logic
             try {
+                safeClearContainer(statsContainer);
                 statsContainer.textContent = 'Calculating stats...';
                 const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
                 const stats = getRows(profilingResult)[0];
@@ -467,7 +468,7 @@ async function displayTableSchema(tableName) {
                 const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
-                statsContainer.textContent = '';
+                safeClearContainer(statsContainer);
                 const text = document.createElement('div');
                 text.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
                 statsContainer.appendChild(text);
@@ -624,6 +625,25 @@ function updateConsoleActionsUI() {
  * Depends on a currently active table (currentTableName) to query the DuckDB information
  * schema.
  */
+/**
+ * Performance optimization: Safely clears a container's DOM content while explicitly
+ * destroying any nested Chart.js instances. Failing to do this before setting
+ * `textContent = ''` leaves event listeners active in memory, causing severe memory leaks.
+ *
+ * @param {HTMLElement} container - The DOM element to clear
+ */
+function safeClearContainer(container) {
+    if (!container) return;
+    const canvases = container.querySelectorAll('canvas');
+    canvases.forEach(canvas => {
+        if (typeof Chart !== 'undefined') {
+            const chart = Chart.getChart(canvas);
+            if (chart) chart.destroy();
+        }
+    });
+    container.textContent = '';
+}
+
 async function updateChartBuilderUI() {
     if (!currentTableName) {
         chartBuilder.style.display = 'none';
@@ -774,7 +794,7 @@ fileInput.addEventListener('change', () => {
  * @param {FileList|Array<File>} files - The files selected or dropped by the user.
  */
 async function handleFiles(files) {
-    previewsContainer.textContent = '';
+    safeClearContainer(previewsContainer);
     
     await withLoading('Error loading files', async () => {
         // Group files by their relative path to detect Delta Lake tables
@@ -883,7 +903,7 @@ async function processFile(file, path) {
  */
 async function onTableLoaded(tableName) {
     // Show schema
-    if (loadedTables.size === 1) schemaDisplay.textContent = '';
+    if (loadedTables.size === 1) safeClearContainer(schemaDisplay);
     await displayTableSchema(tableName);
     
     // Generate Previews
@@ -1284,7 +1304,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
         sqlInput.dispatchEvent(new Event('input'));
 
-        schemaDisplay.textContent = '';
+        safeClearContainer(schemaDisplay);
         for (const table of loadedTables) {
             await displayTableSchema(table);
         }
@@ -1335,8 +1355,8 @@ clearBtn.addEventListener('click', async () => {
         
         loadedTables.clear();
         currentTableName = '';
-        schemaDisplay.textContent = '';
-        previewsContainer.textContent = '';
+        safeClearContainer(schemaDisplay);
+        safeClearContainer(previewsContainer);
         if (gridInstance) {
             gridInstance.destroy();
             gridInstance = null;
