@@ -51,3 +51,6 @@
 ## 2026-07-29 - Testing Event Listener Lambdas in Playwright Mocks
 **Learning:** When mocking Playwright objects that accept lambda functions as event handlers (e.g., `page.on("console", lambda msg: ...)`), the lambdas themselves must be explicitly executed in the test using `mock_page.on.call_args_list` to verify their internal behavior (like logging statements) and ensure full coverage.
 **Action:** Always extract lambda arguments from mock call logs and invoke them with dummy `MagicMock` event objects to test their inner assertions/side-effects.
+## 2026-08-13 - Toast Notification Strict Mode Violations
+**Learning:** Successive actions can trigger multiple toast notifications to appear in the DOM sequentially. Using a bare locator like `[role="alert"]` in Playwright tests causes strict mode violations because multiple elements match.
+**Action:** Always use `.last` or `.filter(has_text=...)` (e.g., `page.locator('[role="alert"]').last`) when asserting on toast notifications to ensure tests remain robust and flake-free.
