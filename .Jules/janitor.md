@@ -64,3 +64,6 @@ Action: Removed dead python logic to simplify deployment and testing footprint.
 ## 2026-07-29 - Removed leftover debug logs
 **Learning:** Found leftover `console.log()` statements across front-end files (`dropzone/app.js`, `dropzone.html`, `employment_rate_canada.html`, `flood_risk_gatineau_ottawa.html`, `nhpi_big6_comparison.html`). These logs clutter the console and act as tech debt.
 **Action:** Removed all unnecessary `console.log()` calls from JS and HTML files.
+## 2026-08-14 - Chart.js Memory Leaks
+**Learning:** When replacing or clearing the DOM content of a container that houses Chart.js `<canvas>` elements using `container.textContent = ''`, the Chart instances must be explicitly destroyed using `Chart.getChart(canvas).destroy()`. Failing to do so causes severe memory leaks because internal event listeners remain active in memory.
+**Action:** Ensure `destroyCharts(container)` or `Chart.getChart(canvas)?.destroy()` is called before removing canvas elements from the DOM or re-instantiating charts on the same canvas.

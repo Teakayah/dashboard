@@ -467,6 +467,7 @@ async function displayTableSchema(tableName) {
                 const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
+                destroyCharts(statsContainer);
                 statsContainer.textContent = '';
                 const text = document.createElement('div');
                 text.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
@@ -774,6 +775,7 @@ fileInput.addEventListener('change', () => {
  * @param {FileList|Array<File>} files - The files selected or dropped by the user.
  */
 async function handleFiles(files) {
+    destroyCharts(previewsContainer);
     previewsContainer.textContent = '';
     
     await withLoading('Error loading files', async () => {
@@ -1105,6 +1107,19 @@ function createPreviewCard(title, renderFn) {
 }
 
 /**
+ * Destroys all Chart.js instances inside a given container to prevent memory leaks.
+ * @param {HTMLElement} container - The DOM element containing canvas elements.
+ */
+function destroyCharts(container) {
+    if (!window.Chart) return;
+    const canvases = container.querySelectorAll('canvas');
+    canvases.forEach(canvas => {
+        const chart = window.Chart.getChart(canvas);
+        if (chart) chart.destroy();
+    });
+}
+
+/**
  * Initializes and renders a Chart.js instance onto a specific canvas element.
  * Automatically applies responsive defaults.
  *
@@ -1116,6 +1131,10 @@ function createPreviewCard(title, renderFn) {
 function renderChart(id, type, data, options = {}) {
     const canvas = document.getElementById(id);
     if (!canvas) return;
+    if (window.Chart) {
+        const existingChart = window.Chart.getChart(canvas);
+        if (existingChart) existingChart.destroy();
+    }
     const ctx = canvas.getContext('2d');
     new Chart(ctx, {
         type: type,
@@ -1336,6 +1355,7 @@ clearBtn.addEventListener('click', async () => {
         loadedTables.clear();
         currentTableName = '';
         schemaDisplay.textContent = '';
+        destroyCharts(previewsContainer);
         previewsContainer.textContent = '';
         if (gridInstance) {
             gridInstance.destroy();
