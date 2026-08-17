@@ -64,3 +64,9 @@ Action: Removed dead python logic to simplify deployment and testing footprint.
 ## 2026-07-29 - Removed leftover debug logs
 **Learning:** Found leftover `console.log()` statements across front-end files (`dropzone/app.js`, `dropzone.html`, `employment_rate_canada.html`, `flood_risk_gatineau_ottawa.html`, `nhpi_big6_comparison.html`). These logs clutter the console and act as tech debt.
 **Action:** Removed all unnecessary `console.log()` calls from JS and HTML files.
+## 2026-08-17 - Consolidated raw DOM manipulation
+Learning: Found raw DOM manipulation () duplicating the functionality of the existing  utility in  in .
+Action: Consolidated the duplicated code by replacing it with calls to , removing 15 lines of raw DOM logic.
+## 2026-08-17 - Consolidated raw DOM manipulation
+Learning: Found raw DOM manipulation using document.createElement for option duplicating the functionality of the existing populateSelect utility in updateJoinColumns in dropzone/app.js.
+Action: Consolidated the duplicated code by replacing it with calls to populateSelect, removing 15 lines of raw DOM logic.
