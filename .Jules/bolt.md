@@ -61,3 +61,7 @@
 ## 2026-07-30 - Concurrent I/O for Multi-Part Datasets
 **Learning:** Sequentially awaiting `file.arrayBuffer()` and `db.registerFileBuffer()` for multi-part datasets (like Delta Lake) causes an O(N) I/O bottleneck in DuckDB-Wasm, severely impacting total load time.
 **Action:** Use `Promise.all` with `Array.prototype.map` to concurrently process and register file buffers, maximizing browser I/O throughput.
+
+## 2026-08-17 - [Prevent Chart.js Memory Leaks on DOM Clear]
+**Learning:** Wiping a DOM container (`.textContent = ''`) that houses Chart.js `<canvas>` elements leaves internal event listeners active, causing a severe memory leak across dynamic renders.
+**Action:** Always search for `canvas` elements within a container and explicitly call `Chart.getChart(canvas).destroy()` before clearing its inner DOM content.

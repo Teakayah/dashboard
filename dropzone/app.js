@@ -383,6 +383,21 @@ async function init() {
 }
 
 /**
+ * Safely clears a DOM element's textContent while destroying any Chart.js instances inside it.
+ * Failing to call .destroy() on Chart instances before removing the canvas causes a memory leak.
+ * @param {HTMLElement} element - The DOM element to clear.
+ */
+function clearElementWithCharts(element) {
+    if (!element) return;
+    const canvases = element.querySelectorAll('canvas');
+    for (const canvas of canvases) {
+        const chart = Chart.getChart(canvas);
+        if (chart) chart.destroy();
+    }
+    element.textContent = '';
+}
+
+/**
  * Restores the Analytical Drop-Zone UI state after a browser reload.
  * Queries the DuckDB instance's information_schema to discover tables that were
  * persisted across sessions (e.g., within the Origin Private File System (OPFS)).
@@ -399,7 +414,7 @@ async function restoreState() {
             currentTableName = tables[tables.length - 1];
             statusEl.textContent = `Restored ${tables.length} table(s)`;
             
-            schemaDisplay.textContent = '';
+            clearElementWithCharts(schemaDisplay);
             for (const table of tables) {
                 await displayTableSchema(table);
             }
@@ -460,6 +475,7 @@ async function displayTableSchema(tableName) {
             
             // Profiling logic
             try {
+                clearElementWithCharts(statsContainer);
                 statsContainer.textContent = 'Calculating stats...';
                 const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
                 const stats = getRows(profilingResult)[0];
@@ -467,7 +483,7 @@ async function displayTableSchema(tableName) {
                 const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
-                statsContainer.textContent = '';
+                clearElementWithCharts(statsContainer);
                 const text = document.createElement('div');
                 text.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
                 statsContainer.appendChild(text);
@@ -774,7 +790,7 @@ fileInput.addEventListener('change', () => {
  * @param {FileList|Array<File>} files - The files selected or dropped by the user.
  */
 async function handleFiles(files) {
-    previewsContainer.textContent = '';
+    clearElementWithCharts(previewsContainer);
     
     await withLoading('Error loading files', async () => {
         // Group files by their relative path to detect Delta Lake tables
@@ -883,7 +899,7 @@ async function processFile(file, path) {
  */
 async function onTableLoaded(tableName) {
     // Show schema
-    if (loadedTables.size === 1) schemaDisplay.textContent = '';
+    if (loadedTables.size === 1) clearElementWithCharts(schemaDisplay);
     await displayTableSchema(tableName);
     
     // Generate Previews
@@ -1284,7 +1300,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
         sqlInput.dispatchEvent(new Event('input'));
 
-        schemaDisplay.textContent = '';
+        clearElementWithCharts(schemaDisplay);
         for (const table of loadedTables) {
             await displayTableSchema(table);
         }
@@ -1335,8 +1351,8 @@ clearBtn.addEventListener('click', async () => {
         
         loadedTables.clear();
         currentTableName = '';
-        schemaDisplay.textContent = '';
-        previewsContainer.textContent = '';
+        clearElementWithCharts(schemaDisplay);
+        clearElementWithCharts(previewsContainer);
         if (gridInstance) {
             gridInstance.destroy();
             gridInstance = null;
