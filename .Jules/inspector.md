@@ -51,3 +51,6 @@
 ## 2026-07-29 - Testing Event Listener Lambdas in Playwright Mocks
 **Learning:** When mocking Playwright objects that accept lambda functions as event handlers (e.g., `page.on("console", lambda msg: ...)`), the lambdas themselves must be explicitly executed in the test using `mock_page.on.call_args_list` to verify their internal behavior (like logging statements) and ensure full coverage.
 **Action:** Always extract lambda arguments from mock call logs and invoke them with dummy `MagicMock` event objects to test their inner assertions/side-effects.
+## 2026-08-18 - Missing MagicMock in Lambda Tests
+**Learning:** When writing tests that extract lambdas from Playwright mocks and use `MagicMock` as dummy objects (e.g., event arguments), `MagicMock` must be explicitly imported in the test file, even if the parent file mocks it or uses `patch`.
+**Action:** Always verify that `MagicMock` is imported when explicitly instantiating it for mock arguments to lambda functions extracted from Playwright call args.
