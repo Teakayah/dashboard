@@ -43,6 +43,22 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+const schemaCache = new Map();
+
+/**
+ * Retrieves the schema for a table, caching the Promise itself to prevent
+ * duplicate queries and redundant IPC roundtrips for concurrent requests.
+ *
+ * @param {string} tableName - The name of the table to describe.
+ * @returns {Promise<import('@duckdb/duckdb-wasm').Table>}
+ */
+function getCachedSchema(tableName) {
+    if (!schemaCache.has(tableName)) {
+        schemaCache.set(tableName, conn.query(`DESCRIBE "${escapeId(tableName)}"`));
+    }
+    return schemaCache.get(tableName);
+}
+
 /**
  * Utility to clear and populate a <select> element.
  * @param {HTMLSelectElement} select - The select element to populate.
@@ -164,6 +180,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         const query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedUrl}')`;
         await conn.query(query);
 
+        schemaCache.delete(tableName);
         currentTableName = tableName;
         loadedTables.add(tableName);
         await onTableLoaded(tableName);
@@ -426,7 +443,7 @@ async function restoreState() {
  * @param {string} tableName - The name of the DuckDB table to describe and profile.
  */
 async function displayTableSchema(tableName) {
-    const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
+    const schemaResult = await getCachedSchema(tableName);
     const statsContainer = document.createElement('div');
     statsContainer.style.fontSize = '0.75rem';
     statsContainer.style.marginTop = '4px';
@@ -568,8 +585,8 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await conn.query(`DESCRIBE "${escapeId(tableA)}"`);
-        const schemaBResult = await conn.query(`DESCRIBE "${escapeId(tableB)}"`);
+        const schemaAResult = await getCachedSchema(tableA);
+        const schemaBResult = await getCachedSchema(tableB);
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
@@ -631,7 +648,7 @@ async function updateChartBuilderUI() {
     }
     chartBuilder.style.display = 'flex';
     try {
-        const schemaResult = await conn.query(`DESCRIBE "${escapeId(currentTableName)}"`);
+        const schemaResult = await getCachedSchema(currentTableName);
         const cols = getRows(schemaResult);
         
         const numericCols = cols.filter(c => ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase()));
@@ -823,6 +840,7 @@ async function handleFiles(files) {
                 const query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedDirName}')`;
                 await conn.query(`DROP TABLE IF EXISTS "${escapeId(tableName)}"`);
                 await conn.query(query);
+                schemaCache.delete(tableName);
                 await onTableLoaded(tableName);
             } else {
                 // If not delta, just treat as individual files (default behavior)
@@ -871,6 +889,7 @@ async function processFile(file, path) {
     
     await conn.query(`DROP TABLE IF EXISTS "${escapeId(tableName)}"`);
     await conn.query(query);
+    schemaCache.delete(tableName);
     await onTableLoaded(tableName);
 }
 
@@ -936,7 +955,7 @@ recipeSelect.addEventListener('change', () => {
  * @param {string} tableName - The name of the DuckDB table to analyze
  */
 async function generateInstantCharts(tableName) {
-    const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
+    const schemaResult = await getCachedSchema(tableName);
     const columns = getRows(schemaResult);
     const numericCols = columns.filter(c => 
         ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase())
@@ -1273,6 +1292,7 @@ loadSamplesBtn.addEventListener('click', async () => {
             await db.registerFileText(name, content);
             const escapedName = name.replace(/'/g, "''");
             await conn.query(`CREATE TABLE IF NOT EXISTS "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
+            schemaCache.delete(tableName);
             loadedTables.add(tableName);
             currentTableName = tableName;
         }
@@ -1334,6 +1354,7 @@ clearBtn.addEventListener('click', async () => {
         }
         
         loadedTables.clear();
+        schemaCache.clear();
         currentTableName = '';
         schemaDisplay.textContent = '';
         previewsContainer.textContent = '';
