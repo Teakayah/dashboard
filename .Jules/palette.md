@@ -65,3 +65,6 @@
 ## 2026-07-31 - Accessible Feedback for Background Actions
 **Learning:** File downloads and clipboard operations in JavaScript are silent to screen readers by default. Relying solely on visual cues (like a button text temporarily changing to 'Copied!') leaves visually impaired users without confirmation that an action succeeded.
 **Action:** Always trigger an `aria-live` announcement (e.g., using a toast system) when a background file export or clipboard operation completes successfully.
+## 2026-08-18 - Accessible Feedback for Background Actions
+**Learning:** Background actions like file downloads, database exports, and clipboard operations are silent to screen readers, leaving users unaware if an action succeeded.
+**Action:** Always provide explicit feedback upon successful completion of background actions by triggering an aria-live announcement (e.g., calling a toast notification function).
