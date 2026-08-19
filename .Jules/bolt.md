@@ -64,3 +64,7 @@
 ## 2026-08-14 - Schema Caching reduces IPC overhead
 **Learning:** Sequential message processing in DuckDB-Wasm creates excessive IPC overhead. Repeatedly querying schema using DESCRIBE causes redundant delays.
 **Action:** Caching the DESCRIBE results in a local Map drastically reduces these redundant IPC roundtrips during table load, chart generation, and UI updates.
+
+## 2026-08-18 - [Optimize DuckDB-Wasm Concurrent Queries]
+**Learning:** In single-worker DuckDB-Wasm environments, opening multiple queries (like 'DESCRIBE table') concurrently without caching causes excessive IPC overhead and sequential processing latency. Waiting for results instead of promises causes duplicate work.
+**Action:** Implement an in-memory cache for asynchronous operations like DuckDB Wasm queries, caching the `Promise` itself (e.g., `cache.set(key, conn.query(...))`) rather than the awaited result. This ensures concurrent requests await the same pending promise.
