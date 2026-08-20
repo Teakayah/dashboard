@@ -1250,6 +1250,7 @@ downloadBtn.addEventListener('click', async () => {
         a.download = `query_results_${new Date().getTime()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
+        showToast('CSV downloaded successfully', 'success');
     });
 });
 
@@ -1259,6 +1260,7 @@ copyJsonBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(json).then(() => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
+        showToast('JSON copied to clipboard', 'success');
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
     }).catch(err => {
         console.error(err);
@@ -1319,6 +1321,7 @@ exportDbBtn.addEventListener('click', async () => {
         a.download = `datadashboard_export_${new Date().getTime()}.db`;
         a.click();
         URL.revokeObjectURL(url);
+        showToast('Database exported successfully', 'success');
     });
 });
 

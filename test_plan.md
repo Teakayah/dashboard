@@ -1,0 +1,12 @@
+- Navigate to http://localhost:8765/dropzone.html
+- Load Sample Datasets (this triggers the first background task missing a success toast)
+- Assert success toast appears.
+- Wait for processing.
+- Type a query, e.g., SELECT * FROM "departments" LIMIT 10
+- Run the query.
+- Click "Copy JSON" (this triggers the second background task)
+- Assert success toast appears.
+- Click "Download Results as CSV" (this triggers the third background task)
+- Assert success toast appears.
+- Click "Export Database (.db)" (this triggers the fourth background task)
+- Assert success toast appears.
