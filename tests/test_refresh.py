@@ -58,6 +58,7 @@ def test_run_failure_no_allow_nonzero(mock_subprocess, mock_sys_exit):
     with pytest.raises(SystemExit):
         module._run('false')
 
+    mock_subprocess.assert_called_once_with(('false',), cwd=str(module.ROOT))
     mock_sys_exit.assert_called_once_with(1)
 
 def test_run_failure_allow_nonzero(mock_subprocess, mock_sys_exit):
