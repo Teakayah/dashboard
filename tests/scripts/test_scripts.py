@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 import importlib.util
 
 def run_script(script_name):
@@ -164,14 +164,16 @@ def test_debug_browser_callbacks():
                 console_lambda = calls[0][0][1]
                 error_lambda = calls[1][0][1]
 
+                mock_print.reset_mock()
                 mock_msg = MagicMock()
                 mock_msg.type = "log"
                 mock_msg.text = "Hello world"
                 console_lambda(mock_msg)
-                mock_print.assert_any_call("CONSOLE: [log] Hello world")
+                mock_print.assert_called_once_with("CONSOLE: [log] Hello world")
 
+                mock_print.reset_mock()
                 error_lambda("Test error")
-                mock_print.assert_any_call("PAGE ERROR: Test error")
+                mock_print.assert_called_once_with("PAGE ERROR: Test error")
 
 def test_debug_browser_entrypoint():
     with patch('threading.Thread') as mock_thread:

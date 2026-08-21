@@ -51,3 +51,7 @@
 ## 2026-07-29 - Testing Event Listener Lambdas in Playwright Mocks
 **Learning:** When mocking Playwright objects that accept lambda functions as event handlers (e.g., `page.on("console", lambda msg: ...)`), the lambdas themselves must be explicitly executed in the test using `mock_page.on.call_args_list` to verify their internal behavior (like logging statements) and ensure full coverage.
 **Action:** Always extract lambda arguments from mock call logs and invoke them with dummy `MagicMock` event objects to test their inner assertions/side-effects.
+
+## 2026-08-21 - Restoring mock call history in complex lambdas
+**Learning:** When strengthening test assertions from `mock.assert_any_call()` to `mock.assert_called_once_with()` for sequentially invoked mock handlers (e.g., event listener lambdas in Playwright), previous calls accumulate in the mock's history, causing strict assertions on subsequent calls to fail.
+**Action:** Always insert `mock.reset_mock()` between sequential invocations of independent mock-triggering functions to isolate call history and ensure strict assertions correctly evaluate only the current operation.
