@@ -164,6 +164,7 @@ def test_debug_browser_callbacks():
                 console_lambda = calls[0][0][1]
                 error_lambda = calls[1][0][1]
 
+                from unittest.mock import MagicMock
                 mock_msg = MagicMock()
                 mock_msg.type = "log"
                 mock_msg.text = "Hello world"

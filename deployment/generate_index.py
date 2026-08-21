@@ -48,6 +48,11 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
     title = html.unescape(title)
 
     # Meta description
+    # Regex breakdown:
+    # <meta[^>]*                  - Matches the opening <meta tag and any attributes before 'name'
+    # name=["\']description["\']  - Matches the name attribute with either single or double quotes
+    # [^>]*                       - Matches any intermediate attributes before 'content'
+    # content=["\'](.*?)["\']     - Group 1: Non-greedily captures the actual description text
     desc_match = re.search(
         r'<meta[^>]*name=["\']description["\'][^>]*content=["\'](.*?)["\']',
         content, re.IGNORECASE
