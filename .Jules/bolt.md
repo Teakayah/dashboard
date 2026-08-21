@@ -61,3 +61,7 @@
 ## 2026-07-30 - Concurrent I/O for Multi-Part Datasets
 **Learning:** Sequentially awaiting `file.arrayBuffer()` and `db.registerFileBuffer()` for multi-part datasets (like Delta Lake) causes an O(N) I/O bottleneck in DuckDB-Wasm, severely impacting total load time.
 **Action:** Use `Promise.all` with `Array.prototype.map` to concurrently process and register file buffers, maximizing browser I/O throughput.
+
+## 2026-08-01 - Cache DuckDB Schema Promises
+**Learning:** Requesting the schema for the same table multiple times (e.g., for schema display and auto-chart generation) triggers redundant `DESCRIBE` queries in DuckDB-Wasm. This causes slow IPC roundtrips to the WebWorker.
+**Action:** Cache the `conn.query()` Promise directly in a Map. This ensures concurrent requests for the same table await the exact same pending promise rather than triggering redundant queries.

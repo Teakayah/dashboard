@@ -43,6 +43,23 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+// Cache for table schemas to prevent redundant DuckDB DESCRIBE queries
+const schemaCache = new Map();
+
+/**
+ * Gets the schema for a table, caching the Promise to prevent redundant IPC roundtrips
+ * for concurrent or repeated requests for the same table's schema.
+ *
+ * @param {string} tableName - The name of the table
+ * @returns {Promise<import('@duckdb/duckdb-wasm').Table>}
+ */
+function getTableSchema(tableName) {
+    if (!schemaCache.has(tableName)) {
+        schemaCache.set(tableName, conn.query(`DESCRIBE "${escapeId(tableName)}"`));
+    }
+    return schemaCache.get(tableName);
+}
+
 /**
  * Utility to clear and populate a <select> element.
  * @param {HTMLSelectElement} select - The select element to populate.
@@ -166,6 +183,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 
         currentTableName = tableName;
         loadedTables.add(tableName);
+        schemaCache.delete(tableName);
         await onTableLoaded(tableName);
 
         statusEl.textContent = `Loaded remote table: ${tableName}`;
@@ -426,7 +444,7 @@ async function restoreState() {
  * @param {string} tableName - The name of the DuckDB table to describe and profile.
  */
 async function displayTableSchema(tableName) {
-    const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
+    const schemaResult = await getTableSchema(tableName);
     const statsContainer = document.createElement('div');
     statsContainer.style.fontSize = '0.75rem';
     statsContainer.style.marginTop = '4px';
@@ -568,8 +586,8 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await conn.query(`DESCRIBE "${escapeId(tableA)}"`);
-        const schemaBResult = await conn.query(`DESCRIBE "${escapeId(tableB)}"`);
+        const schemaAResult = await getTableSchema(tableA);
+        const schemaBResult = await getTableSchema(tableB);
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
@@ -631,7 +649,7 @@ async function updateChartBuilderUI() {
     }
     chartBuilder.style.display = 'flex';
     try {
-        const schemaResult = await conn.query(`DESCRIBE "${escapeId(currentTableName)}"`);
+        const schemaResult = await getTableSchema(currentTableName);
         const cols = getRows(schemaResult);
         
         const numericCols = cols.filter(c => ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase()));
@@ -851,6 +869,7 @@ async function processFile(file, path) {
     const tableName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
     currentTableName = tableName;
     loadedTables.add(tableName);
+    schemaCache.delete(tableName);
     
     const buffer = await file.arrayBuffer();
     await db.registerFileBuffer(path, new Uint8Array(buffer));
@@ -936,7 +955,7 @@ recipeSelect.addEventListener('change', () => {
  * @param {string} tableName - The name of the DuckDB table to analyze
  */
 async function generateInstantCharts(tableName) {
-    const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
+    const schemaResult = await getTableSchema(tableName);
     const columns = getRows(schemaResult);
     const numericCols = columns.filter(c => 
         ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase())
@@ -1274,6 +1293,7 @@ loadSamplesBtn.addEventListener('click', async () => {
             const escapedName = name.replace(/'/g, "''");
             await conn.query(`CREATE TABLE IF NOT EXISTS "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
             loadedTables.add(tableName);
+            schemaCache.delete(tableName);
             currentTableName = tableName;
         }
         
@@ -1334,6 +1354,7 @@ clearBtn.addEventListener('click', async () => {
         }
         
         loadedTables.clear();
+        schemaCache.clear();
         currentTableName = '';
         schemaDisplay.textContent = '';
         previewsContainer.textContent = '';
