@@ -467,6 +467,12 @@ async function displayTableSchema(tableName) {
                 const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
+                // Performance/Memory optimization: explicitly destroy Chart instances
+                // before clearing the DOM container to prevent memory leaks from dangling event listeners.
+                statsContainer.querySelectorAll('canvas').forEach(canvas => {
+                    const chart = window.Chart?.getChart(canvas);
+                    if (chart) chart.destroy();
+                });
                 statsContainer.textContent = '';
                 const text = document.createElement('div');
                 text.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
@@ -774,6 +780,12 @@ fileInput.addEventListener('change', () => {
  * @param {FileList|Array<File>} files - The files selected or dropped by the user.
  */
 async function handleFiles(files) {
+    // Performance/Memory optimization: explicitly destroy Chart instances
+    // before clearing the DOM container to prevent memory leaks from dangling event listeners.
+    previewsContainer.querySelectorAll('canvas').forEach(canvas => {
+        const chart = window.Chart?.getChart(canvas);
+        if (chart) chart.destroy();
+    });
     previewsContainer.textContent = '';
     
     await withLoading('Error loading files', async () => {
@@ -1336,6 +1348,12 @@ clearBtn.addEventListener('click', async () => {
         loadedTables.clear();
         currentTableName = '';
         schemaDisplay.textContent = '';
+        // Performance/Memory optimization: explicitly destroy Chart instances
+        // before clearing the DOM container to prevent memory leaks from dangling event listeners.
+        previewsContainer.querySelectorAll('canvas').forEach(canvas => {
+            const chart = window.Chart?.getChart(canvas);
+            if (chart) chart.destroy();
+        });
         previewsContainer.textContent = '';
         if (gridInstance) {
             gridInstance.destroy();
