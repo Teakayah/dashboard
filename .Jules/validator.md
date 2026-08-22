@@ -38,3 +38,7 @@ Assertion: By patching `urllib.request.urlopen` to return this in-memory malicio
 Coverage Gap: The `deployment/update_flood_data.py` and `deployment/generate_descriptions.py` scripts missed line coverage for exception branches that guarded against insecure URLs, as those URLs were locally hardcoded or already checked earlier in the function.
 Learning: Unreachable logical branches, such as checking a locally hardcoded URL prefix, are impossible to mock or test because the application state strictly prevents that code path from executing.
 Assertion: When encountering untestable line coverage gaps caused by unreachable logical branches (like validating a locally hardcoded URL prefix), refactor the code to remove the redundant condition instead of attempting to write impossible mock tests.
+## 2026-08-22 - Strengthen Playwright lambda callback assertions
+Coverage Gap: Loose assertions (`assert_any_call`) on lambda callbacks (e.g., console/error events) allow unexpected side-effects to go undetected.
+Learning: Using `assert_called_once_with` requires explicitly clearing the mock state between sequential invocations using `mock.reset_mock()` to accurately verify isolated behaviors in shared mocks.
+Assertion: Strengthened lambda assertions using `assert_called_once_with` and isolated them via `reset_mock()`.
