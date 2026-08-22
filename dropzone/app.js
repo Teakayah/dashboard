@@ -1089,6 +1089,7 @@ function createPreviewCard(title, renderFn) {
         a.href = url;
         a.download = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png';
         a.click();
+        showToast(`Downloaded ${title} as PNG`, 'success');
     };
     header.appendChild(downloadBtn);
     
@@ -1250,6 +1251,7 @@ downloadBtn.addEventListener('click', async () => {
         a.download = `query_results_${new Date().getTime()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
+        showToast('Downloaded results as CSV', 'success');
     });
 });
 
@@ -1259,6 +1261,7 @@ copyJsonBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(json).then(() => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
+        showToast('Copied JSON to clipboard', 'success');
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
     }).catch(err => {
         console.error(err);
@@ -1319,6 +1322,7 @@ exportDbBtn.addEventListener('click', async () => {
         a.download = `datadashboard_export_${new Date().getTime()}.db`;
         a.click();
         URL.revokeObjectURL(url);
+        showToast('Database exported', 'success');
     });
 });
 
