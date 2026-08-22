@@ -9,9 +9,8 @@ Run with:  pytest tests/test_analysis_pages.py -v
 """
 
 import pytest
+from helpers import BASE, wait_for_networkidle
 from playwright.sync_api import Page, expect
-
-from helpers import BASE
 
 LOAD_TIMEOUT = 8_000   # ms
 TAB_TIMEOUT  = 2_000   # ms — post-click settle
@@ -19,10 +18,7 @@ TAB_TIMEOUT  = 2_000   # ms — post-click settle
 
 def _load(page: Page, path: str) -> None:
     page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=LOAD_TIMEOUT)
-    except Exception:
-        pass   # CDN assets (Chart.js, Leaflet) may be slow in CI
+    wait_for_networkidle(page, timeout=LOAD_TIMEOUT)
 
 
 # ── Employment Rate (employment_rate_canada.html) ─────────────────────────────

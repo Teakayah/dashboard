@@ -1,12 +1,16 @@
-from playwright.sync_api import Page, expect
 from pathlib import Path
+
+from helpers import (
+    ACTION_TIMEOUT,
+    DROPZONE_URL,
+    load_samples,
+    wait_for_duckdb_ready,
+    wait_for_networkidle,
+)
 from helpers import (
     BASE as BASE_URL,
-    DROPZONE_URL,
-    ACTION_TIMEOUT,
-    wait_for_duckdb_ready,
-    load_samples,
 )
+from playwright.sync_api import Page, expect
 
 REPO_ROOT = Path(__file__).parent.parent
 FLOOD_URL = f"{BASE_URL}/flood_risk_gatineau_ottawa.html"
@@ -17,10 +21,7 @@ LOAD_TIMEOUT = 8_000
 
 def _load_page(page: Page, url: str) -> None:
     page.goto(url, wait_until="domcontentloaded", timeout=60000)
-    try:
-        page.wait_for_load_state("networkidle", timeout=LOAD_TIMEOUT)
-    except Exception:
-        pass
+    wait_for_networkidle(page, timeout=LOAD_TIMEOUT)
 
 
 class TestIndexSearch:

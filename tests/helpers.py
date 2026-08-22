@@ -8,6 +8,13 @@ DUCKDB_READY_TIMEOUT = 90_000
 ACTION_TIMEOUT = 15_000
 
 
+def wait_for_networkidle(page: Page, timeout: int = 8000) -> None:
+    try:
+        page.wait_for_load_state('networkidle', timeout=timeout)
+    except Exception:  # noqa: BLE001, S110
+        pass
+
+
 def wait_for_duckdb_ready(page: Page) -> None:
     page.wait_for_function(
         """() => {

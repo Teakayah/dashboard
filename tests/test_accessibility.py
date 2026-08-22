@@ -14,9 +14,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from helpers import BASE, wait_for_networkidle
 from playwright.sync_api import Page
-
-from helpers import BASE
 
 AXE_CDN = (
     'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js'
@@ -79,10 +78,7 @@ def _fmt(violations: list[dict]) -> str:
 @pytest.mark.parametrize('label,path', PAGES)
 def test_page_has_no_critical_or_serious_violations(page: Page, label: str, path: str):
     page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8_000)
-    except Exception:
-        pass
+    wait_for_networkidle(page, timeout=8_000)
 
     _inject_axe(page)
     violations = _run_axe(page)

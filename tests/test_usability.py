@@ -10,6 +10,8 @@ import pytest
 from playwright.sync_api import Page, expect
 
 BASE = 'http://localhost:8765'
+from helpers import wait_for_networkidle
+
 REPO_ROOT = Path(__file__).parent.parent
 
 
@@ -153,10 +155,7 @@ def test_analysis_page_no_js_errors(page: Page, filename: str):
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass  # CDN assets may be slow in CI
+    wait_for_networkidle(page, timeout=8000)
     assert errors == [], f'JS errors on {filename}: {errors}'
 
 
@@ -217,10 +216,7 @@ def test_flood_simulator_updates_multiple_stations(page: Page):
 def test_analysis_page_no_horizontal_scroll_desktop(page: Page, filename: str):
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
+    wait_for_networkidle(page, timeout=8000)
     scroll_width = page.evaluate('document.body.scrollWidth')
     viewport_width = page.evaluate('window.innerWidth')
     assert scroll_width <= viewport_width + 2, (
@@ -234,10 +230,7 @@ def test_analysis_page_no_horizontal_scroll_desktop(page: Page, filename: str):
 def test_analysis_page_no_vertical_clip_desktop(page: Page, filename: str):
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
+    wait_for_networkidle(page, timeout=8000)
     clipped = page.evaluate("""
         () => {
             const canvases = document.querySelectorAll('canvas');
@@ -256,10 +249,7 @@ def test_analysis_page_no_vertical_clip_desktop(page: Page, filename: str):
 def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/employment_rate_canada.html', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
+    wait_for_networkidle(page, timeout=8000)
 
     # Disable animations on all existing Chart instances and future ones
     page.evaluate("""
@@ -304,10 +294,7 @@ def test_flood_dashboard_height_stabilizes(page: Page):
     """Ensure the flood dashboard height remains stable across all tabs."""
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
+    wait_for_networkidle(page, timeout=8000)
 
     tabs = ['gauge', 'history', 'snowpack']
     for tab in tabs:
@@ -360,10 +347,7 @@ def test_flood_no_vertical_scroll_desktop(page: Page):
     """Ensure the flood page fits within the vertical viewport on desktop without scrolling."""
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
+    wait_for_networkidle(page, timeout=8000)
 
     scroll_height = page.evaluate('document.documentElement.scrollHeight')
     viewport_height = page.evaluate('window.innerHeight')
@@ -378,10 +362,7 @@ def test_flood_no_vertical_scroll_desktop(page: Page):
 def test_viz_elements_have_height(page: Page, filename: str):
     """Ensure that critical visualization elements (canvases, maps) have a non-zero height when visible."""
     page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=5000)
-    except Exception:
-        pass
+    wait_for_networkidle(page, timeout=5000)
 
     # Check multiple tabs if the page has a .tab interface
     tab_count = page.locator('.tab').count()

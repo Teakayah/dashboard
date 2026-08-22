@@ -64,3 +64,6 @@ Action: Removed dead python logic to simplify deployment and testing footprint.
 ## 2026-07-29 - Removed leftover debug logs
 **Learning:** Found leftover `console.log()` statements across front-end files (`dropzone/app.js`, `dropzone.html`, `employment_rate_canada.html`, `flood_risk_gatineau_ottawa.html`, `nhpi_big6_comparison.html`). These logs clutter the console and act as tech debt.
 **Action:** Removed all unnecessary `console.log()` calls from JS and HTML files.
+## 2026-08-01 - Consolidated duplicate try-except networkidle blocks in tests
+**Learning:** Found multiple identical `try-except` blocks catching blind exceptions when waiting for the network idle state in Playwright tests, causing duplication and ruff `S110` / `BLE001` warnings.
+**Action:** Centralized the logic into a single `wait_for_networkidle` helper in `tests/helpers.py` and appended the `# noqa: BLE001, S110` suppression comment directly to the centralized block to prevent linter errors, then replaced all duplicated inline usage.
