@@ -68,3 +68,7 @@
 ## 2026-08-18 - [Optimize DuckDB-Wasm Concurrent Queries]
 **Learning:** In single-worker DuckDB-Wasm environments, opening multiple queries (like 'DESCRIBE table') concurrently without caching causes excessive IPC overhead and sequential processing latency. Waiting for results instead of promises causes duplicate work.
 **Action:** Implement an in-memory cache for asynchronous operations like DuckDB Wasm queries, caching the `Promise` itself (e.g., `cache.set(key, conn.query(...))`) rather than the awaited result. This ensures concurrent requests await the same pending promise.
+
+## 2026-08-23 - [Cache asynchronous DuckDB profiling queries]
+**Learning:** In DuckDB-Wasm, executing multiple async profiling queries sequentially (e.g. `conn.query(SELECT MIN...); conn.query(SELECT ... GROUP BY ...)`) each time a schema column is clicked creates excessive IPC overhead. Furthermore, since column stats are static for the loaded table, redundant queries are completely unnecessary.
+**Action:** When implementing an in-memory cache for asynchronous operations like DuckDB Wasm queries, cache the `Promise` itself (e.g., `cache.set(key, (async () => { ... })())`) rather than the awaited result. This ensures that concurrent requests for the same key await the same pending promise, preventing duplicate queries and redundant IPC roundtrips.

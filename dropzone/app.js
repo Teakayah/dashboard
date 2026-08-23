@@ -450,6 +450,10 @@ async function displayTableSchema(tableName) {
     statsContainer.style.fontStyle = 'italic';
     statsContainer.style.minHeight = '1.2em';
 
+    // Performance optimization: Cache profiling promises to prevent redundant queries
+    // and eliminate concurrent IPC overhead when rapidly clicking columns.
+    const profileCache = new Map();
+
     const cols = getRows(schemaResult).map(r => {
         const btn = document.createElement('button');
         btn.className = 'clickable-col';
@@ -476,12 +480,28 @@ async function displayTableSchema(tableName) {
             
             // Profiling logic
             try {
-                statsContainer.textContent = 'Calculating stats...';
-                const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
-                const stats = getRows(profilingResult)[0];
+                // Prevent memory leaks by destroying the existing Chart instance before clearing
+                const existingCanvas = statsContainer.querySelector('canvas');
+                if (existingCanvas) {
+                    const chart = Chart.getChart(existingCanvas);
+                    if (chart) chart.destroy();
+                }
 
-                const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
-                const distRows = getRows(distResult);
+                statsContainer.textContent = 'Calculating stats...';
+
+                if (!profileCache.has(r.column_name)) {
+                    const profilePromise = (async () => {
+                        const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
+                        const stats = getRows(profilingResult)[0];
+
+                        const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
+                        const distRows = getRows(distResult);
+                        return { stats, distRows };
+                    })();
+                    profileCache.set(r.column_name, profilePromise);
+                }
+
+                const { stats, distRows } = await profileCache.get(r.column_name);
 
                 destroyCharts(statsContainer);
                 statsContainer.textContent = '';
