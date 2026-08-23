@@ -38,3 +38,8 @@ Assertion: By patching `urllib.request.urlopen` to return this in-memory malicio
 Coverage Gap: The `deployment/update_flood_data.py` and `deployment/generate_descriptions.py` scripts missed line coverage for exception branches that guarded against insecure URLs, as those URLs were locally hardcoded or already checked earlier in the function.
 Learning: Unreachable logical branches, such as checking a locally hardcoded URL prefix, are impossible to mock or test because the application state strictly prevents that code path from executing.
 Assertion: When encountering untestable line coverage gaps caused by unreachable logical branches (like validating a locally hardcoded URL prefix), refactor the code to remove the redundant condition instead of attempting to write impossible mock tests.
+
+## 2026-08-23 - Assertion fixes in test scripts
+Coverage Gap: `test_debug_browser_callbacks` in `tests/scripts/test_scripts.py` failed randomly due to strict mock checking over multiple assertions.
+Learning: `MagicMock` strict assertions on sequential call sequences need `.reset_mock()` between verification checks to prevent `AssertionError` for previously evaluated test boundaries.
+Assertion: When verifying multiple sequences using `assert_called_once_with`, immediately invoke `mock.reset_mock()` between sequences so the mock history gets wiped clean.
