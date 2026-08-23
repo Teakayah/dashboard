@@ -328,7 +328,9 @@ def test_copy_json_copies_to_clipboard(dz: Page):
     _wait_for_ready(dz)
 
     # Grant clipboard-read and clipboard-write permissions to the current origin
-    dz.context.grant_permissions(['clipboard-read', 'clipboard-write'], origin=dz.url)
+    from urllib.parse import urlparse
+    origin = f"{urlparse(dz.url).scheme}://{urlparse(dz.url).netloc}"
+    dz.context.grant_permissions(['clipboard-read', 'clipboard-write'], origin=origin)
 
     dz.locator('#load-samples').click()
     dz.wait_for_function(
@@ -383,7 +385,6 @@ def test_copy_json_shows_error_toast_on_failure(dz: Page):
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text(re.compile(r'Clipboard Error', re.IGNORECASE))
 
-
 def test_chart_export_downloads_png(dz: Page):
     """Clicking 💾 PNG must trigger a file download containing the chart image."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
@@ -409,3 +410,29 @@ def test_chart_export_downloads_png(dz: Page):
 
     path = download.path()
     assert os.path.getsize(path) > 0, "Downloaded PNG image should not be empty"
+
+
+def test_load_remote_delta_unsupported_shows_toast(dz: Page):
+    """Clicking Load Delta Table when unsupported must show an error toast."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    dz.evaluate("window.deltaSupported = false")
+    dz.locator('#remote-delta-url').fill('https://example.com/data.delta')
+    dz.locator('#load-remote-delta').click()
+
+    toast = dz.locator('[role="alert"]')
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Delta Lake support is not available', re.IGNORECASE))
+
+
+def test_load_remote_delta_empty_url_does_nothing(dz: Page):
+    """Clicking Load Delta Table with an empty URL should do nothing."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    dz.locator('#remote-delta-url').fill('  ')
+    dz.locator('#load-remote-delta').click()
+
+    expect(dz.locator('[role="alert"]')).not_to_be_visible(timeout=1000)
+    expect(dz.locator('#loading')).not_to_be_visible(timeout=1000)

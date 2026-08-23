@@ -54,3 +54,7 @@
 ## 2026-08-13 - Toast Notification Strict Mode Violations
 **Learning:** Successive actions can trigger multiple toast notifications to appear in the DOM sequentially. Using a bare locator like `[role="alert"]` in Playwright tests causes strict mode violations because multiple elements match.
 **Action:** Always use `.last` or `.filter(has_text=...)` (e.g., `page.locator('[role="alert"]').last`) when asserting on toast notifications to ensure tests remain robust and flake-free.
+
+## 2026-08-23 - Testing UI error states triggered by global window properties
+**Learning:** Testing UI interactions that depend on environment feature flags (like `window.deltaSupported = false`) requires explicitly mocking the global state in the browser context via `page.evaluate()`.
+**Action:** Always use `page.evaluate("window.property = value")` before triggering UI events to simulate unsupported browser states in Playwright tests.
