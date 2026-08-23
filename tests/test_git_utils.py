@@ -13,9 +13,15 @@ def test_get_git_log_batched_valid_output():
         assert res == {'index.html': '2024-01-01', 'main.js': '2023-12-31'}
 
 def test_get_git_log_batched_subprocess_exception():
-    with patch('subprocess.run', side_effect=Exception('Git failed')):
+    with patch('subprocess.run', side_effect=Exception('Git failed')) as mock_run:
         res = git_utils.get_git_log_batched(['index.html'], '%ci')
         assert res == {}
+        mock_run.assert_called_once_with(
+            ['git', 'log', '--format=TS:%ci', '--name-only', '--', 'index.html'],
+            capture_output=True,
+            text=True,
+            cwd=str(git_utils.ROOT)
+        )
 
 def test_get_git_dates_batched_empty():
     assert git_utils.get_git_dates_batched([]) == {}

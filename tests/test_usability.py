@@ -25,6 +25,13 @@ def analysis_pages() -> list[str]:
 
 # ── Index page ────────────────────────────────────────────────────────────────
 
+
+def _wait_for_networkidle(page: Page, timeout: int = 8000):
+    try:
+        page.wait_for_load_state('networkidle', timeout=timeout)
+    except Exception:  # noqa: BLE001, S110
+        pass
+
 def test_index_title(page: Page):
     page.goto(BASE, wait_until='domcontentloaded', timeout=60000)
     expect(page).to_have_title('DataDashboard')
@@ -153,10 +160,7 @@ def test_analysis_page_no_js_errors(page: Page, filename: str):
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass  # CDN assets may be slow in CI
+    _wait_for_networkidle(page)
     assert errors == [], f'JS errors on {filename}: {errors}'
 
 
@@ -217,10 +221,7 @@ def test_flood_simulator_updates_multiple_stations(page: Page):
 def test_analysis_page_no_horizontal_scroll_desktop(page: Page, filename: str):
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
+    _wait_for_networkidle(page)
     scroll_width = page.evaluate('document.body.scrollWidth')
     viewport_width = page.evaluate('window.innerWidth')
     assert scroll_width <= viewport_width + 2, (
@@ -234,10 +235,7 @@ def test_analysis_page_no_horizontal_scroll_desktop(page: Page, filename: str):
 def test_analysis_page_no_vertical_clip_desktop(page: Page, filename: str):
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
+    _wait_for_networkidle(page)
     clipped = page.evaluate("""
         () => {
             const canvases = document.querySelectorAll('canvas');
@@ -256,10 +254,7 @@ def test_analysis_page_no_vertical_clip_desktop(page: Page, filename: str):
 def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/employment_rate_canada.html', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
+    _wait_for_networkidle(page)
 
     # Disable animations on all existing Chart instances and future ones
     page.evaluate("""
@@ -304,10 +299,7 @@ def test_flood_dashboard_height_stabilizes(page: Page):
     """Ensure the flood dashboard height remains stable across all tabs."""
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
+    _wait_for_networkidle(page)
 
     tabs = ['gauge', 'history', 'snowpack']
     for tab in tabs:
@@ -360,10 +352,7 @@ def test_flood_no_vertical_scroll_desktop(page: Page):
     """Ensure the flood page fits within the vertical viewport on desktop without scrolling."""
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=8000)
-    except Exception:
-        pass
+    _wait_for_networkidle(page)
 
     scroll_height = page.evaluate('document.documentElement.scrollHeight')
     viewport_height = page.evaluate('window.innerHeight')
@@ -378,10 +367,7 @@ def test_flood_no_vertical_scroll_desktop(page: Page):
 def test_viz_elements_have_height(page: Page, filename: str):
     """Ensure that critical visualization elements (canvases, maps) have a non-zero height when visible."""
     page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
-    try:
-        page.wait_for_load_state('networkidle', timeout=5000)
-    except Exception:
-        pass
+    _wait_for_networkidle(page)
 
     # Check multiple tabs if the page has a .tab interface
     tab_count = page.locator('.tab').count()
@@ -390,7 +376,25 @@ def test_viz_elements_have_height(page: Page, filename: str):
         for i in range(tab_count):
             # Click the tab and wait for animation/rendering
             tabs.nth(i).click()
-            page.wait_for_timeout(300)
+
+            # Wait for any visible canvas/map in the active panel to have a height >= 10,
+            # or for no such elements to exist. This avoids hardcoded timeouts.
+            page.wait_for_function("""
+                () => {
+                    const activePanel = document.querySelector('.panel.active');
+                    const container = activePanel || document.body;
+                    const canvases = container.querySelectorAll('canvas');
+                    const maps = container.querySelectorAll('#floodMap, .leaflet-container');
+
+                    for (let c of canvases) {
+                        if (c.offsetParent !== null && c.offsetHeight < 10) return false;
+                    }
+                    for (let m of maps) {
+                        if (m.offsetParent !== null && m.offsetHeight < 10) return false;
+                    }
+                    return true;
+                }
+            """, timeout=5000)
             
             elements = page.evaluate("""
                 () => {
@@ -420,7 +424,16 @@ def test_viz_elements_have_height(page: Page, filename: str):
             assert not elements, f"Collapsed visualizations on {filename} tab '{tab_name}': {elements}"
     else:
         # Standard page with no tabs
-        page.wait_for_timeout(500)
+        page.wait_for_function("""
+            () => {
+                const canvases = document.querySelectorAll('canvas');
+                for (let c of canvases) {
+                    if (c.offsetParent !== null && c.offsetHeight < 10) return false;
+                }
+                return true;
+            }
+        """, timeout=5000)
+
         elements = page.evaluate("""
             () => {
                 const results = [];

@@ -20,6 +20,22 @@ let lastResult = null;
 let gridInstance = null;
 let currentTableName = '';
 let loadedTables = new Set();
+// Performance optimization: Caches the schema to prevent redundant IPC roundtrips to the DuckDB-Wasm worker during UI updates, instant chart generation, and join assistant rendering.
+const tableSchemaCache = new Map();
+
+/**
+ * Retrieves the schema for a table, using a memory cache if available.
+ * @param {string} tableName
+ * @returns {Promise<any>}
+ */
+async function getTableSchemaCached(tableName) {
+    if (tableSchemaCache.has(tableName)) {
+        return tableSchemaCache.get(tableName);
+    }
+    const schemaPromise = conn.query(`DESCRIBE "${escapeId(tableName)}"`);
+    tableSchemaCache.set(tableName, schemaPromise);
+    return await schemaPromise;
+}
 
 const statusEl = document.getElementById('status');
 const dropZone = document.getElementById('drop-zone');
@@ -426,7 +442,7 @@ async function restoreState() {
  * @param {string} tableName - The name of the DuckDB table to describe and profile.
  */
 async function displayTableSchema(tableName) {
-    const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
+    const schemaResult = await getTableSchemaCached(tableName);
     const statsContainer = document.createElement('div');
     statsContainer.style.fontSize = '0.75rem';
     statsContainer.style.marginTop = '4px';
@@ -467,6 +483,7 @@ async function displayTableSchema(tableName) {
                 const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                 const distRows = getRows(distResult);
 
+                destroyCharts(statsContainer);
                 statsContainer.textContent = '';
                 const text = document.createElement('div');
                 text.textContent = `Stats for ${r.column_name}: Min: ${stats.min_val} | Max: ${stats.max_val} | Count: ${stats.count_val}`;
@@ -568,33 +585,18 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await conn.query(`DESCRIBE "${escapeId(tableA)}"`);
-        const schemaBResult = await conn.query(`DESCRIBE "${escapeId(tableB)}"`);
+        const schemaAResult = await getTableSchemaCached(tableA);
+        const schemaBResult = await getTableSchemaCached(tableB);
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
         
         const sharedCols = colsB.filter(c => colsA.has(c));
         
-        joinCol.textContent = '';
-        const defaultOpt = document.createElement('option');
-        defaultOpt.value = '';
-        defaultOpt.disabled = true;
-        defaultOpt.selected = true;
-        defaultOpt.textContent = 'Select Common Column...';
-        joinCol.appendChild(defaultOpt);
-        sharedCols.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c;
-            opt.textContent = c;
-            joinCol.appendChild(opt);
-        });
-
         if (sharedCols.length === 0) {
-            const opt = document.createElement('option');
-            opt.textContent = 'No shared columns found';
-            opt.disabled = true;
-            joinCol.appendChild(opt);
+            populateSelect(joinCol, [], 'No shared columns found');
+        } else {
+            populateSelect(joinCol, sharedCols, 'Select Common Column...');
         }
     } catch (err) {
         console.error('Error fetching columns for join:', err);
@@ -631,7 +633,7 @@ async function updateChartBuilderUI() {
     }
     chartBuilder.style.display = 'flex';
     try {
-        const schemaResult = await conn.query(`DESCRIBE "${escapeId(currentTableName)}"`);
+        const schemaResult = await getTableSchemaCached(currentTableName);
         const cols = getRows(schemaResult);
         
         const numericCols = cols.filter(c => ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase()));
@@ -774,6 +776,7 @@ fileInput.addEventListener('change', () => {
  * @param {FileList|Array<File>} files - The files selected or dropped by the user.
  */
 async function handleFiles(files) {
+    destroyCharts(previewsContainer);
     previewsContainer.textContent = '';
     
     await withLoading('Error loading files', async () => {
@@ -822,6 +825,7 @@ async function handleFiles(files) {
                 const escapedDirName = dirName.replace(/'/g, "''");
                 const query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedDirName}')`;
                 await conn.query(`DROP TABLE IF EXISTS "${escapeId(tableName)}"`);
+                tableSchemaCache.delete(tableName);
                 await conn.query(query);
                 await onTableLoaded(tableName);
             } else {
@@ -870,6 +874,7 @@ async function processFile(file, path) {
     }
     
     await conn.query(`DROP TABLE IF EXISTS "${escapeId(tableName)}"`);
+    tableSchemaCache.delete(tableName);
     await conn.query(query);
     await onTableLoaded(tableName);
 }
@@ -936,7 +941,7 @@ recipeSelect.addEventListener('change', () => {
  * @param {string} tableName - The name of the DuckDB table to analyze
  */
 async function generateInstantCharts(tableName) {
-    const schemaResult = await conn.query(`DESCRIBE "${escapeId(tableName)}"`);
+    const schemaResult = await getTableSchemaCached(tableName);
     const columns = getRows(schemaResult);
     const numericCols = columns.filter(c => 
         ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase())
@@ -1089,6 +1094,7 @@ function createPreviewCard(title, renderFn) {
         a.href = url;
         a.download = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png';
         a.click();
+        showToast('Downloaded chart as PNG', 'success');
     };
     header.appendChild(downloadBtn);
     
@@ -1105,6 +1111,19 @@ function createPreviewCard(title, renderFn) {
 }
 
 /**
+ * Destroys all Chart.js instances inside a given container to prevent memory leaks.
+ * @param {HTMLElement} container - The DOM element containing canvas elements.
+ */
+function destroyCharts(container) {
+    if (!window.Chart) return;
+    const canvases = container.querySelectorAll('canvas');
+    canvases.forEach(canvas => {
+        const chart = window.Chart.getChart(canvas);
+        if (chart) chart.destroy();
+    });
+}
+
+/**
  * Initializes and renders a Chart.js instance onto a specific canvas element.
  * Automatically applies responsive defaults.
  *
@@ -1116,6 +1135,10 @@ function createPreviewCard(title, renderFn) {
 function renderChart(id, type, data, options = {}) {
     const canvas = document.getElementById(id);
     if (!canvas) return;
+    if (window.Chart) {
+        const existingChart = window.Chart.getChart(canvas);
+        if (existingChart) existingChart.destroy();
+    }
     const ctx = canvas.getContext('2d');
     new Chart(ctx, {
         type: type,
@@ -1250,6 +1273,7 @@ downloadBtn.addEventListener('click', async () => {
         a.download = `query_results_${new Date().getTime()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
+        showToast('Downloaded results as CSV', 'success');
     });
 });
 
@@ -1260,6 +1284,7 @@ copyJsonBtn.addEventListener('click', () => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
         setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
+        showToast('Copied JSON to clipboard', 'success');
     }).catch(err => {
         console.error(err);
         showToast('Clipboard Error: ' + err.message);
@@ -1273,6 +1298,7 @@ loadSamplesBtn.addEventListener('click', async () => {
             await db.registerFileText(name, content);
             const escapedName = name.replace(/'/g, "''");
             await conn.query(`CREATE TABLE IF NOT EXISTS "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
+            tableSchemaCache.delete(tableName);
             loadedTables.add(tableName);
             currentTableName = tableName;
         }
@@ -1319,6 +1345,7 @@ exportDbBtn.addEventListener('click', async () => {
         a.download = `datadashboard_export_${new Date().getTime()}.db`;
         a.click();
         URL.revokeObjectURL(url);
+        showToast('Database export started', 'success');
     });
 });
 
@@ -1334,8 +1361,10 @@ clearBtn.addEventListener('click', async () => {
         }
         
         loadedTables.clear();
+        tableSchemaCache.clear();
         currentTableName = '';
         schemaDisplay.textContent = '';
+        destroyCharts(previewsContainer);
         previewsContainer.textContent = '';
         if (gridInstance) {
             gridInstance.destroy();

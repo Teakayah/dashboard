@@ -64,7 +64,7 @@ class TestDropzoneButtons:
         load_samples(dz)
         # Don't select anything — just click
         dz.locator("#generate-join").click()
-        toast = dz.locator('[role="alert"]')
+        toast = dz.locator('[role="alert"]').last
         toast.wait_for(state="visible", timeout=3000)
         assert "select both tables" in toast.inner_text().lower()
 
@@ -79,7 +79,7 @@ class TestDropzoneButtons:
         wait_for_duckdb_ready(dz)
         load_samples(dz)
         dz.locator("#generate-chart").click()
-        toast = dz.locator('[role="alert"]')
+        toast = dz.locator('[role="alert"]').last
         toast.wait_for(state="visible", timeout=3000)
         assert "select both x and y" in toast.inner_text().lower()
 
