@@ -1114,7 +1114,7 @@ function createPreviewCard(title, renderFn) {
         a.href = url;
         a.download = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png';
         a.click();
-        showToast('Downloaded chart as PNG', 'success');
+        showToast(`Downloaded ${title} as PNG`, 'success');
     };
     header.appendChild(downloadBtn);
     
@@ -1303,8 +1303,8 @@ copyJsonBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(json).then(() => {
         const originalText = copyJsonBtn.textContent;
         copyJsonBtn.textContent = 'Copied!';
-        setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
         showToast('Copied JSON to clipboard', 'success');
+        setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
     }).catch(err => {
         console.error(err);
         showToast('Clipboard Error: ' + err.message);
@@ -1365,7 +1365,7 @@ exportDbBtn.addEventListener('click', async () => {
         a.download = `datadashboard_export_${new Date().getTime()}.db`;
         a.click();
         URL.revokeObjectURL(url);
-        showToast('Database export started', 'success');
+        showToast('Database exported', 'success');
     });
 });
 
