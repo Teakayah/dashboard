@@ -50,12 +50,19 @@ def _extract_description(content: str, filename: str, descriptions: dict) -> str
         return m.group(1).strip()
 
     # 2. Subtitle element
+    # Extract inner content from elements with the 'subtitle' class.
     m = re.search(
-        r'class=["\'][^"\']*subtitle[^"\']*["\'][^>]*>(.*?)</[a-z]+>',
-        content, re.IGNORECASE | re.DOTALL,
+        r'''
+        <([a-zA-Z0-9]+)                              # Group 1: Capture the HTML opening tag name (e.g., div, span, p)
+        [^>]*class=["\'][^"\']*subtitle[^"\']*["\']  # Ensure the tag has a class attribute containing 'subtitle'
+        [^>]*>                                       # Match the remainder of the opening tag
+        (.*?)                                        # Group 2: Non-greedily capture the inner content
+        </\1>                                        # Use \1 backreference to match the exact closing tag from Group 1
+        ''',
+        content, re.IGNORECASE | re.DOTALL | re.VERBOSE,
     )
     if m:
-        text = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+        text = re.sub(r'<[^>]+>', '', m.group(2)).strip()
         text = html_lib.unescape(re.sub(r'\s+', ' ', text))
         return text[:120] + '…' if len(text) > 120 else text
 

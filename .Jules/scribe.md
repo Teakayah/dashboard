@@ -94,3 +94,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-08-11 - Implicit DOM Resizing for Chart.js
 **Learning:** The application handles responsive chart scaling not by explicit re-initialization, but by dynamically wrapping `<canvas>` elements and firing synthetic `window.dispatchEvent(new Event('resize'))` events to trick Chart.js into recalculating dimensions when toggling fullscreen. This is a recurring architectural pattern for external visualization libraries in this codebase.
 **Action:** Document this synthetic event pattern via JSDoc whenever wrapping or injecting wrapper containers around third-party components to prevent confusion about how reactive layouts are triggered.
+
+## 2026-08-08 - Standardize HTML Extractions with re.VERBOSE
+**Learning:** Build scripts like `generate_feed.py` used dense, single-line regular expressions for HTML parsing that were hard to read and prone to edge-case failures (e.g. nested tags breaking `</[a-z]+>`).
+**Action:** When parsing HTML with regex across all deployment scripts, standardize on using the `re.VERBOSE` flag with multiline strings and inline comments, and always use backreferences (`\1`) for closing tags to ensure safety and clarity for future maintainers.
