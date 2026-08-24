@@ -19,6 +19,14 @@ from helpers import (
     wait_for_duckdb_ready as _wait_for_ready,
 )
 
+def _load_samples_and_wait(dz: Page):
+    """Helper to click load samples and wait for schema parsing."""
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=ACTION_TIMEOUT,
+    )
+
 
 # ── Initialisation ────────────────────────────────────────────────────────────
 
@@ -98,11 +106,7 @@ def test_persistence_across_reload(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.reload(wait_until="domcontentloaded")
 
@@ -127,11 +131,7 @@ def test_clear_data_wipes_schema(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.on('dialog', lambda dlg: dlg.accept())
     dz.locator('#clear-data').click()
@@ -168,11 +168,7 @@ def test_run_query_returns_results_grid(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 3')
     dz.locator('#run-query').click()
@@ -186,11 +182,7 @@ def test_run_query_enables_download_and_copy_buttons(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     # Both buttons should start disabled
     assert dz.locator('#download-csv').is_disabled()
@@ -228,11 +220,7 @@ def test_invalid_sql_shows_dialog_not_crash(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT * FROM nonexistent_table_xyz')
     dz.locator('#run-query').click()
@@ -247,11 +235,7 @@ def test_count_query_returns_single_value(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT COUNT(*) AS n FROM "employees"')
     dz.locator('#run-query').click()
@@ -272,11 +256,7 @@ def test_csv_export_downloads_file(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
     dz.locator('#run-query').click()
@@ -332,11 +312,7 @@ def test_copy_json_copies_to_clipboard(dz: Page):
     origin = f"{urlparse(dz.url).scheme}://{urlparse(dz.url).netloc}"
     dz.context.grant_permissions(['clipboard-read', 'clipboard-write'], origin=origin)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
     dz.locator('#run-query').click()
@@ -358,11 +334,7 @@ def test_copy_json_shows_error_toast_on_failure(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
     dz.locator('#run-query').click()
@@ -390,11 +362,7 @@ def test_chart_export_downloads_png(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.select_option('#chart-x-col', index=1)
     dz.select_option('#chart-y-col', index=1)

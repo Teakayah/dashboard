@@ -67,3 +67,6 @@ Action: Removed dead python logic to simplify deployment and testing footprint.
 ## 2026-08-14 - Chart.js Memory Leaks
 **Learning:** When replacing or clearing the DOM content of a container that houses Chart.js `<canvas>` elements using `container.textContent = ''`, the Chart instances must be explicitly destroyed using `Chart.getChart(canvas).destroy()`. Failing to do so causes severe memory leaks because internal event listeners remain active in memory.
 **Action:** Ensure `destroyCharts(container)` or `Chart.getChart(canvas)?.destroy()` is called before removing canvas elements from the DOM or re-instantiating charts on the same canvas.
+## 2026-08-16 - Consolidate duplicated test setup logic
+Learning: Found duplicated logic for loading sample data and waiting for schema parsing repeated across almost every test in `tests/test_dropzone.py`.
+Action: Extracted the repeated DOM interaction and waiting logic into a shared helper function `_load_samples_and_wait` to reduce boilerplate and improve test maintainability.
