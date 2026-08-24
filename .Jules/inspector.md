@@ -62,3 +62,6 @@
 ## 2026-08-21 - Restoring mock call history in complex lambdas
 **Learning:** When strengthening test assertions from `mock.assert_any_call()` to `mock.assert_called_once_with()` for sequentially invoked mock handlers (e.g., event listener lambdas in Playwright), previous calls accumulate in the mock's history, causing strict assertions on subsequent calls to fail.
 **Action:** Always insert `mock.reset_mock()` between sequential invocations of independent mock-triggering functions to isolate call history and ensure strict assertions correctly evaluate only the current operation.
+## 2026-08-24 - Asserting empty state UI with Grid.js
+**Learning:** When queries return zero rows, `Grid.js` is explicitly destroyed and an empty state UI (`.empty`) is injected into the results container to inform the user instead of displaying a blank grid or an error. This conditional rendering branch was previously untested.
+**Action:** Always include a test case that forces an empty result set (e.g., `SELECT * FROM table WHERE false`) and verify that the empty state elements (like 'No results found' SVG/text) are visible and correctly styled.

@@ -436,3 +436,20 @@ def test_load_remote_delta_empty_url_does_nothing(dz: Page):
 
     expect(dz.locator('[role="alert"]')).not_to_be_visible(timeout=1000)
     expect(dz.locator('#loading')).not_to_be_visible(timeout=1000)
+
+def test_run_query_empty_results_shows_empty_state(dz: Page):
+    """Running a query that returns 0 rows must show the empty state UI."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=ACTION_TIMEOUT,
+    )
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" WHERE id = 99999')
+    dz.locator('#run-query').click()
+
+    expect(dz.locator('.empty')).to_be_visible(timeout=ACTION_TIMEOUT)
+    expect(dz.locator('.empty')).to_contain_text('No results found')
