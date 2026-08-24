@@ -436,3 +436,16 @@ def test_load_remote_delta_empty_url_does_nothing(dz: Page):
 
     expect(dz.locator('[role="alert"]')).not_to_be_visible(timeout=1000)
     expect(dz.locator('#loading')).not_to_be_visible(timeout=1000)
+
+def test_load_remote_delta_fails_gracefully(dz: Page):
+    """Loading a remote Delta table from an invalid URL should show an error toast."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    dz.evaluate("window.deltaSupported = true")
+    dz.locator('#remote-delta-url').fill('https://example.invalid/data.delta')
+    dz.locator('#load-remote-delta').click()
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=10000)
+    expect(toast).to_contain_text(re.compile(r'Error loading remote Delta table', re.IGNORECASE))

@@ -47,3 +47,7 @@ Assertion: When encountering untestable line coverage gaps caused by unreachable
 Coverage Gap: Loose assertions (`assert_any_call`) on lambda callbacks (e.g., console/error events) allow unexpected side-effects to go undetected.
 Learning: Using `assert_called_once_with` requires explicitly clearing the mock state between sequential invocations using `mock.reset_mock()` to accurately verify isolated behaviors in shared mocks.
 Assertion: Strengthened lambda assertions using `assert_called_once_with` and isolated them via `reset_mock()`.
+## 2026-08-24 - Cover Remote Delta Table Load Error State
+Coverage Gap: The error handling branch for loading a remote Delta table in `dropzone/app.js` was missing test coverage.
+Learning: When front-end functions rely on external network requests (like DuckDB fetching a Delta table), simulating a failure by providing an invalid URL (e.g., `https://example.invalid/...`) allows the test to reach the error state without complex mocking.
+Assertion: Added a test passing an invalid URL and asserting that the UI properly displays the corresponding error toast.
