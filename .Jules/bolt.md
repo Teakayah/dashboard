@@ -72,3 +72,6 @@
 ## 2026-08-23 - [Cache asynchronous DuckDB profiling queries]
 **Learning:** In DuckDB-Wasm, executing multiple async profiling queries sequentially (e.g. `conn.query(SELECT MIN...); conn.query(SELECT ... GROUP BY ...)`) each time a schema column is clicked creates excessive IPC overhead. Furthermore, since column stats are static for the loaded table, redundant queries are completely unnecessary.
 **Action:** When implementing an in-memory cache for asynchronous operations like DuckDB Wasm queries, cache the `Promise` itself (e.g., `cache.set(key, (async () => { ... })())`) rather than the awaited result. This ensures that concurrent requests for the same key await the same pending promise, preventing duplicate queries and redundant IPC roundtrips.
+## 2026-08-25 - [Optimize File Registration Queries]
+**Learning:** Executing a `DROP TABLE IF EXISTS` followed by a `CREATE TABLE` query in DuckDB-Wasm incurs redundant IPC overhead due to multiple sequential `conn.query()` calls across the WebWorker boundary.
+**Action:** Always utilize DuckDB's native `CREATE OR REPLACE TABLE` syntax to combine dropping existing tables and creating new ones into a single query, eliminating redundant IPC roundtrips and accelerating overall data ingestion.
