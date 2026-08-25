@@ -180,6 +180,27 @@ const PROV=['Ontario','Quebec','British Columbia','Alberta','Manitoba','Saskatch
             'Nova Scotia','New Brunswick','Newfoundland and Labrador','Prince Edward Island'];
 const RECESSIONS=[[1981,1982],[1990,1992],[2008,2009],[2020,2020]];
 
+function createChip(geo, label, title, visSet, updateFn) {
+  var c = document.createElement('div');
+  c.className = 'chip on';
+  c.textContent = label;
+  c.title = title;
+  c.style.borderColor = COLORS[geo];
+  c.style.color = COLORS[geo];
+  c.style.background = COLORS[geo] + '18';
+  c.onclick = function() {
+    if (visSet.has(geo)) {
+      visSet.delete(geo);
+      c.classList.remove('on');
+    } else {
+      visSet.add(geo);
+      c.classList.add('on');
+    }
+    updateFn();
+  };
+  return c;
+}
+
 // ── Tab switch ────────────────────────────────────────────────────────────────
 function showTab(id){
   ['rate','jobs','debt','pop'].forEach(function(t,i){
@@ -237,13 +258,9 @@ function rateView(v){
   document.getElementById('rate-btnS').classList.toggle('active',v==='small');
 }
 RATE_ORDER.forEach(function(g){
-  var c=document.createElement('div');
-  c.className='chip on';c.textContent=CHIP[g]||g;c.title=g;
-  c.style.borderColor=COLORS[g];c.style.color=COLORS[g];c.style.background=COLORS[g]+'18';
-  c.onclick=function(){
-    if(rateVis.has(g)){rateVis.delete(g);c.classList.remove('on');}else{rateVis.add(g);c.classList.add('on');}
+  var c = createChip(g, CHIP[g]||g, g, rateVis, function() {
     rateChart.data.datasets=rateDS(Array.from(rateVis));rateChart.update();
-  };
+  });
   document.getElementById('rate-chips').appendChild(c);
 });
 (function(){
@@ -365,23 +382,15 @@ function debtView(v){
 }
 // Federal chip
 (function(){
-  var c=document.createElement('div');
-  c.className='chip on';c.textContent='Federal';c.title='Federal government liabilities';
-  c.style.borderColor=COLORS['Federal'];c.style.color=COLORS['Federal'];c.style.background=COLORS['Federal']+'18';
-  c.onclick=function(){
-    if(debtVis.has('Federal')){debtVis.delete('Federal');c.classList.remove('on');}else{debtVis.add('Federal');c.classList.add('on');}
+  var c = createChip('Federal', 'Federal', 'Federal government liabilities', debtVis, function() {
     debtChart.data.datasets=debtDS(Array.from(debtVis));debtChart.update();
-  };
+  });
   document.getElementById('debt-chips').appendChild(c);
 })();
 debtProvGeos.forEach(function(g){
-  var c=document.createElement('div');
-  c.className='chip on';c.textContent=CHIP[g]||g;c.title=g;
-  c.style.borderColor=COLORS[g];c.style.color=COLORS[g];c.style.background=COLORS[g]+'18';
-  c.onclick=function(){
-    if(debtVis.has(g)){debtVis.delete(g);c.classList.remove('on');}else{debtVis.add(g);c.classList.add('on');}
+  var c = createChip(g, CHIP[g]||g, g, debtVis, function() {
     debtChart.data.datasets=debtDS(Array.from(debtVis));debtChart.update();
-  };
+  });
   document.getElementById('debt-chips').appendChild(c);
 });
 // Federal note on small charts
@@ -485,13 +494,9 @@ function popView(v){
 
 // Pop chips
 RATE_ORDER.forEach(function(g){
-  var c=document.createElement('div');
-  c.className='chip on';c.textContent=CHIP[g]||g;c.title=g;
-  c.style.borderColor=COLORS[g];c.style.color=COLORS[g];c.style.background=COLORS[g]+'18';
-  c.onclick=function(){
-    if(popVis.has(g)){popVis.delete(g);c.classList.remove('on');}else{popVis.add(g);c.classList.add('on');}
+  var c = createChip(g, CHIP[g]||g, g, popVis, function() {
     popBuildMain();
-  };
+  });
   document.getElementById('pop-chips').appendChild(c);
 });
 
