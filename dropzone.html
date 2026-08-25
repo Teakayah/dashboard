@@ -62,9 +62,9 @@
             font-size: 1rem;
             color: inherit;
         }
-        .drop-zone.drag-over {
+        .drop-zone:hover, .drop-zone.drag-over {
             border-color: var(--primary);
-            background: #eff6ff;
+            background: rgba(79, 142, 247, 0.08);
         }
         .drop-zone:focus-visible {
             outline: 2px solid var(--primary);
@@ -368,7 +368,16 @@
         <div id="results" class="results-container"></div>
     </main>
 
-    <div id="loading" class="loading-overlay">Processing...</div>
+    <div id="loading" class="loading-overlay" role="status" aria-live="assertive">
+        <svg aria-hidden="true" style="width: 24px; height: 24px; margin-right: 10px; animation: spin 1s linear infinite;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>Processing...</span>
+    </div>
+    <style>
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
 
     <script src="dropzone/vendor/gridjs/gridjs.js"></script>
     <script type="module" src="dropzone/app.js"></script>
