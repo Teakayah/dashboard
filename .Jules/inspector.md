@@ -62,3 +62,6 @@
 ## 2026-08-21 - Restoring mock call history in complex lambdas
 **Learning:** When strengthening test assertions from `mock.assert_any_call()` to `mock.assert_called_once_with()` for sequentially invoked mock handlers (e.g., event listener lambdas in Playwright), previous calls accumulate in the mock's history, causing strict assertions on subsequent calls to fail.
 **Action:** Always insert `mock.reset_mock()` between sequential invocations of independent mock-triggering functions to isolate call history and ensure strict assertions correctly evaluate only the current operation.
+## 2026-08-25 - Mocking network errors via invalid URLs
+**Learning:** When testing frontend error handling for external network requests (e.g., DuckDB-Wasm fetching a remote Delta table), passing an intentionally invalid URL (like 'https://example.invalid/data') is an effective way to trigger the failure state without requiring complex API mocks or network interception.
+**Action:** Use `.invalid` top level domains to trigger failure states in browser-run tests instead of installing mock servers for basic error handling testing.
