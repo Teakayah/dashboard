@@ -79,6 +79,25 @@ def test_load_samples_populates_sql_input(dz: Page):
     assert 'employees' in sql.lower(), f'SQL input not pre-populated: {sql!r}'
 
 
+def test_loading_state_is_accessible(dz: Page):
+    """Async work must expose a polite status and mark the page busy."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    loading = dz.locator('#loading')
+    expect(loading).to_have_attribute('role', 'status')
+    expect(loading).to_have_attribute('aria-live', 'polite')
+
+    busy = dz.evaluate("""
+        document.getElementById('load-samples').click();
+        document.body.getAttribute('aria-busy');
+    """)
+    assert busy == 'true'
+
+    expect(loading).not_to_be_visible(timeout=ACTION_TIMEOUT)
+    expect(dz.locator('body')).not_to_have_attribute('aria-busy', 'true')
+
+
 # ── CSV file load ─────────────────────────────────────────────────────────────
 
 def test_csv_file_loads_and_shows_schema(dz: Page, tmp_path: Path):
@@ -431,3 +450,24 @@ def test_run_query_empty_results_shows_empty_state(dz: Page):
 
     expect(dz.locator('.empty')).to_be_visible(timeout=ACTION_TIMEOUT)
     expect(dz.locator('.empty')).to_contain_text('No results found')
+
+
+def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
+    """Loading date and numeric CSV columns generates at least one preview."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    csv = tmp_path / 'sales_data.csv'
+    csv.write_text(
+        'date,product,revenue\n'
+        '2022-01-01,Widget,100\n'
+        '2022-01-02,Gadget,200\n'
+        '2022-01-03,Doohickey,50\n'
+    )
+
+    dz.evaluate("document.getElementById('file-input').removeAttribute('webkitdirectory')")
+    dz.locator('#file-input').set_input_files(str(csv))
+
+    previews = dz.locator('#instant-previews .preview-card')
+    expect(previews.first).to_be_visible(timeout=ACTION_TIMEOUT)
+    assert previews.count() > 0
