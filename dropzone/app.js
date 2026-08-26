@@ -843,8 +843,8 @@ async function handleFiles(files) {
                 currentTableName = tableName;
                 loadedTables.add(tableName);
                 const escapedDirName = dirName.replace(/'/g, "''");
-                const query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedDirName}')`;
-                await conn.query(`DROP TABLE IF EXISTS "${escapeId(tableName)}"`);
+                // Performance optimization: Use CREATE OR REPLACE TABLE to eliminate redundant IPC roundtrips across the WebWorker boundary.
+                const query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedDirName}')`;
                 tableSchemaCache.delete(tableName);
                 await conn.query(query);
                 await onTableLoaded(tableName);
@@ -883,17 +883,17 @@ async function processFile(file, path) {
     const ext = file.name.split('.').pop().toLowerCase();
     const escapedPath = path.replace(/'/g, "''");
     
+    // Performance optimization: Use CREATE OR REPLACE TABLE to eliminate redundant IPC roundtrips across the WebWorker boundary.
     if (ext === 'parquet') {
-        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_parquet('${escapedPath}')`;
+        query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_parquet('${escapedPath}')`;
     } else if (ext === 'csv') {
-        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedPath}')`;
+        query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedPath}')`;
     } else if (ext === 'json') {
-        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_json_auto('${escapedPath}')`;
+        query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_json_auto('${escapedPath}')`;
     } else {
-        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM '${escapedPath}'`;
+        query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM '${escapedPath}'`;
     }
     
-    await conn.query(`DROP TABLE IF EXISTS "${escapeId(tableName)}"`);
     tableSchemaCache.delete(tableName);
     await conn.query(query);
     await onTableLoaded(tableName);
