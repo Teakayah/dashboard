@@ -60,6 +60,19 @@ const queryHistoryEl = document.getElementById('query-history');
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
 /**
+ * Trigger a browser download for an object or data URL.
+ *
+ * @param {string} url - URL containing the download payload.
+ * @param {string} filename - Suggested file name.
+ */
+function triggerDownload(url, filename) {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+}
+
+/**
  * Utility to clear and populate a <select> element.
  * @param {HTMLSelectElement} select - The select element to populate.
  * @param {Array<string|Object>} options - Array of values or column objects.
@@ -177,7 +190,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         // but we can ensure it's there if needed.
 
         const escapedUrl = url.replace(/'/g, "''");
-        const query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedUrl}')`;
+        const query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedUrl}')`;
         await conn.query(query);
 
         currentTableName = tableName;
@@ -843,8 +856,7 @@ async function handleFiles(files) {
                 currentTableName = tableName;
                 loadedTables.add(tableName);
                 const escapedDirName = dirName.replace(/'/g, "''");
-                const query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedDirName}')`;
-                await conn.query(`DROP TABLE IF EXISTS "${escapeId(tableName)}"`);
+                const query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM delta_scan('${escapedDirName}')`;
                 tableSchemaCache.delete(tableName);
                 await conn.query(query);
                 await onTableLoaded(tableName);
@@ -884,16 +896,15 @@ async function processFile(file, path) {
     const escapedPath = path.replace(/'/g, "''");
     
     if (ext === 'parquet') {
-        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_parquet('${escapedPath}')`;
+        query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_parquet('${escapedPath}')`;
     } else if (ext === 'csv') {
-        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedPath}')`;
+        query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedPath}')`;
     } else if (ext === 'json') {
-        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_json_auto('${escapedPath}')`;
+        query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_json_auto('${escapedPath}')`;
     } else {
-        query = `CREATE TABLE "${escapeId(tableName)}" AS SELECT * FROM '${escapedPath}'`;
+        query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM '${escapedPath}'`;
     }
     
-    await conn.query(`DROP TABLE IF EXISTS "${escapeId(tableName)}"`);
     tableSchemaCache.delete(tableName);
     await conn.query(query);
     await onTableLoaded(tableName);
@@ -1110,10 +1121,7 @@ function createPreviewCard(title, renderFn) {
     downloadBtn.onclick = () => {
         const canvas = document.getElementById(id);
         const url = canvas.toDataURL('image/png');
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png';
-        a.click();
+        triggerDownload(url, title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png');
         showToast(`Downloaded ${title} as PNG`, 'success');
     };
     header.appendChild(downloadBtn);
@@ -1288,10 +1296,7 @@ downloadBtn.addEventListener('click', async () => {
         const content = await db.copyFileToBuffer(csvPath);
         const blob = new Blob([content], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `query_results_${new Date().getTime()}.csv`;
-        a.click();
+        triggerDownload(url, `query_results_${new Date().getTime()}.csv`);
         URL.revokeObjectURL(url);
         showToast('Downloaded results as CSV', 'success');
     });
@@ -1317,7 +1322,7 @@ loadSamplesBtn.addEventListener('click', async () => {
             const tableName = name.replace('.csv', '');
             await db.registerFileText(name, content);
             const escapedName = name.replace(/'/g, "''");
-            await conn.query(`CREATE TABLE IF NOT EXISTS "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
+            await conn.query(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
             tableSchemaCache.delete(tableName);
             loadedTables.add(tableName);
             currentTableName = tableName;
@@ -1360,10 +1365,7 @@ exportDbBtn.addEventListener('click', async () => {
         const buffer = await db.copyFileToBuffer('indexeddb://duckdb');
         const blob = new Blob([buffer], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `datadashboard_export_${new Date().getTime()}.db`;
-        a.click();
+        triggerDownload(url, `datadashboard_export_${new Date().getTime()}.db`);
         URL.revokeObjectURL(url);
         showToast('Database exported', 'success');
     });
@@ -1412,6 +1414,7 @@ clearBtn.addEventListener('click', async () => {
  */
 async function withLoading(errorPrefix, asyncFn) {
     loadingOverlay.style.display = 'flex';
+    document.body.setAttribute('aria-busy', 'true');
     try {
         await asyncFn();
     } catch (err) {
@@ -1419,6 +1422,7 @@ async function withLoading(errorPrefix, asyncFn) {
         showToast(errorPrefix + ': ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
+        document.body.removeAttribute('aria-busy');
     }
 }
 

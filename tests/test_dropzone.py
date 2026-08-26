@@ -19,6 +19,14 @@ from helpers import (
     wait_for_duckdb_ready as _wait_for_ready,
 )
 
+def _load_samples_and_wait(dz: Page):
+    """Helper to click load samples and wait for schema parsing."""
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=ACTION_TIMEOUT,
+    )
+
 
 # ── Initialisation ────────────────────────────────────────────────────────────
 
@@ -71,6 +79,25 @@ def test_load_samples_populates_sql_input(dz: Page):
     assert 'employees' in sql.lower(), f'SQL input not pre-populated: {sql!r}'
 
 
+def test_loading_state_is_accessible(dz: Page):
+    """Async work must expose a polite status and mark the page busy."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    loading = dz.locator('#loading')
+    expect(loading).to_have_attribute('role', 'status')
+    expect(loading).to_have_attribute('aria-live', 'polite')
+
+    busy = dz.evaluate("""
+        document.getElementById('load-samples').click();
+        document.body.getAttribute('aria-busy');
+    """)
+    assert busy == 'true'
+
+    expect(loading).not_to_be_visible(timeout=ACTION_TIMEOUT)
+    expect(dz.locator('body')).not_to_have_attribute('aria-busy', 'true')
+
+
 # ── CSV file load ─────────────────────────────────────────────────────────────
 
 def test_csv_file_loads_and_shows_schema(dz: Page, tmp_path: Path):
@@ -98,11 +125,7 @@ def test_persistence_across_reload(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.reload(wait_until="domcontentloaded")
 
@@ -127,11 +150,7 @@ def test_clear_data_wipes_schema(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.on('dialog', lambda dlg: dlg.accept())
     dz.locator('#clear-data').click()
@@ -168,11 +187,7 @@ def test_run_query_returns_results_grid(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 3')
     dz.locator('#run-query').click()
@@ -186,11 +201,7 @@ def test_run_query_enables_download_and_copy_buttons(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     # Both buttons should start disabled
     assert dz.locator('#download-csv').is_disabled()
@@ -228,11 +239,7 @@ def test_invalid_sql_shows_dialog_not_crash(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT * FROM nonexistent_table_xyz')
     dz.locator('#run-query').click()
@@ -247,11 +254,7 @@ def test_count_query_returns_single_value(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT COUNT(*) AS n FROM "employees"')
     dz.locator('#run-query').click()
@@ -272,11 +275,7 @@ def test_csv_export_downloads_file(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
     dz.locator('#run-query').click()
@@ -332,11 +331,7 @@ def test_copy_json_copies_to_clipboard(dz: Page):
     origin = f"{urlparse(dz.url).scheme}://{urlparse(dz.url).netloc}"
     dz.context.grant_permissions(['clipboard-read', 'clipboard-write'], origin=origin)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
     dz.locator('#run-query').click()
@@ -358,11 +353,7 @@ def test_copy_json_shows_error_toast_on_failure(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
     dz.locator('#run-query').click()
@@ -390,11 +381,7 @@ def test_chart_export_downloads_png(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=ACTION_TIMEOUT,
-    )
+    _load_samples_and_wait(dz)
 
     dz.select_option('#chart-x-col', index=1)
     dz.select_option('#chart-y-col', index=1)
@@ -436,3 +423,51 @@ def test_load_remote_delta_empty_url_does_nothing(dz: Page):
 
     expect(dz.locator('[role="alert"]')).not_to_be_visible(timeout=1000)
     expect(dz.locator('#loading')).not_to_be_visible(timeout=1000)
+
+def test_load_remote_delta_fails_gracefully(dz: Page):
+    """Loading a remote Delta table from an invalid URL should show an error toast."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    dz.evaluate("window.deltaSupported = true")
+    dz.locator('#remote-delta-url').fill('https://example.invalid/data.delta')
+    dz.locator('#load-remote-delta').click()
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=10000)
+    expect(toast).to_contain_text(re.compile(r'Error loading remote Delta table', re.IGNORECASE))
+
+
+def test_run_query_empty_results_shows_empty_state(dz: Page):
+    """Running a query that returns 0 rows must show the empty state UI."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" WHERE id = 99999')
+    dz.locator('#run-query').click()
+
+    expect(dz.locator('.empty')).to_be_visible(timeout=ACTION_TIMEOUT)
+    expect(dz.locator('.empty')).to_contain_text('No results found')
+
+
+def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
+    """Loading date and numeric CSV columns generates at least one preview."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    csv = tmp_path / 'sales_data.csv'
+    csv.write_text(
+        'date,product,revenue\n'
+        '2022-01-01,Widget,100\n'
+        '2022-01-02,Gadget,200\n'
+        '2022-01-03,Doohickey,50\n'
+    )
+
+    dz.evaluate("document.getElementById('file-input').removeAttribute('webkitdirectory')")
+    dz.locator('#file-input').set_input_files(str(csv))
+
+    previews = dz.locator('#instant-previews .preview-card')
+    expect(previews.first).to_be_visible(timeout=ACTION_TIMEOUT)
+    assert previews.count() > 0

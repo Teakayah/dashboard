@@ -216,8 +216,27 @@
             align-items: center;
             font-weight: bold;
         }
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border: 3px solid rgba(0, 0, 0, 0.2);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            animation: loading-spin 1s linear infinite;
+        }
+        @keyframes loading-spin {
+            to { transform: rotate(360deg); }
+        }
         @media (prefers-color-scheme: dark) {
             .loading-overlay { background: rgba(0,0,0,0.7); }
+            .loading-spinner {
+                border-color: rgba(255, 255, 255, 0.25);
+                border-left-color: var(--primary);
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .loading-spinner { animation: none; }
         }
         @media (max-width: 600px) {
             .preview-section { grid-template-columns: 1fr; }
@@ -368,7 +387,10 @@
         <div id="results" class="results-container"></div>
     </main>
 
-    <div id="loading" class="loading-overlay">Processing...</div>
+    <div id="loading" class="loading-overlay" role="status" aria-live="polite">
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <span>Processing...</span>
+    </div>
 
     <script src="dropzone/vendor/gridjs/gridjs.js"></script>
     <script type="module" src="dropzone/app.js"></script>
