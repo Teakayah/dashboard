@@ -47,3 +47,8 @@ Assertion: When encountering untestable line coverage gaps caused by unreachable
 Coverage Gap: Loose assertions (`assert_any_call`) on lambda callbacks (e.g., console/error events) allow unexpected side-effects to go undetected.
 Learning: Using `assert_called_once_with` requires explicitly clearing the mock state between sequential invocations using `mock.reset_mock()` to accurately verify isolated behaviors in shared mocks.
 Assertion: Strengthened lambda assertions using `assert_called_once_with` and isolated them via `reset_mock()`.
+
+## 2026-08-26 - Remote Delta Error Handling
+Coverage Gap: The error handling path for a failed remote Delta table load (e.g. invalid URL) when `window.deltaSupported` is true was uncovered.
+Learning: Because DuckDB-Wasm loads the Delta extension dynamically when needed, providing an invalid URL like `https://example.invalid/data` is sufficient to trigger a failure in the `delta_scan` function without requiring complex API mocking.
+Assertion: When `window.deltaSupported = true`, trigger `#load-remote-delta` with an invalid URL and verify an error toast appears with a relevant message.
