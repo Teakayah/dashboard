@@ -59,6 +59,19 @@ const queryHistoryEl = document.getElementById('query-history');
 
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
+
+/**
+ * Utility to trigger a file download from a given URL.
+ * @param {string} url - The URL or Data URL to download.
+ * @param {string} filename - The target filename.
+ */
+function triggerDownload(url, filename) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+}
+
 /**
  * Utility to clear and populate a <select> element.
  * @param {HTMLSelectElement} select - The select element to populate.
@@ -1110,10 +1123,7 @@ function createPreviewCard(title, renderFn) {
     downloadBtn.onclick = () => {
         const canvas = document.getElementById(id);
         const url = canvas.toDataURL('image/png');
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png';
-        a.click();
+        triggerDownload(url, title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png');
         showToast(`Downloaded ${title} as PNG`, 'success');
     };
     header.appendChild(downloadBtn);
@@ -1288,10 +1298,7 @@ downloadBtn.addEventListener('click', async () => {
         const content = await db.copyFileToBuffer(csvPath);
         const blob = new Blob([content], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `query_results_${new Date().getTime()}.csv`;
-        a.click();
+        triggerDownload(url, `query_results_${new Date().getTime()}.csv`);
         URL.revokeObjectURL(url);
         showToast('Downloaded results as CSV', 'success');
     });
@@ -1360,10 +1367,7 @@ exportDbBtn.addEventListener('click', async () => {
         const buffer = await db.copyFileToBuffer('indexeddb://duckdb');
         const blob = new Blob([buffer], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `datadashboard_export_${new Date().getTime()}.db`;
-        a.click();
+        triggerDownload(url, `datadashboard_export_${new Date().getTime()}.db`);
         URL.revokeObjectURL(url);
         showToast('Database exported', 'success');
     });

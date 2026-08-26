@@ -67,3 +67,6 @@ Action: Removed dead python logic to simplify deployment and testing footprint.
 ## 2026-08-14 - Chart.js Memory Leaks
 **Learning:** When replacing or clearing the DOM content of a container that houses Chart.js `<canvas>` elements using `container.textContent = ''`, the Chart instances must be explicitly destroyed using `Chart.getChart(canvas).destroy()`. Failing to do so causes severe memory leaks because internal event listeners remain active in memory.
 **Action:** Ensure `destroyCharts(container)` or `Chart.getChart(canvas)?.destroy()` is called before removing canvas elements from the DOM or re-instantiating charts on the same canvas.
+## 2026-08-26 - Consolidated file download logic
+Learning: Found duplicated DOM manipulation logic (creating an anchor tag, setting href/download, and clicking it) used for downloading images, CSVs, and databases in `dropzone/app.js`.
+Action: Consolidated the duplicated code into a single `triggerDownload(url, filename)` helper function to reduce boilerplate and tech debt.
