@@ -436,3 +436,25 @@ def test_load_remote_delta_empty_url_does_nothing(dz: Page):
 
     expect(dz.locator('[role="alert"]')).not_to_be_visible(timeout=1000)
     expect(dz.locator('#loading')).not_to_be_visible(timeout=1000)
+
+def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
+    """Loading a CSV file with date and numeric columns should automatically generate instant charts."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    csv = tmp_path / 'sales_data.csv'
+    csv.write_text('date,product,revenue\n2022-01-01,Widget,100\n2022-01-02,Gadget,200\n2022-01-03,Doohickey,50\n')
+
+    dz.evaluate("document.getElementById('file-input').removeAttribute('webkitdirectory')")
+    dz.locator('#file-input').set_input_files(str(csv))
+
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('sales_data')",
+        timeout=ACTION_TIMEOUT,
+    )
+
+    # Wait for the instant charts to appear in the preview section
+    dz.wait_for_selector('#instant-previews .preview-card canvas', timeout=ACTION_TIMEOUT)
+
+    charts = dz.locator('#instant-previews .preview-card')
+    assert charts.count() > 0, "Expected at least one instant chart to be generated"

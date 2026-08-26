@@ -62,3 +62,7 @@
 ## 2026-08-21 - Restoring mock call history in complex lambdas
 **Learning:** When strengthening test assertions from `mock.assert_any_call()` to `mock.assert_called_once_with()` for sequentially invoked mock handlers (e.g., event listener lambdas in Playwright), previous calls accumulate in the mock's history, causing strict assertions on subsequent calls to fail.
 **Action:** Always insert `mock.reset_mock()` between sequential invocations of independent mock-triggering functions to isolate call history and ensure strict assertions correctly evaluate only the current operation.
+
+## 2026-08-26 - Testing dynamically generated UI components based on column types
+**Learning:** Testing logic that dynamically generates components based on dataset heuristics (like `generateInstantCharts` looking for dates and numbers) requires uploading specialized dummy files during testing, rather than relying solely on pre-existing generic sample data (which lacked the required types to trigger the feature).
+**Action:** When testing dynamic UI features tied to file uploads, create explicit `tmp_path` files within the test (e.g. dummy CSVs) that satisfy the specific heuristic requirements instead of relying on default UI samples.
