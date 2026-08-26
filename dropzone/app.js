@@ -1412,6 +1412,7 @@ clearBtn.addEventListener('click', async () => {
  */
 async function withLoading(errorPrefix, asyncFn) {
     loadingOverlay.style.display = 'flex';
+    document.body.setAttribute('aria-busy', 'true');
     try {
         await asyncFn();
     } catch (err) {
@@ -1419,6 +1420,7 @@ async function withLoading(errorPrefix, asyncFn) {
         showToast(errorPrefix + ': ' + err.message);
     } finally {
         loadingOverlay.style.display = 'none';
+        document.body.removeAttribute('aria-busy');
     }
 }
 

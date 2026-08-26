@@ -65,3 +65,6 @@
 ## 2026-07-31 - Accessible Feedback for Background Actions
 **Learning:** File downloads and clipboard operations in JavaScript are silent to screen readers by default. Relying solely on visual cues (like a button text temporarily changing to 'Copied!') leaves visually impaired users without confirmation that an action succeeded.
 **Action:** Always trigger an `aria-live` announcement (e.g., using a toast system) when a background file export or clipboard operation completes successfully.
+## 2026-08-26 - Visual and Semantic Loading States
+**Learning:** When using a full-screen loading overlay for background async operations (like DuckDB queries), relying solely on text (e.g., "Processing...") feels unresponsive, and screen readers may miss the blocking state.
+**Action:** Always pair global loading overlays with a visual CSS spinner for sighted users, and use `role="status"` with `aria-live="polite"` on the message, while applying `aria-busy="true"` to the `body` to properly inform assistive technologies that the page is currently non-interactive.

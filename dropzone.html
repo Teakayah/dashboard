@@ -216,7 +216,19 @@
             align-items: center;
             font-weight: bold;
         }
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @media (prefers-color-scheme: dark) {
+            .spinner { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: var(--primary); }
             .loading-overlay { background: rgba(0,0,0,0.7); }
         }
         @media (max-width: 600px) {
@@ -368,7 +380,7 @@
         <div id="results" class="results-container"></div>
     </main>
 
-    <div id="loading" class="loading-overlay">Processing...</div>
+    <div id="loading" class="loading-overlay" role="status" aria-live="polite"><span class="spinner"></span>Processing...</div>
 
     <script src="dropzone/vendor/gridjs/gridjs.js"></script>
     <script type="module" src="dropzone/app.js"></script>
