@@ -471,3 +471,27 @@ def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
     previews = dz.locator('#instant-previews .preview-card')
     expect(previews.first).to_be_visible(timeout=ACTION_TIMEOUT)
     assert previews.count() > 0
+
+def test_query_recipe_populates_sql_input(dz: Page):
+    """Selecting a query recipe must populate the SQL input with the recipe and replace {{TABLE}}."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    # Ensure dropdown is enabled
+    recipe_select = dz.locator('#query-recipes')
+    expect(recipe_select).to_be_enabled(timeout=ACTION_TIMEOUT)
+
+    # Select the "Count Total Rows" recipe
+    recipe_select.select_option(value="SELECT count(*) FROM {{TABLE}}")
+
+    dz.wait_for_function(
+        "document.getElementById('sql-input').value.includes('SELECT count(*) FROM')",
+        timeout=ACTION_TIMEOUT
+    )
+
+    sql = dz.locator('#sql-input').input_value()
+    assert 'SELECT count(*) FROM' in sql, f'Recipe not populated correctly: {sql}'
+    assert '{{TABLE}}' not in sql, f'{{TABLE}} placeholder was not replaced: {sql}'
+    assert '"departments"' in sql or '"employees"' in sql or 'departments' in sql or 'employees' in sql, f'Table name not replaced correctly: {sql}'
