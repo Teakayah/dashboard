@@ -170,7 +170,7 @@ def test_run_query_button_disabled_without_input(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
     run_btn = dz.locator('#run-query')
-    assert run_btn.is_disabled(), 'Run Query should be disabled when SQL input is empty'
+    expect(run_btn).to_be_disabled()
 
 
 def test_run_query_button_enables_when_sql_typed(dz: Page):
@@ -179,7 +179,7 @@ def test_run_query_button_enables_when_sql_typed(dz: Page):
 
     dz.locator('#sql-input').fill('SELECT 1')
     run_btn = dz.locator('#run-query')
-    assert not run_btn.is_disabled(), 'Run Query should be enabled after typing SQL'
+    expect(run_btn).to_be_enabled()
 
 
 def test_run_query_returns_results_grid(dz: Page):
@@ -204,15 +204,15 @@ def test_run_query_enables_download_and_copy_buttons(dz: Page):
     _load_samples_and_wait(dz)
 
     # Both buttons should start disabled
-    assert dz.locator('#download-csv').is_disabled()
-    assert dz.locator('#copy-json').is_disabled()
+    expect(dz.locator('#download-csv')).to_be_disabled()
+    expect(dz.locator('#copy-json')).to_be_disabled()
 
     dz.locator('#sql-input').fill('SELECT * FROM "departments"')
     dz.locator('#run-query').click()
     dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
 
-    assert not dz.locator('#download-csv').is_disabled(), 'Download CSV not enabled after query'
-    assert not dz.locator('#copy-json').is_disabled(), 'Copy JSON not enabled after query'
+    expect(dz.locator('#download-csv')).to_be_enabled()
+    expect(dz.locator('#copy-json')).to_be_enabled()
 
 
 def test_join_query_executes_correctly(dz: Page):
