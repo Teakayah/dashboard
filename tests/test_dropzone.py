@@ -471,3 +471,21 @@ def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
     previews = dz.locator('#instant-previews .preview-card')
     expect(previews.first).to_be_visible(timeout=ACTION_TIMEOUT)
     assert previews.count() > 0
+
+def test_clear_data_disables_copy_json(dz: Page):
+    """Clearing data must disable the Copy JSON button."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    expect(dz.locator('#copy-json')).to_be_enabled(timeout=ACTION_TIMEOUT)
+
+    dz.on("dialog", lambda dialog: dialog.accept())
+    dz.locator('#clear-data').click()
+
+    expect(dz.locator('#copy-json')).to_be_disabled(timeout=ACTION_TIMEOUT)

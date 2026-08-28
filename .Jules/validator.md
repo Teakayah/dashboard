@@ -47,3 +47,7 @@ Assertion: When encountering untestable line coverage gaps caused by unreachable
 Coverage Gap: Loose assertions (`assert_any_call`) on lambda callbacks (e.g., console/error events) allow unexpected side-effects to go undetected.
 Learning: Using `assert_called_once_with` requires explicitly clearing the mock state between sequential invocations using `mock.reset_mock()` to accurately verify isolated behaviors in shared mocks.
 Assertion: Strengthened lambda assertions using `assert_called_once_with` and isolated them via `reset_mock()`.
+## YYYY-MM-DD - Verifying UI state resets after destructive actions
+Coverage Gap: The UI state reset for the `copyJsonBtn` when executing the "Clear Data" destructive action lacked test coverage.
+Learning: It is easy to overlook verifying that dynamically enabled action buttons (like export or copy) correctly revert to their disabled default state after the underlying data or context is wiped by a user action.
+Assertion: When testing destructive UI actions (like clearing a workspace), explicitly assert that all conditionally enabled dependent controls revert to their disabled state, using Playwright's `expect(locator).to_be_disabled()`.
