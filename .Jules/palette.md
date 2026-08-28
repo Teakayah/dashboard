@@ -65,3 +65,6 @@
 ## 2026-07-31 - Accessible Feedback for Background Actions
 **Learning:** File downloads and clipboard operations in JavaScript are silent to screen readers by default. Relying solely on visual cues (like a button text temporarily changing to 'Copied!') leaves visually impaired users without confirmation that an action succeeded.
 **Action:** Always trigger an `aria-live` announcement (e.g., using a toast system) when a background file export or clipboard operation completes successfully.
+## 2026-08-28 - Implicit Select Labeling
+**Learning:** Using a preceding visible `<label>` text next to a `<select>` dropdown does not natively associate the two elements for screen readers or allow clicking the text to focus the dropdown unless explicitly linked via the `for` attribute.
+**Action:** When auditing forms, ensure all visible `<label>` elements are explicitly linked to their corresponding `<input>` or `<select>` elements using the `for` attribute, instead of relying solely on `aria-label`, to provide both an accessible name for screen readers and an improved clickable area for mouse/touch users.
