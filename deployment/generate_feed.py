@@ -33,7 +33,14 @@ except ImportError:
 
 
 def _extract_title(content: str, stem: str) -> str:
-    m = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
+    m = re.search(
+        r'''
+        <title[^>]*>  # Capture the opening title tag with optional attributes
+        (.*?)         # Group 1: Non-greedily capture the inner content
+        </title>      # Capture the closing title tag
+        ''',
+        content, re.IGNORECASE | re.DOTALL | re.VERBOSE
+    )
     raw = m.group(1).strip() if m else stem.replace('_', ' ').title()
     return (raw
             .replace('&amp;', '&').replace('&lt;', '<')
@@ -43,8 +50,13 @@ def _extract_title(content: str, stem: str) -> str:
 def _extract_description(content: str, filename: str, descriptions: dict) -> str:
     # 1. <meta name="description">
     m = re.search(
-        r'<meta[^>]*name=["\']description["\'][^>]*content=["\'](.*?)["\']',
-        content, re.IGNORECASE,
+        r'''
+        <meta[^>]*                  # Matches the opening <meta tag and any attributes before 'name'
+        name=["\']description["\']  # Matches the name attribute with either single or double quotes
+        [^>]*                       # Matches any intermediate attributes before 'content'
+        content=["\'](.*?)["\']     # Group 1: Non-greedily captures the actual description text
+        ''',
+        content, re.IGNORECASE | re.VERBOSE
     )
     if m:
         return m.group(1).strip()
