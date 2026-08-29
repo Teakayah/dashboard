@@ -182,6 +182,19 @@ def test_run_query_button_enables_when_sql_typed(dz: Page):
     assert not run_btn.is_disabled(), 'Run Query should be enabled after typing SQL'
 
 
+def test_run_query_keyboard_shortcut(dz: Page):
+    """Pressing Ctrl+Enter within the SQL input must execute the query."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 2')
+    dz.locator('#sql-input').press('Control+Enter')
+
+    expect(dz.locator('.gridjs-tbody tr')).to_have_count(2, timeout=READY_TIMEOUT)
+
+
 def test_run_query_returns_results_grid(dz: Page):
     """SELECT against the sample data must render a Grid.js results table."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)

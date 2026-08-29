@@ -47,3 +47,7 @@ Assertion: When encountering untestable line coverage gaps caused by unreachable
 Coverage Gap: Loose assertions (`assert_any_call`) on lambda callbacks (e.g., console/error events) allow unexpected side-effects to go undetected.
 Learning: Using `assert_called_once_with` requires explicitly clearing the mock state between sequential invocations using `mock.reset_mock()` to accurately verify isolated behaviors in shared mocks.
 Assertion: Strengthened lambda assertions using `assert_called_once_with` and isolated them via `reset_mock()`.
+## YYYY-MM-DD - Cover Ctrl+Enter query shortcut
+Coverage Gap: The Ctrl+Enter keyboard shortcut to execute a query in the UI lacked test coverage.
+Learning: User interactions relying on keyboard event listeners (`keydown` with modifiers like `Ctrl` or `Meta`) can silently break during refactoring and require explicit UI tests to ensure accessibility and power-user usability.
+Assertion: Use Playwright's `.press('Control+Enter')` directly on the input locator and assert the expected UI outcome (e.g. results grid rendering).
