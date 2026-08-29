@@ -62,3 +62,6 @@
 ## 2026-08-21 - Restoring mock call history in complex lambdas
 **Learning:** When strengthening test assertions from `mock.assert_any_call()` to `mock.assert_called_once_with()` for sequentially invoked mock handlers (e.g., event listener lambdas in Playwright), previous calls accumulate in the mock's history, causing strict assertions on subsequent calls to fail.
 **Action:** Always insert `mock.reset_mock()` between sequential invocations of independent mock-triggering functions to isolate call history and ensure strict assertions correctly evaluate only the current operation.
+## 2026-08-29 - Axe-Core Injection on strict CSP pages
+**Learning:** `page.add_script_tag()` injection of `axe-core` from a CDN will be blocked by strict `script-src` Content-Security-Policy meta tags, causing tests to be silently skipped.
+**Action:** Use Playwright's `page.route()` to intercept the HTML document response, strip the `<meta http-equiv="Content-Security-Policy">` tag using `re.sub()`, and fulfill the route *before* calling `page.goto()` and injecting axe-core.
