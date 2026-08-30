@@ -963,51 +963,45 @@ def test_extract_fallback_return():
     assert result == {"Canada": {2023: [100.0]}}
 
 @patch('deployment.rebuild_analyses.ROOT')
-@patch('deployment.rebuild_analyses.REBUILDERS', {"test.html": MagicMock()})
 def test_main_success_with_changes(mock_root):
     mock_html = MagicMock()
     mock_html.exists.return_value = True
     mock_root.__truediv__.return_value = mock_html
 
-    from deployment.rebuild_analyses import REBUILDERS
-    mock_rebuild_fn = REBUILDERS["test.html"]
-    mock_rebuild_fn.return_value = True
+    mock_rebuild_fn = MagicMock(return_value=True)
+    with patch('deployment.rebuild_analyses.REBUILDERS', {"test.html": mock_rebuild_fn}):
+        from deployment.rebuild_analyses import main
+        result = main()
+        assert result == 1
+        mock_rebuild_fn.assert_called_once_with(mock_html)
 
-    from deployment.rebuild_analyses import main
-    result = main()
-    assert result == 1
-    mock_rebuild_fn.assert_called_once_with(mock_html)
 
 @patch('deployment.rebuild_analyses.ROOT')
-@patch('deployment.rebuild_analyses.REBUILDERS', {"test.html": MagicMock()})
 def test_main_skip_missing_file(mock_root):
     mock_html = MagicMock()
     mock_html.exists.return_value = False
     mock_root.__truediv__.return_value = mock_html
 
-    from deployment.rebuild_analyses import REBUILDERS
-    mock_rebuild_fn = REBUILDERS["test.html"]
+    mock_rebuild_fn = MagicMock()
+    with patch('deployment.rebuild_analyses.REBUILDERS', {"test.html": mock_rebuild_fn}):
+        from deployment.rebuild_analyses import main
+        result = main()
+        assert result == 0
+        mock_rebuild_fn.assert_not_called()
 
-    from deployment.rebuild_analyses import main
-    result = main()
-    assert result == 0
-    mock_rebuild_fn.assert_not_called()
 
 @patch('deployment.rebuild_analyses.ROOT')
-@patch('deployment.rebuild_analyses.REBUILDERS', {"test.html": MagicMock()})
 def test_main_exception_handling(mock_root, capsys):
     mock_html = MagicMock()
     mock_html.exists.return_value = True
     mock_root.__truediv__.return_value = mock_html
 
-    from deployment.rebuild_analyses import REBUILDERS
-    mock_rebuild_fn = REBUILDERS["test.html"]
-    mock_rebuild_fn.side_effect = Exception("Test Exception")
-
-    from deployment.rebuild_analyses import main
-    result = main()
-    assert result == 0
-    mock_rebuild_fn.assert_called_once_with(mock_html)
+    mock_rebuild_fn = MagicMock(side_effect=Exception("Test Exception"))
+    with patch('deployment.rebuild_analyses.REBUILDERS', {"test.html": mock_rebuild_fn}):
+        from deployment.rebuild_analyses import main
+        result = main()
+        assert result == 0
+        mock_rebuild_fn.assert_called_once_with(mock_html)
     captured = capsys.readouterr()
     assert "ERROR rebuilding test.html: Test Exception" in captured.out
 
