@@ -62,3 +62,6 @@
 ## 2026-08-21 - Restoring mock call history in complex lambdas
 **Learning:** When strengthening test assertions from `mock.assert_any_call()` to `mock.assert_called_once_with()` for sequentially invoked mock handlers (e.g., event listener lambdas in Playwright), previous calls accumulate in the mock's history, causing strict assertions on subsequent calls to fail.
 **Action:** Always insert `mock.reset_mock()` between sequential invocations of independent mock-triggering functions to isolate call history and ensure strict assertions correctly evaluate only the current operation.
+## YYYY-MM-DD - Fix flaky mock in test_rebuild_analyses
+**Learning:** Shared MagicMock objects in `@patch` decorators at the module level accumulate call counts across tests, leading to flaky assertion failures when tests run out of order or multiple times in CI.
+**Action:** Use a test-local fixture or `with patch` block inside the test method, or explicitly reset the mock (`mock.reset_mock()`) before using it in assertions.
