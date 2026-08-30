@@ -65,3 +65,6 @@
 ## 2026-07-31 - Accessible Feedback for Background Actions
 **Learning:** File downloads and clipboard operations in JavaScript are silent to screen readers by default. Relying solely on visual cues (like a button text temporarily changing to 'Copied!') leaves visually impaired users without confirmation that an action succeeded.
 **Action:** Always trigger an `aria-live` announcement (e.g., using a toast system) when a background file export or clipboard operation completes successfully.
+## YYYY-MM-DD - Add Workspace Empty State
+**Learning:** Blank interface containers without data create confusion and missed opportunities for user guidance. It is important to always implement empty states that explain the expected behavior and provide a call to action.
+**Action:** When creating container blocks for dynamic data results, ensure an explicit empty state is shown initially and restored upon data clear actions.
