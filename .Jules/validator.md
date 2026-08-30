@@ -47,3 +47,7 @@ Assertion: When encountering untestable line coverage gaps caused by unreachable
 Coverage Gap: Loose assertions (`assert_any_call`) on lambda callbacks (e.g., console/error events) allow unexpected side-effects to go undetected.
 Learning: Using `assert_called_once_with` requires explicitly clearing the mock state between sequential invocations using `mock.reset_mock()` to accurately verify isolated behaviors in shared mocks.
 Assertion: Strengthened lambda assertions using `assert_called_once_with` and isolated them via `reset_mock()`.
+## YYYY-MM-DD - Catching Unhandled Promise Rejections
+Coverage Gap: Unhandled promise rejections in frontend JavaScript were silently failing during Playwright tests because `pageerror` only catches uncaught exceptions, not unhandled promises.
+Learning: Playwright's `page.on('pageerror')` does not capture unhandled promise rejections. To catch them, you must inject an `unhandledrejection` event listener into the browser window via `page.add_init_script` and route the errors back to Python using `page.expose_binding`.
+Assertion: Always use `page.add_init_script` to bind a window `unhandledrejection` listener and explicitly assert that the recorded rejections array is empty after interacting with the page.
