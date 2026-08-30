@@ -471,3 +471,20 @@ def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
     previews = dz.locator('#instant-previews .preview-card')
     expect(previews.first).to_be_visible(timeout=ACTION_TIMEOUT)
     assert previews.count() > 0
+
+def test_no_unhandled_promise_rejections_on_load(dz: Page):
+    """Ensure no unhandled promise rejections occur during initialization and data load."""
+    rejections: list[str] = []
+    dz.expose_binding("recordRejection", lambda source, msg: rejections.append(msg))
+    dz.add_init_script("""
+        window.addEventListener('unhandledrejection', event => {
+            window.recordRejection(event.reason ? event.reason.toString() : 'Unknown rejection');
+        });
+    """)
+
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    assert rejections == [], f"Unhandled promise rejections detected: {rejections}"
