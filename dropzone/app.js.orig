@@ -144,7 +144,7 @@ function addToHistory(sql) {
 function renderHistory() {
     queryHistoryEl.textContent = '';
     if (queryHistory.length === 0) return;
-    
+
     const label = document.createElement('span');
     label.textContent = 'Recent:';
     label.style.fontSize = '0.7rem';
@@ -186,7 +186,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
 
     await withLoading('Error loading remote Delta table', async () => {
         const tableName = 'remote_delta_' + Math.random().toString(36).substr(2, 5);
-        // httpfs is required for remote URLs, DuckDB-Wasm usually autoloads it, 
+        // httpfs is required for remote URLs, DuckDB-Wasm usually autoloads it,
         // but we can ensure it's there if needed.
 
         const escapedUrl = url.replace(/'/g, "''");
@@ -422,20 +422,20 @@ async function restoreState() {
     try {
         const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
         const tables = getRows(tablesResult).map(r => r.table_name);
-        
+
         if (tables.length > 0) {
             loadedTables = new Set(tables);
             currentTableName = tables[tables.length - 1];
             statusEl.textContent = `Restored ${tables.length} table(s)`;
-            
+
             schemaDisplay.textContent = '';
             for (const table of tables) {
                 await displayTableSchema(table);
             }
-            
+
             sqlInput.value = `SELECT * FROM "${escapeId(currentTableName)}" LIMIT 100`;
             sqlInput.dispatchEvent(new Event('input'));
-            
+
             updateJoinUI();
             updateChartBuilderUI();
             updateConsoleActionsUI();
@@ -484,13 +484,13 @@ async function displayTableSchema(tableName) {
         btn.style.textAlign = 'left';
         btn.textContent = `${r.column_name} (${r.column_type})`;
         btn.setAttribute('aria-label', `Insert column ${r.column_name} into SQL editor`);
-        
+
         const triggerAction = async (e) => {
             e.stopPropagation();
             insertAtCursor(sqlInput, `"${escapeId(r.column_name)}"`);
             statusEl.textContent = `Inserted column ${r.column_name}`;
             showToast(`Inserted column ${r.column_name}`, 'success');
-            
+
             // Profiling logic
             try {
                 // Prevent memory leaks by destroying the existing Chart instance before clearing
@@ -546,7 +546,7 @@ async function displayTableSchema(tableName) {
                             indexAxis: 'y',
                             maintainAspectRatio: false,
                             plugins: { legend: { display: false }, title: { display: true, text: 'Top 10 Values', font: { size: 10 } } },
-                            scales: { 
+                            scales: {
                                 x: { display: false },
                                 y: { ticks: { font: { size: 8 } } }
                             }
@@ -568,7 +568,7 @@ async function displayTableSchema(tableName) {
 
         return btn;
     });
-    
+
     const tableDiv = document.createElement('div');
     tableDiv.style.marginBottom = '12px';
     const strong = document.createElement('strong');
@@ -590,15 +590,15 @@ function updateJoinUI() {
     if (loadedTables.size >= 2) {
         joinAssistant.style.display = 'flex';
         const tables = Array.from(loadedTables);
-        
+
         populateSelect(joinTableA, tables);
         populateSelect(joinTableB, tables);
-        
+
         // Ensure default different tables
         if (joinTableA.value === joinTableB.value && tables.length > 1) {
             joinTableB.selectedIndex = 1;
         }
-        
+
         updateJoinColumns();
     } else {
         joinAssistant.style.display = 'none';
@@ -620,12 +620,12 @@ async function updateJoinColumns() {
     try {
         const schemaAResult = await getTableSchemaCached(tableA);
         const schemaBResult = await getTableSchemaCached(tableB);
-        
+
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
-        
+
         const sharedCols = colsB.filter(c => colsA.has(c));
-        
+
         if (sharedCols.length === 0) {
             populateSelect(joinCol, [], 'No shared columns found');
         } else {
@@ -668,9 +668,9 @@ async function updateChartBuilderUI() {
     try {
         const schemaResult = await getTableSchemaCached(currentTableName);
         const cols = getRows(schemaResult);
-        
+
         const numericCols = cols.filter(c => ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase()));
-        
+
         populateSelect(chartXCol, cols, 'Select X-Axis...');
         populateSelect(chartYCol, numericCols, 'Select Y-Axis (Numeric)...');
     } catch (err) {
@@ -685,12 +685,12 @@ generateJoinBtn.addEventListener('click', () => {
     const a = joinTableA.value;
     const b = joinTableB.value;
     const col = joinCol.value;
-    
+
     if (!a || !b || !col) {
         showToast('Please select both tables and a common column.');
         return;
     }
-    
+
     if (a === b) {
         showToast('Please select two different tables to join.');
         return;
@@ -711,14 +711,14 @@ generateChartBtn.addEventListener('click', () => {
     const type = chartType.value;
     const xCol = chartXCol.value;
     const yCol = chartYCol.value;
-    
+
     if (!xCol || !yCol) {
         showToast('Please select both X and Y axes.');
         return;
     }
 
     const title = `Custom ${type.toUpperCase()}: ${yCol} vs ${xCol}`;
-    
+
     createPreviewCard(title, async (canvasId) => {
         try {
             if (!loadedTables.has(currentTableName)) {
@@ -731,17 +731,17 @@ generateChartBtn.addEventListener('click', () => {
             } else {
                 sql = `SELECT "${escapeId(xCol)}" as label, AVG("${escapeId(yCol)}") as value\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nGROUP BY 1\nORDER BY 1 ASC\nLIMIT 100`;
             }
-            
+
             // Show the generated SQL to the user in the console
             sqlInput.value = sql;
             sqlInput.dispatchEvent(new Event('input'));
-            
+
             const result = await conn.query(sql);
             const rows = getRows(result);
-            
+
             let chartData = {};
             let chartOptions = {};
-            
+
             if (type === 'scatter') {
                 chartData = {
                     datasets: [{
@@ -766,7 +766,7 @@ generateChartBtn.addEventListener('click', () => {
                     }]
                 };
             }
-            
+
             renderChart(canvasId, type, chartData, chartOptions);
         } catch (e) {
             console.error('Custom chart error', e);
@@ -811,7 +811,7 @@ fileInput.addEventListener('change', () => {
 async function handleFiles(files) {
     destroyCharts(previewsContainer);
     previewsContainer.textContent = '';
-    
+
     await withLoading('Error loading files', async () => {
         // Group files by their relative path to detect Delta Lake tables
         const fileGroups = {};
@@ -820,7 +820,7 @@ async function handleFiles(files) {
         for (const file of files) {
             const relPath = file.webkitRelativePath || file.name;
             const pathParts = relPath.split('/');
-            
+
             if (pathParts.length > 1) {
                 const rootDir = pathParts[0];
                 if (!fileGroups[rootDir]) fileGroups[rootDir] = [];
@@ -839,7 +839,7 @@ async function handleFiles(files) {
         for (const [dirName, dirFiles] of Object.entries(fileGroups)) {
             const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
             const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
-            
+
             // Performance optimization: Concurrently buffer and register files
             // to drastically reduce total loading times for multi-part datasets.
             await Promise.all(dirFiles.map(async file => {
@@ -887,14 +887,14 @@ async function processFile(file, path) {
     const tableName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
     currentTableName = tableName;
     loadedTables.add(tableName);
-    
+
     const buffer = await file.arrayBuffer();
     await db.registerFileBuffer(path, new Uint8Array(buffer));
-    
+
     let query;
     const ext = file.name.split('.').pop().toLowerCase();
     const escapedPath = path.replace(/'/g, "''");
-    
+
     if (ext === 'parquet') {
         query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_parquet('${escapedPath}')`;
     } else if (ext === 'csv') {
@@ -904,7 +904,7 @@ async function processFile(file, path) {
     } else {
         query = `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM '${escapedPath}'`;
     }
-    
+
     tableSchemaCache.delete(tableName);
     await conn.query(query);
     await onTableLoaded(tableName);
@@ -921,10 +921,10 @@ async function onTableLoaded(tableName) {
     // Show schema
     if (loadedTables.size === 1) schemaDisplay.textContent = '';
     await displayTableSchema(tableName);
-    
+
     // Generate Previews
     await generateInstantCharts(tableName);
-    
+
     // Set default query
     sqlInput.value = `SELECT * FROM "${escapeId(tableName)}" LIMIT 100`;
     sqlInput.dispatchEvent(new Event('input'));
@@ -974,17 +974,17 @@ recipeSelect.addEventListener('change', () => {
 async function generateInstantCharts(tableName) {
     const schemaResult = await getTableSchemaCached(tableName);
     const columns = getRows(schemaResult);
-    const numericCols = columns.filter(c => 
+    const numericCols = columns.filter(c =>
         ['DOUBLE', 'FLOAT', 'BIGINT', 'INTEGER', 'DECIMAL', 'HUGEINT'].includes(c.column_type.split('(')[0].toUpperCase())
     ).map(c => c.column_name);
-    
-    const textCols = columns.filter(c => 
+
+    const textCols = columns.filter(c =>
         ['VARCHAR', 'TEXT', 'DATE', 'TIMESTAMP'].includes(c.column_type.toUpperCase())
     ).map(c => c.column_name);
 
-    const dateCols = columns.filter(c => 
+    const dateCols = columns.filter(c =>
         ['DATE', 'TIMESTAMP', 'TIME'].includes(c.column_type.toUpperCase()) ||
-        c.column_name.toLowerCase().includes('date') || 
+        c.column_name.toLowerCase().includes('date') ||
         c.column_name.toLowerCase().includes('year')
     ).map(c => c.column_name);
 
@@ -1020,7 +1020,7 @@ async function generateInstantCharts(tableName) {
         try {
             let bestPair = [numericCols[0], numericCols[1]];
             let maxCorr = 0;
-            
+
             const colsToCheck = numericCols.slice(0, 5);
             const corrExprs = [];
             const pairs = [];
@@ -1046,7 +1046,7 @@ async function generateInstantCharts(tableName) {
                     }
                 }
             }
-            
+
             createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, async (canvasId) => {
                 const result = await conn.query(`SELECT "${escapeId(bestPair[0])}" as x, "${escapeId(bestPair[1])}" as y FROM "${escapeId(tableName)}" WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
                 const rows = getRows(result);
@@ -1071,8 +1071,8 @@ async function generateInstantCharts(tableName) {
             const result = await conn.query(`
                 SELECT "${escapeId(tCol)}" as label, AVG("${escapeId(nCol)}") as value
                 FROM "${escapeId(tableName)}"
-                GROUP BY 1 
-                ORDER BY value DESC 
+                GROUP BY 1
+                ORDER BY value DESC
                 LIMIT 10
             `);
             const rows = getRows(result);
@@ -1100,7 +1100,7 @@ function createPreviewCard(title, renderFn) {
     const card = document.createElement('div');
     card.className = 'preview-card';
     card.style.position = 'relative';
-    
+
     const header = document.createElement('div');
     header.style.display = 'flex';
     header.style.justifyContent = 'space-between';
@@ -1125,15 +1125,15 @@ function createPreviewCard(title, renderFn) {
         showToast(`Downloaded ${title} as PNG`, 'success');
     };
     header.appendChild(downloadBtn);
-    
+
     card.appendChild(header);
-    
+
     const canvas = document.createElement('canvas');
     canvas.id = id;
     canvas.setAttribute('role', 'img');
     canvas.setAttribute('aria-label', `Chart preview: ${title}`);
     card.appendChild(canvas);
-    
+
     previewsContainer.appendChild(card);
     renderFn(id);
 }
@@ -1180,18 +1180,14 @@ function renderChart(id, type, data, options = {}) {
     });
 }
 
-let sqlInputDebounceTimeout;
 sqlInput.addEventListener('input', () => {
-    clearTimeout(sqlInputDebounceTimeout);
-    sqlInputDebounceTimeout = setTimeout(() => {
-        if (sqlInput.value.trim().length > 0) {
-            runBtn.disabled = false; runBtn.setAttribute('aria-disabled', 'false');
-            runBtn.title = 'Run Query (Ctrl+Enter)';
-        } else {
-            runBtn.disabled = true; runBtn.setAttribute('aria-disabled', 'true');
-            runBtn.title = 'Requires a valid query';
-        }
-    }, 150);
+    if (sqlInput.value.trim().length > 0) {
+        runBtn.disabled = false; runBtn.setAttribute('aria-disabled', 'false');
+        runBtn.title = 'Run Query (Ctrl+Enter)';
+    } else {
+        runBtn.disabled = true; runBtn.setAttribute('aria-disabled', 'true');
+        runBtn.title = 'Requires a valid query';
+    }
 });
 
 // Global shortcut: press '/' to focus the SQL input field if not already in an input
@@ -1224,12 +1220,12 @@ runBtn.addEventListener('click', runQuery);
 async function runQuery() {
     const sql = sqlInput.value.trim();
     if (!sql) return;
-    
+
     await withLoading('Query Error', async () => {
         const start = performance.now();
         const result = await conn.query(sql);
         const duration = Math.round(performance.now() - start);
-        
+
         lastResult = getRows(result);
         renderResults(lastResult);
         downloadBtn.disabled = false;
@@ -1266,7 +1262,7 @@ function renderResults(rows) {
         return;
     }
     const columns = Object.keys(rows[0]);
-    
+
     // Performance optimization: pass the plain objects array directly to data
     // and map columns with id keys to avoid array mapping overhead.
     if (gridInstance) {
@@ -1296,7 +1292,7 @@ downloadBtn.addEventListener('click', async () => {
         // DuckDB's COPY wraps the query in parentheses, and a nested semicolon causes a syntax error.
         const userQuery = sqlInput.value.trim().replace(/;+$/, '');
         await conn.query(`COPY (${userQuery}) TO '${csvPath}' (HEADER, DELIMITER ',')`);
-        
+
         const content = await db.copyFileToBuffer(csvPath);
         const blob = new Blob([content], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
@@ -1331,7 +1327,7 @@ loadSamplesBtn.addEventListener('click', async () => {
             loadedTables.add(tableName);
             currentTableName = tableName;
         }
-        
+
         // Populate the example SQL before the async schema render loop, so any
         // test (or user) waiting on schema-display to mention a table can rely on
         // sqlInput already being settled. Otherwise this write races with the
@@ -1348,7 +1344,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         updateJoinUI();
         updateChartBuilderUI();
         updateConsoleActionsUI();
-        
+
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
         setTimeout(() => { loadSamplesBtn.textContent = originalText; }, 2000);
@@ -1357,15 +1353,15 @@ loadSamplesBtn.addEventListener('click', async () => {
 
 exportDbBtn.addEventListener('click', async () => {
     await withLoading('Database Export Error', async () => {
-        // We can't directly download the indexeddb file from here, 
+        // We can't directly download the indexeddb file from here,
         // so we export to a temporary buffer and download.
         await conn.query(`CHECKPOINT`); // Ensure all data is flushed
-        
+
         // DuckDB-Wasm doesn't support 'EXPORT DATABASE' to a single file easily via SQL yet,
         // but we can copy the internal DB file if we know its name.
         // For indexeddb, it's safer to use the buffer if it was a file-backed DB.
         // Since we used indexeddb:// path, we'll try a SQL export approach.
-        
+
         const buffer = await db.copyFileToBuffer('indexeddb://duckdb');
         const blob = new Blob([buffer], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
@@ -1377,15 +1373,15 @@ exportDbBtn.addEventListener('click', async () => {
 
 clearBtn.addEventListener('click', async () => {
     if (!confirm('This will permanently delete all loaded tables from your local storage. Continue?')) return;
-    
+
     await withLoading('Clear Error', async () => {
         const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
         const tables = getRows(tablesResult).map(r => r.table_name);
-        
+
         for (const table of tables) {
             await conn.query(`DROP TABLE IF EXISTS "${escapeId(table)}"`);
         }
-        
+
         loadedTables.clear();
         tableSchemaCache.clear();
         currentTableName = '';

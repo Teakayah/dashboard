@@ -72,3 +72,6 @@
 ## 2026-08-23 - [Cache asynchronous DuckDB profiling queries]
 **Learning:** In DuckDB-Wasm, executing multiple async profiling queries sequentially (e.g. `conn.query(SELECT MIN...); conn.query(SELECT ... GROUP BY ...)`) each time a schema column is clicked creates excessive IPC overhead. Furthermore, since column stats are static for the loaded table, redundant queries are completely unnecessary.
 **Action:** When implementing an in-memory cache for asynchronous operations like DuckDB Wasm queries, cache the `Promise` itself (e.g., `cache.set(key, (async () => { ... })())`) rather than the awaited result. This ensures that concurrent requests for the same key await the same pending promise, preventing duplicate queries and redundant IPC roundtrips.
+## 2026-08-31 - Debounce rapid SQL input events
+**Learning:** Frequent synchronous DOM manipulations attached to text input events cause UI stuttering and unnecessary event dispatches. Modifying button properties and attributes directly on every keystroke is inefficient.
+**Action:** Always wrap rapid continuous input event listeners (like typing in a SQL editor) with a debounce timeout (e.g. `setTimeout`) to batch UI state updates, reducing rendering overhead.

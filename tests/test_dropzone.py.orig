@@ -179,8 +179,7 @@ def test_run_query_button_enables_when_sql_typed(dz: Page):
 
     dz.locator('#sql-input').fill('SELECT 1')
     run_btn = dz.locator('#run-query')
-    import playwright
-    playwright.sync_api.expect(run_btn).to_be_enabled()
+    assert not run_btn.is_disabled(), 'Run Query should be enabled after typing SQL'
 
 
 def test_run_query_returns_results_grid(dz: Page):
