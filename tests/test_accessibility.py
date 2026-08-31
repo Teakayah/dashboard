@@ -13,8 +13,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import re
+
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, Route
 
 from helpers import BASE
 
@@ -41,6 +43,22 @@ PENDING_RULES = {
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
+@pytest.fixture(autouse=True)
+def strip_csp(page: Page) -> None:
+    """Strip Content-Security-Policy meta tags from HTML to allow CDN script injection."""
+    def _strip_csp_handler(route: Route) -> None:
+        if route.request.resource_type == "document":
+            response = route.fetch()
+            body = response.text()
+            # Strip out any <meta http-equiv="Content-Security-Policy" ...>
+            body = re.sub(r'<meta[^>]*http-equiv=["\']Content-Security-Policy["\'][^>]*>', '', body, flags=re.IGNORECASE)
+            route.fulfill(response=response, body=body)
+        else:
+            route.continue_()
+
+    page.route("**/*", _strip_csp_handler)
+
 
 def _inject_axe(page: Page) -> None:
     """Inject axe-core from CDN; skip test if CDN is unreachable."""
