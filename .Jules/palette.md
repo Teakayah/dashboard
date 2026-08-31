@@ -65,3 +65,7 @@
 ## 2026-07-31 - Accessible Feedback for Background Actions
 **Learning:** File downloads and clipboard operations in JavaScript are silent to screen readers by default. Relying solely on visual cues (like a button text temporarily changing to 'Copied!') leaves visually impaired users without confirmation that an action succeeded.
 **Action:** Always trigger an `aria-live` announcement (e.g., using a toast system) when a background file export or clipboard operation completes successfully.
+
+## 2026-08-31 - Screen Reader Feedback for Background Text Insertions
+**Learning:** Injecting text into an editor programmatically (e.g., clicking a schema column or a query history chip) is completely silent to screen readers by default. This leaves visually impaired users without confirmation that their interaction succeeded.
+**Action:** Always trigger an `aria-live` announcement (e.g., `showToast(msg, 'success')`) when programmatic text insertion or replacement completes successfully in the query editor to provide clear accessibility feedback.
