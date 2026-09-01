@@ -504,10 +504,14 @@ async function displayTableSchema(tableName) {
 
                 if (!profileCache.has(r.column_name)) {
                     const profilePromise = (async () => {
-                        const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
+                        // Performance optimization: Execute profiling and distribution queries concurrently
+                        // to reduce sequential IPC roundtrips across the WebWorker boundary.
+                        const [profilingResult, distResult] = await Promise.all([
+                            conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`),
+                            conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`)
+                        ]);
                         const stats = getRows(profilingResult)[0];
 
-                        const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                         const distRows = getRows(distResult);
                         return { stats, distRows };
                     })();
