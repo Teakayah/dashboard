@@ -136,7 +136,7 @@ Recent history shows long sequences of merges from `palette/…`, `validator/…
 ### 3.3 Dead / suspect code
 - [x] `dropzone/vendor/duckdb/duckdb-wasm-browser.mjs` — verified as already deleted.
 - [x] `responsive-inject-v6` block at the top of `dropzone.html` and every analysis page does a `Object.defineProperty(window, 'Chart', …)` hack that runs **before** Chart.js loads — confirm it's still needed; if Chart.js defaults are configured elsewhere, remove it.
-- [ ] `assets/fullscreen.js` (41 lines) — check that the fullscreen button is actually wired up on every chart, not just some.
+- [x] `assets/fullscreen.js` (41 lines) — check that the fullscreen button is actually wired up on every chart, not just some. (Refactored to use MutationObserver for dynamic canvases).
 
 ---
 
