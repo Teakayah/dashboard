@@ -72,3 +72,7 @@
 ## 2026-08-23 - [Cache asynchronous DuckDB profiling queries]
 **Learning:** In DuckDB-Wasm, executing multiple async profiling queries sequentially (e.g. `conn.query(SELECT MIN...); conn.query(SELECT ... GROUP BY ...)`) each time a schema column is clicked creates excessive IPC overhead. Furthermore, since column stats are static for the loaded table, redundant queries are completely unnecessary.
 **Action:** When implementing an in-memory cache for asynchronous operations like DuckDB Wasm queries, cache the `Promise` itself (e.g., `cache.set(key, (async () => { ... })())`) rather than the awaited result. This ensures that concurrent requests for the same key await the same pending promise, preventing duplicate queries and redundant IPC roundtrips.
+
+## YYYY-MM-DD - [Optimize DuckDB-Wasm Profiling Queries]
+**Learning:** In single-worker DuckDB-Wasm environments, sequentially awaiting multiple async queries for the same user action (like clicking a column to profile it) creates unnecessary IPC overhead.
+**Action:** When multiple independent queries are needed simultaneously, always execute them concurrently using `Promise.all` to reduce roundtrips across the WebWorker boundary and improve latency.
