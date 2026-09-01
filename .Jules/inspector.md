@@ -62,3 +62,6 @@
 ## 2026-08-21 - Restoring mock call history in complex lambdas
 **Learning:** When strengthening test assertions from `mock.assert_any_call()` to `mock.assert_called_once_with()` for sequentially invoked mock handlers (e.g., event listener lambdas in Playwright), previous calls accumulate in the mock's history, causing strict assertions on subsequent calls to fail.
 **Action:** Always insert `mock.reset_mock()` between sequential invocations of independent mock-triggering functions to isolate call history and ensure strict assertions correctly evaluate only the current operation.
+## YYYY-MM-DD - Missing State Reset Assertions
+**Learning:** Stateful UI components (like the chart builder) may not automatically hide when their dependent data is cleared. A lack of UI state assertions post-action is a blind spot for visual regressions.
+**Action:** Always assert that dynamically shown elements are properly hidden/reset when the underlying data is cleared or the component state is reset.
