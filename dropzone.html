@@ -384,7 +384,15 @@
             <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 5px;">Tip: Click column names in the schema above to insert them into your query.</p>
         </div>
 
-        <div id="results" class="results-container"></div>
+        <div id="results" class="results-container">
+            <div class="empty" style="text-align: center; padding: 40px 20px;">
+                <svg aria-hidden="true" style="width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+                </svg>
+                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 8px 0;">No data to display</h3>
+                <p style="font-size: 0.9rem; margin: 0; color: var(--text-muted);">Drop a file above or run a SQL query to view results here.</p>
+            </div>
+        </div>
     </main>
 
     <div id="loading" class="loading-overlay" role="status" aria-live="polite">
