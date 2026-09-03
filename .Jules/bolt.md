@@ -72,3 +72,9 @@
 ## 2026-08-23 - [Cache asynchronous DuckDB profiling queries]
 **Learning:** In DuckDB-Wasm, executing multiple async profiling queries sequentially (e.g. `conn.query(SELECT MIN...); conn.query(SELECT ... GROUP BY ...)`) each time a schema column is clicked creates excessive IPC overhead. Furthermore, since column stats are static for the loaded table, redundant queries are completely unnecessary.
 **Action:** When implementing an in-memory cache for asynchronous operations like DuckDB Wasm queries, cache the `Promise` itself (e.g., `cache.set(key, (async () => { ... })())`) rather than the awaited result. This ensures that concurrent requests for the same key await the same pending promise, preventing duplicate queries and redundant IPC roundtrips.
+## 2026-09-03 - Batching DuckDB Wasm Queries
+**Learning:** Sequential `conn.query()` calls across the WebWorker boundary have significant IPC overhead. Iterating over an array to sequentially execute `DROP TABLE IF EXISTS "table"` queries is slow.
+**Action:** Combine multiple `DROP TABLE IF EXISTS` statements into a single string separated by newlines or semicolons and execute them in one `conn.query()` call to minimize IPC roundtrips.
+## 2026-09-03 - Concurrent Schema Lookups for Joins
+**Learning:** Sequentially awaiting `getTableSchemaCached` for two different tables in `updateJoinColumns` causes sequential IPC roundtrips across the WebWorker boundary if the schemas are not cached, increasing latency.
+**Action:** Use `Promise.all()` to concurrently await the schemas for both tables, allowing the requests to be processed in parallel.

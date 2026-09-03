@@ -618,8 +618,13 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await getTableSchemaCached(tableA);
-        const schemaBResult = await getTableSchemaCached(tableB);
+        // Performance optimization: Concurrently await the schemas for both tables.
+        // This eliminates sequential WebWorker IPC roundtrip latency if the schemas are not already cached.
+        // Expected impact: ~50% faster schema loading time when the cache is cold.
+        const [schemaAResult, schemaBResult] = await Promise.all([
+            getTableSchemaCached(tableA),
+            getTableSchemaCached(tableB)
+        ]);
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
@@ -1378,8 +1383,12 @@ clearBtn.addEventListener('click', async () => {
         const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
         const tables = getRows(tablesResult).map(r => r.table_name);
         
-        for (const table of tables) {
-            await conn.query(`DROP TABLE IF EXISTS "${escapeId(table)}"`);
+        // Performance optimization: Batch multiple DROP TABLE IF EXISTS statements into a single query execution.
+        // This eliminates O(N) WebWorker IPC roundtrips when clearing a large number of loaded tables.
+        // Expected impact: Clearance time is reduced to a single network/worker communication block regardless of table count.
+        if (tables.length > 0) {
+            const dropQuery = tables.map(table => `DROP TABLE IF EXISTS "${escapeId(table)}";`).join('\n');
+            await conn.query(dropQuery);
         }
         
         loadedTables.clear();
