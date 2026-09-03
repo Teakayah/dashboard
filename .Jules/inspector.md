@@ -62,3 +62,6 @@
 ## 2026-08-21 - Restoring mock call history in complex lambdas
 **Learning:** When strengthening test assertions from `mock.assert_any_call()` to `mock.assert_called_once_with()` for sequentially invoked mock handlers (e.g., event listener lambdas in Playwright), previous calls accumulate in the mock's history, causing strict assertions on subsequent calls to fail.
 **Action:** Always insert `mock.reset_mock()` between sequential invocations of independent mock-triggering functions to isolate call history and ensure strict assertions correctly evaluate only the current operation.
+## 2026-09-03 - Missing test coverage and escaping for query recipes
+**Learning:** Query recipe templates in vanilla JS (like `{{TABLE}}` replacements) often fail when table names aren't properly double-quoted. Missing test coverage for these UI interactions hides runtime syntax errors in the generated queries.
+**Action:** Added a Playwright test to verify query recipe generation handles table name escaping and correctly populates the SQL input.
