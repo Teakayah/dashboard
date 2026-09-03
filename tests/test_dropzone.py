@@ -471,3 +471,17 @@ def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
     previews = dz.locator('#instant-previews .preview-card')
     expect(previews.first).to_be_visible(timeout=ACTION_TIMEOUT)
     assert previews.count() > 0
+
+def test_query_recipes_populates_sql_input(dz: Page):
+    """Selecting a query recipe should populate the SQL input and emit an input event to enable the run button."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    # Select the "Show Top 10 Rows" recipe which maps to "SELECT * FROM {{TABLE}} LIMIT 10"
+    dz.select_option('#query-recipes', label="Show Top 10 Rows")
+
+    # Wait for the sql input to be updated and for the button to be enabled
+    expect(dz.locator('#sql-input')).to_have_value(re.compile(r'SELECT \* FROM "(?:employees|departments)" LIMIT 10'))
+    expect(dz.locator('#run-query')).to_be_enabled()

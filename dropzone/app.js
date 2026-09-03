@@ -955,7 +955,7 @@ function insertAtCursor(myField, myValue) {
 
 recipeSelect.addEventListener('change', () => {
     if (!currentTableName) return;
-    const recipe = recipeSelect.value.replace(/{{TABLE}}/g, currentTableName);
+    const recipe = recipeSelect.value.replace(/{{TABLE}}/g, `"${escapeId(currentTableName)}"`);
     sqlInput.value = recipe;
     sqlInput.dispatchEvent(new Event('input'));
     recipeSelect.selectedIndex = 0;
