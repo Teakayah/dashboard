@@ -67,3 +67,6 @@ Action: Removed dead python logic to simplify deployment and testing footprint.
 ## 2026-08-14 - Chart.js Memory Leaks
 **Learning:** When replacing or clearing the DOM content of a container that houses Chart.js `<canvas>` elements using `container.textContent = ''`, the Chart instances must be explicitly destroyed using `Chart.getChart(canvas).destroy()`. Failing to do so causes severe memory leaks because internal event listeners remain active in memory.
 **Action:** Ensure `destroyCharts(container)` or `Chart.getChart(canvas)?.destroy()` is called before removing canvas elements from the DOM or re-instantiating charts on the same canvas.
+## 2026-09-03 - Modernized Chart Builder Logic
+Learning: Deeply nested and sprawling `if/else` blocks used for building configuration objects (like Chart.js data/options and SQL queries) based on a single condition (like chart type) add unnecessary vertical bloat and cognitive overhead.
+Action: Simplified the chart generation logic in `dropzone/app.js` by extracting the condition (`const isScatter = type === 'scatter';`) and utilizing ternary operators (`? :`) for direct, concise variable assignments, significantly reducing line count and improving readability.

@@ -725,12 +725,10 @@ generateChartBtn.addEventListener('click', () => {
                 showToast('Invalid table reference.');
                 return;
             }
-            let sql = '';
-            if (type === 'scatter') {
-                sql = `SELECT "${escapeId(xCol)}" as x, "${escapeId(yCol)}" as y\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nLIMIT 500`;
-            } else {
-                sql = `SELECT "${escapeId(xCol)}" as label, AVG("${escapeId(yCol)}") as value\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nGROUP BY 1\nORDER BY 1 ASC\nLIMIT 100`;
-            }
+            const isScatter = type === 'scatter';
+            const sql = isScatter
+                ? `SELECT "${escapeId(xCol)}" as x, "${escapeId(yCol)}" as y\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nLIMIT 500`
+                : `SELECT "${escapeId(xCol)}" as label, AVG("${escapeId(yCol)}") as value\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nGROUP BY 1\nORDER BY 1 ASC\nLIMIT 100`;
             
             // Show the generated SQL to the user in the console
             sqlInput.value = sql;
@@ -739,33 +737,27 @@ generateChartBtn.addEventListener('click', () => {
             const result = await conn.query(sql);
             const rows = getRows(result);
             
-            let chartData = {};
-            let chartOptions = {};
+            const chartData = isScatter ? {
+                datasets: [{
+                    label: `${xCol} vs ${yCol}`,
+                    data: rows.map(r => ({x: r.x, y: r.y})),
+                    backgroundColor: '#ff9f40'
+                }]
+            } : {
+                labels: rows.map(r => r.label),
+                datasets: [{
+                    label: (type === 'line' ? `Avg ${yCol}` : `Average ${yCol}`),
+                    data: rows.map(r => r.value),
+                    backgroundColor: (type === 'line' ? 'transparent' : '#ff9f40'),
+                    borderColor: '#ff9f40',
+                    tension: 0.1,
+                    fill: (type === 'bar')
+                }]
+            };
             
-            if (type === 'scatter') {
-                chartData = {
-                    datasets: [{
-                        label: `${xCol} vs ${yCol}`,
-                        data: rows.map(r => ({x: r.x, y: r.y})),
-                        backgroundColor: '#ff9f40'
-                    }]
-                };
-                chartOptions = {
-                    scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }
-                };
-            } else {
-                chartData = {
-                    labels: rows.map(r => r.label),
-                    datasets: [{
-                        label: (type === 'line' ? `Avg ${yCol}` : `Average ${yCol}`),
-                        data: rows.map(r => r.value),
-                        backgroundColor: (type === 'line' ? 'transparent' : '#ff9f40'),
-                        borderColor: '#ff9f40',
-                        tension: 0.1,
-                        fill: (type === 'bar')
-                    }]
-                };
-            }
+            const chartOptions = isScatter ? {
+                scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }
+            } : {};
             
             renderChart(canvasId, type, chartData, chartOptions);
         } catch (e) {
