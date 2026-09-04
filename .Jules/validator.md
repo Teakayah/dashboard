@@ -47,3 +47,8 @@ Assertion: When encountering untestable line coverage gaps caused by unreachable
 Coverage Gap: Loose assertions (`assert_any_call`) on lambda callbacks (e.g., console/error events) allow unexpected side-effects to go undetected.
 Learning: Using `assert_called_once_with` requires explicitly clearing the mock state between sequential invocations using `mock.reset_mock()` to accurately verify isolated behaviors in shared mocks.
 Assertion: Strengthened lambda assertions using `assert_called_once_with` and isolated them via `reset_mock()`.
+
+## 2026-09-04 - Fix flaky UI element state assertions
+Coverage Gap: Synchronous assertions on asynchronously updating UI elements (like buttons enabling after query execution) caused flaky test timeouts.
+Learning: Using synchronous `locator.is_disabled()` checks can fail intermittently because they evaluate immediately before the DOM has finished rendering the updated state.
+Assertion: Strictly use Playwright's auto-retrying assertions like `expect(locator).to_be_enabled()` to wait for the UI state to match expectations.
