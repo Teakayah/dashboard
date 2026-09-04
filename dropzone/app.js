@@ -618,8 +618,10 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await getTableSchemaCached(tableA);
-        const schemaBResult = await getTableSchemaCached(tableB);
+        const [schemaAResult, schemaBResult] = await Promise.all([
+            getTableSchemaCached(tableA),
+            getTableSchemaCached(tableB)
+        ]);
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
