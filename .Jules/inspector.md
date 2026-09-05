@@ -62,3 +62,6 @@
 ## 2026-08-21 - Restoring mock call history in complex lambdas
 **Learning:** When strengthening test assertions from `mock.assert_any_call()` to `mock.assert_called_once_with()` for sequentially invoked mock handlers (e.g., event listener lambdas in Playwright), previous calls accumulate in the mock's history, causing strict assertions on subsequent calls to fail.
 **Action:** Always insert `mock.reset_mock()` between sequential invocations of independent mock-triggering functions to isolate call history and ensure strict assertions correctly evaluate only the current operation.
+## 2026-09-05 - Use Playwright auto-retrying assertions for async DOM updates
+**Learning:** In Playwright UI tests, using synchronous property checks like `assert locator.is_disabled()` to assert the state of elements that update asynchronously (e.g. based on data loading or UI interactions) can cause flaky test failures if the DOM hasn't finished updating.
+**Action:** Always use Playwright's auto-retrying assertions such as `expect(locator).to_be_enabled()` or `expect(locator).to_be_disabled()` instead of synchronous assertions like `assert not locator.is_disabled()`. This ensures Playwright waits for the expected state, improving test stability.
