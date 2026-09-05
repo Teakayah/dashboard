@@ -47,3 +47,8 @@ Assertion: When encountering untestable line coverage gaps caused by unreachable
 Coverage Gap: Loose assertions (`assert_any_call`) on lambda callbacks (e.g., console/error events) allow unexpected side-effects to go undetected.
 Learning: Using `assert_called_once_with` requires explicitly clearing the mock state between sequential invocations using `mock.reset_mock()` to accurately verify isolated behaviors in shared mocks.
 Assertion: Strengthened lambda assertions using `assert_called_once_with` and isolated them via `reset_mock()`.
+
+## 2026-09-05 - Bypassing CSP for Accessibility Test Script Injection
+Coverage Gap: Accessibility tests in `tests/test_accessibility.py` skipped because injecting axe-core from a CDN was blocked by a strict Content-Security-Policy (CSP) meta tag.
+Learning: Playwright's `page.add_script_tag` respects the page's CSP, causing script injection from unauthorized CDNs to fail in environments with strict `script-src` policies. Modifying HTML with regex is brittle; Playwright provides a native way to bypass CSP.
+Assertion: Use the `browser_context_args` fixture in `pytest-playwright` and set `"bypass_csp": True` to natively allow external test script injections without fragile HTML manipulation.
