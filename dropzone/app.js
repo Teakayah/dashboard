@@ -838,6 +838,7 @@ async function handleFiles(files) {
         // Process directory groups (Potential Delta Lake or multi-part datasets)
         for (const [dirName, dirFiles] of Object.entries(fileGroups)) {
             const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
+            // Strip non-alphanumeric characters to ensure the table name is a valid SQL identifier
             const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
             
             // Performance optimization: Concurrently buffer and register files
@@ -884,6 +885,7 @@ async function handleFiles(files) {
  * @param {string} path - The internal path to register the file buffer under in DuckDB.
  */
 async function processFile(file, path) {
+    // Strip non-alphanumeric characters to ensure the table name is a valid SQL identifier
     const tableName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
     currentTableName = tableName;
     loadedTables.add(tableName);
