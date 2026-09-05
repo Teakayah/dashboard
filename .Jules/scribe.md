@@ -98,3 +98,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-08-08 - Standardize HTML Extractions with re.VERBOSE
 **Learning:** Build scripts like `generate_feed.py` used dense, single-line regular expressions for HTML parsing that were hard to read and prone to edge-case failures (e.g. nested tags breaking `</[a-z]+>`).
 **Action:** When parsing HTML with regex across all deployment scripts, standardize on using the `re.VERBOSE` flag with multiline strings and inline comments, and always use backreferences (`\1`) for closing tags to ensure safety and clarity for future maintainers.
+## YYYY-MM-DD - [Initial]
+**Learning:** Found an opportunity to improve documentation in dropzone/app.js. The regex used to sanitize table names in processFile (`file.name.replace(/[^a-zA-Z0-9]/g, '_')`) does not have a comment explaining why it is needed. DuckDB tables need safe identifiers.
+**Action:** Add inline comment to explain the regex and why table names must be sanitized when dealing with file drops.
