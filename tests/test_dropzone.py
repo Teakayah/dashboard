@@ -471,3 +471,28 @@ def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
     previews = dz.locator('#instant-previews .preview-card')
     expect(previews.first).to_be_visible(timeout=ACTION_TIMEOUT)
     assert previews.count() > 0
+
+def test_run_query_keyboard_shortcut(dz: Page):
+    """Pressing Ctrl+Enter (or Meta+Enter) inside the SQL input should run the query."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 2')
+    dz.locator('#sql-input').press('Control+Enter')
+
+    expect(dz.locator('.gridjs-tbody tr')).to_have_count(2, timeout=READY_TIMEOUT)
+
+
+def test_focus_sql_input_shortcut(dz: Page):
+    """Pressing '/' outside of an input should focus the SQL input."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    # Click on the body to ensure no input is focused
+    dz.locator('body').click()
+    dz.keyboard.press('/')
+
+    # Assert that the sql-input element is currently focused
+    is_focused = dz.evaluate("document.activeElement.id === 'sql-input'")
+    assert is_focused, "SQL input should be focused after pressing '/'"
