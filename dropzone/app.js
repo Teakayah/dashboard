@@ -1392,7 +1392,15 @@ clearBtn.addEventListener('click', async () => {
             gridInstance.destroy();
             gridInstance = null;
         }
-        document.getElementById('results').textContent = '';
+        document.getElementById('results').innerHTML = `
+            <div class="empty" style="text-align: center; padding: 40px 20px;">
+                <svg aria-hidden="true" style="width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 8px 0;">No data loaded</h3>
+                <p style="font-size: 0.9rem; margin: 0; color: var(--text-muted);">Drop a file or connect a database to get started.</p>
+            </div>
+        `;
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
         downloadBtn.disabled = true;
