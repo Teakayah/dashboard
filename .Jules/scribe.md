@@ -98,3 +98,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-08-08 - Standardize HTML Extractions with re.VERBOSE
 **Learning:** Build scripts like `generate_feed.py` used dense, single-line regular expressions for HTML parsing that were hard to read and prone to edge-case failures (e.g. nested tags breaking `</[a-z]+>`).
 **Action:** When parsing HTML with regex across all deployment scripts, standardize on using the `re.VERBOSE` flag with multiline strings and inline comments, and always use backreferences (`\1`) for closing tags to ensure safety and clarity for future maintainers.
+## 2026-08-26 - Explaining complex HTML extraction regex patterns
+**Learning:** Functions like `_extract_title` and `_extract_description` in `generate_feed.py` used dense, single-line regular expressions for HTML parsing which made it difficult to understand exactly which attributes and tags were being captured.
+**Action:** When extracting meta information from HTML tags using regex, use the `re.VERBOSE` flag to break the pattern across multiple lines with inline comments detailing the purpose of each capture group and match sequence.
