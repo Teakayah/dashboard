@@ -471,3 +471,43 @@ def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
     previews = dz.locator('#instant-previews .preview-card')
     expect(previews.first).to_be_visible(timeout=ACTION_TIMEOUT)
     assert previews.count() > 0
+
+def test_query_recipes_populates_sql_input(dz: Page):
+    """Selecting a query recipe should populate the SQL input and emit an input event to enable the run button."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    # Select the "Show Top 10 Rows" recipe which maps to "SELECT * FROM {{TABLE}} LIMIT 10"
+    dz.select_option('#query-recipes', label="Show Top 10 Rows")
+
+    # Wait for the sql input to be updated and for the button to be enabled
+    expect(dz.locator('#sql-input')).to_have_value(re.compile(r'SELECT \* FROM "(?:employees|departments)" LIMIT 10'))
+    expect(dz.locator('#run-query')).to_be_enabled()
+
+
+def test_run_query_keyboard_shortcut(dz: Page):
+    """Pressing Ctrl+Enter (or Meta+Enter) inside the SQL input should run the query."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 2')
+    dz.locator('#sql-input').press('Control+Enter')
+
+    expect(dz.locator('.gridjs-tbody tr')).to_have_count(2, timeout=READY_TIMEOUT)
+
+
+def test_focus_sql_input_shortcut(dz: Page):
+    """Pressing '/' outside of an input should focus the SQL input."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    # Click on the body to ensure no input is focused
+    dz.locator('body').click()
+    dz.keyboard.press('/')
+
+    # Assert that the sql-input element is currently focused
+    is_focused = dz.evaluate("document.activeElement.id === 'sql-input'")
+    assert is_focused, "SQL input should be focused after pressing '/'"
