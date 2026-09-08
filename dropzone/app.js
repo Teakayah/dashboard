@@ -83,27 +83,18 @@ function populateSelect(select, options, defaultMsg) {
     select.textContent = '';
 
     if (defaultMsg) {
-        const defaultOpt = document.createElement('option');
-        defaultOpt.value = '';
-        defaultOpt.disabled = true;
-        defaultOpt.selected = true;
-        defaultOpt.textContent = defaultMsg;
-        select.appendChild(defaultOpt);
+        select.add(new Option(defaultMsg, '', true, true));
     }
 
     options.forEach(item => {
-        const opt = document.createElement('option');
         if (typeof item === 'object') {
-            opt.value = item.column_name;
-            opt.textContent = `${item.column_name} (${item.column_type})`;
+            select.add(new Option(`${item.column_name} (${item.column_type})`, item.column_name));
         } else {
-            opt.value = item;
-            opt.textContent = item;
+            select.add(new Option(item, item));
         }
-        select.appendChild(opt);
     });
 
-    if (!defaultMsg && options.includes(currentVal)) {
+    if (!defaultMsg && options.some(opt => typeof opt === 'object' ? opt.column_name === currentVal : opt === currentVal)) {
         select.value = currentVal;
     }
 }
