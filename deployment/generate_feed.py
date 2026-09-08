@@ -33,7 +33,14 @@ except ImportError:
 
 
 def _extract_title(content: str, stem: str) -> str:
-    m = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
+    m = re.search(
+        r'''
+        <title[^>]*>  # Match the opening <title> tag and any attributes
+        (.*?)         # Group 1: Non-greedily capture the inner text
+        </title>      # Match the closing </title> tag
+        ''',
+        content, re.IGNORECASE | re.DOTALL | re.VERBOSE,
+    )
     raw = m.group(1).strip() if m else stem.replace('_', ' ').title()
     return (raw
             .replace('&amp;', '&').replace('&lt;', '<')
