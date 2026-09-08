@@ -1207,7 +1207,7 @@ document.addEventListener('keydown', (e) => {
 sqlInput.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        if (!runBtn.disabled) {
+        if (sqlInput.value.trim()) {
             runQuery();
         }
     }
