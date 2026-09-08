@@ -74,6 +74,18 @@ class TestDropzoneButtons:
         load_samples(dz)
         expect(dz.locator("#chart-builder")).to_be_visible()
 
+    def test_chart_builder_hides_on_clear_data(self, dz: Page):
+        dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
+        wait_for_duckdb_ready(dz)
+        load_samples(dz)
+        expect(dz.locator("#chart-builder")).to_be_visible()
+
+        # Confirm the dialog
+        dz.on("dialog", lambda d: d.accept())
+        dz.locator("#clear-data").click()
+
+        expect(dz.locator("#chart-builder")).to_be_hidden()
+
     def test_chart_builder_validation(self, dz: Page):
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
@@ -109,6 +121,8 @@ class TestDropzoneButtons:
 
         expect(dz.locator("#schema-display")).to_be_empty()
         expect(dz.locator("#instant-previews")).to_be_empty()
+        expect(dz.locator("#chart-builder")).to_be_hidden()
+        expect(dz.locator("#join-assistant")).to_be_hidden()
 
     def test_clear_data_button_dismiss_keeps_schema(self, dz: Page):
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)

@@ -166,6 +166,7 @@ function renderHistory() {
             sqlInput.value = sql;
             sqlInput.dispatchEvent(new Event('input'));
             sqlInput.focus();
+            showToast('Loaded query from history', 'success');
         };
 
         chip.onclick = triggerAction;
@@ -951,6 +952,13 @@ function insertAtCursor(myField, myValue) {
     }
     myField.focus();
     myField.dispatchEvent(new Event('input'));
+    if (myField === sqlInput) {
+        let displayValue = myValue;
+        if (displayValue.length > 30) {
+            displayValue = displayValue.substring(0, 30) + '...';
+        }
+        showToast('Inserted ' + displayValue + ' into query editor', 'success');
+    }
 }
 
 recipeSelect.addEventListener('change', () => {
