@@ -472,6 +472,39 @@ def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
     expect(previews.first).to_be_visible(timeout=ACTION_TIMEOUT)
     assert previews.count() > 0
 
+
+def test_no_unhandled_promise_rejections_on_load(dz: Page):
+    """Loading the Drop-Zone and samples must not reject promises globally."""
+    rejections: list[str] = []
+    dz.expose_binding("recordRejection", lambda source, msg: rejections.append(msg))
+    dz.add_init_script("""
+        window.addEventListener('unhandledrejection', event => {
+            window.recordRejection(event.reason ? event.reason.toString() : 'Unknown rejection');
+        });
+    """)
+
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    assert rejections == [], f"Unhandled promise rejections detected: {rejections}"
+
+
+def test_clear_data_disables_copy_json(dz: Page):
+    """Clearing data must disable the Copy JSON button."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+    expect(dz.locator('#copy-json')).to_be_enabled(timeout=ACTION_TIMEOUT)
+
+    dz.on("dialog", lambda dialog: dialog.accept())
+    dz.locator('#clear-data').click()
+    expect(dz.locator('#copy-json')).to_be_disabled(timeout=ACTION_TIMEOUT)
+
 def test_query_recipes_populates_sql_input(dz: Page):
     """Selecting a query recipe should populate the SQL input and emit an input event to enable the run button."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
