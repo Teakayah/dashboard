@@ -65,3 +65,7 @@
 ## 2026-07-31 - Accessible Feedback for Background Actions
 **Learning:** File downloads and clipboard operations in JavaScript are silent to screen readers by default. Relying solely on visual cues (like a button text temporarily changing to 'Copied!') leaves visually impaired users without confirmation that an action succeeded.
 **Action:** Always trigger an `aria-live` announcement (e.g., using a toast system) when a background file export or clipboard operation completes successfully.
+
+## YYYY-MM-DD - Explicit Empty States for Dynamic Result Containers
+**Learning:** Container blocks for dynamic data results (like grids or tables) should never be left completely blank when empty or cleared, as this creates a confusing, broken-looking UI.
+**Action:** Always render an explicit empty state in the HTML initially and explicitly restore it via JavaScript when data is cleared to guide the user on next steps.
