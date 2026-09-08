@@ -12,9 +12,10 @@ Failure thresholds:
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, Route
 
 from helpers import BASE
 
@@ -78,6 +79,15 @@ def _fmt(violations: list[dict]) -> str:
 
 @pytest.mark.parametrize('label,path', PAGES)
 def test_page_has_no_critical_or_serious_violations(page: Page, label: str, path: str):
+    def strip_csp(route: Route):
+        response = route.fetch()
+        body = response.text()
+        body = re.sub(r'<meta[^>]*http-equiv="Content-Security-Policy"[^>]*>', '', body, flags=re.IGNORECASE)
+        route.fulfill(response=response, body=body)
+
+    page.route("**/*.html", strip_csp)
+    page.route("**/*/", strip_csp)
+
     page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
     try:
         page.wait_for_load_state('networkidle', timeout=8_000)
