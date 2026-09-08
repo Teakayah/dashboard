@@ -1433,6 +1433,7 @@ init();
  * at the bottom right of the viewport. Automatically dismisses after 5 seconds.
  *
  * @param {string} msg - The message text to display.
+ * @param {string} [type='error'] - The type of toast ('error' or 'success').
  */
 function showToast(msg, type = 'error') {
     const panel = document.createElement('div');
