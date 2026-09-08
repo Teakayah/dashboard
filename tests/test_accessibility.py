@@ -15,7 +15,7 @@ from pathlib import Path
 
 import re
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, Route
 
 from helpers import BASE
 
