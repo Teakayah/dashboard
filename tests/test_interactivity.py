@@ -120,6 +120,8 @@ class TestDropzoneButtons:
         dz.locator("#clear-data").click()
 
         expect(dz.locator("#schema-display")).to_be_empty()
+        expect(dz.locator("#chart-builder")).to_be_hidden()
+        expect(dz.locator("#join-assistant")).to_be_hidden()
         expect(dz.locator("#instant-previews")).to_be_empty()
         expect(dz.locator("#chart-builder")).to_be_hidden()
         expect(dz.locator("#join-assistant")).to_be_hidden()
