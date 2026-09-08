@@ -91,31 +91,8 @@ def _fmt(violations: list[dict]) -> str:
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
-def _strip_csp(route):
-    response = route.fetch()
-    body = response.text()
-    # Strip Content-Security-Policy meta tags from HTML
-    body = re.sub(
-        r'''
-        <meta\s+                 # Match opening meta tag and whitespace
-        [^>]*                    # Match any attributes before http-equiv
-        http-equiv=              # Match http-equiv attribute
-        ["']                     # Match quote
-        Content-Security-Policy  # Match the CSP directive
-        ["']                     # Match closing quote
-        [^>]*                    # Match any trailing attributes
-        >                        # Match closing bracket
-        ''',
-        '',
-        body,
-        flags=re.IGNORECASE | re.VERBOSE
-    )
-    route.fulfill(response=response, body=body)
-
-
 @pytest.mark.parametrize('label,path', PAGES)
 def test_page_has_no_critical_or_serious_violations(page: Page, label: str, path: str):
-    _strip_csp(page)
     page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
     try:
         page.wait_for_load_state('networkidle', timeout=8_000)
