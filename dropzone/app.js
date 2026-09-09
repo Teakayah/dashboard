@@ -253,7 +253,7 @@ function getRows(result) {
             const rawObj = rawRows[i];
             // If rowObj is a Proxy, toJSON() produces a plain object we can mutate.
             // If it's already a plain object without toJSON, we shallow copy it to avoid mutating the original source row.
-            const rowObjPlain = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : (typeof rawObj === 'object' && rawObj !== null ? {...rawObj} : rawObj);
+            const rowObjPlain = typeof rawObj?.toJSON === 'function' ? rawObj.toJSON() : (typeof rawObj === 'object' && rawObj !== null ? {...rawObj} : rawObj);
 
             // Fast path: Only iterate the known BigInt columns instead of all fields.
             for (let j = 0; j < numBigIntCols; j++) {
@@ -272,7 +272,7 @@ function getRows(result) {
             // to a plain object using Arrow's internal optimized path, completely bypassing
             // the heavy proxy getter trap overhead for every cell.
             const rawObj = rawRows[i];
-            rows[i] = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
+            rows[i] = typeof rawObj?.toJSON === 'function' ? rawObj.toJSON() : rawObj;
         }
     }
     return rows;
@@ -368,7 +368,7 @@ async function init() {
         setProgress(50);
         statusEl.textContent = 'Opening database...';
         const accessMode = duckdb.DuckDBAccessMode?.READ_WRITE ?? 3;
-        const opfsSupported = !!(navigator.storage && navigator.storage.getDirectory);
+        const opfsSupported = !!navigator.storage?.getDirectory;
         // We use a versioned name for OPFS to avoid conflicts with older incompatible files
         const dbPath = opfsSupported ? 'opfs://duckdb_v1.db' : null;
 
