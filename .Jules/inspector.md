@@ -65,3 +65,7 @@
 ## 2026-08-29 - Axe-Core Injection on strict CSP pages
 **Learning:** `page.add_script_tag()` injection of `axe-core` from a CDN will be blocked by strict `script-src` Content-Security-Policy meta tags, causing tests to be silently skipped.
 **Action:** Use Playwright's `page.route()` to intercept the HTML document response, strip the `<meta http-equiv="Content-Security-Policy">` tag using `re.sub()`, and fulfill the route *before* calling `page.goto()` and injecting axe-core.
+
+## 2026-09-09 - Testing Asynchronous UI Assertions
+**Learning:** Using synchronous assertions like `toast.wait_for(state="visible", timeout=3000)` combined with `assert ... in toast.inner_text().lower()` is flaky for dynamic DOM elements and can timeout prematurely.
+**Action:** Always use Playwright's native auto-retrying assertions like `expect(locator).to_be_visible(timeout=...)` and `expect(locator).to_contain_text(...)` to ensure tests remain robust.
