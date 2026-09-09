@@ -62,3 +62,7 @@
 ## 2026-08-21 - Restoring mock call history in complex lambdas
 **Learning:** When strengthening test assertions from `mock.assert_any_call()` to `mock.assert_called_once_with()` for sequentially invoked mock handlers (e.g., event listener lambdas in Playwright), previous calls accumulate in the mock's history, causing strict assertions on subsequent calls to fail.
 **Action:** Always insert `mock.reset_mock()` between sequential invocations of independent mock-triggering functions to isolate call history and ensure strict assertions correctly evaluate only the current operation.
+
+## 2026-09-09 - Testing Asynchronous UI Assertions
+**Learning:** Using synchronous assertions like `toast.wait_for(state="visible", timeout=3000)` combined with `assert ... in toast.inner_text().lower()` is flaky for dynamic DOM elements and can timeout prematurely.
+**Action:** Always use Playwright's native auto-retrying assertions like `expect(locator).to_be_visible(timeout=...)` and `expect(locator).to_contain_text(...)` to ensure tests remain robust.

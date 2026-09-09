@@ -1,5 +1,6 @@
 from playwright.sync_api import Page, expect
 from pathlib import Path
+import re
 from helpers import (
     BASE as BASE_URL,
     DROPZONE_URL,
@@ -65,8 +66,8 @@ class TestDropzoneButtons:
         # Don't select anything — just click
         dz.locator("#generate-join").click()
         toast = dz.locator('[role="alert"]').last
-        toast.wait_for(state="visible", timeout=3000)
-        assert "select both tables" in toast.inner_text().lower()
+        expect(toast).to_be_visible(timeout=3000)
+        expect(toast).to_contain_text(re.compile(r'select both tables', re.IGNORECASE))
 
     def test_chart_builder_appears_after_loading_data(self, dz: Page):
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
@@ -80,8 +81,8 @@ class TestDropzoneButtons:
         load_samples(dz)
         dz.locator("#generate-chart").click()
         toast = dz.locator('[role="alert"]').last
-        toast.wait_for(state="visible", timeout=3000)
-        assert "select both x and y" in toast.inner_text().lower()
+        expect(toast).to_be_visible(timeout=3000)
+        expect(toast).to_contain_text(re.compile(r'select both X and Y', re.IGNORECASE))
 
     def test_export_db_button_triggers_download_or_error(self, dz: Page):
         """Export Database must either download a file or show an error — no silent crash."""
