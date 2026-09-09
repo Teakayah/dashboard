@@ -421,6 +421,10 @@ async function restoreState() {
             statusEl.textContent = `Restored ${tables.length} table(s)`;
             
             schemaDisplay.textContent = '';
+            // Performance optimization: Fetch schemas concurrently to eliminate
+            // redundant sequential IPC roundtrips across the WebWorker boundary,
+            // while preserving deterministic DOM insertion order.
+            await Promise.all(tables.map(t => getTableSchemaCached(t)));
             for (const table of tables) {
                 await displayTableSchema(table);
             }
