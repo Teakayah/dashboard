@@ -429,6 +429,10 @@ async function restoreState() {
             statusEl.textContent = `Restored ${tables.length} table(s)`;
             
             schemaDisplay.textContent = '';
+            // Performance optimization: Fetch schemas concurrently to eliminate
+            // redundant sequential IPC roundtrips across the WebWorker boundary,
+            // while preserving deterministic DOM insertion order.
+            await Promise.all(tables.map(t => getTableSchemaCached(t)));
             for (const table of tables) {
                 await displayTableSchema(table);
             }
@@ -618,8 +622,12 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await getTableSchemaCached(tableA);
-        const schemaBResult = await getTableSchemaCached(tableB);
+        // Performance optimization: Execute independent database schema queries concurrently
+        // to minimize WebWorker IPC latency.
+        const [schemaAResult, schemaBResult] = await Promise.all([
+            getTableSchemaCached(tableA),
+            getTableSchemaCached(tableB)
+        ]);
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
