@@ -39,6 +39,13 @@ def dz(browser: Browser) -> Page:
     yield pg
     ctx.close()
 
+@pytest.fixture(scope="session")
+def browser_context_args(browser_context_args):
+    return {
+        **browser_context_args,
+        "bypass_csp": True,
+    }
+
 
 def pytest_configure(config):
     config.addinivalue_line('markers', 'mobile: mark test as a mobile-viewport test')

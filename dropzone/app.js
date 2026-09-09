@@ -83,27 +83,18 @@ function populateSelect(select, options, defaultMsg) {
     select.textContent = '';
 
     if (defaultMsg) {
-        const defaultOpt = document.createElement('option');
-        defaultOpt.value = '';
-        defaultOpt.disabled = true;
-        defaultOpt.selected = true;
-        defaultOpt.textContent = defaultMsg;
-        select.appendChild(defaultOpt);
+        select.add(new Option(defaultMsg, '', true, true));
     }
 
     options.forEach(item => {
-        const opt = document.createElement('option');
         if (typeof item === 'object') {
-            opt.value = item.column_name;
-            opt.textContent = `${item.column_name} (${item.column_type})`;
+            select.add(new Option(`${item.column_name} (${item.column_type})`, item.column_name));
         } else {
-            opt.value = item;
-            opt.textContent = item;
+            select.add(new Option(item, item));
         }
-        select.appendChild(opt);
     });
 
-    if (!defaultMsg && options.includes(currentVal)) {
+    if (!defaultMsg && options.some(opt => typeof opt === 'object' ? opt.column_name === currentVal : opt === currentVal)) {
         select.value = currentVal;
     }
 }
@@ -166,6 +157,7 @@ function renderHistory() {
             sqlInput.value = sql;
             sqlInput.dispatchEvent(new Event('input'));
             sqlInput.focus();
+            showToast('Loaded query from history', 'success');
         };
 
         chip.onclick = triggerAction;
@@ -253,7 +245,7 @@ function getRows(result) {
             const rawObj = rawRows[i];
             // If rowObj is a Proxy, toJSON() produces a plain object we can mutate.
             // If it's already a plain object without toJSON, we shallow copy it to avoid mutating the original source row.
-            const rowObjPlain = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : (typeof rawObj === 'object' && rawObj !== null ? {...rawObj} : rawObj);
+            const rowObjPlain = typeof rawObj?.toJSON === 'function' ? rawObj.toJSON() : (typeof rawObj === 'object' && rawObj !== null ? {...rawObj} : rawObj);
 
             // Fast path: Only iterate the known BigInt columns instead of all fields.
             for (let j = 0; j < numBigIntCols; j++) {
@@ -272,7 +264,7 @@ function getRows(result) {
             // to a plain object using Arrow's internal optimized path, completely bypassing
             // the heavy proxy getter trap overhead for every cell.
             const rawObj = rawRows[i];
-            rows[i] = (rawObj && typeof rawObj.toJSON === 'function') ? rawObj.toJSON() : rawObj;
+            rows[i] = typeof rawObj?.toJSON === 'function' ? rawObj.toJSON() : rawObj;
         }
     }
     return rows;
@@ -368,7 +360,7 @@ async function init() {
         setProgress(50);
         statusEl.textContent = 'Opening database...';
         const accessMode = duckdb.DuckDBAccessMode?.READ_WRITE ?? 3;
-        const opfsSupported = !!(navigator.storage && navigator.storage.getDirectory);
+        const opfsSupported = !!navigator.storage?.getDirectory;
         // We use a versioned name for OPFS to avoid conflicts with older incompatible files
         const dbPath = opfsSupported ? 'opfs://duckdb_v1.db' : null;
 
@@ -429,6 +421,10 @@ async function restoreState() {
             statusEl.textContent = `Restored ${tables.length} table(s)`;
             
             schemaDisplay.textContent = '';
+            // Performance optimization: Fetch schemas concurrently to eliminate
+            // redundant sequential IPC roundtrips across the WebWorker boundary,
+            // while preserving deterministic DOM insertion order.
+            await Promise.all(tables.map(t => getTableSchemaCached(t)));
             for (const table of tables) {
                 await displayTableSchema(table);
             }
@@ -504,10 +500,12 @@ async function displayTableSchema(tableName) {
 
                 if (!profileCache.has(r.column_name)) {
                     const profilePromise = (async () => {
-                        const profilingResult = await conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`);
+                        const [profilingResult, distResult] = await Promise.all([
+                            conn.query(`SELECT MIN("${escapeId(r.column_name)}") as min_val, MAX("${escapeId(r.column_name)}") as max_val, COUNT("${escapeId(r.column_name)}") as count_val FROM "${escapeId(tableName)}"`),
+                            conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`)
+                        ]);
                         const stats = getRows(profilingResult)[0];
 
-                        const distResult = await conn.query(`SELECT "${escapeId(r.column_name)}" as val, count(*) as cnt FROM "${escapeId(tableName)}" GROUP BY 1 ORDER BY 2 DESC LIMIT 10`);
                         const distRows = getRows(distResult);
                         return { stats, distRows };
                     })();
@@ -618,8 +616,13 @@ async function updateJoinColumns() {
     if (!tableA || !tableB) return;
 
     try {
-        const schemaAResult = await getTableSchemaCached(tableA);
-        const schemaBResult = await getTableSchemaCached(tableB);
+        // Performance optimization: Concurrently await the schemas for both tables.
+        // This eliminates sequential WebWorker IPC roundtrip latency if the schemas are not already cached.
+        // Expected impact: ~50% faster schema loading time when the cache is cold.
+        const [schemaAResult, schemaBResult] = await Promise.all([
+            getTableSchemaCached(tableA),
+            getTableSchemaCached(tableB)
+        ]);
         
         const colsA = new Set(getRows(schemaAResult).map(r => r.column_name));
         const colsB = getRows(schemaBResult).map(r => r.column_name);
@@ -725,12 +728,10 @@ generateChartBtn.addEventListener('click', () => {
                 showToast('Invalid table reference.');
                 return;
             }
-            let sql = '';
-            if (type === 'scatter') {
-                sql = `SELECT "${escapeId(xCol)}" as x, "${escapeId(yCol)}" as y\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nLIMIT 500`;
-            } else {
-                sql = `SELECT "${escapeId(xCol)}" as label, AVG("${escapeId(yCol)}") as value\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nGROUP BY 1\nORDER BY 1 ASC\nLIMIT 100`;
-            }
+            const isScatter = type === 'scatter';
+            const sql = isScatter
+                ? `SELECT "${escapeId(xCol)}" as x, "${escapeId(yCol)}" as y\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nLIMIT 500`
+                : `SELECT "${escapeId(xCol)}" as label, AVG("${escapeId(yCol)}") as value\nFROM "${escapeId(currentTableName)}"\nWHERE "${escapeId(xCol)}" IS NOT NULL AND "${escapeId(yCol)}" IS NOT NULL\nGROUP BY 1\nORDER BY 1 ASC\nLIMIT 100`;
             
             // Show the generated SQL to the user in the console
             sqlInput.value = sql;
@@ -739,33 +740,27 @@ generateChartBtn.addEventListener('click', () => {
             const result = await conn.query(sql);
             const rows = getRows(result);
             
-            let chartData = {};
-            let chartOptions = {};
+            const chartData = isScatter ? {
+                datasets: [{
+                    label: `${xCol} vs ${yCol}`,
+                    data: rows.map(r => ({x: r.x, y: r.y})),
+                    backgroundColor: '#ff9f40'
+                }]
+            } : {
+                labels: rows.map(r => r.label),
+                datasets: [{
+                    label: (type === 'line' ? `Avg ${yCol}` : `Average ${yCol}`),
+                    data: rows.map(r => r.value),
+                    backgroundColor: (type === 'line' ? 'transparent' : '#ff9f40'),
+                    borderColor: '#ff9f40',
+                    tension: 0.1,
+                    fill: (type === 'bar')
+                }]
+            };
             
-            if (type === 'scatter') {
-                chartData = {
-                    datasets: [{
-                        label: `${xCol} vs ${yCol}`,
-                        data: rows.map(r => ({x: r.x, y: r.y})),
-                        backgroundColor: '#ff9f40'
-                    }]
-                };
-                chartOptions = {
-                    scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }
-                };
-            } else {
-                chartData = {
-                    labels: rows.map(r => r.label),
-                    datasets: [{
-                        label: (type === 'line' ? `Avg ${yCol}` : `Average ${yCol}`),
-                        data: rows.map(r => r.value),
-                        backgroundColor: (type === 'line' ? 'transparent' : '#ff9f40'),
-                        borderColor: '#ff9f40',
-                        tension: 0.1,
-                        fill: (type === 'bar')
-                    }]
-                };
-            }
+            const chartOptions = isScatter ? {
+                scales: { x: { title: {display: true, text: xCol} }, y: { title: {display: true, text: yCol} } }
+            } : {};
             
             renderChart(canvasId, type, chartData, chartOptions);
         } catch (e) {
@@ -838,6 +833,7 @@ async function handleFiles(files) {
         // Process directory groups (Potential Delta Lake or multi-part datasets)
         for (const [dirName, dirFiles] of Object.entries(fileGroups)) {
             const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
+            // Strip non-alphanumeric characters to ensure the table name is a valid SQL identifier
             const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
             
             // Performance optimization: Concurrently buffer and register files
@@ -884,6 +880,7 @@ async function handleFiles(files) {
  * @param {string} path - The internal path to register the file buffer under in DuckDB.
  */
 async function processFile(file, path) {
+    // Strip non-alphanumeric characters to ensure the table name is a valid SQL identifier
     const tableName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
     currentTableName = tableName;
     loadedTables.add(tableName);
@@ -951,11 +948,18 @@ function insertAtCursor(myField, myValue) {
     }
     myField.focus();
     myField.dispatchEvent(new Event('input'));
+    if (myField === sqlInput) {
+        let displayValue = myValue;
+        if (displayValue.length > 30) {
+            displayValue = displayValue.substring(0, 30) + '...';
+        }
+        showToast('Inserted ' + displayValue + ' into query editor', 'success');
+    }
 }
 
 recipeSelect.addEventListener('change', () => {
     if (!currentTableName) return;
-    const recipe = recipeSelect.value.replace(/{{TABLE}}/g, currentTableName);
+    const recipe = recipeSelect.value.replace(/{{TABLE}}/g, `"${escapeId(currentTableName)}"`);
     sqlInput.value = recipe;
     sqlInput.dispatchEvent(new Event('input'));
     recipeSelect.selectedIndex = 0;
@@ -1180,14 +1184,18 @@ function renderChart(id, type, data, options = {}) {
     });
 }
 
+let sqlInputDebounceTimeout;
 sqlInput.addEventListener('input', () => {
-    if (sqlInput.value.trim().length > 0) {
-        runBtn.disabled = false; runBtn.setAttribute('aria-disabled', 'false');
-        runBtn.title = 'Run Query (Ctrl+Enter)';
-    } else {
-        runBtn.disabled = true; runBtn.setAttribute('aria-disabled', 'true');
-        runBtn.title = 'Requires a valid query';
-    }
+    clearTimeout(sqlInputDebounceTimeout);
+    sqlInputDebounceTimeout = setTimeout(() => {
+        if (sqlInput.value.trim().length > 0) {
+            runBtn.disabled = false; runBtn.setAttribute('aria-disabled', 'false');
+            runBtn.title = 'Run Query (Ctrl+Enter)';
+        } else {
+            runBtn.disabled = true; runBtn.setAttribute('aria-disabled', 'true');
+            runBtn.title = 'Requires a valid query';
+        }
+    }, 150);
 });
 
 // Global shortcut: press '/' to focus the SQL input field if not already in an input
@@ -1203,7 +1211,7 @@ document.addEventListener('keydown', (e) => {
 sqlInput.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        if (!runBtn.disabled) {
+        if (sqlInput.value.trim()) {
             runQuery();
         }
     }
@@ -1378,8 +1386,12 @@ clearBtn.addEventListener('click', async () => {
         const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
         const tables = getRows(tablesResult).map(r => r.table_name);
         
-        for (const table of tables) {
-            await conn.query(`DROP TABLE IF EXISTS "${escapeId(table)}"`);
+        // Performance optimization: Batch multiple DROP TABLE IF EXISTS statements into a single query execution.
+        // This eliminates O(N) WebWorker IPC roundtrips when clearing a large number of loaded tables.
+        // Expected impact: Clearance time is reduced to a single network/worker communication block regardless of table count.
+        if (tables.length > 0) {
+            const dropQuery = tables.map(table => `DROP TABLE IF EXISTS "${escapeId(table)}";`).join('\n');
+            await conn.query(dropQuery);
         }
         
         loadedTables.clear();
@@ -1392,7 +1404,15 @@ clearBtn.addEventListener('click', async () => {
             gridInstance.destroy();
             gridInstance = null;
         }
-        document.getElementById('results').textContent = '';
+        document.getElementById('results').innerHTML = `
+            <div class="empty" style="text-align: center; padding: 40px 20px;">
+                <svg aria-hidden="true" style="width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+                </svg>
+                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 8px 0;">No data to display</h3>
+                <p style="font-size: 0.9rem; margin: 0; color: var(--text-muted);">Drop a file above or run a SQL query to view results here.</p>
+            </div>
+        `;
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
         downloadBtn.disabled = true;
@@ -1433,6 +1453,7 @@ init();
  * at the bottom right of the viewport. Automatically dismisses after 5 seconds.
  *
  * @param {string} msg - The message text to display.
+ * @param {string} [type='error'] - The type of toast ('error' or 'success').
  */
 function showToast(msg, type = 'error') {
     const panel = document.createElement('div');

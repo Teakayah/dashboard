@@ -47,3 +47,7 @@ Assertion: When encountering untestable line coverage gaps caused by unreachable
 Coverage Gap: Loose assertions (`assert_any_call`) on lambda callbacks (e.g., console/error events) allow unexpected side-effects to go undetected.
 Learning: Using `assert_called_once_with` requires explicitly clearing the mock state between sequential invocations using `mock.reset_mock()` to accurately verify isolated behaviors in shared mocks.
 Assertion: Strengthened lambda assertions using `assert_called_once_with` and isolated them via `reset_mock()`.
+## YYYY-MM-DD - [Testing Keyboard Shortcuts]
+Coverage Gap: The keyboard shortcuts (`Ctrl+Enter` and `/`) in the dropzone application lacked test coverage.
+Learning: Testing modifier keyboard shortcuts and global keyboard events requires using specific Playwright methods like `locator.press('Control+Enter')` and `page.keyboard.press('/')` instead of generic input events.
+Assertion: Use Playwright's `press()` method directly on locators or the page keyboard object to simulate specific key combinations, and use `document.activeElement` evaluations to verify focus state changes.

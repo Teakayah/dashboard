@@ -12,9 +12,11 @@ Failure thresholds:
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
+import re
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, Route
 
 from helpers import BASE
 
@@ -41,6 +43,19 @@ PENDING_RULES = {
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
+def _strip_csp(page: Page) -> None:
+    """Intercept HTML requests and remove Content-Security-Policy to allow axe-core injection."""
+    def handle_route(route):
+        response = route.fetch()
+        body = response.text()
+        body = re.sub(r'<meta http-equiv="Content-Security-Policy".*?>', '', body, flags=re.IGNORECASE)
+        headers = response.headers
+        if 'content-security-policy' in headers:
+            del headers['content-security-policy']
+        route.fulfill(response=response, body=body, headers=headers)
+    page.route('**/*.html', handle_route)
+    page.route('**/', handle_route)
 
 def _inject_axe(page: Page) -> None:
     """Inject axe-core from CDN; skip test if CDN is unreachable."""
