@@ -69,3 +69,7 @@
 ## 2026-09-09 - Testing Asynchronous UI Assertions
 **Learning:** Using synchronous assertions like `toast.wait_for(state="visible", timeout=3000)` combined with `assert ... in toast.inner_text().lower()` is flaky for dynamic DOM elements and can timeout prematurely.
 **Action:** Always use Playwright's native auto-retrying assertions like `expect(locator).to_be_visible(timeout=...)` and `expect(locator).to_contain_text(...)` to ensure tests remain robust.
+
+## YYYY-MM-DD - Fix Flaky Timeout for Dynamic Visualization Rendering
+**Learning:** Hardcoded, short timeouts (like 5000ms) for checking dynamic canvas/map rendering height in Playwright tests lead to flakiness, particularly when elements take longer to initialize or resize due to system load.
+**Action:** Always use generous timeouts (e.g., 15000ms) with `page.wait_for_function` when awaiting the final visual state (like height dimensions) of heavy visualization components such as Chart.js canvases or Leaflet maps.

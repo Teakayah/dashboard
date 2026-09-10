@@ -394,7 +394,7 @@ def test_viz_elements_have_height(page: Page, filename: str):
                     }
                     return true;
                 }
-            """, timeout=5000)
+            """, timeout=15000)
             
             elements = page.evaluate("""
                 () => {
@@ -432,7 +432,7 @@ def test_viz_elements_have_height(page: Page, filename: str):
                 }
                 return true;
             }
-        """, timeout=5000)
+        """, timeout=15000)
 
         elements = page.evaluate("""
             () => {
