@@ -646,12 +646,16 @@ async function updateJoinColumns() {
  */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
-    recipeSelect.disabled = !hasData;
-    recipeSelect.title = hasData ? '' : 'Requires loaded data';
-    exportDbBtn.disabled = !hasData;
-    exportDbBtn.title = hasData ? '' : 'Requires loaded data';
-    clearBtn.disabled = !hasData;
-    clearBtn.title = hasData ? '' : 'Requires loaded data';
+
+    const setBtnState = (btn, enabled, disabledTitle, enabledTitle = '') => {
+        btn.disabled = !enabled;
+        btn.setAttribute('aria-disabled', (!enabled).toString());
+        btn.title = enabled ? enabledTitle : disabledTitle;
+    };
+
+    setBtnState(recipeSelect, hasData, 'Requires loaded data');
+    setBtnState(exportDbBtn, hasData, 'Requires loaded data');
+    setBtnState(clearBtn, hasData, 'Requires loaded data');
 }
 
 /**
@@ -1237,8 +1241,10 @@ async function runQuery() {
         lastResult = getRows(result);
         renderResults(lastResult);
         downloadBtn.disabled = false;
+        downloadBtn.setAttribute('aria-disabled', 'false');
         downloadBtn.title = '';
         copyJsonBtn.disabled = false;
+        copyJsonBtn.setAttribute('aria-disabled', 'false');
         copyJsonBtn.title = '';
         statusEl.textContent = `Query executed in ${duration}ms`;
         addToHistory(sql);
@@ -1416,8 +1422,10 @@ clearBtn.addEventListener('click', async () => {
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
         downloadBtn.disabled = true;
+        downloadBtn.setAttribute('aria-disabled', 'true');
         downloadBtn.title = 'Requires query results';
         copyJsonBtn.disabled = true;
+        copyJsonBtn.setAttribute('aria-disabled', 'true');
         copyJsonBtn.title = 'Requires query results';
         joinAssistant.style.display = 'none';
         updateChartBuilderUI();

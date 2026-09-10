@@ -69,3 +69,7 @@
 ## YYYY-MM-DD - Explicit Empty States for Dynamic Result Containers
 **Learning:** Container blocks for dynamic data results (like grids or tables) should never be left completely blank when empty or cleared, as this creates a confusing, broken-looking UI.
 **Action:** Always render an explicit empty state in the HTML initially and explicitly restore it via JavaScript when data is cleared to guide the user on next steps.
+
+## YYYY-MM-DD - Explicit aria-disabled for dynamically disabled elements
+**Learning:** While the native `disabled` attribute implies an inaccessible state to assistive technologies, custom UI behaviors and asynchronous workflows occasionally desynchronize the announced state from the visual state when elements are rapidly enabled/disabled via JavaScript.
+**Action:** When dynamically toggling the `disabled` property of HTML elements via JavaScript in vanilla frontends, explicitly update the `aria-disabled` attribute (e.g., `btn.setAttribute('aria-disabled', 'true'/'false')`) alongside it to ensure consistent, robust state feedback for screen readers.
