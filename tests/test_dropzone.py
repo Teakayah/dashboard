@@ -536,18 +536,6 @@ def test_query_recipes_populates_sql_input(dz: Page):
     expect(dz.locator('#run-query')).to_be_enabled()
 
 
-def test_run_query_keyboard_shortcut(dz: Page):
-    """Pressing Ctrl+Enter (or Meta+Enter) inside the SQL input should run the query."""
-    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
-    _wait_for_ready(dz)
-    _load_samples_and_wait(dz)
-
-    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 2')
-    dz.locator('#sql-input').press('Control+Enter')
-
-    expect(dz.locator('.gridjs-tbody tr')).to_have_count(2, timeout=READY_TIMEOUT)
-
-
 def test_focus_sql_input_shortcut(dz: Page):
     """Pressing '/' outside of an input should focus the SQL input."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)

@@ -51,3 +51,7 @@ Assertion: Strengthened lambda assertions using `assert_called_once_with` and is
 Coverage Gap: The keyboard shortcuts (`Ctrl+Enter` and `/`) in the dropzone application lacked test coverage.
 Learning: Testing modifier keyboard shortcuts and global keyboard events requires using specific Playwright methods like `locator.press('Control+Enter')` and `page.keyboard.press('/')` instead of generic input events.
 Assertion: Use Playwright's `press()` method directly on locators or the page keyboard object to simulate specific key combinations, and use `document.activeElement` evaluations to verify focus state changes.
+## YYYY-MM-DD - Identically Named Tests Shadow Execution
+Coverage Gap: An identically named test function (`test_run_query_keyboard_shortcut`) silently shadowed an earlier test in the same file (`tests/test_dropzone.py`).
+Learning: Identically named test functions shadow one another in Python, creating a false sense of coverage since the first definition is never executed. It also triggers `ruff` F811 redefinition errors.
+Assertion: When writing or refactoring tests, ensure each test function name is unique. Deleting redundant, shadowed test blocks is a safe codebase hygiene improvement.
