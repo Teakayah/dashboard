@@ -86,3 +86,6 @@
 ## 2026-09-09 - [Optimize Concurrent Fetching with Deterministic DOM Order]
 **Learning:** When using `Promise.all()` to parallelize independent database operations (like fetching table schemas) and improve performance, directly mapping these into UI-updating promises can introduce race conditions, resulting in non-deterministic DOM insertion order based on which promise resolves first.
 **Action:** Separate data fetching from UI rendering. Pre-fetch the necessary data concurrently using `Promise.all()`, and then use a sequential loop (e.g., `for...of`) to build and append the UI elements. This preserves deterministic visual order while still eliminating redundant sequential IPC latency.
+## YYYY-MM-DD - [Batching DuckDB operations for sample data loading]
+**Learning:** Sequentially registering files and executing `CREATE TABLE` queries within a loop when loading sample data creates unnecessary O(N) WebWorker IPC roundtrips, slowing down the loading process.
+**Action:** When loading multiple sample data files into DuckDB, use `Promise.all` to register the files concurrently, and batch the multiple `CREATE TABLE` statements into a single newline-separated query to minimize IPC roundtrip latency.
