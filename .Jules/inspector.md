@@ -69,3 +69,7 @@
 ## 2026-09-09 - Testing Asynchronous UI Assertions
 **Learning:** Using synchronous assertions like `toast.wait_for(state="visible", timeout=3000)` combined with `assert ... in toast.inner_text().lower()` is flaky for dynamic DOM elements and can timeout prematurely.
 **Action:** Always use Playwright's native auto-retrying assertions like `expect(locator).to_be_visible(timeout=...)` and `expect(locator).to_contain_text(...)` to ensure tests remain robust.
+
+## 2026-09-12 - Flaky Mobile Layout Tests
+**Learning:** Layout calculations on mobile viewports (e.g., `document.body.scrollWidth`) can return incorrect values or timeout if the page has not fully finished loading its asynchronous rendering, even if `domcontentloaded` has fired.
+**Action:** Always use `_wait_for_networkidle(page)` after `page.goto()` before asserting on layout metrics like scroll widths.

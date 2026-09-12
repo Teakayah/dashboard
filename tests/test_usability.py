@@ -168,6 +168,7 @@ def test_analysis_page_no_js_errors(page: Page, filename: str):
 def test_analysis_page_no_horizontal_scroll_mobile(page: Page, filename: str):
     page.set_viewport_size({'width': 375, 'height': 812})
     page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
+    _wait_for_networkidle(page)
     scroll_width = page.evaluate('document.body.scrollWidth')
     viewport_width = page.evaluate('window.innerWidth')
     assert scroll_width <= viewport_width + 2, (
