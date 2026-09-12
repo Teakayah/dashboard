@@ -1326,11 +1326,20 @@ copyJsonBtn.addEventListener('click', () => {
 
 loadSamplesBtn.addEventListener('click', async () => {
     await withLoading('Sample Loading Error', async () => {
-        for (const [name, content] of Object.entries(SAMPLE_DATA)) {
+        // Performance optimization: Concurrently register file contents and batch CREATE TABLE queries
+        // into a single execution to minimize IPC roundtrips across the WebWorker boundary.
+        await Promise.all(Object.entries(SAMPLE_DATA).map(([name, content]) => db.registerFileText(name, content)));
+
+        const createQueries = Object.keys(SAMPLE_DATA).map(name => {
             const tableName = name.replace('.csv', '');
-            await db.registerFileText(name, content);
             const escapedName = name.replace(/'/g, "''");
-            await conn.query(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
+            return `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}');`;
+        }).join('\n');
+
+        await conn.query(createQueries);
+
+        for (const name of Object.keys(SAMPLE_DATA)) {
+            const tableName = name.replace('.csv', '');
             tableSchemaCache.delete(tableName);
             loadedTables.add(tableName);
             currentTableName = tableName;
