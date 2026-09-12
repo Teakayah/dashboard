@@ -382,9 +382,34 @@ def build_html(analyses: list[dict]) -> str:
       background: #f5f5f2;
       border-bottom: 1px solid #e8e8e4;
     }}
-    .search-bar input {{
+    .input-wrapper {{
+      position: relative;
       width: 100%;
       max-width: 480px;
+    }}
+    .shortcut-hint {{
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #6b7280;
+      font-size: 0.75rem;
+      transition: opacity 0.2s;
+    }}
+    .shortcut-hint kbd {{
+      background: #f5f5f2;
+      padding: 0.1rem 0.3rem;
+      border-radius: 0.25rem;
+      border: 1px solid #d8d8d4;
+      font-family: inherit;
+    }}
+    .input-wrapper:focus-within .shortcut-hint,
+    .search-bar input:not(:placeholder-shown) + .shortcut-hint {{
+      opacity: 0;
+    }}
+    .search-bar input {{
+      width: 100%;
       padding: 9px 14px;
       border-radius: 8px;
       border: 1px solid #d8d8d4;
@@ -547,7 +572,10 @@ def build_html(analyses: list[dict]) -> str:
 </header>
 
 <search><div class="search-bar">
-  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
+  <div class="input-wrapper">
+    <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses (Press / to focus)">
+    <div class="shortcut-hint" aria-hidden="true"><kbd>/</kbd> to focus</div>
+  </div>
 </div></search>
 
 <main>
@@ -556,7 +584,7 @@ def build_html(analyses: list[dict]) -> str:
 {cards_html}
   </div>
   {empty_html}
-  <div id="no-results" class="empty hidden">No analyses found matching "<strong></strong>".</div>
+  <div id="no-results" class="empty hidden" aria-live="polite">No analyses found matching "<strong></strong>".</div>
 </main>
 
 <footer>
@@ -568,6 +596,13 @@ def build_html(analyses: list[dict]) -> str:
 <script>
   const input = document.getElementById('search');
   const cards = document.querySelectorAll('.card');
+
+  document.addEventListener('keydown', (e) => {{
+    if (e.key === '/' && document.activeElement !== input) {{
+      e.preventDefault();
+      input.focus();
+    }}
+  }});
   const noResults = document.getElementById('no-results');
   const noResultsQuery = noResults.querySelector('strong');
 
