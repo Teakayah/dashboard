@@ -1326,11 +1326,27 @@ copyJsonBtn.addEventListener('click', () => {
 
 loadSamplesBtn.addEventListener('click', async () => {
     await withLoading('Sample Loading Error', async () => {
-        for (const [name, content] of Object.entries(SAMPLE_DATA)) {
+        // Performance optimization: Concurrently register sample files to reduce IPC overhead.
+        await Promise.all(Object.entries(SAMPLE_DATA).map(([name, content]) => db.registerFileText(name, content)));
+
+        const queries = [];
+        const tableNames = [];
+        for (const name of Object.keys(SAMPLE_DATA)) {
             const tableName = name.replace('.csv', '');
-            await db.registerFileText(name, content);
             const escapedName = name.replace(/'/g, "''");
-            await conn.query(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
+            queries.push(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}');`);
+            tableNames.push(tableName);
+        }
+
+        // Performance optimization: Concurrently execute multiple CREATE TABLE queries
+        // using Promise.all to pipeline IPC messages to the DuckDB-Wasm worker,
+        // since conn.query does not support multiple statements in a single string.
+        if (queries.length > 0) {
+            await Promise.all(queries.map(q => conn.query(q)));
+        }
+
+        // Update application state only after the database queries execute successfully
+        for (const tableName of tableNames) {
             tableSchemaCache.delete(tableName);
             loadedTables.add(tableName);
             currentTableName = tableName;

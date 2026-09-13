@@ -86,3 +86,11 @@
 ## 2026-09-09 - [Optimize Concurrent Fetching with Deterministic DOM Order]
 **Learning:** When using `Promise.all()` to parallelize independent database operations (like fetching table schemas) and improve performance, directly mapping these into UI-updating promises can introduce race conditions, resulting in non-deterministic DOM insertion order based on which promise resolves first.
 **Action:** Separate data fetching from UI rendering. Pre-fetch the necessary data concurrently using `Promise.all()`, and then use a sequential loop (e.g., `for...of`) to build and append the UI elements. This preserves deterministic visual order while still eliminating redundant sequential IPC latency.
+
+## 2024-11-20 - Batch CREATE TABLE queries to reduce DuckDB-Wasm IPC overhead
+**Learning:** Sequential `conn.query()` calls for multiple `CREATE TABLE` operations in DuckDB-Wasm incur high IPC overhead across the WebWorker boundary.
+**Action:** When creating multiple tables consecutively (e.g. loading samples), first register files concurrently via `Promise.all()`, then combine the `CREATE TABLE` statements into a single string and execute them in one `conn.query()` roundtrip.
+
+## 2024-11-20 - Pipeline DuckDB-Wasm IPC Queries
+**Learning:** DuckDB-Wasm's `conn.query` uses prepared statements and does not support executing multiple SQL statements passed as a single concatenated string.
+**Action:** When you need to execute multiple independent queries concurrently (e.g. creating sample tables) and want to avoid sequential IPC roundtrips, pipeline the requests by using `Promise.all()` over multiple `conn.query(q)` calls rather than concatenating them into a single string.
