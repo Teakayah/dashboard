@@ -51,3 +51,8 @@ Assertion: Strengthened lambda assertions using `assert_called_once_with` and is
 Coverage Gap: The keyboard shortcuts (`Ctrl+Enter` and `/`) in the dropzone application lacked test coverage.
 Learning: Testing modifier keyboard shortcuts and global keyboard events requires using specific Playwright methods like `locator.press('Control+Enter')` and `page.keyboard.press('/')` instead of generic input events.
 Assertion: Use Playwright's `press()` method directly on locators or the page keyboard object to simulate specific key combinations, and use `document.activeElement` evaluations to verify focus state changes.
+
+## 2026-09-14 - Uncover Obsolete Skipped Tests
+Coverage Gap: The script entrypoint `__main__` block in `deployment/rebuild_analyses.py` lacked test coverage because its test (`test_script_entrypoint`) was skipped due to an outdated assumption about missing fixtures.
+Learning: Even if a test was skipped historically due to data requirements, subsequent refactoring (like mocking the inner `main()` logic) can render the skip obsolete. Always verify if the skipped rationale still applies to the current test implementation.
+Assertion: By verifying the test logic relies on a mock (`with patch("deployment.rebuild_analyses.main", return_value=0):`), it is safe to remove `pytest.skip` and explicitly assert that `sys.exit` is called correctly.
