@@ -547,7 +547,7 @@ def build_html(analyses: list[dict]) -> str:
 </header>
 
 <search><div class="search-bar">
-  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses">
+  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses (Press / to focus)">
 </div></search>
 
 <main>
@@ -556,7 +556,7 @@ def build_html(analyses: list[dict]) -> str:
 {cards_html}
   </div>
   {empty_html}
-  <div id="no-results" class="empty hidden">No analyses found matching "<strong></strong>".</div>
+  <div id="no-results" class="empty hidden" aria-live="polite">No analyses found matching "<strong></strong>".</div>
 </main>
 
 <footer>
@@ -570,6 +570,13 @@ def build_html(analyses: list[dict]) -> str:
   const cards = document.querySelectorAll('.card');
   const noResults = document.getElementById('no-results');
   const noResultsQuery = noResults.querySelector('strong');
+
+  document.addEventListener('keydown', (e) => {{
+    if (e.key === '/' && document.activeElement !== input) {{
+      e.preventDefault();
+      input.focus();
+    }}
+  }});
 
   function debounce(func, wait) {{
     let timeout;
