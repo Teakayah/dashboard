@@ -1326,11 +1326,18 @@ copyJsonBtn.addEventListener('click', () => {
 
 loadSamplesBtn.addEventListener('click', async () => {
     await withLoading('Sample Loading Error', async () => {
-        for (const [name, content] of Object.entries(SAMPLE_DATA)) {
+        // Performance optimization: Parallelize file registration and query execution for sample datasets
+        // to eliminate sequential WebWorker IPC latency.
+        const sampleTasks = Object.entries(SAMPLE_DATA).map(async ([name, content]) => {
             const tableName = name.replace('.csv', '');
             await db.registerFileText(name, content);
             const escapedName = name.replace(/'/g, "''");
             await conn.query(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
+            return tableName;
+        });
+
+        const tableNames = await Promise.all(sampleTasks);
+        for (const tableName of tableNames) {
             tableSchemaCache.delete(tableName);
             loadedTables.add(tableName);
             currentTableName = tableName;
@@ -1344,6 +1351,10 @@ loadSamplesBtn.addEventListener('click', async () => {
         sqlInput.dispatchEvent(new Event('input'));
 
         schemaDisplay.textContent = '';
+
+        // Performance optimization: Fetch schemas concurrently to reduce total UI render time,
+        // then render sequentially to preserve predictable DOM order.
+        await Promise.all(Array.from(loadedTables).map(t => getTableSchemaCached(t)));
         for (const table of loadedTables) {
             await displayTableSchema(table);
         }
