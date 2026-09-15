@@ -1362,6 +1362,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         sqlInput.dispatchEvent(new Event('input'));
 
         schemaDisplay.textContent = '';
+        await Promise.all(Array.from(loadedTables).map(t => getTableSchemaCached(t)));
         for (const table of loadedTables) {
             await displayTableSchema(table);
         }
