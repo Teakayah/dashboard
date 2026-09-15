@@ -649,7 +649,6 @@ function updateConsoleActionsUI() {
 
     const setBtnState = (btn, enabled, disabledTitle, enabledTitle = '') => {
         btn.disabled = !enabled;
-        btn.setAttribute('aria-disabled', (!enabled).toString());
         btn.title = enabled ? enabledTitle : disabledTitle;
     };
 
@@ -1193,10 +1192,10 @@ sqlInput.addEventListener('input', () => {
     clearTimeout(sqlInputDebounceTimeout);
     sqlInputDebounceTimeout = setTimeout(() => {
         if (sqlInput.value.trim().length > 0) {
-            runBtn.disabled = false; runBtn.setAttribute('aria-disabled', 'false');
+            runBtn.disabled = false;
             runBtn.title = 'Run Query (Ctrl+Enter)';
         } else {
-            runBtn.disabled = true; runBtn.setAttribute('aria-disabled', 'true');
+            runBtn.disabled = true;
             runBtn.title = 'Requires a valid query';
         }
     }, 150);
@@ -1241,10 +1240,8 @@ async function runQuery() {
         lastResult = getRows(result);
         renderResults(lastResult);
         downloadBtn.disabled = false;
-        downloadBtn.setAttribute('aria-disabled', 'false');
         downloadBtn.title = '';
         copyJsonBtn.disabled = false;
-        copyJsonBtn.setAttribute('aria-disabled', 'false');
         copyJsonBtn.title = '';
         statusEl.textContent = `Query executed in ${duration}ms`;
         addToHistory(sql);
@@ -1332,21 +1329,26 @@ copyJsonBtn.addEventListener('click', () => {
 
 loadSamplesBtn.addEventListener('click', async () => {
     await withLoading('Sample Loading Error', async () => {
-        const entries = Object.entries(SAMPLE_DATA);
+        // Performance optimization: Concurrently register sample files to reduce IPC overhead.
+        await Promise.all(Object.entries(SAMPLE_DATA).map(([name, content]) => db.registerFileText(name, content)));
 
-        // Register files concurrently, then batch table creation into one worker call.
-        await Promise.all(entries.map(([name, content]) => db.registerFileText(name, content)));
-
-        const createQueries = entries.map(([name]) => {
+        const queries = [];
+        const tableNames = [];
+        for (const name of Object.keys(SAMPLE_DATA)) {
             const tableName = name.replace('.csv', '');
             const escapedName = name.replace(/'/g, "''");
-            return `CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}');`;
-        }).join('\n');
+            queries.push(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}');`);
+            tableNames.push(tableName);
+        }
 
-        await conn.query(createQueries);
+        // Performance optimization: Concurrently execute multiple CREATE TABLE queries
+        // using Promise.all to pipeline IPC messages to the DuckDB-Wasm worker,
+        // since conn.query does not support multiple statements in a single string.
+        if (queries.length > 0) {
+            await Promise.all(queries.map(q => conn.query(q)));
+        }
 
-        for (const [name] of entries) {
-            const tableName = name.replace('.csv', '');
+        for (const tableName of tableNames) {
             tableSchemaCache.delete(tableName);
             loadedTables.add(tableName);
             currentTableName = tableName;
@@ -1432,10 +1434,8 @@ clearBtn.addEventListener('click', async () => {
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
         downloadBtn.disabled = true;
-        downloadBtn.setAttribute('aria-disabled', 'true');
         downloadBtn.title = 'Requires query results';
         copyJsonBtn.disabled = true;
-        copyJsonBtn.setAttribute('aria-disabled', 'true');
         copyJsonBtn.title = 'Requires query results';
         joinAssistant.style.display = 'none';
         updateChartBuilderUI();
