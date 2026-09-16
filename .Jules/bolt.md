@@ -86,3 +86,9 @@
 ## 2026-09-09 - [Optimize Concurrent Fetching with Deterministic DOM Order]
 **Learning:** When using `Promise.all()` to parallelize independent database operations (like fetching table schemas) and improve performance, directly mapping these into UI-updating promises can introduce race conditions, resulting in non-deterministic DOM insertion order based on which promise resolves first.
 **Action:** Separate data fetching from UI rendering. Pre-fetch the necessary data concurrently using `Promise.all()`, and then use a sequential loop (e.g., `for...of`) to build and append the UI elements. This preserves deterministic visual order while still eliminating redundant sequential IPC latency.
+## 2026-10-05 - [Optimize Sample Data Instantiation in DuckDB]
+**Learning:** Instantiating multiple sample data tables sequentially using a standard `for...of` loop creates an O(N) execution bottleneck, as it forces each asynchronous DuckDB operation to wait for the previous one to finish rendering.
+**Action:** Parallelize database operations for generating sample data by pushing the promises into an array and using `await Promise.all()` instead of resolving them sequentially to significantly minimize latency.
+## 2026-10-05 - [Optimize File Loading in DuckDB]
+**Learning:** Awaiting `processFile` inside a `for...of` loop sequentially evaluates asynchronous promises one by one, creating an O(N) execution bottleneck during multi-file dropping instances.
+**Action:** Parallelize database operations for generating table instances from files by pushing the promises into an array and using `await Promise.all()` instead of resolving them sequentially to significantly minimize latency.
