@@ -930,6 +930,8 @@ async function onTableLoaded(tableName) {
 /**
  * Inserts text at the current cursor position within an input or textarea element.
  * If text is selected, the selected text is replaced. Also triggers an 'input' event.
+ * Note: This triggers synthetic events that may cause recursive UI updates if
+ * listeners are not properly debounced.
  *
  * @param {HTMLInputElement|HTMLTextAreaElement} myField - The target input field.
  * @param {string} myValue - The text to insert.
@@ -972,6 +974,9 @@ recipeSelect.addEventListener('change', () => {
  *  1. Time-series trends (if date + numeric columns exist)
  *  2. Highest correlation pairs (tests up to 10 pairs of numeric columns)
  *  3. Category distributions (if text + numeric columns exist)
+ *
+ * This function handles hidden background querying and dynamic UI injection
+ * of Chart.js canvases based on inferred data types.
  *
  * @param {string} tableName - The name of the DuckDB table to analyze
  */
