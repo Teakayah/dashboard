@@ -88,12 +88,13 @@ def main():
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    for _ in range(40):
+    for _ in range(1000):
         try:
             socket.create_connection(('localhost', PORT), timeout=0.5).close()
             break
         except OSError:
-            time.sleep(0.25)
+            # Performance optimization: Use shorter sleep to reduce blocking wait time for server readiness
+            time.sleep(0.01)
     else:
         server.terminate()
         sys.exit(f'HTTP server did not start on localhost:{PORT}')
