@@ -206,6 +206,9 @@ class TestFloodPageButtons:
     def test_slider_updates_regional_levels(self, page: Page):
         _load_page(page, FLOOD_URL)
 
+        # Ensure live data has populated before reading initial value
+        expect(page.locator("#hullDisplay")).not_to_have_text("0.00")
+
         # Get initial values
         low_hull = float(page.locator("#hullDisplay").inner_text())
 
