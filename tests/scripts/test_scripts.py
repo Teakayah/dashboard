@@ -94,6 +94,26 @@ def test_generate_icons(tmp_path):
         with Image.open(test_file) as img:
             assert img.size == (100, 100)
             assert img.mode == 'RGBA'
+            # Default color is #1d4ed8 which is (29, 78, 216)
+            assert img.getpixel((10, 10)) == (29, 78, 216, 255)
+            # Center should be white due to the bar chart drawn
+            assert img.getpixel((50, 50)) == (255, 255, 255, 255)
+
+def test_generate_icons_custom_color(tmp_path):
+    from PIL import Image
+    with patch('builtins.print'):
+        module = load_script_as_module('generate_icons.py', 'generate_icons')
+
+        test_file = tmp_path / "test_custom_color.png"
+        module.generate_icon(100, str(test_file), color="#ff0000")
+
+        assert test_file.exists()
+        with Image.open(test_file) as img:
+            assert img.size == (100, 100)
+            assert img.mode == 'RGBA'
+            # Custom background color #ff0000 -> (255, 0, 0, 255)
+            assert img.getpixel((10, 10)) == (255, 0, 0, 255)
+            # Center remains white
             assert img.getpixel((50, 50)) == (255, 255, 255, 255)
 
 def test_generate_icons_main(tmp_path, monkeypatch):
