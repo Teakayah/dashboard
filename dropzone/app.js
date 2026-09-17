@@ -1189,10 +1189,10 @@ sqlInput.addEventListener('input', () => {
     clearTimeout(sqlInputDebounceTimeout);
     sqlInputDebounceTimeout = setTimeout(() => {
         if (sqlInput.value.trim().length > 0) {
-            runBtn.disabled = false; runBtn.setAttribute('aria-disabled', 'false');
+            runBtn.disabled = false;
             runBtn.title = 'Run Query (Ctrl+Enter)';
         } else {
-            runBtn.disabled = true; runBtn.setAttribute('aria-disabled', 'true');
+            runBtn.disabled = true;
             runBtn.title = 'Requires a valid query';
         }
     }, 150);
