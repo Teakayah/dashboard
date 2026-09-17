@@ -45,7 +45,10 @@ def test_fetch_changed_since_success():
 
 def test_fetch_changed_since_error(capsys):
     with patch('urllib.request.urlopen') as mock_urlopen:
-        mock_urlopen.side_effect = Exception("API failure")
+        mock_response = MagicMock()
+        mock_response.read.side_effect = Exception("API failure")
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
 
         result = fetch_changed_since(date(2023, 1, 1))
 
