@@ -12,7 +12,8 @@ lfs_csv = ROOT / '14100287-eng' / '14100287.csv'
 
 def _clean(val: str) -> Optional[float]:
     v = val.strip()
-    if v in ('', '..', 'F', 'x', 'E', 'r', 'p'):
+    # Performance optimization: use set instead of tuple for faster O(1) membership testing
+    if v in {'', '..', 'F', 'x', 'E', 'r', 'p'}:
         return None
     try:
         return float(v)
