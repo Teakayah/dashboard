@@ -156,6 +156,13 @@ def test_load_last_checked_invalid_json(tmp_path):
         assert _load_last_checked() is None
 
 
+def test_load_last_checked_json_exception():
+    with patch('deployment.update_statcan_data.STATUS_FILE') as mock_status_file:
+        mock_status_file.exists.return_value = True
+        mock_status_file.read_text.side_effect = Exception('Test Exception')
+        assert _load_last_checked() is None
+
+
 def test_load_last_checked_missing_key(tmp_path):
     status_file = tmp_path / "status.json"
     status_file.write_text(json.dumps({'some_other_key': '2023-11-15'}))
