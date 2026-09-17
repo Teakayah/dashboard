@@ -126,6 +126,20 @@ RESPONSIVE_PRESETS = {
     },
 }
 
+# Matches and extracts previous responsive injection blocks to safely strip them.
+RESPONSIVE_STRIP_REGEX = re.compile(
+    r'''
+    \s*                                     # Match any leading whitespace
+    <!--\ responsive-inject(?:-v\d+)?\ -->  # Opening marker with optional version (e.g. -v5)
+    \s*<style>.*?</style>                   # Match the injected CSS block non-greedily
+    \s*<script>.*?</script>                 # Match the injected JavaScript block non-greedily
+    (?:                                     # Optional non-capturing group for the closing marker
+        \s*<!--\ /responsive-inject(?:-v\d+)?\ -->
+    )?
+    ''',
+    flags=re.DOTALL | re.VERBOSE,
+)
+
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.strip())
@@ -149,22 +163,8 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
     """
     preset = RESPONSIVE_PRESETS[preset_name]
 
-    # Matches and extracts previous responsive injection blocks to safely strip them.
-    strip_regex = re.compile(
-        r'''
-        \s*                                     # Match any leading whitespace
-        <!--\ responsive-inject(?:-v\d+)?\ -->  # Opening marker with optional version (e.g. -v5)
-        \s*<style>.*?</style>                   # Match the injected CSS block non-greedily
-        \s*<script>.*?</script>                 # Match the injected JavaScript block non-greedily
-        (?:                                     # Optional non-capturing group for the closing marker
-            \s*<!--\ /responsive-inject(?:-v\d+)?\ -->
-        )?
-        ''',
-        flags=re.DOTALL | re.VERBOSE,
-    )
-
     if preset_name == 'none':
-        new_content = strip_regex.sub('', content)
+        new_content = RESPONSIVE_STRIP_REGEX.sub('', content)
         if new_content != content:
             print(f'  Removed responsive enhancer from {filename}')
         return new_content
@@ -178,7 +178,7 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
         return content
 
     # Strip any older-version block, then inject the current preset.
-    new_content = strip_regex.sub('', content)
+    new_content = RESPONSIVE_STRIP_REGEX.sub('', content)
     final_content = re.sub(
         r'(<head[^>]*>)',
         r'\1\n' + snippet,
