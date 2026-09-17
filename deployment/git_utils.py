@@ -36,6 +36,15 @@ def get_git_log_batched(files: list[str], format_code: str) -> dict[str, str]:
 
     return dates
 
+def _get_relative_path(f: Path) -> str:
+    """Helper to consistently convert a Path to a relative string."""
+    if f.is_absolute():
+        try:
+            return str(f.relative_to(ROOT))
+        except ValueError:
+            return str(f.name)
+    return str(f)
+
 def get_git_dates_batched(files: list[Path]) -> dict[Path, str]:
     """Return 'Mon YYYY' from git log for multiple files in a single call; fall back to mtime."""
     if not files:
@@ -43,15 +52,7 @@ def get_git_dates_batched(files: list[Path]) -> dict[Path, str]:
     dates = {}
 
     # Convert Path objects to string paths relative to ROOT
-    rel_paths = []
-    for f in files:
-        if f.is_absolute():
-            try:
-                rel_paths.append(str(f.relative_to(ROOT)))
-            except ValueError:
-                rel_paths.append(str(f.name))
-        else:
-            rel_paths.append(str(f))
+    rel_paths = [_get_relative_path(f) for f in files]
 
     raw_dates = get_git_log_batched(rel_paths, '%ci')
 
