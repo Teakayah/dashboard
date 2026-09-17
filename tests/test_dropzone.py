@@ -536,6 +536,27 @@ def test_query_recipes_populates_sql_input(dz: Page):
     expect(dz.locator('#run-query')).to_be_enabled()
 
 
+def test_query_recipe_summarize_executes(dz: Page):
+    """Selecting the SUMMARIZE recipe must populate the SQL editor and execute profiling columns."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    dz.select_option('#query-recipes', label="Dataset Summary & Profiling (SUMMARIZE)")
+
+    expect(dz.locator('#sql-input')).to_have_value(re.compile(r'SUMMARIZE "(?:employees|departments)"'))
+    expect(dz.locator('#run-query')).to_be_enabled()
+
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    expect(dz.locator('.gridjs-tbody tr')).not_to_have_count(0)
+    grid_text = dz.locator('#results').inner_text()
+    assert any(col in grid_text for col in ['column_name', 'min', 'max', 'count', 'approx_unique']), f"Expected profiling output in grid, got: {grid_text[:200]}"
+
+
+
 def test_focus_sql_input_shortcut(dz: Page):
     """Pressing '/' outside of an input should focus the SQL input."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
