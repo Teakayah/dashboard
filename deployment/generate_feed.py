@@ -47,9 +47,8 @@ def _extract_title(content: str, stem: str) -> str:
             .replace('&gt;', '>').replace('&#39;', "'"))
 
 
-def _extract_description(content: str, filename: str, descriptions: dict) -> str:
-    # 1. <meta name="description">
-    m = re.search(
+def _parse_meta_description(content: str) -> str | None:
+    if m := re.search(
         r'''
         <meta[^>]*                  # Match the opening <meta tag and any attributes before 'name'
         name=["\']description["\']  # Match the name attribute with either single or double quotes
@@ -57,13 +56,13 @@ def _extract_description(content: str, filename: str, descriptions: dict) -> str
         content=["\'](.*?)["\']     # Group 1: Non-greedily capture the actual description text
         ''',
         content, re.IGNORECASE | re.VERBOSE,
-    )
-    if m:
+    ):
         return m.group(1).strip()
+    return None
 
-    # 2. Subtitle element
-    # Extract inner content from elements with the 'subtitle' class.
-    m = re.search(
+
+def _parse_subtitle_description(content: str) -> str | None:
+    if m := re.search(
         r'''
         <([a-zA-Z0-9]+)                              # Group 1: Capture the HTML opening tag name (e.g., div, span, p)
         [^>]*class=["\'][^"\']*subtitle[^"\']*["\']  # Ensure the tag has a class attribute containing 'subtitle'
@@ -72,13 +71,18 @@ def _extract_description(content: str, filename: str, descriptions: dict) -> str
         </\1>                                        # Use \1 backreference to match the exact closing tag from Group 1
         ''',
         content, re.IGNORECASE | re.DOTALL | re.VERBOSE,
-    )
-    if m:
+    ):
         text = re.sub(r'<[^>]+>', '', m.group(2)).strip()
         text = html_lib.unescape(re.sub(r'\s+', ' ', text))
         return text[:120] + '…' if len(text) > 120 else text
+    return None
 
-    # 3. Pre-generated description from descriptions.json
+
+def _extract_description(content: str, filename: str, descriptions: dict) -> str:
+    if (meta := _parse_meta_description(content)) is not None:
+        return meta
+    if (subtitle := _parse_subtitle_description(content)) is not None:
+        return subtitle
     return descriptions.get(filename, '')
 
 
