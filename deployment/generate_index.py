@@ -5,6 +5,7 @@ Run locally or via GitHub Actions on every push.
 """
 
 import argparse
+import concurrent.futures
 import html
 import json
 import re
@@ -650,6 +651,31 @@ def inject_share_fix(content: str, filename: str) -> str:
     return new_content
 
 
+def _process_file(filepath, date_str, descriptions, responsive_preset):
+    try:
+        content = filepath.read_text(encoding='utf-8', errors='ignore')
+    except Exception:
+        # Fallback for file read errors if any
+        return _fallback(filepath, date_str)
+
+    # Extract meta
+    meta = extract_meta(filepath, content, descriptions=descriptions, git_date=date_str)
+
+    # Inject enhancements
+    new_content = inject_responsive(content, meta['filename'], responsive_preset)
+    new_content = strip_back_link(new_content, meta['filename'])
+    new_content = inject_favicon(new_content, meta['filename'])
+    new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
+    new_content = inject_share_fix(new_content, meta['filename'])
+    new_content = inject_contrast_fix(new_content, meta['filename'])
+    new_content = inject_csp(new_content, meta['filename'])
+
+    if new_content != content:
+        filepath.write_text(new_content, encoding='utf-8')
+
+    return meta
+
+
 def main(argv: Optional[list[str]] = None):
     args = parse_args(argv)
     descriptions = load_descriptions()
@@ -663,30 +689,31 @@ def main(argv: Optional[list[str]] = None):
     # Batch git date retrieval for all HTML files
     git_dates = get_git_dates_batched(html_files)
 
+    # Performance optimization: Use ThreadPoolExecutor to parallelize file I/O and processing without pickling issues
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {
+            executor.submit(
+                _process_file,
+                filepath,
+                git_dates.get(filepath, ""),
+                descriptions,
+                args.responsive_preset
+            ): filepath
+            for filepath in html_files
+        }
+
+        results_map = {}
+        for future in concurrent.futures.as_completed(futures):
+            filepath = futures[future]
+            try:
+                results_map[filepath] = future.result()
+            except Exception as e:
+                print(f"Error processing {filepath}: {e}")
+                results_map[filepath] = _fallback(filepath, git_dates.get(filepath, ""))
+
     for filepath in html_files:
-        date_str = git_dates.get(filepath, "")
-        try:
-            content = filepath.read_text(encoding='utf-8', errors='ignore')
-        except Exception:
-            # Fallback for file read errors if any
-            analyses.append(_fallback(filepath, date_str))
-            continue
-
-        # Extract meta
-        meta = extract_meta(filepath, content, descriptions=descriptions, git_date=date_str)
-        analyses.append(meta)
-
-        # Inject enhancements
-        new_content = inject_responsive(content, meta['filename'], args.responsive_preset)
-        new_content = strip_back_link(new_content, meta['filename'])
-        new_content = inject_favicon(new_content, meta['filename'])
-        new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
-        new_content = inject_share_fix(new_content, meta['filename'])
-        new_content = inject_contrast_fix(new_content, meta['filename'])
-        new_content = inject_csp(new_content, meta['filename'])
-
-        if new_content != content:
-            filepath.write_text(new_content, encoding='utf-8')
+        if filepath in results_map:
+            analyses.append(results_map[filepath])
 
     html = build_html(analyses)
     output = ROOT / 'index.html'
