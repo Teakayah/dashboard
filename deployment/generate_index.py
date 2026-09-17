@@ -650,8 +650,7 @@ def inject_share_fix(content: str, filename: str) -> str:
     return new_content
 
 
-def main(argv: Optional[list[str]] = None):
-    args = parse_args(argv)
+def main(args: argparse.Namespace):
     descriptions = load_descriptions()
     analyses = []
 
@@ -697,4 +696,4 @@ def main(argv: Optional[list[str]] = None):
 
 
 if __name__ == '__main__':  # pragma: no cover
-    main()
+    main(parse_args())

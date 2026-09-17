@@ -272,7 +272,7 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
 
     # Mock get_git_dates_batched to avoid subprocess calls during test
     with patch.object(module, 'get_git_dates_batched', return_value={analysis: 'May 2026'}):
-        module.main(['--responsive-preset', 'none'])
+        module.main(module.parse_args(['--responsive-preset', 'none']))
 
     content = analysis.read_text(encoding='utf-8')
     assert '<!-- responsive-inject-v7 -->' not in content
@@ -691,7 +691,7 @@ def test_main_handles_file_read_error(tmp_path, monkeypatch):
         return original_read_text(self, *args, **kwargs)
 
     with patch.object(Path, 'read_text', autospec=True, side_effect=mock_read_text):
-        module.main()
+        module.main(module.parse_args())
 
     index_file = tmp_path / 'index.html'
     assert index_file.exists()
@@ -732,7 +732,7 @@ def test_main_with_none_responsive_preset_removes_enhancer(tmp_path, monkeypatch
     monkeypatch.setattr(module, 'EXCLUDE', {'index.html'})
     monkeypatch.setattr(sys, 'argv', ['generate_index.py', '--responsive-preset', 'none'])
 
-    module.main()
+    module.main(module.parse_args())
 
     content = analysis.read_text(encoding='utf-8')
     assert '<!-- responsive-inject-v6 -->' not in content
