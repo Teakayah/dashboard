@@ -1,5 +1,7 @@
-from PIL import Image, ImageDraw
 import os
+
+from PIL import Image, ImageDraw
+
 
 def generate_icon(size, filename, color="#1d4ed8"):
     # Create a base image with the primary color background

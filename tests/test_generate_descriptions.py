@@ -1,10 +1,11 @@
-import pytest
-import runpy
-
 import importlib.util
 import os
+import runpy
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 
 def load_generate_descriptions_module():
     with patch.dict(os.environ, {'OLLAMA_URL': 'http://localhost:11434/api/generate', 'OLLAMA_MODEL': 'llama3'}):

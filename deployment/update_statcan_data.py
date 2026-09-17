@@ -18,7 +18,6 @@ import csv
 import json
 import sys
 import urllib.request
-from typing import Optional, Union
 import zipfile
 from datetime import date, datetime, timezone
 from io import BytesIO
@@ -26,9 +25,9 @@ from pathlib import Path
 
 # Import centralized configuration
 try:
-    from config import ROOT, TABLES, OUR_IDS
+    from config import OUR_IDS, ROOT, TABLES
 except ImportError:
-    from deployment.config import ROOT, TABLES, OUR_IDS
+    from deployment.config import OUR_IDS, ROOT, TABLES
 
 STATUS_FILE = ROOT / 'source' / '.update_result.json'
 
@@ -44,7 +43,7 @@ _MAX_LOOKBACK_DAYS = 60
 
 # ── Phase 1: check ─────────────────────────────────────────────────────────────
 
-def _load_last_checked() -> Optional[date]:
+def _load_last_checked() -> date | None:
     """Return the date of the last successful check, or None on first run."""
     if not STATUS_FILE.exists():
         return None
@@ -58,7 +57,7 @@ def _load_last_checked() -> Optional[date]:
     return None
 
 
-def _normalize_pid(raw: Union[str, int]) -> str:
+def _normalize_pid(raw: str | int) -> str:
     """Stats Canada API returns 10-digit PIDs (8-digit + '01'). Strip to 8."""
     s = str(raw).strip().replace('-', '')
     if len(s) == 10 and s.endswith('01'):
@@ -66,7 +65,7 @@ def _normalize_pid(raw: Union[str, int]) -> str:
     return s
 
 
-def fetch_changed_since(since: date) -> Optional[set[str]]:
+def fetch_changed_since(since: date) -> set[str] | None:
     """
     Call getChangedCubeList and return the set of 8-digit table IDs that changed
     since `since`. Returns None if the API call fails (caller should fall back).
@@ -92,7 +91,7 @@ def fetch_changed_since(since: date) -> Optional[set[str]]:
 
 # ── Phase 2: download ──────────────────────────────────────────────────────────
 
-def _get_end_period(metadata_path: Path) -> Optional[str]:
+def _get_end_period(metadata_path: Path) -> str | None:
     """Read 'End Reference Period' from a Stats Canada metadata CSV."""
     if not metadata_path.exists():
         return None

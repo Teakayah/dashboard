@@ -1,6 +1,8 @@
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from deployment import git_utils
+
 
 def test_get_git_log_batched_empty():
     assert git_utils.get_git_log_batched([], '%ci') == {}

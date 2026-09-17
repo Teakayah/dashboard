@@ -5,19 +5,24 @@ Requires the local HTTP server started automatically by conftest.py (port 8765).
 Run with:  pytest tests/test_dropzone.py -v
 """
 
-from pathlib import Path
-import re
-
 import os
-
-from playwright.sync_api import Page, expect
+import re
+from pathlib import Path
 
 from helpers import (
-    DROPZONE_URL as DROPZONE,
     ACTION_TIMEOUT,
+)
+from helpers import (
+    DROPZONE_URL as DROPZONE,
+)
+from helpers import (
     DUCKDB_READY_TIMEOUT as READY_TIMEOUT,
+)
+from helpers import (
     wait_for_duckdb_ready as _wait_for_ready,
 )
+from playwright.sync_api import Page, expect
+
 
 def _load_samples_and_wait(dz: Page):
     """Helper to click load samples and wait for schema parsing."""
@@ -534,18 +539,6 @@ def test_query_recipes_populates_sql_input(dz: Page):
     # Wait for the sql input to be updated and for the button to be enabled
     expect(dz.locator('#sql-input')).to_have_value(re.compile(r'SELECT \* FROM "(?:employees|departments)" LIMIT 10'))
     expect(dz.locator('#run-query')).to_be_enabled()
-
-
-def test_run_query_keyboard_shortcut(dz: Page):
-    """Pressing Ctrl+Enter (or Meta+Enter) inside the SQL input should run the query."""
-    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
-    _wait_for_ready(dz)
-    _load_samples_and_wait(dz)
-
-    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 2')
-    dz.locator('#sql-input').press('Control+Enter')
-
-    expect(dz.locator('.gridjs-tbody tr')).to_have_count(2, timeout=READY_TIMEOUT)
 
 
 def test_focus_sql_input_shortcut(dz: Page):

@@ -1,16 +1,14 @@
-from typing import Optional
-import time
 import csv
-from pathlib import Path
-from collections import defaultdict
 import sys
-
+import time
+from collections import defaultdict
+from pathlib import Path
 
 ROOT = Path('source') / 'Stat Can' / 'Employment'
 lfs_csv = ROOT / '14100287-eng' / '14100287.csv'
 
 
-def _clean(val: str) -> Optional[float]:
+def _clean(val: str) -> float | None:
     v = val.strip()
     if v in ('', '..', 'F', 'x', 'E', 'r', 'p'):
         return None

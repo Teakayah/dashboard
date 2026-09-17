@@ -1,10 +1,17 @@
-import pytest
+import csv
 import json
 from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 
-from deployment.update_statcan_data import fetch_changed_since, _get_end_period, _normalize_pid, _load_last_checked
-import csv
+import pytest
+
+from deployment.update_statcan_data import (
+    _get_end_period,
+    _load_last_checked,
+    _normalize_pid,
+    fetch_changed_since,
+)
+
 
 @pytest.mark.parametrize("raw_pid,expected", [
     ('1010001501', '10100015'),
@@ -68,16 +75,16 @@ def test_fetch_changed_since_url_error(capsys):
 
 def test_fetch_changed_since_insecure_url():
     from deployment.update_statcan_data import fetch_changed_since
-    with patch('deployment.update_statcan_data._CHANGED_URL', 'ftp://example.com/{date}'):
-        with pytest.raises(ValueError, match="Insecure URL scheme"):
-            fetch_changed_since(date(2023, 1, 1))
+    with patch('deployment.update_statcan_data._CHANGED_URL', 'ftp://example.com/{date}'), \
+         pytest.raises(ValueError, match="Insecure URL scheme"):
+        fetch_changed_since(date(2023, 1, 1))
 
 def test_download_table_insecure_url(tmp_path):
     from deployment.update_statcan_data import download_table
     table = {'id': '12345678', 'desc': 'Test Table', 'path': tmp_path / '12345678'}
-    with patch('deployment.update_statcan_data._DL_URL', 'file:///etc/passwd/{pid}'):
-        with pytest.raises(ValueError, match="Insecure URL scheme"):
-            download_table(table)
+    with patch('deployment.update_statcan_data._DL_URL', 'file:///etc/passwd/{pid}'), \
+         pytest.raises(ValueError, match="Insecure URL scheme"):
+        download_table(table)
 
 def test_fetch_changed_since_invalid_json():
     """Test that invalid JSON from Stats Canada API returns None."""
@@ -227,9 +234,10 @@ def test_download_table_network_error(mock_urlopen, mock_get_end_period, tmp_pat
 
 def test_write_status_success(tmp_path):
     from datetime import datetime, timezone
+
     from deployment.update_statcan_data import _write_status
     now = datetime.now(timezone.utc)
-    today = date.today()
+    today = datetime.now(timezone.utc).date()
     tables = [{'id': '123'}]
 
     mock_status_file = tmp_path / 'status.json'
@@ -260,8 +268,9 @@ def test_main_first_run(mock_load, capsys):
 @patch('deployment.update_statcan_data._load_last_checked')
 @patch('deployment.update_statcan_data.TABLES', [{'id': '123', 'desc': 'T'}])
 def test_main_max_lookback(mock_load, capsys):
+    from datetime import datetime, timezone
     from deployment.update_statcan_data import main
-    mock_load.return_value = date.today() - timedelta(days=61)
+    mock_load.return_value = datetime.now(timezone.utc).date() - timedelta(days=61)
     with patch('deployment.update_statcan_data.download_table') as mock_dl:
         mock_dl.return_value = {'id': '123', 'desc': 'T', 'updated': True}
         with patch('deployment.update_statcan_data._write_status') as mock_ws:
@@ -275,8 +284,9 @@ def test_main_max_lookback(mock_load, capsys):
 @patch('deployment.update_statcan_data.TABLES', [{'id': '123', 'desc': 'T'}])
 @patch('deployment.update_statcan_data.fetch_changed_since')
 def test_main_api_failure(mock_fetch, mock_load, capsys):
+    from datetime import datetime, timezone
     from deployment.update_statcan_data import main
-    mock_load.return_value = date.today() - timedelta(days=10)
+    mock_load.return_value = datetime.now(timezone.utc).date() - timedelta(days=10)
     mock_fetch.return_value = None
     with patch('deployment.update_statcan_data.download_table') as mock_dl:
         mock_dl.return_value = {'id': '123', 'desc': 'T', 'updated': False}
@@ -290,8 +300,9 @@ def test_main_api_failure(mock_fetch, mock_load, capsys):
 @patch('deployment.update_statcan_data.TABLES', [{'id': '123', 'desc': 'T'}])
 @patch('deployment.update_statcan_data.fetch_changed_since')
 def test_main_no_updates(mock_fetch, mock_load, capsys):
+    from datetime import datetime, timezone
     from deployment.update_statcan_data import main
-    mock_load.return_value = date.today() - timedelta(days=10)
+    mock_load.return_value = datetime.now(timezone.utc).date() - timedelta(days=10)
     mock_fetch.return_value = set()
     with patch('deployment.update_statcan_data._write_status') as mock_ws:
         result = main()
@@ -303,8 +314,9 @@ def test_main_no_updates(mock_fetch, mock_load, capsys):
 @patch('deployment.update_statcan_data.TABLES', [{'id': '123', 'desc': 'T1'}, {'id': '456', 'desc': 'T2'}])
 @patch('deployment.update_statcan_data.fetch_changed_since')
 def test_main_partial_updates(mock_fetch, mock_load, capsys):
+    from datetime import datetime, timezone
     from deployment.update_statcan_data import main
-    mock_load.return_value = date.today() - timedelta(days=10)
+    mock_load.return_value = datetime.now(timezone.utc).date() - timedelta(days=10)
     mock_fetch.return_value = {'123'}
     with patch('deployment.update_statcan_data.download_table') as mock_dl:
         mock_dl.return_value = {'id': '123', 'desc': 'T1', 'updated': True, 'error': 'err'}
@@ -322,6 +334,7 @@ def test_download_table_no_change(tmp_path, monkeypatch):
     import sys
     import zipfile
     from unittest.mock import MagicMock
+
     from deployment import update_statcan_data
     monkeypatch.setattr(update_statcan_data, 'ROOT', tmp_path)
 
@@ -360,8 +373,9 @@ def test_download_table_no_change(tmp_path, monkeypatch):
 
 @patch('deployment.update_statcan_data._get_end_period')
 def test_download_table_path_traversal(mock_get_end_period, tmp_path):
-    import zipfile
     import io
+    import zipfile
+
     from deployment.update_statcan_data import download_table
     table = {'id': '12345678', 'desc': 'Test Table', 'path': tmp_path / '12345678'}
     mock_get_end_period.return_value = '2023-01'

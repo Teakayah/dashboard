@@ -11,14 +11,12 @@ Failure thresholds:
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
-import re
 
-import re
 import pytest
-from playwright.sync_api import Page, Route
-
 from helpers import BASE
+from playwright.sync_api import Page
 
 AXE_CDN = (
     'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js'

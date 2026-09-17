@@ -6,10 +6,10 @@ Each analysis page becomes a feed entry, sorted newest-first by git commit date.
 The feed is regenerated on every deploy so subscribers always see the latest updates.
 """
 
+import concurrent.futures
 import html as html_lib
 import json
 import re
-import concurrent.futures
 from datetime import datetime, timezone
 from pathlib import Path
 

@@ -25,7 +25,6 @@ Schedule locally with launchd (macOS):
 
 import argparse
 import json
-from typing import Optional
 import subprocess
 import sys
 from datetime import date
@@ -67,7 +66,7 @@ def _git(*args: str) -> str:
 
 # ── Pipeline ───────────────────────────────────────────────────────────────────
 
-def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.strip())
     parser.add_argument('--no-push', action='store_true',
                         help='Run all steps but skip git commit and push.')

@@ -1,7 +1,9 @@
 
 import json
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import MagicMock, mock_open, patch
+
 from deployment.update_flood_data import fetch_gauge_data, fetch_precip_data, main
+
 
 def test_fetch_gauge_data_success():
     station_id = "02KF005"
@@ -168,10 +170,11 @@ def test_main_partial_failure(mock_fetch_precip, mock_fetch_gauge):
 def test_main_cli(capsys):
     import sys
 
-    with patch('deployment.update_flood_data.main', return_value=None):
-        with patch.object(sys, 'argv', ['update_flood_data.py']):
-            # Re-importing allows the __main__ block to run if coverage doesn't catch it
-            # since it's already imported, we use importlib to reload
-            import importlib
-            from deployment import update_flood_data
-            importlib.reload(update_flood_data)
+    with patch('deployment.update_flood_data.main', return_value=None), \
+         patch.object(sys, 'argv', ['update_flood_data.py']):
+        # Re-importing allows the __main__ block to run if coverage doesn't catch it
+        # since it's already imported, we use importlib to reload
+        import importlib
+
+        from deployment import update_flood_data
+        importlib.reload(update_flood_data)
