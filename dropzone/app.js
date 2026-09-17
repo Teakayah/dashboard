@@ -1326,12 +1326,19 @@ copyJsonBtn.addEventListener('click', () => {
 
 loadSamplesBtn.addEventListener('click', async () => {
     await withLoading('Sample Loading Error', async () => {
-        for (const [name, content] of Object.entries(SAMPLE_DATA)) {
+        // Performance optimization: Batch sample table creations to execute concurrently.
+        // This eliminates sequential WebWorker IPC roundtrips when loading multiple datasets.
+        const samplePromises = Object.entries(SAMPLE_DATA).map(async ([name, content]) => {
             const tableName = name.replace('.csv', '');
             await db.registerFileText(name, content);
             const escapedName = name.replace(/'/g, "''");
             await conn.query(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
             tableSchemaCache.delete(tableName);
+            return tableName;
+        });
+
+        const createdTables = await Promise.all(samplePromises);
+        for (const tableName of createdTables) {
             loadedTables.add(tableName);
             currentTableName = tableName;
         }
@@ -1344,7 +1351,13 @@ loadSamplesBtn.addEventListener('click', async () => {
         sqlInput.dispatchEvent(new Event('input'));
 
         schemaDisplay.textContent = '';
-        for (const table of loadedTables) {
+
+        // Performance optimization: Fetch schemas concurrently to eliminate
+        // redundant sequential IPC roundtrips across the WebWorker boundary,
+        // while preserving deterministic DOM insertion order.
+        const tablesArray = Array.from(loadedTables);
+        await Promise.all(tablesArray.map(t => getTableSchemaCached(t)));
+        for (const table of tablesArray) {
             await displayTableSchema(table);
         }
 
