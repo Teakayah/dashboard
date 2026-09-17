@@ -1,5 +1,6 @@
 from pathlib import Path
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import subprocess
 import threading
 
 import pytest
@@ -28,6 +29,29 @@ WasmHandler.extensions_map.update({
 })
 
 
+def _ensure_test_pages_hydrated() -> None:
+    """Ensure required analysis and index pages exist for local testing, hydrating from git if missing."""
+    pages = [
+        'employment_rate_canada.html',
+        'nhpi_big6_comparison.html',
+        'flood_risk_gatineau_ottawa.html',
+        'index.html',
+    ]
+    for page in pages:
+        target = REPO_ROOT / page
+        if not target.exists():
+            for ref in ['origin/main', 'main', 'HEAD']:
+                try:
+                    content = subprocess.check_output(
+                        ['git', 'show', f'{ref}:{page}'],
+                        stderr=subprocess.DEVNULL,
+                    )
+                    target.write_bytes(content)
+                    break
+                except Exception:
+                    continue
+
+
 @pytest.fixture()
 def dz(browser: Browser) -> Page:
     """Fresh browser context for Drop-Zone tests — clean IndexedDB, no stale SW."""
@@ -51,9 +75,9 @@ def pytest_configure(config):
     config.addinivalue_line('markers', 'mobile: mark test as a mobile-viewport test')
     if not hasattr(config, "workerinput"):
         # We are the master node (or not using xdist)
-        server = HTTPServer(('127.0.0.1', PORT), WasmHandler)
-        thread = threading.Thread(target=server.serve_forever)
-        thread.daemon = True
+        _ensure_test_pages_hydrated()
+        server = ThreadingHTTPServer(('127.0.0.1', PORT), WasmHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         config._local_server = server
 

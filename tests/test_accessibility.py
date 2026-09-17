@@ -14,9 +14,8 @@ from __future__ import annotations
 from pathlib import Path
 import re
 
-import re
 import pytest
-from playwright.sync_api import Page, Route
+from playwright.sync_api import Page
 
 from helpers import BASE
 

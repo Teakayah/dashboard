@@ -646,12 +646,15 @@ async function updateJoinColumns() {
  */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
-    recipeSelect.disabled = !hasData;
-    recipeSelect.title = hasData ? '' : 'Requires loaded data';
-    exportDbBtn.disabled = !hasData;
-    exportDbBtn.title = hasData ? '' : 'Requires loaded data';
-    clearBtn.disabled = !hasData;
-    clearBtn.title = hasData ? '' : 'Requires loaded data';
+
+    const setBtnState = (btn, enabled, disabledTitle, enabledTitle = '') => {
+        btn.disabled = !enabled;
+        btn.title = enabled ? enabledTitle : disabledTitle;
+    };
+
+    setBtnState(recipeSelect, hasData, 'Requires loaded data');
+    setBtnState(exportDbBtn, hasData, 'Requires loaded data');
+    setBtnState(clearBtn, hasData, 'Requires loaded data');
 }
 
 /**
@@ -1189,10 +1192,10 @@ sqlInput.addEventListener('input', () => {
     clearTimeout(sqlInputDebounceTimeout);
     sqlInputDebounceTimeout = setTimeout(() => {
         if (sqlInput.value.trim().length > 0) {
-            runBtn.disabled = false; runBtn.setAttribute('aria-disabled', 'false');
+            runBtn.disabled = false;
             runBtn.title = 'Run Query (Ctrl+Enter)';
         } else {
-            runBtn.disabled = true; runBtn.setAttribute('aria-disabled', 'true');
+            runBtn.disabled = true;
             runBtn.title = 'Requires a valid query';
         }
     }, 150);
@@ -1326,11 +1329,26 @@ copyJsonBtn.addEventListener('click', () => {
 
 loadSamplesBtn.addEventListener('click', async () => {
     await withLoading('Sample Loading Error', async () => {
-        for (const [name, content] of Object.entries(SAMPLE_DATA)) {
+        // Performance optimization: Concurrently register sample files to reduce IPC overhead.
+        await Promise.all(Object.entries(SAMPLE_DATA).map(([name, content]) => db.registerFileText(name, content)));
+
+        const queries = [];
+        const tableNames = [];
+        for (const name of Object.keys(SAMPLE_DATA)) {
             const tableName = name.replace('.csv', '');
-            await db.registerFileText(name, content);
             const escapedName = name.replace(/'/g, "''");
-            await conn.query(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
+            queries.push(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}');`);
+            tableNames.push(tableName);
+        }
+
+        // Performance optimization: Concurrently execute multiple CREATE TABLE queries
+        // using Promise.all to pipeline IPC messages to the DuckDB-Wasm worker,
+        // since conn.query does not support multiple statements in a single string.
+        if (queries.length > 0) {
+            await Promise.all(queries.map(q => conn.query(q)));
+        }
+
+        for (const tableName of tableNames) {
             tableSchemaCache.delete(tableName);
             loadedTables.add(tableName);
             currentTableName = tableName;
@@ -1344,6 +1362,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         sqlInput.dispatchEvent(new Event('input'));
 
         schemaDisplay.textContent = '';
+        await Promise.all(Array.from(loadedTables).map(t => getTableSchemaCached(t)));
         for (const table of loadedTables) {
             await displayTableSchema(table);
         }
