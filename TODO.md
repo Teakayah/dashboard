@@ -150,7 +150,7 @@ Current tests cover Python deployment scripts. None of the **front-end** is test
 - [x] **File drop** — `test_csv_file_loads_and_shows_schema` via `set_input_files`.
 - [x] **Persistence** — `test_persistence_across_reload` rehydrates schema after full reload.
 - [x] **Clear data** — `test_clear_data_wipes_schema` accepts confirm dialog and asserts empty schema.
-- [ ] **CSV/JSON export** — execute a query, click Download/Copy, verify resulting payload.
+- [x] **CSV/JSON export** — execute a query, click Download/Copy, verify resulting payload (covered in `tests/test_dropzone.py`).
 - [ ] **Service worker** — verify cache version increments invalidate old assets.
 
 - [x] Snapshot test (Playwright) light and dark renders. (Verified manually and via accessibility tests).

@@ -368,6 +368,9 @@
                     <option value="SELECT count(*) FROM {{TABLE}}">Count Total Rows</option>
                     <option value="SELECT * FROM {{TABLE}} ORDER BY 1 DESC LIMIT 100">Sort by First Column (Desc)</option>
                     <option value="SELECT column_name, data_type FROM (DESCRIBE {{TABLE}})">Show Schema Details</option>
+                    <option value="SUMMARIZE {{TABLE}}">Dataset Summary &amp; Profiling (SUMMARIZE)</option>
+                    <option value="SELECT * FROM {{TABLE}} USING SAMPLE 10%">Random Sample (10%)</option>
+                    <option value="SELECT *, count(*) as duplicate_count FROM {{TABLE}} GROUP BY ALL HAVING count(*) > 1">Find Duplicate Rows</option>
                 </select>
                 <div style="flex: 1"></div>
                 <button id="clear-data" disabled title="Requires loaded data" class="secondary" style="background-color: #dc2626;">Clear All Data</button>
