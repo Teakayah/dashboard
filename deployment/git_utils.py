@@ -4,6 +4,21 @@ from datetime import datetime
 
 ROOT = Path(__file__).parent.parent.resolve()
 
+def _parse_git_log_output(output: str) -> dict[str, str]:
+    """Parse output from git log format to extract file timestamps."""
+    dates = {}
+    current_ts = None
+    for line in output.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith('TS:'):
+            current_ts = line[3:]
+        elif current_ts:
+            if line not in dates:
+                dates[line] = current_ts
+    return dates
+
 def get_git_log_batched(files: list[str], format_code: str) -> dict[str, str]:
     """
     Return git log timestamps for multiple files in a single call.
@@ -13,28 +28,16 @@ def get_git_log_batched(files: list[str], format_code: str) -> dict[str, str]:
     if not files:
         return {}
 
-    dates = {}
     try:
         # files are strings, assumed to be relative to ROOT
         cmd = ['git', 'log', f'--format=TS:{format_code}', '--name-only', '--'] + files
         # Notice we removed check=True because git log might fail on some files and we still want to parse
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
-
-        current_ts = None
-        for line in result.stdout.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith('TS:'):
-                current_ts = line[3:]
-            elif current_ts:
-                # Store by string filename (e.g. "index.html" or "previews/test.png")
-                if line not in dates:
-                    dates[line] = current_ts
+        return _parse_git_log_output(result.stdout)
     except Exception:
         pass
 
-    return dates
+    return {}
 
 def get_git_dates_batched(files: list[Path]) -> dict[Path, str]:
     """Return 'Mon YYYY' from git log for multiple files in a single call; fall back to mtime."""
