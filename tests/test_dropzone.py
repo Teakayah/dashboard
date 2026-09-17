@@ -7,6 +7,7 @@ Run with:  pytest tests/test_dropzone.py -v
 
 from pathlib import Path
 import re
+import pytest
 
 import os
 
@@ -560,3 +561,83 @@ def test_focus_sql_input_shortcut(dz: Page):
     # Assert that the sql-input element is currently focused
     is_focused = dz.evaluate("document.activeElement.id === 'sql-input'")
     assert is_focused, "SQL input should be focused after pressing '/'"
+
+
+def test_query_history_adds_chip_and_loads_query(dz: Page):
+    """Running a query should add it to the history chips, and clicking the chip should load it."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    # First query
+    query1 = 'SELECT * FROM "employees" LIMIT 1'
+    dz.locator('#sql-input').fill(query1)
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    # Check that chip was created
+    chip = dz.locator('.history-chip').first
+    expect(chip).to_be_visible(timeout=ACTION_TIMEOUT)
+    expect(chip).to_have_text(query1)
+
+    # Change query in input
+    query2 = 'SELECT * FROM "departments" LIMIT 1'
+    dz.locator('#sql-input').fill(query2)
+
+    # Click the history chip
+    chip.click()
+
+    # The input should be populated with query1
+    expect(dz.locator('#sql-input')).to_have_value(query1)
+
+
+def test_query_history_persists_across_reloads(dz: Page):
+    """Running a query should add it to the history chips, and it should persist across page reloads."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    # First query
+    query1 = 'SELECT * FROM "employees" LIMIT 1'
+    dz.locator('#sql-input').fill(query1)
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    # Check that chip was created
+    chip = dz.locator('.history-chip').first
+    expect(chip).to_be_visible(timeout=ACTION_TIMEOUT)
+    expect(chip).to_have_text(query1)
+
+    # Reload the page
+    dz.reload(wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    # Check that chip is still present
+    chip = dz.locator('.history-chip').first
+    expect(chip).to_be_visible(timeout=ACTION_TIMEOUT)
+    expect(chip).to_have_text(query1)
+
+
+@pytest.mark.xfail(reason="Bug: history chips not cleared")
+def test_query_history_clears_when_data_cleared(dz: Page):
+    """Clearing all data should clear the query history chips."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    # First query
+    query1 = 'SELECT * FROM "employees" LIMIT 1'
+    dz.locator('#sql-input').fill(query1)
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    # Check that chip was created
+    chip = dz.locator('.history-chip').first
+    expect(chip).to_be_visible(timeout=ACTION_TIMEOUT)
+
+    # Click clear data
+    dz.on("dialog", lambda dialog: dialog.accept())
+    dz.locator('#clear-data').click()
+
+    # Check that history chips are removed
+    expect(dz.locator('.history-chip')).to_have_count(0, timeout=ACTION_TIMEOUT)

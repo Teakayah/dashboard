@@ -69,3 +69,6 @@
 ## 2026-09-09 - Testing Asynchronous UI Assertions
 **Learning:** Using synchronous assertions like `toast.wait_for(state="visible", timeout=3000)` combined with `assert ... in toast.inner_text().lower()` is flaky for dynamic DOM elements and can timeout prematurely.
 **Action:** Always use Playwright's native auto-retrying assertions like `expect(locator).to_be_visible(timeout=...)` and `expect(locator).to_contain_text(...)` to ensure tests remain robust.
+## 2026-09-17 - Asserting Known Application Bugs
+**Learning:** If a new integration test uncovers an existing flaw in the application logic, asserting the flawed behavior just to make the test pass is a significant anti-pattern. Tests serve as living documentation of how the system *should* behave.
+**Action:** Instead of refactoring the core logic (which is out of scope for the Inspector persona) or asserting the bug, assert the *correct* behavior and decorate the test with `@pytest.mark.xfail(reason="Bug: [description]")`. This documents the bug and preserves the test for when it's eventually fixed without breaking CI.
