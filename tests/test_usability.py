@@ -380,8 +380,7 @@ def test_viz_elements_have_height(page: Page, filename: str):
 
             # Wait for any visible canvas/map in the active panel to have a height >= 10,
             # or for no such elements to exist. This avoids hardcoded timeouts.
-            page.wait_for_function("""
-                () => {
+            page.wait_for_function("""() => {
                     const activePanel = document.querySelector('.panel.active');
                     const container = activePanel || document.body;
                     const canvases = container.querySelectorAll('canvas');
@@ -394,8 +393,7 @@ def test_viz_elements_have_height(page: Page, filename: str):
                         if (m.offsetParent !== null && m.offsetHeight < 10) return false;
                     }
                     return true;
-                }
-            """, timeout=15000)
+                }""", timeout=15000)
             
             elements = page.evaluate("""
                 () => {

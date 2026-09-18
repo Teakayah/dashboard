@@ -52,7 +52,7 @@ class TestDropzoneButtons:
 
         dz.locator("#load-samples").click()
         dz.wait_for_function(
-            "document.getElementById('schema-display').textContent.includes('employees')",
+            "() => document.getElementById('schema-display').textContent.includes('employees')",
             timeout=ACTION_TIMEOUT,
         )
 
@@ -186,7 +186,7 @@ class TestFloodPageButtons:
 
         # Poll the clipboard to handle the async write
         page.wait_for_function(
-            "navigator.clipboard.readText().then(text => text.includes('flood_risk_gatineau_ottawa.html'))",
+            "() => navigator.clipboard.readText().then(text => text.includes('flood_risk_gatineau_ottawa.html'))",
             timeout=3000
         )
 

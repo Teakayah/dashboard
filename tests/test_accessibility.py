@@ -60,7 +60,7 @@ def _inject_axe(page: Page) -> None:
     """Inject axe-core from CDN; skip test if CDN is unreachable."""
     try:
         page.add_script_tag(url=AXE_CDN)
-        page.wait_for_function('typeof axe !== "undefined"', timeout=8_000)
+        page.wait_for_function('() => typeof axe !== "undefined"', timeout=8_000)
     except Exception as exc:
         pytest.skip(f'axe-core CDN unavailable: {exc}')
 
