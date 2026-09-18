@@ -49,6 +49,8 @@ def _extract_title(content: str, stem: str) -> str:
 
 def _extract_description(content: str, filename: str, descriptions: dict) -> str:
     # 1. <meta name="description">
+    # Extracts the 'content' attribute value from a <meta name="description"> tag,
+    # handling varied attribute ordering and quotes.
     m = re.search(
         r'''
         <meta[^>]*                  # Match the opening <meta tag and any attributes before 'name'
@@ -63,6 +65,8 @@ def _extract_description(content: str, filename: str, descriptions: dict) -> str
 
     # 2. Subtitle element
     # Extract inner content from elements with the 'subtitle' class.
+    # Locates any HTML element with a 'subtitle' class and extracts its inner text content,
+    # dynamically matching the closing tag to the captured opening tag.
     m = re.search(
         r'''
         <([a-zA-Z0-9]+)                              # Group 1: Capture the HTML opening tag name (e.g., div, span, p)

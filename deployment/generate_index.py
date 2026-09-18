@@ -48,6 +48,8 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
     title = html.unescape(title)
 
     # Meta description
+    # Extracts the 'content' attribute value from a <meta name="description"> tag,
+    # handling varied attribute ordering and quotes.
     desc_match = re.search(
         r'''
         <meta[^>]*                # Matches the opening <meta tag and any attributes before 'name'
@@ -61,6 +63,8 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
 
     # If no meta description, look for a subtitle element (common pattern in your files)
     if not description:
+        # Locates any HTML element with a 'subtitle' class and extracts its inner text content,
+        # dynamically matching the closing tag to the captured opening tag.
         sub_match = re.search(
             r'''
             <([a-zA-Z0-9]+)                                  # Group 1: Captures the HTML tag name (e.g., div, span, p)
