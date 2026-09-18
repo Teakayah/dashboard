@@ -208,8 +208,11 @@ def test_flood_simulator_updates_multiple_stations(page: Page):
     slider = page.locator('#levelSlider')
     page.evaluate("s => { s.value = '2.00'; s.dispatchEvent(new Event('input')); }", slider.element_handle())
     
+    # Wait for values to change from initial state
+    expect(page.locator('#levelDisplay')).not_to_have_text(initial_brit)
+    expect(page.locator('#hullDisplay')).not_to_have_text(initial_hull)
+
     # Verify updates
-    page.wait_for_timeout(300)
     new_brit = page.locator('#levelDisplay').inner_text()
     new_hull = page.locator('#hullDisplay').inner_text()
     
