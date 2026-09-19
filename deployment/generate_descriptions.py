@@ -111,6 +111,30 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def process_tasks(tasks: list[Path], descriptions: dict) -> int:
+    updated = 0
+    if not tasks:
+        return updated
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_file = {}
+        for filepath in tasks:
+            print(f'  Generating description for {filepath.name}…')
+            content = filepath.read_text(encoding='utf-8', errors='ignore')
+            future = executor.submit(ollama_describe, content, filepath.name)
+            future_to_file[future] = filepath
+
+        for future in concurrent.futures.as_completed(future_to_file):
+            filepath = future_to_file[future]
+            desc = future.result()
+            if desc:
+                descriptions[filepath.name] = desc
+                print(f'    [{filepath.name}] → {desc}')
+                updated += 1
+            else:
+                print(f'    [{filepath.name}] → (no description generated)')
+    return updated
+
+
 def main() -> None:
     args = parse_args()
     descriptions = load_descriptions()
@@ -120,7 +144,6 @@ def main() -> None:
     else:
         targets = sorted(ROOT.glob('*.html'), key=lambda p: p.stat().st_mtime, reverse=True)
 
-    updated = 0
     tasks = []
     for filepath in targets:
         if filepath.name.lower() in EXCLUDE:
@@ -133,24 +156,7 @@ def main() -> None:
             continue
         tasks.append(filepath)
 
-    if tasks:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            future_to_file = {}
-            for filepath in tasks:
-                print(f'  Generating description for {filepath.name}…')
-                content = filepath.read_text(encoding='utf-8', errors='ignore')
-                future = executor.submit(ollama_describe, content, filepath.name)
-                future_to_file[future] = filepath
-
-            for future in concurrent.futures.as_completed(future_to_file):
-                filepath = future_to_file[future]
-                desc = future.result()
-                if desc:
-                    descriptions[filepath.name] = desc
-                    print(f'    [{filepath.name}] → {desc}')
-                    updated += 1
-                else:
-                    print(f'    [{filepath.name}] → (no description generated)')
+    updated = process_tasks(tasks, descriptions)
 
     save_descriptions(descriptions)
     print(f'\nDone. {updated} description(s) updated in {DESCRIPTIONS_FILE.relative_to(ROOT)}')
