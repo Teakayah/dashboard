@@ -4,9 +4,9 @@ Fetch latest flood risk data: hydrometric gauges and snowpack (SWE).
 Saves to source/.flood_data.json for injection into analysis HTML.
 """
 
-import concurrent.futures
+import asyncio
+import aiohttp
 import json
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -24,13 +24,12 @@ STATIONS = [
 PRECIP_STATION = "6106000"  # Ottawa CDA
 
 
-def fetch_gauge_data(station_id):
+async def fetch_gauge_data(session, station_id):
     """Fetch latest reading from ECCC GeoMet API."""
     url = f"https://api.weather.gc.ca/collections/hydrometric-realtime/items?STATION_NUMBER={station_id}&f=json&limit=1"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "DataDashboard/1.0"})
-        with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
-            data = json.loads(resp.read())
+        async with session.get(url, headers={"User-Agent": "DataDashboard/1.0"}, timeout=15) as resp:
+            data = await resp.json()
             if not data.get("features"):
                 return None
             props = data["features"][0]["properties"]
@@ -45,13 +44,12 @@ def fetch_gauge_data(station_id):
         return None
 
 
-def fetch_precip_data(climate_id):
+async def fetch_precip_data(session, climate_id):
     """Fetch recent precipitation from ECCC GeoMet API."""
     url = f"https://api.weather.gc.ca/collections/climate-daily/items?CLIMATE_IDENTIFIER={climate_id}&f=json&limit=7"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "DataDashboard/1.0"})
-        with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
-            data = json.loads(resp.read())
+        async with session.get(url, headers={"User-Agent": "DataDashboard/1.0"}, timeout=15) as resp:
+            data = await resp.json()
             if not data.get("features"):
                 return None
             # Get latest 7 days and sum precipitation
@@ -70,31 +68,30 @@ def fetch_precip_data(climate_id):
         return None
 
 
-def main():
+async def async_main():
     print("Fetching flood risk data...")
 
     # 1. Gauge data & 2. Precipitation
     gauges = {}
     precip = None
 
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=len(STATIONS) + 1
-    ) as executor:
-        future_to_station = {}
+    # Performance optimization: Replace synchronous ThreadPoolExecutor network
+    # requests with asyncio and aiohttp for lower overhead and faster parallel fetching.
+    async with aiohttp.ClientSession() as session:
+        gauge_tasks = []
         for s in STATIONS:
             print(f"  Fetching {s['label']} ({s['id']})...")
-            future_to_station[executor.submit(fetch_gauge_data, s["id"])] = s
+            gauge_tasks.append((s, asyncio.create_task(fetch_gauge_data(session, s["id"]))))
 
         print(f"  Fetching precipitation for station {PRECIP_STATION}...")
-        future_precip = executor.submit(fetch_precip_data, PRECIP_STATION)
+        precip_task = asyncio.create_task(fetch_precip_data(session, PRECIP_STATION))
 
-        for future in concurrent.futures.as_completed(future_to_station):
-            s = future_to_station[future]
-            data = future.result()
+        for s, task in gauge_tasks:
+            data = await task
             if data:
                 gauges[s["id"]] = data
 
-        precip = future_precip.result()
+        precip = await precip_task
 
     # 3. SWE (Simulated for now, based on real 2024/2025 trends if available)
     swe = {
@@ -129,6 +126,8 @@ def main():
 
     print(f"Flood data saved to {OUTPUT_FILE}")
 
+def main():
+    asyncio.run(async_main())
 
 if __name__ == "__main__":  # pragma: no cover
     main()
