@@ -6,7 +6,8 @@ import {
     populateSelect,
     insertAtCursor,
     showToast,
-    withLoading
+    withLoading,
+    showEmptyState
 } from './src/utils.js';
 import { addToHistory, renderHistory } from './src/history.js';
 import {
@@ -653,15 +654,12 @@ function renderResults(rows) {
             gridInstance.destroy();
             gridInstance = null;
         }
-        resultsContainer.innerHTML = `
-            <div class="empty" style="text-align: center; padding: 40px 20px;">
-                <svg aria-hidden="true" style="width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-                </svg>
-                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 8px 0;">No results found</h3>
-                <p style="font-size: 0.9rem; margin: 0; color: var(--text-muted);">Your query executed successfully but returned 0 rows. Try adjusting your SQL conditions.</p>
-            </div>
-        `;
+        showEmptyState(
+            resultsContainer,
+            'No results found',
+            'Your query executed successfully but returned 0 rows. Try adjusting your SQL conditions.',
+            'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4'
+        );
         return;
     }
     const columns = Object.keys(rows[0]);
@@ -808,15 +806,12 @@ clearBtn.addEventListener('click', async () => {
             gridInstance.destroy();
             gridInstance = null;
         }
-        document.getElementById('results').innerHTML = `
-            <div class="empty" style="text-align: center; padding: 40px 20px;">
-                <svg aria-hidden="true" style="width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; display: block;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
-                </svg>
-                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 8px 0;">No data to display</h3>
-                <p style="font-size: 0.9rem; margin: 0; color: var(--text-muted);">Drop a file above or run a SQL query to view results here.</p>
-            </div>
-        `;
+        showEmptyState(
+            document.getElementById('results'),
+            'No data to display',
+            'Drop a file above or run a SQL query to view results here.',
+            'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4'
+        );
         sqlInput.value = '';
         sqlInput.dispatchEvent(new Event('input'));
         downloadBtn.disabled = true;
