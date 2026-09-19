@@ -506,6 +506,19 @@ def test_no_unhandled_promise_rejections_on_load(dz: Page):
     assert rejections == [], f"Unhandled promise rejections detected: {rejections}"
 
 
+def test_clear_data_disables_export_db(dz: Page):
+    """Clearing data must disable the Export Database button."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    expect(dz.locator('#export-db')).to_be_enabled(timeout=ACTION_TIMEOUT)
+
+    dz.on("dialog", lambda dialog: dialog.accept())
+    dz.locator('#clear-data').click()
+    expect(dz.locator('#export-db')).to_be_disabled(timeout=ACTION_TIMEOUT)
+
+
 def test_clear_data_disables_copy_json(dz: Page):
     """Clearing data must disable the Copy JSON button."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
