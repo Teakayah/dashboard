@@ -42,7 +42,14 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
     <meta name="description"> or subtitle element is found in the HTML.
     """
     # Title
-    title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
+    title_match = re.search(
+        r'''
+        <title[^>]*>  # Match the opening <title> tag and any attributes
+        (.*?)         # Group 1: Non-greedily capture the inner text
+        </title>      # Match the closing </title> tag
+        ''',
+        content, re.IGNORECASE | re.DOTALL | re.VERBOSE
+    )
     title = title_match.group(1).strip() if title_match else filepath.stem.replace('_', ' ').title()
     # Clean HTML entities in title
     title = html.unescape(title)
@@ -260,7 +267,14 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
     image_url = f'{SITE_URL}/previews/{stem}.png'
 
     # Extract title for og:title
-    title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
+    title_match = re.search(
+        r'''
+        <title[^>]*>  # Match the opening <title> tag and any attributes
+        (.*?)         # Group 1: Non-greedily capture the inner text
+        </title>      # Match the closing </title> tag
+        ''',
+        content, re.IGNORECASE | re.DOTALL | re.VERBOSE
+    )
     title = title_match.group(1).strip() if title_match else stem.replace('_', ' ').title()
     title = html.escape(html.unescape(title), quote=True)
 
