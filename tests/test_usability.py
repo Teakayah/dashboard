@@ -201,6 +201,8 @@ def test_flood_simulator_updates_multiple_stations(page: Page):
     page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded', timeout=60000)
     
     # Get initial values
+    expect(page.locator('#levelDisplay')).not_to_have_text('0.00')
+    expect(page.locator('#hullDisplay')).not_to_have_text('0.00')
     initial_brit = page.locator('#levelDisplay').inner_text()
     initial_hull = page.locator('#hullDisplay').inner_text()
     
