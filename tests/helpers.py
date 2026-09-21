@@ -21,6 +21,6 @@ def wait_for_duckdb_ready(page: Page) -> None:
 def load_samples(page: Page) -> None:
     page.locator('#load-samples').click()
     page.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
+        "() => document.getElementById('schema-display').textContent.includes('employees')",
         timeout=ACTION_TIMEOUT,
     )
