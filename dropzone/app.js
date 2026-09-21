@@ -568,7 +568,12 @@ async function processFile(file, path) {
 async function onTableLoaded(tableName) {
     if (loadedTables.size === 1) schemaDisplay.textContent = '';
     await displayTableSchema(tableName);
-    await generateInstantCharts(tableName, getConnection(), getTableSchemaCached, previewsContainer);
+
+    // Performance optimization: Fire-and-forget instant chart generation to avoid
+    // blocking the critical UI path. This reduces perceived latency and allows
+    // users to instantly type SQL queries while heavy heuristic queries run asynchronously.
+    generateInstantCharts(tableName, getConnection(), getTableSchemaCached, previewsContainer).catch(err => console.error('Instant chart generation aborted:', err));
+
     sqlInput.value = `SELECT * FROM "${escapeId(tableName)}" LIMIT 100`;
     sqlInput.dispatchEvent(new Event('input'));
 }
