@@ -1,3 +1,4 @@
+import re
 """
 Interaction tests for the three analysis pages.
 
@@ -98,22 +99,18 @@ def test_employment_overview_toggle_switches_chart(page: Page):
 
     initial_text = toggle.inner_text()
     toggle.click()
-    page.wait_for_timeout(500)
-    new_text = toggle.inner_text()
 
     # The button label must change to indicate the view switched
     # (e.g. "Show Overview" ↔ "Show Provinces")
-    assert initial_text != new_text or page.locator('#panel-rate canvas').count() > 0, (
-        'Rate panel toggle did not change state'
-    )
+    if page.locator('#panel-rate canvas').count() == 0:
+        expect(toggle).not_to_have_text(initial_text)
 
 
 def test_employment_subtitle_is_visible(page: Page):
     _load(page, EMPLOYMENT_URL)
     subtitle = page.locator('.subtitle').first
     expect(subtitle).to_be_visible()
-    text = subtitle.inner_text()
-    assert 'Statistics Canada' in text, f'Subtitle missing expected text: {text!r}'
+    expect(subtitle).to_contain_text('Statistics Canada')
 
 
 # ── NHPI Big-6 (nhpi_big6_comparison.html) ───────────────────────────────────
@@ -179,10 +176,7 @@ def test_nhpi_subtitle_references_statcan(page: Page):
     _load(page, NHPI_URL)
     subtitle = page.locator('.subtitle').first
     expect(subtitle).to_be_visible()
-    text = subtitle.inner_text()
-    assert 'Statistics Canada' in text or '18-10-0205' in text, (
-        f'NHPI subtitle missing Stats Can reference: {text!r}'
-    )
+    expect(subtitle).to_contain_text(re.compile(r'Statistics Canada|18-10-0205'))
 
 
 # ── Flood Risk (flood_risk_gatineau_ottawa.html) ──────────────────────────────
@@ -239,13 +233,15 @@ def test_flood_slider_updates_britannia_level(page: Page):
         "s.value = '-1.0'; s.dispatchEvent(new Event('input')); }"
     )
     page.wait_for_timeout(300)
-    low_val = float(page.locator('#levelDisplay').inner_text())
+    low_val_str = page.locator('#levelDisplay').inner_text()
+    low_val = float(low_val_str)
 
     page.evaluate(
         "() => { const s = document.getElementById('levelSlider'); "
         "s.value = '3.0'; s.dispatchEvent(new Event('input')); }"
     )
-    page.wait_for_timeout(300)
+
+    expect(page.locator('#levelDisplay')).not_to_have_text(low_val_str)
     high_val = float(page.locator('#levelDisplay').inner_text())
 
     assert high_val > low_val, (
@@ -264,12 +260,7 @@ def test_flood_slider_updates_hull_level(page: Page):
         "() => { const s = document.getElementById('levelSlider'); "
         "s.value = '2.0'; s.dispatchEvent(new Event('input')); }"
     )
-    page.wait_for_timeout(300)
-    updated_hull = page.locator('#hullDisplay').inner_text()
-
-    assert initial_hull != updated_hull, (
-        f'#hullDisplay did not update with slider ({initial_hull!r} → {updated_hull!r})'
-    )
+    expect(page.locator('#hullDisplay')).not_to_have_text(initial_hull)
 
 
 def test_flood_history_chart_renders(page: Page):

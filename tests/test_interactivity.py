@@ -207,12 +207,13 @@ class TestFloodPageButtons:
         _load_page(page, FLOOD_URL)
 
         # Get initial values
-        low_hull = float(page.locator("#hullDisplay").inner_text())
+        low_hull_str = page.locator("#hullDisplay").inner_text()
+        low_hull = float(low_hull_str)
 
         # Move slider up
         page.locator("#levelSlider").evaluate("el => { el.value = '2.0'; el.dispatchEvent(new Event('input')); }")
-        page.wait_for_timeout(300)
 
+        expect(page.locator("#hullDisplay")).not_to_have_text(low_hull_str)
         high_hull = float(page.locator("#hullDisplay").inner_text())
 
         assert high_hull > low_hull, (

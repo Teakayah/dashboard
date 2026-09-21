@@ -35,9 +35,8 @@ def test_duckdb_init_reaches_ready(dz: Page):
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
-    status = dz.locator('#status').inner_text()
-    assert 'Error' not in status, f'Init failed: {status}'
-    assert 'timed out' not in status.lower(), f'Init timed out: {status}'
+    expect(dz.locator('#status')).not_to_contain_text('Error')
+    expect(dz.locator('#status')).not_to_contain_text(re.compile('timed out', re.IGNORECASE))
 
 
 def test_no_js_errors_on_load(dz: Page):
@@ -279,9 +278,7 @@ def test_count_query_returns_single_value(dz: Page):
 
     # Verify the count value in the first cell is a positive integer —
     # don't assert exact row count since Grid.js may show prior results
-    cell_text = dz.locator('.gridjs-tbody tr td').first.inner_text()
-    count = int(cell_text.strip())
-    assert count > 0, 'COUNT(*) returned 0 — no sample data loaded?'
+    expect(dz.locator('.gridjs-tbody tr td').first).to_have_text(re.compile(r'^[1-9]\d*$'))
 
 
 # ── Export & Copy ─────────────────────────────────────────────────────────────
@@ -552,8 +549,7 @@ def test_query_recipe_summarize_executes(dz: Page):
     dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
 
     expect(dz.locator('.gridjs-tbody tr')).not_to_have_count(0)
-    grid_text = dz.locator('#results').inner_text()
-    assert any(col in grid_text for col in ['column_name', 'min', 'max', 'count', 'approx_unique']), f"Expected profiling output in grid, got: {grid_text[:200]}"
+    expect(dz.locator('#results')).to_contain_text(re.compile(r'column_name|min|max|count|approx_unique'))
 
 
 
