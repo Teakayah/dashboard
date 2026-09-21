@@ -69,3 +69,6 @@
 ## 2026-09-09 - Testing Asynchronous UI Assertions
 **Learning:** Using synchronous assertions like `toast.wait_for(state="visible", timeout=3000)` combined with `assert ... in toast.inner_text().lower()` is flaky for dynamic DOM elements and can timeout prematurely.
 **Action:** Always use Playwright's native auto-retrying assertions like `expect(locator).to_be_visible(timeout=...)` and `expect(locator).to_contain_text(...)` to ensure tests remain robust.
+## 2024-05-18 - Fix flaky toggle test by using explicit locators
+**Learning:** In Playwright UI tests, assuming the first button in a panel is a generic toggle (e.g., `page.locator('#panel-rate button').first`) and testing arbitrary text changes can lead to skipped or flaky tests if the UI structure updates.
+**Action:** Use explicit ID-based locators (e.g., `#rate-btnS`) to interact with specific toggle buttons, and test explicitly for state changes using class attributes (`active`) and visibility.

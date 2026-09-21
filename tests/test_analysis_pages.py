@@ -84,28 +84,39 @@ def test_employment_charts_have_height_in_each_tab(page: Page):
 
 
 def test_employment_overview_toggle_switches_chart(page: Page):
-    """'Show Overview' button on the rate panel must toggle the chart."""
+    """'By province' button on the rate panel must toggle the chart view."""
     _load(page, EMPLOYMENT_URL)
+
+    import re
 
     # Ensure we're on the rate tab
     page.locator('.tab').nth(0).click()
     page.wait_for_timeout(TAB_TIMEOUT)
 
-    # Find and click an overview / series toggle button
-    toggle = page.locator('#panel-rate button').first
-    if not toggle.count():
-        pytest.skip('No toggle button found on rate panel')
+    btn_overlay = page.locator('#rate-btnO')
+    btn_small = page.locator('#rate-btnS')
 
-    initial_text = toggle.inner_text()
-    toggle.click()
-    page.wait_for_timeout(500)
-    new_text = toggle.inner_text()
+    view_overlay = page.locator('#rate-OW')
+    view_small = page.locator('#rate-SW')
 
-    # The button label must change to indicate the view switched
-    # (e.g. "Show Overview" ↔ "Show Provinces")
-    assert initial_text != new_text or page.locator('#panel-rate canvas').count() > 0, (
-        'Rate panel toggle did not change state'
-    )
+    # Initial state
+    expect(btn_overlay).to_have_class(re.compile(r'\bactive\b'))
+    expect(view_overlay).to_be_visible()
+    expect(view_small).to_be_hidden()
+
+    # Click By province
+    btn_small.click()
+    expect(btn_small).to_have_class(re.compile(r'\bactive\b'))
+    expect(btn_overlay).not_to_have_class(re.compile(r'\bactive\b'))
+    expect(view_overlay).to_be_hidden()
+    expect(view_small).to_be_visible()
+
+    # Click All overlaid
+    btn_overlay.click()
+    expect(btn_overlay).to_have_class(re.compile(r'\bactive\b'))
+    expect(btn_small).not_to_have_class(re.compile(r'\bactive\b'))
+    expect(view_overlay).to_be_visible()
+    expect(view_small).to_be_hidden()
 
 
 def test_employment_subtitle_is_visible(page: Page):
