@@ -69,3 +69,6 @@
 ## YYYY-MM-DD - Explicit Empty States for Dynamic Result Containers
 **Learning:** Container blocks for dynamic data results (like grids or tables) should never be left completely blank when empty or cleared, as this creates a confusing, broken-looking UI.
 **Action:** Always render an explicit empty state in the HTML initially and explicitly restore it via JavaScript when data is cleared to guide the user on next steps.
+## 2024-05-18 - Refine Interactive Semantics and Empty States
+**Learning:** Using the CSS `:not(:empty)` pseudo-class prevents layout jumps and awkward empty boxes for dynamic UI containers (like query history) without requiring complex JavaScript DOM logic. Hardcoded light-mode background colors on hover states break dark-mode compatibility; using `rgba()` with low opacity is more robust.
+**Action:** Standardize on `:not(:empty)` for purely JS-injected containers and enforce semantic `<label>` elements over `<span>` tags next to inputs to increase tap targets.

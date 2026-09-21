@@ -62,9 +62,10 @@
             font-size: 1rem;
             color: inherit;
         }
+        .drop-zone:hover,
         .drop-zone.drag-over {
             border-color: var(--primary);
-            background: #eff6ff;
+            background: rgba(79, 142, 247, 0.05);
         }
         .drop-zone:focus-visible {
             outline: 2px solid var(--primary);
@@ -161,7 +162,7 @@
             background: var(--primary);
             transition: width 0.3s ease;
         }
-        .query-history-container {
+        .query-history-container:not(:empty) {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
@@ -330,9 +331,9 @@
             <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; color: #0d9488;">🔗 Join Assistant</div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <select id="join-table-a" aria-label="First table to join" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);"></select>
-                <span>JOIN</span>
+                <label for="join-table-b" style="font-size: 0.9rem; font-weight: 500;">JOIN</label>
                 <select id="join-table-b" aria-label="Second table to join" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border);"></select>
-                <span>ON</span>
+                <label for="join-col" style="font-size: 0.9rem; font-weight: 500;">ON</label>
                 <select id="join-col" aria-label="Column to join on" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
                     <option value="" disabled selected>Select Column...</option>
                 </select>
@@ -348,11 +349,11 @@
                     <option value="line">Line Chart</option>
                     <option value="scatter">Scatter Plot</option>
                 </select>
-                <span>X-Axis:</span>
+                <label for="chart-x-col" style="font-size: 0.9rem; font-weight: 500;">X-Axis:</label>
                 <select id="chart-x-col" aria-label="X-Axis Column" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
                     <option value="" disabled selected>Select Column...</option>
                 </select>
-                <span>Y-Axis (Aggregated):</span>
+                <label for="chart-y-col" style="font-size: 0.9rem; font-weight: 500;">Y-Axis (Aggregated):</label>
                 <select id="chart-y-col" aria-label="Y-Axis Column" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
                     <option value="" disabled selected>Select Column...</option>
                 </select>
