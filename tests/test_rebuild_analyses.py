@@ -1079,7 +1079,6 @@ def test_extract_statcan_data_general_buckets():
 
 @patch("sys.exit")
 def test_script_entrypoint(mock_exit):
-    pytest.skip("requires the production Stats Canada CSV fixtures")
     import importlib.util
     from pathlib import Path
     with patch("deployment.rebuild_analyses.main", return_value=0):
