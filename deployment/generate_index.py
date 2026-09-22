@@ -377,6 +377,17 @@ def build_html(analyses: list[dict]) -> str:
     }}
 
     /* ── Search ─────────────────────────────────────────────── */
+    .visually-hidden {{
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }}
     .search-bar {{
       padding: 16px 32px;
       background: #f5f5f2;
@@ -547,6 +558,7 @@ def build_html(analyses: list[dict]) -> str:
 </header>
 
 <search><div class="search-bar">
+  <label for="search" class="visually-hidden">Search analyses</label>
   <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses (Press / to focus)">
 </div></search>
 

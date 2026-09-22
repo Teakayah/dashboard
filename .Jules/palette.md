@@ -69,3 +69,7 @@
 ## YYYY-MM-DD - Explicit Empty States for Dynamic Result Containers
 **Learning:** Container blocks for dynamic data results (like grids or tables) should never be left completely blank when empty or cleared, as this creates a confusing, broken-looking UI.
 **Action:** Always render an explicit empty state in the HTML initially and explicitly restore it via JavaScript when data is cleared to guide the user on next steps.
+
+## 2026-08-01 - Prefer native labels over aria-labels
+**Learning:** Using `aria-label` on inputs is sufficient for screen readers, but omitting a native `<label>` tag is an anti-pattern. Native `<label for="...">` tags provide robust accessibility.
+**Action:** Always prefer pairing inputs with a native `<label>` tag (using `.visually-hidden` if the design strictly requires it) instead of solely relying on `aria-label`.
