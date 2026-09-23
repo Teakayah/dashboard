@@ -171,3 +171,47 @@ export async function withLoading(errorPrefix, asyncFn) {
         document.body.removeAttribute('aria-busy');
     }
 }
+
+/**
+ * Renders an accessible empty state inside a container using safe DOM elements.
+ *
+ * @param {HTMLElement} containerEl - The container element to populate.
+ * @param {string} title - Heading for the empty state.
+ * @param {string} message - Descriptive message.
+ * @param {string} svgPath - SVG path string for the icon.
+ */
+export function showEmptyState(containerEl, title, message, svgPath) {
+    if (!containerEl) return;
+    containerEl.textContent = '';
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'empty';
+    emptyDiv.style.cssText = 'text-align: center; padding: 40px 20px;';
+
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.style.cssText = 'width: 48px; height: 48px; margin: 0 auto 16px; opacity: 0.5; display: block;';
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('viewBox', '0 0 24 24');
+
+    const path = document.createElementNS(svgNs, 'path');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('d', svgPath);
+    svg.appendChild(path);
+    emptyDiv.appendChild(svg);
+
+    const h3 = document.createElement('h3');
+    h3.style.cssText = 'font-size: 1.1rem; font-weight: 600; color: var(--text); margin: 0 0 8px 0;';
+    h3.textContent = title;
+    emptyDiv.appendChild(h3);
+
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size: 0.9rem; margin: 0; color: var(--text-muted);';
+    p.textContent = message;
+    emptyDiv.appendChild(p);
+
+    containerEl.appendChild(emptyDiv);
+}

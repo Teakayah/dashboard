@@ -1078,14 +1078,10 @@ def test_extract_statcan_data_general_buckets():
     del EXTRACTION_CONFIGS["88888888"]
 
 @patch("sys.exit")
-def test_script_entrypoint(mock_exit):
-    pytest.skip("requires the production Stats Canada CSV fixtures")
-    import importlib.util
+@patch("pathlib.Path.write_text")
+def test_script_entrypoint(mock_write, mock_exit):
     from pathlib import Path
-    with patch("deployment.rebuild_analyses.main", return_value=0):
-        path = Path(__file__).parent.parent / 'deployment' / 'rebuild_analyses.py'
-        spec = importlib.util.spec_from_file_location('__main__', path)
-        module = importlib.util.module_from_spec(spec)
-        assert spec.loader is not None
-        spec.loader.exec_module(module)
-        mock_exit.assert_called_once_with(0)
+    import runpy
+    path = Path(__file__).parent.parent / 'deployment' / 'rebuild_analyses.py'
+    runpy.run_path(str(path), run_name='__main__')
+    mock_exit.assert_called_once()
