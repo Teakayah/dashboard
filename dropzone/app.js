@@ -568,7 +568,8 @@ async function processFile(file, path) {
 async function onTableLoaded(tableName) {
     if (loadedTables.size === 1) schemaDisplay.textContent = '';
     await displayTableSchema(tableName);
-    await generateInstantCharts(tableName, getConnection(), getTableSchemaCached, previewsContainer);
+    // Fire-and-forget: Do not await instant chart generation so the critical UI path (populating the SQL input) is not blocked.
+    generateInstantCharts(tableName, getConnection(), getTableSchemaCached, previewsContainer).catch(e => console.warn('Instant charts failed:', e));
     sqlInput.value = `SELECT * FROM "${escapeId(tableName)}" LIMIT 100`;
     sqlInput.dispatchEvent(new Event('input'));
 }
