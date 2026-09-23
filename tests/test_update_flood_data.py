@@ -168,8 +168,8 @@ def test_main_partial_failure(mock_fetch_precip, mock_fetch_gauge):
 def test_main_cli(capsys):
     import sys
 
-    with patch('deployment.update_flood_data.main', return_value=None):
-        with patch.object(sys, 'argv', ['update_flood_data.py']):
+    with patch('deployment.update_flood_data.main', return_value=None), \
+         patch.object(sys, 'argv', ['update_flood_data.py']):
             # Re-importing allows the __main__ block to run if coverage doesn't catch it
             # since it's already imported, we use importlib to reload
             import importlib

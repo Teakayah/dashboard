@@ -8,6 +8,8 @@ They do NOT use DuckDB; all data is hardcoded in the analysis HTML files.
 Run with:  pytest tests/test_analysis_pages.py -v
 """
 
+import re
+
 import pytest
 from playwright.sync_api import Page, expect
 
@@ -84,36 +86,44 @@ def test_employment_charts_have_height_in_each_tab(page: Page):
 
 
 def test_employment_overview_toggle_switches_chart(page: Page):
-    """'Show Overview' button on the rate panel must toggle the chart."""
+    """'By province' button on the rate panel must toggle the chart view."""
     _load(page, EMPLOYMENT_URL)
 
     # Ensure we're on the rate tab
     page.locator('.tab').nth(0).click()
     page.wait_for_timeout(TAB_TIMEOUT)
 
-    # Find and click an overview / series toggle button
-    toggle = page.locator('#panel-rate button').first
-    if not toggle.count():
-        pytest.skip('No toggle button found on rate panel')
+    btn_overlay = page.locator('#rate-btnO')
+    btn_small = page.locator('#rate-btnS')
 
-    initial_text = toggle.inner_text()
-    toggle.click()
-    page.wait_for_timeout(500)
-    new_text = toggle.inner_text()
+    view_overlay = page.locator('#rate-OW')
+    view_small = page.locator('#rate-SW')
 
-    # The button label must change to indicate the view switched
-    # (e.g. "Show Overview" ↔ "Show Provinces")
-    assert initial_text != new_text or page.locator('#panel-rate canvas').count() > 0, (
-        'Rate panel toggle did not change state'
-    )
+    # Initial state
+    expect(btn_overlay).to_have_class(re.compile(r'\bactive\b'))
+    expect(view_overlay).to_be_visible()
+    expect(view_small).to_be_hidden()
+
+    # Click By province
+    btn_small.click()
+    expect(btn_small).to_have_class(re.compile(r'\bactive\b'))
+    expect(btn_overlay).not_to_have_class(re.compile(r'\bactive\b'))
+    expect(view_overlay).to_be_hidden()
+    expect(view_small).to_be_visible()
+
+    # Click All overlaid
+    btn_overlay.click()
+    expect(btn_overlay).to_have_class(re.compile(r'\bactive\b'))
+    expect(btn_small).not_to_have_class(re.compile(r'\bactive\b'))
+    expect(view_overlay).to_be_visible()
+    expect(view_small).to_be_hidden()
 
 
 def test_employment_subtitle_is_visible(page: Page):
     _load(page, EMPLOYMENT_URL)
     subtitle = page.locator('.subtitle').first
     expect(subtitle).to_be_visible()
-    text = subtitle.inner_text()
-    assert 'Statistics Canada' in text, f'Subtitle missing expected text: {text!r}'
+    expect(subtitle).to_contain_text('Statistics Canada')
 
 
 # ── NHPI Big-6 (nhpi_big6_comparison.html) ───────────────────────────────────
@@ -179,10 +189,7 @@ def test_nhpi_subtitle_references_statcan(page: Page):
     _load(page, NHPI_URL)
     subtitle = page.locator('.subtitle').first
     expect(subtitle).to_be_visible()
-    text = subtitle.inner_text()
-    assert 'Statistics Canada' in text or '18-10-0205' in text, (
-        f'NHPI subtitle missing Stats Can reference: {text!r}'
-    )
+    expect(subtitle).to_contain_text(re.compile(r'Statistics Canada|18-10-0205'))
 
 
 # ── Flood Risk (flood_risk_gatineau_ottawa.html) ──────────────────────────────
@@ -238,14 +245,15 @@ def test_flood_slider_updates_britannia_level(page: Page):
         "() => { const s = document.getElementById('levelSlider'); "
         "s.value = '-1.0'; s.dispatchEvent(new Event('input')); }"
     )
-    page.wait_for_timeout(300)
-    low_val = float(page.locator('#levelDisplay').inner_text())
+    low_val_str = page.locator('#levelDisplay').inner_text()
+    low_val = float(low_val_str)
 
     page.evaluate(
         "() => { const s = document.getElementById('levelSlider'); "
         "s.value = '3.0'; s.dispatchEvent(new Event('input')); }"
     )
-    page.wait_for_timeout(300)
+
+    expect(page.locator('#levelDisplay')).not_to_have_text(low_val_str)
     high_val = float(page.locator('#levelDisplay').inner_text())
 
     assert high_val > low_val, (
@@ -264,12 +272,7 @@ def test_flood_slider_updates_hull_level(page: Page):
         "() => { const s = document.getElementById('levelSlider'); "
         "s.value = '2.0'; s.dispatchEvent(new Event('input')); }"
     )
-    page.wait_for_timeout(300)
-    updated_hull = page.locator('#hullDisplay').inner_text()
-
-    assert initial_hull != updated_hull, (
-        f'#hullDisplay did not update with slider ({initial_hull!r} → {updated_hull!r})'
-    )
+    expect(page.locator('#hullDisplay')).not_to_have_text(initial_hull)
 
 
 def test_flood_history_chart_renders(page: Page):
