@@ -23,7 +23,7 @@ def _load_samples_and_wait(dz: Page):
     """Helper to click load samples and wait for schema parsing."""
     dz.locator('#load-samples').click()
     dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
+        "() => document.getElementById('schema-display').textContent.includes('employees')",
         timeout=ACTION_TIMEOUT,
     )
 
@@ -56,7 +56,7 @@ def test_load_samples_creates_both_tables(dz: Page):
 
     dz.locator('#load-samples').click()
     dz.wait_for_function(
-        "document.getElementById('status').textContent.includes('table')",
+        "() => document.getElementById('status').textContent.includes('table')",
         timeout=ACTION_TIMEOUT,
     )
 
@@ -71,7 +71,7 @@ def test_load_samples_populates_sql_input(dz: Page):
 
     dz.locator('#load-samples').click()
     dz.wait_for_function(
-        "document.getElementById('sql-input').value.includes('employees')",
+        "() => document.getElementById('sql-input').value.includes('employees')",
         timeout=ACTION_TIMEOUT,
     )
 
@@ -112,8 +112,7 @@ def test_csv_file_loads_and_shows_schema(dz: Page, tmp_path: Path):
     dz.locator('#file-input').set_input_files(str(csv))
     # Wait for both schema AND status to update — status lags schema in CI
     dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('sales_data') && "
-        "document.getElementById('status').textContent.toLowerCase().includes('table')",
+        "() => document.getElementById('schema-display').textContent.includes('sales_data') && document.getElementById('status').textContent.toLowerCase().includes('table')",
         timeout=ACTION_TIMEOUT,
     )
 
@@ -155,7 +154,7 @@ def test_clear_data_wipes_schema(dz: Page):
     dz.on('dialog', lambda dlg: dlg.accept())
     dz.locator('#clear-data').click()
     dz.wait_for_function(
-        "document.getElementById('status').textContent === 'Storage cleared'",
+        "() => document.getElementById('status').textContent === 'Storage cleared'",
         timeout=ACTION_TIMEOUT,
     )
 
@@ -238,7 +237,7 @@ def test_join_query_executes_correctly(dz: Page):
 
     dz.locator('#load-samples').click()
     dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('departments')",
+        "() => document.getElementById('schema-display').textContent.includes('departments')",
         timeout=ACTION_TIMEOUT,
     )
 
@@ -317,11 +316,11 @@ def test_export_db_downloads_file(dz: Page):
     """Clicking Export Database must trigger a file download containing the DuckDB database."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
 
-    dz.wait_for_function("document.getElementById('status').textContent.includes('Ready') || document.getElementById('status').textContent.includes('Loaded')", timeout=10000)
+    dz.wait_for_function("() => document.getElementById('status').textContent.includes('Ready') || document.getElementById('status').textContent.includes('Loaded')", timeout=10000)
 
     dz.locator('#load-samples').click()
     dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
+        "() => document.getElementById('schema-display').textContent.includes('employees')",
         timeout=5000,
     )
 
