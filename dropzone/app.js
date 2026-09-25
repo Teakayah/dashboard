@@ -569,7 +569,7 @@ async function processFile(file, path) {
 async function onTableLoaded(tableName) {
     if (loadedTables.size === 1) schemaDisplay.textContent = '';
     await displayTableSchema(tableName);
-    await generateInstantCharts(tableName, getConnection(), getTableSchemaCached, previewsContainer);
+    generateInstantCharts(tableName, getConnection(), getTableSchemaCached, previewsContainer).catch(console.error);
     sqlInput.value = `SELECT * FROM "${escapeId(tableName)}" LIMIT 100`;
     sqlInput.dispatchEvent(new Event('input'));
 }
