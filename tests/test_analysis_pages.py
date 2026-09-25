@@ -10,7 +10,6 @@ Run with:  pytest tests/test_analysis_pages.py -v
 
 import re
 
-import pytest
 from playwright.sync_api import Page, expect
 
 from helpers import BASE
