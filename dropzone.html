@@ -429,7 +429,12 @@
       if (navigator.share) {
         navigator.share({title: document.title, url: window.location.href});
       } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(window.location.href);
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          const btn = document.getElementById('share-btn');
+          const original = btn.innerText;
+          btn.innerText = 'Copied!';
+          setTimeout(() => btn.innerText = original, 2000);
+        });
       }
     });
 

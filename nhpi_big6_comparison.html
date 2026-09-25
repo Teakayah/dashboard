@@ -69,7 +69,7 @@
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
   <div class="nav-links">
-    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:document.title,url:window.location.href})}else if(navigator.clipboard){navigator.clipboard.writeText(window.location.href)}">Share</button>
+    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:document.title,url:window.location.href})}else if(navigator.clipboard){navigator.clipboard.writeText(window.location.href).then(()=>{let b=this;let o=b.innerText;b.innerText='Copied!';setTimeout(()=>b.innerText=o,2000)})} ">Share</button>
   </div>
 </header>
 

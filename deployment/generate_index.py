@@ -660,7 +660,7 @@ def inject_share_fix(content: str, filename: str) -> str:
     unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
     safe = ('onclick="if(navigator.share){navigator.share({title:document.title,'
             'url:window.location.href})}else if(navigator.clipboard)'
-            '{navigator.clipboard.writeText(window.location.href)}"')
+            '{navigator.clipboard.writeText(window.location.href).then(()=>{let b=this;let o=b.innerText;b.innerText=\'Copied!\';setTimeout(()=>b.innerText=o,2000)})} "')
     if unsafe not in content:
         return content
     new_content = content.replace(unsafe, safe)
