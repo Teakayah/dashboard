@@ -244,6 +244,7 @@ def test_flood_slider_updates_britannia_level(page: Page):
         "() => { const s = document.getElementById('levelSlider'); "
         "s.value = '-1.0'; s.dispatchEvent(new Event('input')); }"
     )
+    expect(page.locator('#levelDisplay')).not_to_have_text('0.00')
     low_val_str = page.locator('#levelDisplay').inner_text()
     low_val = float(low_val_str)
 
@@ -266,6 +267,7 @@ def test_flood_slider_updates_hull_level(page: Page):
     page.locator(".tab[onclick*=\"'gauge'\"]").click()
     page.wait_for_timeout(TAB_TIMEOUT)
 
+    expect(page.locator('#hullDisplay')).not_to_have_text('0.00')
     initial_hull = page.locator('#hullDisplay').inner_text()
     page.evaluate(
         "() => { const s = document.getElementById('levelSlider'); "

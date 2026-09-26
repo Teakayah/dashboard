@@ -207,6 +207,7 @@ class TestFloodPageButtons:
         _load_page(page, FLOOD_URL)
 
         # Get initial values
+        expect(page.locator("#hullDisplay")).not_to_have_text("0.00")
         low_hull_str = page.locator("#hullDisplay").inner_text()
         low_hull = float(low_hull_str)
 
