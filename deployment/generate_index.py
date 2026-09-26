@@ -393,6 +393,32 @@ def build_html(analyses: list[dict]) -> str:
       background: #f5f5f2;
       border-bottom: 1px solid #e8e8e4;
     }}
+    .input-wrapper {{
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+    }}
+    .shortcut-hint {{
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #6b7280;
+      font-size: 0.75rem;
+      transition: opacity 0.2s;
+    }}
+    .shortcut-hint kbd {{
+      background: #e5e7eb;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+      font-family: inherit;
+    }}
+    .input-wrapper:focus-within .shortcut-hint,
+    .input-wrapper input:not(:placeholder-shown) + .shortcut-hint {{
+      opacity: 0;
+    }}
     .search-bar input {{
       width: 100%;
       max-width: 480px;
@@ -559,7 +585,10 @@ def build_html(analyses: list[dict]) -> str:
 
 <search><div class="search-bar">
   <label for="search" class="visually-hidden">Search analyses</label>
-  <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses (Press / to focus)">
+  <div class="input-wrapper">
+    <input id="search" type="search" placeholder="Search analyses…" autocomplete="off" aria-label="Search analyses (Press / to focus)">
+    <div class="shortcut-hint" aria-hidden="true"><kbd>/</kbd> to focus</div>
+  </div>
 </div></search>
 
 <main>

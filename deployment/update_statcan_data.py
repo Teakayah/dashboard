@@ -159,8 +159,8 @@ def download_table(table: dict) -> dict:
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main() -> int:
-    today = date.today()
     now = datetime.now(timezone.utc)
+    today = now.date()
 
     print('Stats Canada update check\n')
 
