@@ -79,6 +79,7 @@ def test_index_search_filters_cards(page: Page):
 def test_index_search_finds_match(page: Page):
     page.goto(BASE, wait_until='domcontentloaded', timeout=60000)
     # Grab the first card's title text and search for part of it
+    expect(page.locator('.card-title').first).to_be_visible()
     first_title = page.locator('.card-title').first.inner_text()
     keyword = first_title.split()[0]  # first word of the title
     page.locator('#search').fill(keyword)
