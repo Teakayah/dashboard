@@ -21,6 +21,26 @@ class WasmHandler(SimpleHTTPRequestHandler):
         self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
         super().end_headers()
 
+    def copyfile(self, source, outputfile):
+        """Chunked file transfer with backoff on ENOBUFS (macOS socket buffer)."""
+        bufsize = 64 * 1024
+        while True:
+            try:
+                buf = source.read(bufsize)
+                if not buf:
+                    break
+                outputfile.write(buf)
+            except OSError as e:
+                if e.errno == 55:  # ENOBUFS
+                    import time
+                    time.sleep(0.01)
+                    try:
+                        outputfile.write(buf)
+                    except OSError:
+                        break
+                else:
+                    break
+
 
 WasmHandler.extensions_map.update({
     ".wasm": "application/wasm",
