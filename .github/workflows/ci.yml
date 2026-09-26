@@ -1,0 +1,100 @@
+name: CI (PR Validation)
+
+on:
+  pull_request:
+    branches: [integration, main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  repo-hygiene:
+    name: Verify No Forbidden Generated Files
+    if: github.base_ref == 'integration'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for generated files in PR
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          changed_files=$(git diff --name-only "$BASE_SHA...HEAD")
+          forbidden_files=""
+          while IFS= read -r file; do
+            case "$file" in
+              index.html|feed.xml|favicon.ico|descriptions.json|previews/*)
+                forbidden_files="${forbidden_files}${file}"$'\n'
+                ;;
+              *.html)
+                case "$file" in
+                  */*|dropzone.html) ;;
+                  *) forbidden_files="${forbidden_files}${file}"$'\n' ;;
+                esac
+                ;;
+            esac
+          done <<< "$changed_files"
+
+          if [ -n "$forbidden_files" ]; then
+            echo "::error::Generated files must not be changed on integration:"
+            printf '%s' "$forbidden_files"
+            exit 1
+          fi
+          echo "Hygiene check passed."
+
+  python-tests:
+    name: Python Deployment Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run Python unit tests
+        run: |
+          pytest tests/test_git_utils.py \
+                 tests/test_generate_descriptions.py \
+                 tests/test_generate_feed.py \
+                 tests/test_generate_index.py \
+                 tests/test_rebuild_analyses.py \
+                 tests/test_refresh.py \
+                 tests/test_update_flood_data.py \
+                 tests/test_update_statcan_data.py -v --tb=short
+
+  playwright-tests:
+    name: Front-end & Accessibility (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Cache Playwright Chromium Binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('requirements.txt') }}
+      - name: Install Playwright Chromium with dependencies
+        run: python -m playwright install --with-deps chromium
+      - name: Run Playwright and accessibility tests
+        run: |
+          pytest tests/test_dropzone.py \
+                 tests/test_accessibility.py \
+                 tests/test_analysis_pages.py \
+                 tests/test_interactivity.py \
+                 tests/test_usability.py -v --tb=short

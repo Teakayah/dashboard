@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
 jobs:
   # ── Integrate + Test + Deploy ──────────────────────────────────────────────
   integrate:
@@ -21,10 +25,23 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # 1. Setup & Tests
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
+        run: pip install -r requirements.txt
+
+      - name: Cache Playwright Chromium Binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('requirements.txt') }}
+
+      - name: Install Playwright Chromium with dependencies
+        run: python -m playwright install --with-deps chromium
 
       # Generated HTML pages live on main only (CLAUDE.md §3). The PR merge ref
       # propagates integration's deletion of those files, leaving the worktree
