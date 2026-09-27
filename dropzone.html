@@ -291,7 +291,7 @@
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
   <div class="nav-links">
-    <button class="share-btn" id="share-btn">Share</button>
+    <button class="share-btn" id="share-btn" aria-live="polite">Share</button>
   </div>
 </header>
 
@@ -425,16 +425,27 @@
 </style>
 
   <script>
-    document.getElementById('share-btn')?.addEventListener('click', () => {
+    const shareBtn = document.getElementById('share-btn');
+    shareBtn?.addEventListener('click', () => {
       if (navigator.share) {
         navigator.share({title: document.title, url: window.location.href});
       } else if (navigator.clipboard) {
         navigator.clipboard.writeText(window.location.href).then(() => {
-          const btn = document.getElementById('share-btn');
-          if (btn) {
-            const original = btn.innerText;
-            btn.innerText = 'Copied!';
-            setTimeout(() => { btn.innerText = original; }, 2000);
+          if (shareBtn.innerText !== 'Copied!') {
+            const original = shareBtn.innerText;
+            shareBtn.innerText = 'Copied!';
+
+            // Dispatch aria-live announcement
+            const announcement = document.createElement('div');
+            announcement.setAttribute('aria-live', 'polite');
+            announcement.setAttribute('class', 'visually-hidden');
+            announcement.textContent = 'Link copied to clipboard';
+            document.body.appendChild(announcement);
+
+            setTimeout(() => {
+                shareBtn.innerText = original;
+                document.body.removeChild(announcement);
+            }, 2000);
           }
         }).catch(() => {});
       }

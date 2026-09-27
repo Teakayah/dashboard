@@ -686,13 +686,19 @@ def inject_contrast_fix(content: str, filename: str) -> str:
 
 def inject_share_fix(content: str, filename: str) -> str:
     """Replace bare navigator.share onclick with a feature-detected version."""
-    unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
+    unsafe1 = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
+    unsafe2 = 'onclick="if(navigator.share){navigator.share({title:document.title,url:window.location.href})}else if(navigator.clipboard){navigator.clipboard.writeText(window.location.href)}"'
+
     safe = ('onclick="if(navigator.share){navigator.share({title:document.title,'
             'url:window.location.href})}else if(navigator.clipboard)'
-            '{navigator.clipboard.writeText(window.location.href)}"')
-    if unsafe not in content:
-        return content
-    new_content = content.replace(unsafe, safe)
+            '{navigator.clipboard.writeText(window.location.href).then(()=>{'
+            'const b=this;if(b.innerText!==\'Copied!\'){const o=b.innerText;'
+            'b.innerText=\'Copied!\';setTimeout(()=>b.innerText=o,2000)}})}" '
+            'aria-live="polite"')
+
+    new_content = content.replace(unsafe1, safe).replace(unsafe2, safe)
+
+    # Also add aria-live if safe string was added previously but without aria-live
     if new_content != content:
         print(f'  Fixed navigator.share in {filename}')
     return new_content
