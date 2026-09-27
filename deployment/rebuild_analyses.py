@@ -7,6 +7,7 @@ Uses a declarative extraction framework to process various tables.
 import csv
 import json
 import re
+import functools
 import sys
 from collections import defaultdict
 from itertools import zip_longest
@@ -41,6 +42,7 @@ def _read_csv(path: Path) -> list[dict]:
         return [dict(zip_longest(headers, row)) for row in reader if any(row)]
 
 
+@functools.lru_cache(maxsize=2048)
 def _clean(val: str) -> Optional[float]:
     """
     Return float or None for Stats Canada VALUE cells.
