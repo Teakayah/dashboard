@@ -3,14 +3,6 @@ import { showToast } from './utils.js';
 let queryHistory = JSON.parse(localStorage.getItem('dz_query_history') || '[]');
 
 /**
- * Returns the current list of saved query strings.
- * @returns {Array<string>}
- */
-export function getQueryHistory() {
-    return queryHistory;
-}
-
-/**
  * Adds a successfully executed SQL query to the local storage history.
  * Maintains a maximum of 10 recent unique queries.
  *
