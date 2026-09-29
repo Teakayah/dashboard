@@ -69,3 +69,6 @@
 ## 2026-09-09 - Testing Asynchronous UI Assertions
 **Learning:** Using synchronous assertions like `toast.wait_for(state="visible", timeout=3000)` combined with `assert ... in toast.inner_text().lower()` is flaky for dynamic DOM elements and can timeout prematurely.
 **Action:** Always use Playwright's native auto-retrying assertions like `expect(locator).to_be_visible(timeout=...)` and `expect(locator).to_contain_text(...)` to ensure tests remain robust.
+## 2026-10-01 - Testing Service Worker Cache Invalidation
+**Learning:** Changes to cached assets inside a Service Worker are rarely tested end-to-end, leading to stale assets loading despite deployments. A Playwright test that verifies that `activate` correctly sweeps stale caches based on a dynamic `CACHE_VERSION` prevents persistent offline regressions.
+**Action:** Include a dedicated integration test that artificially seeds old cache keys and asserts their deletion post-registration.

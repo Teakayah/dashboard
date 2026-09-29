@@ -151,7 +151,7 @@ Current tests cover Python deployment scripts. None of the **front-end** is test
 - [x] **Persistence** — `test_persistence_across_reload` rehydrates schema after full reload.
 - [x] **Clear data** — `test_clear_data_wipes_schema` accepts confirm dialog and asserts empty schema.
 - [x] **CSV/JSON export** — execute a query, click Download/Copy, verify resulting payload (covered in `tests/test_dropzone.py`).
-- [ ] **Service worker** — verify cache version increments invalidate old assets.
+- [x] **Service worker** — verify cache version increments invalidate old assets.
 
 - [x] Snapshot test (Playwright) light and dark renders. (Verified manually and via accessibility tests).
 - [x] axe-core WCAG 2.1 AA CI step — `tests/test_accessibility.py` injects axe-core and fails on critical/serious violations across all pages. (Enabled `color-contrast` rule and fixed all failures).
