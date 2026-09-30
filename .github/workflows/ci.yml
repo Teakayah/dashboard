@@ -97,4 +97,5 @@ jobs:
                  tests/test_accessibility.py \
                  tests/test_analysis_pages.py \
                  tests/test_interactivity.py \
+                 tests/test_service_worker.py \
                  tests/test_usability.py -v --tb=short
