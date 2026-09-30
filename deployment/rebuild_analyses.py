@@ -5,6 +5,7 @@ Uses a declarative extraction framework to process various tables.
 """
 
 import csv
+import functools
 import json
 import re
 import sys
@@ -41,6 +42,7 @@ def _read_csv(path: Path) -> list[dict]:
         return [dict(zip_longest(headers, row)) for row in reader if any(row)]
 
 
+@functools.lru_cache(maxsize=4096)
 def _clean(val: str) -> Optional[float]:
     """
     Return float or None for Stats Canada VALUE cells.

@@ -17,6 +17,11 @@ try:
 except ImportError:
     from deployment.config import ROOT, SITE_URL, LIBRARY_PATTERNS, ACCENT_COLORS
 
+COMPILED_LIBRARY_PATTERNS = {
+    name: re.compile(pattern, re.IGNORECASE)
+    for name, pattern in LIBRARY_PATTERNS.items()
+}
+
 EXCLUDE = {'index.html'}
 
 DESCRIPTIONS_FILE = ROOT / 'descriptions.json'
@@ -84,8 +89,8 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
     description = html.unescape(description)
 
     # Detect visualization libraries
-    tags = [name for name, pattern in LIBRARY_PATTERNS.items()
-            if re.search(pattern, content, re.IGNORECASE)]
+    tags = [name for name, pattern in COMPILED_LIBRARY_PATTERNS.items()
+            if pattern.search(content)]
 
     return {
         'filename': filepath.name,
