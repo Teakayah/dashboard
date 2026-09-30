@@ -86,3 +86,6 @@
 ## 2026-09-09 - [Optimize Concurrent Fetching with Deterministic DOM Order]
 **Learning:** When using `Promise.all()` to parallelize independent database operations (like fetching table schemas) and improve performance, directly mapping these into UI-updating promises can introduce race conditions, resulting in non-deterministic DOM insertion order based on which promise resolves first.
 **Action:** Separate data fetching from UI rendering. Pre-fetch the necessary data concurrently using `Promise.all()`, and then use a sequential loop (e.g., `for...of`) to build and append the UI elements. This preserves deterministic visual order while still eliminating redundant sequential IPC latency.
+## 2026-09-30 - Pre-compile Regexes
+**Learning:** `re.search` evaluates a string pattern inside a loop which internally recompiles the string regex logic. However, this is slower than `re.compile(pattern).search(text)` especially when called in tight loops on large strings.
+**Action:** Always pre-compile `re.compile` at the module level when performing repeated tag detection in scripts processing multiple files.
