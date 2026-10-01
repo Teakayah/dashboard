@@ -10,6 +10,14 @@ export function escapeId(str) {
 }
 
 /**
+ * Extracts the file path, preferring the relative path.
+ *
+ * @param {File} file
+ * @returns {string} The file path
+ */
+export const getFilePath = (file) => file.webkitRelativePath || file.name;
+
+/**
  * Safely converts an Arrow table result into a plain array of JavaScript objects.
  * DuckDB-Wasm returns query results as Apache Arrow tables wrapped in Proxy objects.
  * Attempting to pass these proxies directly to UI components (like Grid.js) or standard
