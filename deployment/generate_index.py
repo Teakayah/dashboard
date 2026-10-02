@@ -39,6 +39,42 @@ try:
 except ImportError:
     from deployment.git_utils import get_git_dates_batched
 
+# Pre-compiled regular expressions for performance optimization
+# Eliminates redundant parsing overhead during tight loop execution across many files.
+RE_TITLE = re.compile(r'<title[^>]*>(.*?)</title>', re.IGNORECASE | re.DOTALL)
+RE_META_DESC = re.compile(
+    r'''
+    <meta[^>]*                # Matches the opening <meta tag and any attributes before 'name'
+    name=["']description["']  # Matches the name attribute with either single or double quotes
+    [^>]*                     # Matches any intermediate attributes before 'content'
+    content=["'](.*?)["']     # Group 1: Non-greedily captures the actual description text
+    ''',
+    re.IGNORECASE | re.VERBOSE
+)
+RE_SUBTITLE = re.compile(
+    r'''
+    <([a-zA-Z0-9]+)                                  # Group 1: Captures the HTML tag name (e.g., div, span, p)
+    [^>]*class=["'][^"']*subtitle[^"']*["'][^>]*>    # Ensures the tag has a class attribute containing 'subtitle'
+    (.*?)                                            # Group 2: Non-greedily captures the inner content
+    </\1>                                            # The \1 backreference dynamically matches the exact closing tag
+    ''',
+    re.IGNORECASE | re.DOTALL | re.VERBOSE
+)
+RE_HTML_TAGS = re.compile(r'<[^>]+>')
+RE_WHITESPACE = re.compile(r'\s+')
+RE_HEAD_CLOSE = re.compile(r'(</head>)', re.IGNORECASE)
+RE_HEAD_OPEN = re.compile(r'(<head[^>]*>)', re.IGNORECASE)
+RE_BACK_LINK = re.compile(
+    r'''
+    \n?                            # Match an optional newline
+    <!--\ back-link-inject\ -->    # Match the specific HTML comment marker
+    (?:                            # Optional non-capturing group for the div
+        <div[^>]*>.*?</div>        # Match the div and its contents non-greedily
+    )?
+    ''',
+    re.DOTALL | re.VERBOSE,
+)
+
 
 def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None, git_date: Optional[str] = None) -> dict:
     """Extract title, description, and tags from an HTML file content.
@@ -47,38 +83,21 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
     <meta name="description"> or subtitle element is found in the HTML.
     """
     # Title
-    title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
+    title_match = RE_TITLE.search(content)
     title = title_match.group(1).strip() if title_match else filepath.stem.replace('_', ' ').title()
     # Clean HTML entities in title
     title = html.unescape(title)
 
     # Meta description
-    desc_match = re.search(
-        r'''
-        <meta[^>]*                # Matches the opening <meta tag and any attributes before 'name'
-        name=["']description["']  # Matches the name attribute with either single or double quotes
-        [^>]*                     # Matches any intermediate attributes before 'content'
-        content=["'](.*?)["']     # Group 1: Non-greedily captures the actual description text
-        ''',
-        content, re.IGNORECASE | re.VERBOSE
-    )
+    desc_match = RE_META_DESC.search(content)
     description = desc_match.group(1).strip() if desc_match else ''
 
     # If no meta description, look for a subtitle element (common pattern in your files)
     if not description:
-        sub_match = re.search(
-            r'''
-            <([a-zA-Z0-9]+)                                  # Group 1: Captures the HTML tag name (e.g., div, span, p)
-            [^>]*class=["'][^"']*subtitle[^"']*["'][^>]*>    # Ensures the tag has a class attribute containing 'subtitle'
-            (.*?)                                            # Group 2: Non-greedily captures the inner content
-            </\1>                                            # The \1 backreference dynamically matches the exact closing tag
-            ''',
-            content,
-            re.IGNORECASE | re.DOTALL | re.VERBOSE
-        )
+        sub_match = RE_SUBTITLE.search(content)
         if sub_match:
-            description = re.sub(r'<[^>]+>', '', sub_match.group(2)).strip()
-            description = re.sub(r'\s+', ' ', description)
+            description = RE_HTML_TAGS.sub('', sub_match.group(2)).strip()
+            description = RE_WHITESPACE.sub(' ', description)
             if len(description) > 120:
                 description = description[:117] + '…'
 
@@ -184,12 +203,10 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
 
     # Strip any older-version block, then inject the current preset.
     new_content = strip_regex.sub('', content)
-    final_content = re.sub(
-        r'(<head[^>]*>)',
+    final_content = RE_HEAD_OPEN.sub(
         r'\1\n' + snippet,
         new_content,
         count=1,
-        flags=re.IGNORECASE,
     )
     if final_content != new_content:
         print(f'  Injected responsive enhancer into {filename}')
@@ -203,19 +220,7 @@ def strip_back_link(content: str, filename: str) -> str:
     """Remove the legacy arrow back-link div; the unified header is the canonical nav."""
     if BACK_LINK_MARKER not in content:
         return content
-    new_content = re.sub(
-        r'''
-        \n?                            # Match an optional newline
-        <!--\ back-link-inject\ -->    # Match the specific HTML comment marker
-        (?:                            # Optional non-capturing group for the div
-            <div[^>]*>.*?</div>        # Match the div and its contents non-greedily
-        )?
-        ''',
-        '',
-        content,
-        count=1,
-        flags=re.DOTALL | re.VERBOSE,
-    )
+    new_content = RE_BACK_LINK.sub('', content, count=1)
     if new_content != content:
         print(f'  Stripped legacy back-link from {filename}')
     return new_content
@@ -230,7 +235,7 @@ def inject_favicon(content: str, filename: str) -> str:
     favicon_link = f'\n  <link rel="icon" href="{SITE_URL}/favicon.ico" type="image/x-icon">'
 
     # Insert just before </head>
-    new_content = re.sub(r'(</head>)', favicon_link + r'\n\1', content, count=1, flags=re.IGNORECASE)
+    new_content = RE_HEAD_CLOSE.sub(favicon_link + r'\n\1', content, count=1)
     if new_content != content:
         print(f'  Injected favicon into {filename}')
     return new_content
@@ -251,7 +256,7 @@ def inject_csp(content: str, filename: str) -> str:
         'worker-src \'self\' blob:">'
     )
 
-    new_content = re.sub(r'(<head[^>]*>)', r'\1' + csp_block, content, count=1, flags=re.IGNORECASE)
+    new_content = RE_HEAD_OPEN.sub(r'\1' + csp_block, content, count=1)
     if new_content != content:
         print(f'  Injected CSP into {filename}')
     return new_content
@@ -265,7 +270,7 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
     image_url = f'{SITE_URL}/previews/{stem}.png'
 
     # Extract title for og:title
-    title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE | re.DOTALL)
+    title_match = RE_TITLE.search(content)
     title = title_match.group(1).strip() if title_match else stem.replace('_', ' ').title()
     title = html.escape(html.unescape(title), quote=True)
 
@@ -282,7 +287,7 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
     )
 
     # Insert just before </head>
-    new_content = re.sub(r'(</head>)', og_block + r'\n\1', content, count=1, flags=re.IGNORECASE)
+    new_content = RE_HEAD_CLOSE.sub(og_block + r'\n\1', content, count=1)
     if new_content != content:
         print(f'  Injected og:image into {filename}')
     return new_content
@@ -681,7 +686,7 @@ def inject_contrast_fix(content: str, filename: str) -> str:
     """Inject a CSS override that fixes dark-mode body colours and WCAG AA contrast failures."""
     if CONTRAST_FIX_MARKER in content:
         return content
-    new_content = re.sub(r'(</head>)', CONTRAST_FIX_STYLE + r'\n\1', content, count=1, flags=re.IGNORECASE)
+    new_content = RE_HEAD_CLOSE.sub(CONTRAST_FIX_STYLE + r'\n\1', content, count=1)
     if new_content != content:
         print(f'  Injected contrast fix into {filename}')
     return new_content
