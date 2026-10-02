@@ -701,14 +701,15 @@ downloadBtn.addEventListener('click', async () => {
     });
 });
 
+const originalCopyJsonText = copyJsonBtn.textContent;
 copyJsonBtn.addEventListener('click', () => {
     if (!lastResult) return;
     const json = JSON.stringify(lastResult, null, 2);
     navigator.clipboard.writeText(json).then(() => {
-        const originalText = copyJsonBtn.textContent;
+        if (copyJsonBtn.textContent === 'Copied!') return;
         copyJsonBtn.textContent = 'Copied!';
         showToast('Copied JSON to clipboard', 'success');
-        setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
+        setTimeout(() => { copyJsonBtn.textContent = originalCopyJsonText; }, 2000);
     }).catch(err => {
         console.error(err);
         showToast('Clipboard Error: ' + err.message);

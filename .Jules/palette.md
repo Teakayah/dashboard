@@ -69,3 +69,7 @@
 ## YYYY-MM-DD - Explicit Empty States for Dynamic Result Containers
 **Learning:** Container blocks for dynamic data results (like grids or tables) should never be left completely blank when empty or cleared, as this creates a confusing, broken-looking UI.
 **Action:** Always render an explicit empty state in the HTML initially and explicitly restore it via JavaScript when data is cleared to guide the user on next steps.
+
+## 2026-09-12 - Prevent State-Mutation Race Conditions in Temporary Visual Feedback
+**Learning:** When changing a button's text temporarily (e.g., to "Copied!") and reverting it with a timeout, rapid double-clicks can cause the temporary state to be captured as the "original" text, permanently overwriting the button's label.
+**Action:** Prevent this by checking if the current text is already the temporary state before capturing it, or by storing the original text outside the event handler.
