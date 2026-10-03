@@ -582,6 +582,24 @@ def test_query_recipe_summarize_executes(dz: Page):
     expect(dz.locator('#results')).to_contain_text(re.compile(r'column_name|min|max|count|approx_unique'))
 
 
+def test_query_recipe_duplicate_rows_executes(dz: Page):
+    """Selecting the Find Duplicate Rows recipe must populate the SQL editor and execute."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    dz.select_option('#query-recipes', label="Find Duplicate Rows")
+
+    expect(dz.locator('#sql-input')).to_have_value(re.compile(r'duplicate_count'))
+    expect(dz.locator('#run-query')).to_be_enabled()
+
+    dz.locator('#run-query').click()
+
+    # Wait for either results or empty state since samples might not have duplicates
+    expect(dz.locator('.gridjs-tbody tr, .empty')).not_to_have_count(0)
+
+
 
 def test_focus_sql_input_shortcut(dz: Page):
     """Pressing '/' outside of an input should focus the SQL input."""
