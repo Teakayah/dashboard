@@ -425,23 +425,22 @@
 </style>
 
   <script>
-    document.getElementById('share-btn')?.addEventListener('click', () => {
+    const shareBtn = document.getElementById('share-btn');
+    const originalShareText = shareBtn ? shareBtn.innerText : 'Share';
+    shareBtn?.addEventListener('click', () => {
       if (navigator.share) {
         navigator.share({title: document.title, url: window.location.href});
       } else if (navigator.clipboard) {
         navigator.clipboard.writeText(window.location.href).then(() => {
-          const btn = document.getElementById('share-btn');
-          if (btn) {
-            const original = btn.innerText;
-            btn.innerText = 'Copied!';
-            setTimeout(() => { btn.innerText = original; }, 2000);
+          if (shareBtn && shareBtn.innerText !== 'Copied!') {
+            shareBtn.innerText = 'Copied!';
+            setTimeout(() => { shareBtn.innerText = originalShareText; }, 2000);
           }
         }).catch(() => {});
       }
     });
 
     if (!navigator.share && !navigator.clipboard) {
-      const shareBtn = document.getElementById('share-btn');
       if (shareBtn) shareBtn.style.display = 'none';
     }
 
