@@ -7,7 +7,8 @@ import {
     insertAtCursor,
     showToast,
     withLoading,
-    showEmptyState
+    showEmptyState,
+    getFilePath
 } from './src/utils.js';
 import { addToHistory, renderHistory } from './src/history.js';
 import {
@@ -473,7 +474,7 @@ async function handleFiles(files) {
         const standaloneFiles = [];
 
         for (const file of files) {
-            const relPath = file.webkitRelativePath || file.name;
+            const relPath = getFilePath(file);
             const pathParts = relPath.split('/');
 
             if (pathParts.length > 1) {
@@ -490,12 +491,12 @@ async function handleFiles(files) {
         }
 
         for (const [dirName, dirFiles] of Object.entries(fileGroups)) {
-            const isDelta = dirFiles.some(f => (f.webkitRelativePath || f.name).includes('_delta_log'));
+            const isDelta = dirFiles.some(f => getFilePath(f).includes('_delta_log'));
             const tableName = dirName.replace(/[^a-zA-Z0-9]/g, '_');
 
             const db = getDb();
             await Promise.all(dirFiles.map(async file => {
-                const fullPath = file.webkitRelativePath || file.name;
+                const fullPath = getFilePath(file);
                 const buffer = await file.arrayBuffer();
                 await db.registerFileBuffer(fullPath, new Uint8Array(buffer));
             }));
@@ -515,7 +516,7 @@ async function handleFiles(files) {
                 await onTableLoaded(tableName);
             } else {
                 for (const file of dirFiles) {
-                    await processFile(file, file.webkitRelativePath || file.name);
+                    await processFile(file, getFilePath(file));
                 }
             }
         }
@@ -701,14 +702,15 @@ downloadBtn.addEventListener('click', async () => {
     });
 });
 
+const originalCopyJsonText = copyJsonBtn.textContent;
 copyJsonBtn.addEventListener('click', () => {
     if (!lastResult) return;
     const json = JSON.stringify(lastResult, null, 2);
     navigator.clipboard.writeText(json).then(() => {
-        const originalText = copyJsonBtn.textContent;
+        if (copyJsonBtn.textContent === 'Copied!') return;
         copyJsonBtn.textContent = 'Copied!';
         showToast('Copied JSON to clipboard', 'success');
-        setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
+        setTimeout(() => { copyJsonBtn.textContent = originalCopyJsonText; }, 2000);
     }).catch(err => {
         console.error(err);
         showToast('Clipboard Error: ' + err.message);

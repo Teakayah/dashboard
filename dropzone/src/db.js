@@ -102,12 +102,15 @@ export function reloadWithoutSW() {
 }
 
 /**
- * Initializes the DuckDB-Wasm instance.
+ * Initializes the DuckDB-Wasm instance, selecting the appropriate WebAssembly bundle,
+ * instantiating the worker, and opening the database connection.
+ * Handles OPFS persistence if available in the browser, with an in-memory fallback.
  *
- * @param {Object} options
- * @param {HTMLElement} [options.statusEl] - Status display element.
- * @param {Function} [options.setProgress] - Progress callback (0-100).
- * @param {Function} [options.onStateRestored] - Async callback after DB is ready to restore state.
+ * @param {Object} [options={}] - Configuration options for initialization.
+ * @param {HTMLElement} [options.statusEl] - Status display element to update with progress messages.
+ * @param {Function} [options.setProgress] - Progress callback function that receives a percentage (0-100).
+ * @param {Function} [options.onStateRestored] - Async callback executed after DB is ready, used to restore persistent state.
+ * @returns {Promise<void>} Resolves when the database is connected and extensions are loaded.
  */
 export async function initDuckDB({ statusEl, setProgress, onStateRestored } = {}) {
     let timedOut = false;
