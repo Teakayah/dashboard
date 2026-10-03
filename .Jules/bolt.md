@@ -86,3 +86,7 @@
 ## 2026-09-09 - [Optimize Concurrent Fetching with Deterministic DOM Order]
 **Learning:** When using `Promise.all()` to parallelize independent database operations (like fetching table schemas) and improve performance, directly mapping these into UI-updating promises can introduce race conditions, resulting in non-deterministic DOM insertion order based on which promise resolves first.
 **Action:** Separate data fetching from UI rendering. Pre-fetch the necessary data concurrently using `Promise.all()`, and then use a sequential loop (e.g., `for...of`) to build and append the UI elements. This preserves deterministic visual order while still eliminating redundant sequential IPC latency.
+
+## 2026-10-03 - [Pre-compile regular expressions]
+**Learning:** To optimize Python performance (e.g., in scripts like `generate_feed.py`), repeatedly evaluating `re.search()` with string patterns inside tight loops incurs redundant evaluation overhead.
+**Action:** Pre-compile regular expressions at the module level using `re.compile()` and reuse them, avoiding multiple compilations.
