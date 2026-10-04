@@ -22,7 +22,14 @@ COMPILED_LIBRARY_PATTERNS = {
     for name, pattern in LIBRARY_PATTERNS.items()
 }
 
-RE_TITLE = re.compile(r'<title[^>]*>(.*?)</title>', re.IGNORECASE | re.DOTALL)
+RE_TITLE = re.compile(
+    r'''
+    <title[^>]*>  # Match the opening <title> tag and any attributes
+    (.*?)         # Group 1: Non-greedily capture the inner text
+    </title>      # Match the closing </title> tag
+    ''',
+    re.IGNORECASE | re.DOTALL | re.VERBOSE
+)
 RE_META_DESC = re.compile(
     r'''
     <meta[^>]*                # Matches the opening <meta tag and any attributes before 'name'
@@ -41,10 +48,30 @@ RE_SUBTITLE = re.compile(
     ''',
     re.IGNORECASE | re.DOTALL | re.VERBOSE
 )
-RE_HTML_TAGS = re.compile(r'<[^>]+>')
-RE_WHITESPACE = re.compile(r'\s+')
-RE_HEAD_CLOSE = re.compile(r'(</head>)', re.IGNORECASE)
-RE_HEAD_OPEN = re.compile(r'(<head[^>]*>)', re.IGNORECASE)
+RE_HTML_TAGS = re.compile(
+    r'''
+    <[^>]+>       # Match any HTML tag, from opening angle bracket to closing angle bracket
+    ''',
+    re.VERBOSE
+)
+RE_WHITESPACE = re.compile(
+    r'''
+    \s+           # Match one or more whitespace characters
+    ''',
+    re.VERBOSE
+)
+RE_HEAD_CLOSE = re.compile(
+    r'''
+    (</head>)     # Group 1: Match the closing </head> tag
+    ''',
+    re.IGNORECASE | re.VERBOSE
+)
+RE_HEAD_OPEN = re.compile(
+    r'''
+    (<head[^>]*>) # Group 1: Match the opening <head> tag and any attributes
+    ''',
+    re.IGNORECASE | re.VERBOSE
+)
 RE_BACK_LINK = re.compile(
     r'''
     \n?                            # Match an optional newline
