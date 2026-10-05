@@ -1,0 +1,4 @@
+## 2026-10-05 - Add E2E Smoke Test for refresh.py SRI Mismatches
+Coverage Gap: The refresh pipeline (`deployment/refresh.py`) lacked an end-to-end smoke test to verify that generated HTML files had no `<script>` Subresource Integrity (SRI) mismatches, leaving a potential regression vulnerability uncovered (as noted in TODO.md).
+Learning: Playwright's `page.on("console", ...)` can be used to catch browser-level subresource integrity errors that wouldn't normally fail a `page.goto` or standard DOM assertion, enabling reliable validation of resource integrity.
+Assertion: Run `refresh.py` with push/description flags disabled using `subprocess.run`, then use Playwright to load each generated HTML file via a `file://` protocol and explicitly assert that no SRI-related error messages were emitted to the browser console.
