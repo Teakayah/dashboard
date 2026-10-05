@@ -93,7 +93,7 @@ export function createPreviewCard(title, renderFn, container = document.getEleme
     card.appendChild(canvas);
 
     container.appendChild(card);
-    renderFn(id);
+    return renderFn(id);
 }
 
 /**
@@ -129,11 +129,13 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
 
     if (numericCols.length === 0) return;
 
+    const previewPromises = [];
+
     // 1. Time-Series Trend detection
     if (dateCols.length > 0 && numericCols.length > 0) {
         const dCol = dateCols[0];
         const nCol = numericCols[0];
-        createPreviewCard(`Trend: ${nCol} over ${dCol}`, async (canvasId) => {
+        previewPromises.push(createPreviewCard(`Trend: ${nCol} over ${dCol}`, async (canvasId) => {
             const result = await conn.query(`
                 SELECT "${escapeId(dCol)}" as date, AVG("${escapeId(nCol)}") as val
                 FROM "${escapeId(tableName)}"
@@ -151,7 +153,7 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
                     fill: false
                 }]
             });
-        }, previewsContainer);
+        }, previewsContainer));
     }
 
     // 2. Correlation detection
@@ -186,7 +188,7 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
                 }
             }
 
-            createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, async (canvasId) => {
+            previewPromises.push(createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, async (canvasId) => {
                 const result = await conn.query(`SELECT "${escapeId(bestPair[0])}" as x, "${escapeId(bestPair[1])}" as y FROM "${escapeId(tableName)}" WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
                 const rows = getRows(result);
                 renderChart(canvasId, 'scatter', {
@@ -198,7 +200,7 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
                 }, {
                     scales: { x: { title: {display: true, text: bestPair[0]} }, y: { title: {display: true, text: bestPair[1]} } }
                 });
-            }, previewsContainer);
+            }, previewsContainer));
         } catch (e) {
             console.warn('Correlation check failed', e);
         }
@@ -208,7 +210,7 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
     if (textCols.length > 0 && numericCols.length > 0) {
         const tCol = textCols[0];
         const nCol = numericCols[0];
-        createPreviewCard(`Distribution: ${nCol} by ${tCol}`, async (canvasId) => {
+        previewPromises.push(createPreviewCard(`Distribution: ${nCol} by ${tCol}`, async (canvasId) => {
             const result = await conn.query(`
                 SELECT "${escapeId(tCol)}" as label, AVG("${escapeId(nCol)}") as value
                 FROM "${escapeId(tableName)}"
@@ -225,6 +227,8 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
                     backgroundColor: '#ff6384'
                 }]
             });
-        }, previewsContainer);
+        }, previewsContainer));
     }
+
+    await Promise.all(previewPromises);
 }
