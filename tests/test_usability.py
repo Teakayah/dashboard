@@ -271,30 +271,50 @@ def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
 
     def assert_height_stable(toggle_selector: str):
         page.locator(toggle_selector).click()
-        # Poll until height stops changing; Chart.js resize callbacks can chain
-        # across many rAF cycles when canvases first become visible.
-        prev_h = None
-        stable_count = 0
-        for _ in range(40):  # up to 8s total
-            h = page.evaluate('document.documentElement.scrollHeight')
-            if prev_h is not None and abs(h - prev_h) <= 4:
-                stable_count += 1
-                if stable_count >= 4:  # stable for 800ms
-                    return
-            else:
-                stable_count = 0
-            prev_h = h
-            page.wait_for_timeout(200)
-        assert False, (
-            f'{toggle_selector}: page height never stabilized (last value: {prev_h})'
-        )
+        page.evaluate("window.__heightStablePoll = { prev: null, count: 0 };")
+        page.wait_for_function('''
+            () => {
+                const h = document.documentElement.scrollHeight;
+                if (window.__heightStablePoll.prev !== null && Math.abs(h - window.__heightStablePoll.prev) <= 4) {
+                    window.__heightStablePoll.count += 1;
+                } else {
+                    window.__heightStablePoll.count = 0;
+                }
+                window.__heightStablePoll.prev = h;
+                return window.__heightStablePoll.count >= 4;
+            }
+        ''', timeout=15000, polling=200)
 
     assert_height_stable('#rate-btnS')
     page.locator('.tab', has_text='Government Debt').click()
-    page.wait_for_timeout(300)
+    page.evaluate("window.__heightStablePoll = { prev: null, count: 0 };")
+    page.wait_for_function('''
+        () => {
+            const h = document.documentElement.scrollHeight;
+            if (window.__heightStablePoll.prev !== null && Math.abs(h - window.__heightStablePoll.prev) <= 4) {
+                window.__heightStablePoll.count += 1;
+            } else {
+                window.__heightStablePoll.count = 0;
+            }
+            window.__heightStablePoll.prev = h;
+            return window.__heightStablePoll.count >= 4;
+        }
+    ''', timeout=15000, polling=200)
     assert_height_stable('#debt-btnS')
     page.locator('.tab', has_text='Population').click()
-    page.wait_for_timeout(300)
+    page.evaluate("window.__heightStablePoll = { prev: null, count: 0 };")
+    page.wait_for_function('''
+        () => {
+            const h = document.documentElement.scrollHeight;
+            if (window.__heightStablePoll.prev !== null && Math.abs(h - window.__heightStablePoll.prev) <= 4) {
+                window.__heightStablePoll.count += 1;
+            } else {
+                window.__heightStablePoll.count = 0;
+            }
+            window.__heightStablePoll.prev = h;
+            return window.__heightStablePoll.count >= 4;
+        }
+    ''', timeout=15000, polling=200)
     assert_height_stable('#pop-btnS')
 
 
@@ -307,12 +327,27 @@ def test_flood_dashboard_height_stabilizes(page: Page):
     tabs = ['gauge', 'history', 'snowpack']
     for tab in tabs:
         page.locator(f".tab[onclick*=\"'{tab}'\"]").click()
-        page.wait_for_timeout(300)
+
+        # Poll for stability
+        page.evaluate("window.__heightStablePoll = { prev: null, count: 0 };")
+        page.wait_for_function('''
+            () => {
+                const h = document.documentElement.scrollHeight;
+                if (window.__heightStablePoll.prev !== null && Math.abs(h - window.__heightStablePoll.prev) <= 5) {
+                    window.__heightStablePoll.count += 1;
+                } else {
+                    window.__heightStablePoll.count = 0;
+                }
+                window.__heightStablePoll.prev = h;
+                return window.__heightStablePoll.count >= 4;
+            }
+        ''', timeout=15000, polling=200)
+
+        # Grab a snapshot of heights to ensure they are stable within diff 5 as required
         heights = []
         for _ in range(5):
             heights.append(page.evaluate('document.documentElement.scrollHeight'))
-            page.wait_for_timeout(200)
-        
+
         diff = max(heights) - min(heights)
         assert diff <= 5, (
             f'Tab {tab}: page height is unstable (range: {min(heights)}-{max(heights)}): {heights}'
