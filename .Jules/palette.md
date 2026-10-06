@@ -69,3 +69,6 @@
 ## YYYY-MM-DD - Explicit Empty States for Dynamic Result Containers
 **Learning:** Container blocks for dynamic data results (like grids or tables) should never be left completely blank when empty or cleared, as this creates a confusing, broken-looking UI.
 **Action:** Always render an explicit empty state in the HTML initially and explicitly restore it via JavaScript when data is cleared to guide the user on next steps.
+## 2026-10-06 - Dynamic Contextual Keyboard Hints
+**Learning:** While static keyboard hints (like `/` to focus) are useful, they become clutter once the user is already interacting with the element. Power-user actions (like `Ctrl+Enter` to submit a textarea) are often invisible.
+**Action:** Use CSS pseudo-classes (`:focus-within` and `:not(:placeholder-shown)`) with sibling combinators (`~`) to dynamically swap shortcut hints. Hide the "focus" hint and gracefully fade in the "execution" hint only when the user is actively engaged with the input.
