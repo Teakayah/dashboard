@@ -319,9 +319,9 @@ function updateConsoleActionsUI() {
         btn.title = enabled ? enabledTitle : disabledTitle;
     };
 
-    setBtnState(recipeSelect, hasData, 'Requires loaded data');
-    setBtnState(exportDbBtn, hasData, 'Requires loaded data');
-    setBtnState(clearBtn, hasData, 'Requires loaded data');
+    setBtnState(recipeSelect, hasData, 'Requires loaded data', 'Select a query recipe');
+    setBtnState(exportDbBtn, hasData, 'Requires loaded data', 'Export Database (.db)');
+    setBtnState(clearBtn, hasData, 'Requires loaded data', 'Clear All Data');
 }
 
 /**
@@ -635,9 +635,9 @@ async function runQuery() {
         lastResult = getRows(result);
         renderResults(lastResult);
         downloadBtn.disabled = false;
-        downloadBtn.title = '';
+        downloadBtn.title = 'Download Results as CSV';
         copyJsonBtn.disabled = false;
-        copyJsonBtn.title = '';
+        copyJsonBtn.title = 'Copy JSON';
         statusEl.textContent = `Query executed in ${duration}ms`;
         addToHistory(sql, queryHistoryEl, sqlInput);
     });
