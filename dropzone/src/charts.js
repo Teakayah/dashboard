@@ -129,66 +129,98 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
 
     if (numericCols.length === 0) return;
 
+    // We will collect data-fetching promises first to execute them concurrently,
+    // then render the UI sequentially to guarantee deterministic visual order
+    // and avoid dangling promises in the UI callbacks.
+    const fetchPromises = [];
+    const uiTasks = [];
+
     // 1. Time-Series Trend detection
     if (dateCols.length > 0 && numericCols.length > 0) {
         const dCol = dateCols[0];
         const nCol = numericCols[0];
-        createPreviewCard(`Trend: ${nCol} over ${dCol}`, async (canvasId) => {
-            const result = await conn.query(`
-                SELECT "${escapeId(dCol)}" as date, AVG("${escapeId(nCol)}") as val
-                FROM "${escapeId(tableName)}"
-                WHERE "${escapeId(dCol)}" IS NOT NULL AND "${escapeId(nCol)}" IS NOT NULL
-                GROUP BY 1 ORDER BY 1 ASC LIMIT 100
-            `);
-            const rows = getRows(result);
-            renderChart(canvasId, 'line', {
-                labels: rows.map(r => r.date),
-                datasets: [{
-                    label: `Avg ${nCol}`,
-                    data: rows.map(r => r.val),
-                    borderColor: '#4bc0c0',
-                    tension: 0.1,
-                    fill: false
-                }]
-            });
-        }, previewsContainer);
+
+        const fetchTrend = (async () => {
+            try {
+                const result = await conn.query(`
+                    SELECT "${escapeId(dCol)}" as date, AVG("${escapeId(nCol)}") as val
+                    FROM "${escapeId(tableName)}"
+                    WHERE "${escapeId(dCol)}" IS NOT NULL AND "${escapeId(nCol)}" IS NOT NULL
+                    GROUP BY 1 ORDER BY 1 ASC LIMIT 100
+                `);
+                return getRows(result);
+            } catch (e) {
+                console.warn('Trend fetch failed', e);
+                return null;
+            }
+        })();
+        fetchPromises.push(fetchTrend);
+
+        uiTasks.push(async () => {
+            const rows = await fetchTrend;
+            if (!rows) return;
+            createPreviewCard(`Trend: ${nCol} over ${dCol}`, (canvasId) => {
+                renderChart(canvasId, 'line', {
+                    labels: rows.map(r => r.date),
+                    datasets: [{
+                        label: `Avg ${nCol}`,
+                        data: rows.map(r => r.val),
+                        borderColor: '#4bc0c0',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                });
+            }, previewsContainer);
+        });
     }
 
     // 2. Correlation detection
     if (numericCols.length >= 2) {
-        try {
-            let bestPair = [numericCols[0], numericCols[1]];
-            let maxCorr = 0;
+        const fetchCorrelation = (async () => {
+            try {
+                let bestPair = [numericCols[0], numericCols[1]];
+                let maxCorr = 0;
 
-            const colsToCheck = numericCols.slice(0, 5);
-            const corrExprs = [];
-            const pairs = [];
-            for (let i = 0; i < colsToCheck.length; i++) {
-                for (let j = i + 1; j < colsToCheck.length; j++) {
-                    const c1 = colsToCheck[i];
-                    const c2 = colsToCheck[j];
-                    corrExprs.push(`corr("${escapeId(c1)}", "${escapeId(c2)}") as "c_${i}_${j}"`);
-                    pairs.push({ c1, c2, alias: `c_${i}_${j}` });
-                }
-            }
-
-            if (corrExprs.length > 0) {
-                const corrQuery = `SELECT ${corrExprs.join(', ')} FROM "${escapeId(tableName)}"`;
-                const corrResult = await conn.query(corrQuery);
-                const row = getRows(corrResult)[0] || {};
-
-                for (const pair of pairs) {
-                    const corr = Math.abs(row[pair.alias] || 0);
-                    if (corr > maxCorr) {
-                        maxCorr = corr;
-                        bestPair = [pair.c1, pair.c2];
+                const colsToCheck = numericCols.slice(0, 5);
+                const corrExprs = [];
+                const pairs = [];
+                for (let i = 0; i < colsToCheck.length; i++) {
+                    for (let j = i + 1; j < colsToCheck.length; j++) {
+                        const c1 = colsToCheck[i];
+                        const c2 = colsToCheck[j];
+                        corrExprs.push(`corr("${escapeId(c1)}", "${escapeId(c2)}") as "c_${i}_${j}"`);
+                        pairs.push({ c1, c2, alias: `c_${i}_${j}` });
                     }
                 }
-            }
 
-            createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, async (canvasId) => {
+                if (corrExprs.length > 0) {
+                    const corrQuery = `SELECT ${corrExprs.join(', ')} FROM "${escapeId(tableName)}"`;
+                    const corrResult = await conn.query(corrQuery);
+                    const row = getRows(corrResult)[0] || {};
+
+                    for (const pair of pairs) {
+                        const corr = Math.abs(row[pair.alias] || 0);
+                        if (corr > maxCorr) {
+                            maxCorr = corr;
+                            bestPair = [pair.c1, pair.c2];
+                        }
+                    }
+                }
+
                 const result = await conn.query(`SELECT "${escapeId(bestPair[0])}" as x, "${escapeId(bestPair[1])}" as y FROM "${escapeId(tableName)}" WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
-                const rows = getRows(result);
+                return { rows: getRows(result), bestPair };
+            } catch (e) {
+                console.warn('Correlation fetch failed', e);
+                return null;
+            }
+        })();
+        fetchPromises.push(fetchCorrelation);
+
+        uiTasks.push(async () => {
+            const data = await fetchCorrelation;
+            if (!data) return;
+            const { rows, bestPair } = data;
+            createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, (canvasId) => {
                 renderChart(canvasId, 'scatter', {
                     datasets: [{
                         label: `${bestPair[0]} vs ${bestPair[1]}`,
@@ -199,32 +231,52 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
                     scales: { x: { title: {display: true, text: bestPair[0]} }, y: { title: {display: true, text: bestPair[1]} } }
                 });
             }, previewsContainer);
-        } catch (e) {
-            console.warn('Correlation check failed', e);
-        }
+        });
     }
 
     // 3. Category Distribution
     if (textCols.length > 0 && numericCols.length > 0) {
         const tCol = textCols[0];
         const nCol = numericCols[0];
-        createPreviewCard(`Distribution: ${nCol} by ${tCol}`, async (canvasId) => {
-            const result = await conn.query(`
-                SELECT "${escapeId(tCol)}" as label, AVG("${escapeId(nCol)}") as value
-                FROM "${escapeId(tableName)}"
-                GROUP BY 1 
-                ORDER BY value DESC 
-                LIMIT 10
-            `);
-            const rows = getRows(result);
-            renderChart(canvasId, 'bar', {
-                labels: rows.map(r => r.label),
-                datasets: [{
-                    label: `Average ${nCol}`,
-                    data: rows.map(r => r.value),
-                    backgroundColor: '#ff6384'
-                }]
-            });
-        }, previewsContainer);
+
+        const fetchDistribution = (async () => {
+            try {
+                const result = await conn.query(`
+                    SELECT "${escapeId(tCol)}" as label, AVG("${escapeId(nCol)}") as value
+                    FROM "${escapeId(tableName)}"
+                    GROUP BY 1
+                    ORDER BY value DESC
+                    LIMIT 10
+                `);
+                return getRows(result);
+            } catch (e) {
+                console.warn('Distribution fetch failed', e);
+                return null;
+            }
+        })();
+        fetchPromises.push(fetchDistribution);
+
+        uiTasks.push(async () => {
+            const rows = await fetchDistribution;
+            if (!rows) return;
+            createPreviewCard(`Distribution: ${nCol} by ${tCol}`, (canvasId) => {
+                renderChart(canvasId, 'bar', {
+                    labels: rows.map(r => r.label),
+                    datasets: [{
+                        label: `Average ${nCol}`,
+                        data: rows.map(r => r.value),
+                        backgroundColor: '#ff6384'
+                    }]
+                });
+            }, previewsContainer);
+        });
+    }
+
+    // Wait for all data queries to complete concurrently across the Worker boundary
+    await Promise.all(fetchPromises);
+
+    // Build and append the UI elements in deterministic sequential order
+    for (const renderTask of uiTasks) {
+        await renderTask();
     }
 }

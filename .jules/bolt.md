@@ -1,0 +1,6 @@
+## 2026-10-07 - [Optimize DuckDB-Wasm Profiling Queries]
+**Learning:** In single-worker DuckDB-Wasm environments, sequentially awaiting multiple async queries for the same user action (like generating chart previews) creates unnecessary IPC overhead.
+**Action:** When multiple independent queries are needed simultaneously, always execute them concurrently using `Promise.all` to reduce roundtrips across the WebWorker boundary and improve latency.
+## 2026-10-07 - [Optimize Concurrent Fetching with Deterministic DOM Order]
+**Learning:** When using `Promise.all()` to parallelize independent database operations (like generating multiple charts concurrently) and improve performance, directly wrapping the UI rendering in the Promise can introduce race conditions, resulting in non-deterministic DOM insertion order or even freezing UI if an unhandled promise rejection occurs inside the wrapper.
+**Action:** Separate data fetching from UI rendering. Pre-fetch the necessary data concurrently using `Promise.all()` into variables, and then use a sequential loop (e.g., `for...of` or `for` loop over tasks) to build and append the UI elements. This preserves deterministic visual order while still eliminating redundant sequential IPC latency.
