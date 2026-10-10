@@ -49,10 +49,12 @@ def test_service_worker_clears_old_caches(page: Page):
         });
     }''')
 
-    # The activate event deletes old caches. Wait a bit for the promise chain.
-    page.wait_for_timeout(1000)
+    # The activate event deletes old caches. Wait for them to disappear.
+    page.wait_for_function(
+        'async () => { const keys = await caches.keys(); return !keys.includes("datadashboard-v1") && !keys.includes("datadashboard-v2"); }'
+    )
 
-    final_keys = page.evaluate('() => caches.keys()')
+    final_keys = page.evaluate('async () => await caches.keys()')
     assert 'datadashboard-v1' not in final_keys
     assert 'datadashboard-v2' not in final_keys
 
