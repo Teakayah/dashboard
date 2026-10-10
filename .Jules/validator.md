@@ -51,3 +51,8 @@ Assertion: Strengthened lambda assertions using `assert_called_once_with` and is
 Coverage Gap: The keyboard shortcuts (`Ctrl+Enter` and `/`) in the dropzone application lacked test coverage.
 Learning: Testing modifier keyboard shortcuts and global keyboard events requires using specific Playwright methods like `locator.press('Control+Enter')` and `page.keyboard.press('/')` instead of generic input events.
 Assertion: Use Playwright's `press()` method directly on locators or the page keyboard object to simulate specific key combinations, and use `document.activeElement` evaluations to verify focus state changes.
+
+## 2026-10-08 - Fix flaky service worker cache test
+Coverage Gap: Service worker cache invalidation tests occasionally failed in CI due to arbitrary timeouts.
+Learning: Hardcoded `page.wait_for_timeout` is unreliable for asynchronous browser APIs like `caches.keys()`. Network and CPU constraints in CI cause cache cleanup to take varying amounts of time, leading to flaky assertions.
+Assertion: Use `page.wait_for_function(...)` to continually poll the cache state directly within the browser until the stale caches are removed, instead of guessing an arbitrary timeout.
