@@ -15,7 +15,6 @@ from playwright.sync_api import Page, expect
 from helpers import BASE
 
 LOAD_TIMEOUT = 8_000   # ms
-TAB_TIMEOUT  = 2_000   # ms — post-click settle
 
 
 def _load(page: Page, path: str) -> None:
@@ -46,20 +45,15 @@ def test_employment_all_tabs_are_clickable(page: Page):
         tab = page.locator('.tab').nth(i)
         expect(tab).to_be_visible()
         tab.click()
-        page.wait_for_timeout(TAB_TIMEOUT)
 
         # Target panel is active
         active = page.locator(f'#panel-{tab_id}')
-        assert 'active' in (active.get_attribute('class') or ''), (
-            f'Panel #{tab_id} not active after clicking "{label}"'
-        )
+        expect(active).to_have_class(re.compile(r'\bactive\b'))
         # All other panels are hidden
         for other_id in EMPLOYMENT_TABS:
             if other_id != tab_id:
                 other = page.locator(f'#panel-{other_id}')
-                assert 'active' not in (other.get_attribute('class') or ''), (
-                    f'Panel #{other_id} should be hidden when "{label}" is active'
-                )
+                expect(other).not_to_have_class(re.compile(r'\bactive\b'))
 
 
 def test_employment_charts_have_height_in_each_tab(page: Page):
@@ -74,13 +68,9 @@ def test_employment_charts_have_height_in_each_tab(page: Page):
     }
     for i, (tab_id, canvas_id) in enumerate(canvas_ids.items()):
         page.locator('.tab').nth(i).click()
-        page.wait_for_timeout(TAB_TIMEOUT)
 
-        height = page.evaluate(
-            f"document.getElementById('{canvas_id}')?.offsetHeight ?? 0"
-        )
-        assert height > 0, (
-            f'Canvas #{canvas_id} has zero height on tab "{tab_id}"'
+        page.wait_for_function(
+            f"() => document.getElementById('{canvas_id}')?.offsetHeight > 0"
         )
 
 
@@ -90,7 +80,7 @@ def test_employment_overview_toggle_switches_chart(page: Page):
 
     # Ensure we're on the rate tab
     page.locator('.tab').nth(0).click()
-    page.wait_for_timeout(TAB_TIMEOUT)
+    expect(page.locator('#panel-rate')).to_have_class(re.compile(r'\bactive\b'))
 
     btn_overlay = page.locator('#rate-btnO')
     btn_small = page.locator('#rate-btnS')
@@ -212,32 +202,28 @@ def test_flood_all_tabs_switch_panels(page: Page):
 
     for tab_id in FLOOD_TABS:
         page.locator(f".tab[onclick*=\"'{tab_id}'\"]").click()
-        page.wait_for_timeout(TAB_TIMEOUT)
 
         active = page.locator(f'#panel-{tab_id}')
-        classes = active.get_attribute('class') or ''
-        assert 'active' in classes, (
-            f'#panel-{tab_id} not active after clicking tab "{tab_id}"'
-        )
+        expect(active).to_have_class(re.compile(r'\bactive\b'))
 
 
 def test_flood_gauge_chart_has_height(page: Page):
     """The gauge chart canvas must render with non-zero height."""
     _load(page, FLOOD_URL)
     page.locator(".tab[onclick*=\"'gauge'\"]").click()
-    page.wait_for_timeout(TAB_TIMEOUT)
 
-    height = page.evaluate(
-        "document.getElementById('gaugeChart')?.offsetHeight ?? 0"
+    page.wait_for_function(
+        "() => document.getElementById('gaugeChart')?.offsetHeight > 0"
     )
-    assert height > 0, 'gaugeChart canvas has zero height'
 
 
 def test_flood_slider_updates_britannia_level(page: Page):
     """Moving the slider must update the #levelDisplay value."""
     _load(page, FLOOD_URL)
     page.locator(".tab[onclick*=\"'gauge'\"]").click()
-    page.wait_for_timeout(TAB_TIMEOUT)
+
+    # Wait for gauge panel to be active before interacting
+    expect(page.locator('#panel-gauge')).to_have_class(re.compile(r'\bactive\b'))
 
     # Slider range is min=-1.00 max=3.00 (relative offset from base level)
     page.evaluate(
@@ -264,7 +250,9 @@ def test_flood_slider_updates_hull_level(page: Page):
     """Hull level (#hullDisplay) must co-update with the slider."""
     _load(page, FLOOD_URL)
     page.locator(".tab[onclick*=\"'gauge'\"]").click()
-    page.wait_for_timeout(TAB_TIMEOUT)
+
+    # Wait for gauge panel to be active before interacting
+    expect(page.locator('#panel-gauge')).to_have_class(re.compile(r'\bactive\b'))
 
     initial_hull = page.locator('#hullDisplay').inner_text()
     page.evaluate(
@@ -278,24 +266,20 @@ def test_flood_history_chart_renders(page: Page):
     """Historical chart canvas must have non-zero height."""
     _load(page, FLOOD_URL)
     page.locator(".tab[onclick*=\"'history'\"]").click()
-    page.wait_for_timeout(TAB_TIMEOUT)
 
-    height = page.evaluate(
-        "document.getElementById('historyChart')?.offsetHeight ?? 0"
+    page.wait_for_function(
+        "() => document.getElementById('historyChart')?.offsetHeight > 0"
     )
-    assert height > 0, 'historyChart canvas has zero height on history tab'
 
 
 def test_flood_snowpack_chart_renders(page: Page):
     """Snowpack chart must render on its tab."""
     _load(page, FLOOD_URL)
     page.locator(".tab[onclick*=\"'snowpack'\"]").click()
-    page.wait_for_timeout(TAB_TIMEOUT)
 
-    height = page.evaluate("""
+    page.wait_for_function("""
         () => {
             const canvas = document.querySelector('#panel-snowpack canvas');
-            return canvas ? canvas.offsetHeight : 0;
+            return canvas && canvas.offsetHeight > 0;
         }
     """)
-    assert height > 0, 'Snowpack panel canvas has zero height'
