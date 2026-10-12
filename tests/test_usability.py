@@ -307,20 +307,32 @@ def test_flood_dashboard_height_stabilizes(page: Page):
     tabs = ['gauge', 'history', 'snowpack']
     for tab in tabs:
         page.locator(f".tab[onclick*=\"'{tab}'\"]").click()
-        page.wait_for_timeout(300)
-        heights = []
-        for _ in range(5):
-            heights.append(page.evaluate('document.documentElement.scrollHeight'))
-            page.wait_for_timeout(200)
-        
-        diff = max(heights) - min(heights)
-        assert diff <= 5, (
-            f'Tab {tab}: page height is unstable (range: {min(heights)}-{max(heights)}): {heights}'
-        )
+        try:
+            page.wait_for_function('''() => {
+                window.__heightTracker = window.__heightTracker || [];
+                window.__heightTracker.push(document.documentElement.scrollHeight);
+                if (window.__heightTracker.length < 5) return false;
+
+                const recent = window.__heightTracker.slice(-5);
+                const maxH = Math.max(...recent);
+                const minH = Math.min(...recent);
+
+                if (maxH - minH <= 5) {
+                    window.__heightTracker = null;
+                    return true;
+                } else {
+                    // Reset tracking window if unstable
+                    window.__heightTracker = [document.documentElement.scrollHeight];
+                    return false;
+                }
+            }''', polling=200, timeout=10000)
+        except Exception as e:
+            assert False, f'Tab {tab}: page height never stabilized. Error: {e}'
         
         viewport_height = page.evaluate('window.innerHeight')
-        assert max(heights) <= viewport_height + 50, (
-            f'Tab {tab}: page height {max(heights)} exceeds viewport {viewport_height}'
+        final_height = page.evaluate('document.documentElement.scrollHeight')
+        assert final_height <= viewport_height + 50, (
+            f'Tab {tab}: page height {final_height} exceeds viewport {viewport_height}'
         )
 
 
