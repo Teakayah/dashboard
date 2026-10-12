@@ -29,6 +29,7 @@
   button{padding:5px 13px;border-radius:6px;border:1px solid #3a3d4a;background:#252830;color:#ccc;font-size:.77rem;cursor:pointer;transition:all .15s}
   button:hover{background:#303445;color:#fff}
   button.active{background:#3b5bdb;border-color:#3b5bdb;color:#fff}
+  button:focus-visible{outline:2px solid #3b5bdb;outline-offset:2px}
   .chart-wrap{position:relative;height:400px}
   .chart-sm{position:relative;height:280px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -312,6 +313,7 @@ if (appEl) {
   ];
   ranges.forEach(r => {
     const btn = createElement('button', r.active ? 'active' : null, r.text);
+    btn.setAttribute('aria-pressed', r.active ? 'true' : 'false');
     btn.onclick = function() { setR(r.year, btn); };
     controls.appendChild(btn);
   });
@@ -371,8 +373,9 @@ buildPeakBar();
 }
 
 function setR(y,btn){
-  document.querySelectorAll('.controls button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.controls button').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
   btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
   buildMain(y+'-01');
 }
 
