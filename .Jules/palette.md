@@ -77,3 +77,6 @@
 ## 2026-10-09 - Managing Dynamic Tooltips for Disabled States
 **Learning:** Adding title tooltips to disabled buttons improves accessibility by explaining why an action is unavailable. However, if the tooltip isn't dynamically updated when the button becomes enabled, users see outdated/confusing explanations or no explanations at all.
 **Action:** When adding explanatory tooltips to disabled buttons, always pair the title attribute management with the JS logic that toggles the disabled property. Clear the title (or set it to the normal action description) when disabled = false, and restore the explanation when disabled = true.
+## 2026-05-15 - Synchronize title Tooltips with State
+**Learning:** Screen readers and mouse users experience a disconnect when elements (like export buttons or fullscreen toggles) change their functional state (enabled/disabled, or enter/exit) but fail to update their visual `title` tooltip attributes concurrently with the state change or `aria-label`.
+**Action:** When toggling disabled states or aria-labels on interactive elements, always explicitly update the `title` attribute to match the current context so hover states do not present outdated or conflicting information.

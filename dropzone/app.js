@@ -634,10 +634,11 @@ async function runQuery() {
 
         lastResult = getRows(result);
         renderResults(lastResult);
-        downloadBtn.disabled = false;
-        downloadBtn.title = 'Download Results as CSV';
-        copyJsonBtn.disabled = false;
-        copyJsonBtn.title = 'Copy JSON';
+        const hasResults = lastResult.length > 0;
+        downloadBtn.disabled = !hasResults;
+        downloadBtn.title = hasResults ? 'Download Results as CSV' : 'Requires query results';
+        copyJsonBtn.disabled = !hasResults;
+        copyJsonBtn.title = hasResults ? 'Copy JSON' : 'Requires query results';
         statusEl.textContent = `Query executed in ${duration}ms`;
         addToHistory(sql, queryHistoryEl, sqlInput);
     });
