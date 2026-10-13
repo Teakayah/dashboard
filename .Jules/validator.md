@@ -56,3 +56,7 @@ Assertion: Use Playwright's `press()` method directly on locators or the page ke
 Coverage Gap: Service worker cache invalidation tests occasionally failed in CI due to arbitrary timeouts.
 Learning: Hardcoded `page.wait_for_timeout` is unreliable for asynchronous browser APIs like `caches.keys()`. Network and CPU constraints in CI cause cache cleanup to take varying amounts of time, leading to flaky assertions.
 Assertion: Use `page.wait_for_function(...)` to continually poll the cache state directly within the browser until the stale caches are removed, instead of guessing an arbitrary timeout.
+## 2026-10-13 - Replace fixed timeouts with sliding window polling for height stabilization
+Coverage Gap: Flaky UI tests (`test_canadian_dashboard_province_view_height_stabilizes` and `test_flood_dashboard_height_stabilizes`) caused by using hardcoded `page.wait_for_timeout` to wait for layout changes.
+Learning: When refactoring Playwright UI tests to replace hardcoded sleeps with `page.wait_for_function` for layout stabilization (e.g., height changes), avoid tracking scalar min/max values that reset on perceived instability, as this fails on smooth transitions.
+Assertion: Instead, use a sliding window approach (e.g., an array tracking the last N measurements via JavaScript within `wait_for_function`) and verify if the difference between the max and min of that window is within your stable threshold.

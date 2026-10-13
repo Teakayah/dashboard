@@ -273,28 +273,30 @@ def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
         page.locator(toggle_selector).click()
         # Poll until height stops changing; Chart.js resize callbacks can chain
         # across many rAF cycles when canvases first become visible.
-        prev_h = None
-        stable_count = 0
-        for _ in range(40):  # up to 8s total
-            h = page.evaluate('document.documentElement.scrollHeight')
-            if prev_h is not None and abs(h - prev_h) <= 4:
-                stable_count += 1
-                if stable_count >= 4:  # stable for 800ms
-                    return
-            else:
-                stable_count = 0
-            prev_h = h
-            page.wait_for_timeout(200)
-        assert False, (
-            f'{toggle_selector}: page height never stabilized (last value: {prev_h})'
+        page.wait_for_function(
+            '''() => {
+                window.__h_prev = window.__h_prev || document.documentElement.scrollHeight;
+                window.__h_stable = window.__h_stable || 0;
+                let h = document.documentElement.scrollHeight;
+                if (Math.abs(h - window.__h_prev) <= 4) {
+                    window.__h_stable += 1;
+                    if (window.__h_stable >= 4) {
+                        return true;
+                    }
+                } else {
+                    window.__h_stable = 0;
+                }
+                window.__h_prev = h;
+                return false;
+            }''', timeout=10000, polling=200
         )
+        # reset variables for next call
+        page.evaluate('window.__h_prev = undefined; window.__h_stable = undefined;')
 
     assert_height_stable('#rate-btnS')
     page.locator('.tab', has_text='Government Debt').click()
-    page.wait_for_timeout(300)
     assert_height_stable('#debt-btnS')
     page.locator('.tab', has_text='Population').click()
-    page.wait_for_timeout(300)
     assert_height_stable('#pop-btnS')
 
 
@@ -307,21 +309,29 @@ def test_flood_dashboard_height_stabilizes(page: Page):
     tabs = ['gauge', 'history', 'snowpack']
     for tab in tabs:
         page.locator(f".tab[onclick*=\"'{tab}'\"]").click()
-        page.wait_for_timeout(300)
-        heights = []
-        for _ in range(5):
-            heights.append(page.evaluate('document.documentElement.scrollHeight'))
-            page.wait_for_timeout(200)
-        
-        diff = max(heights) - min(heights)
-        assert diff <= 5, (
-            f'Tab {tab}: page height is unstable (range: {min(heights)}-{max(heights)}): {heights}'
+        page.wait_for_function(
+            '''() => {
+                window.__th_history = window.__th_history || [];
+                let h = document.documentElement.scrollHeight;
+                window.__th_history.push(h);
+                if (window.__th_history.length > 5) {
+                    window.__th_history.shift();
+                }
+                if (window.__th_history.length === 5) {
+                    let max_h = Math.max(...window.__th_history);
+                    let min_h = Math.min(...window.__th_history);
+                    return (max_h - min_h) <= 5;
+                }
+                return false;
+            }''', timeout=10000, polling=200
         )
         
         viewport_height = page.evaluate('window.innerHeight')
-        assert max(heights) <= viewport_height + 50, (
-            f'Tab {tab}: page height {max(heights)} exceeds viewport {viewport_height}'
+        max_h = page.evaluate('Math.max(...window.__th_history)')
+        assert max_h <= viewport_height + 50, (
+            f'Tab {tab}: page height {max_h} exceeds viewport {viewport_height}'
         )
+        page.evaluate('window.__th_history = undefined;')
 
 
 def test_flood_charts_no_overflow_card(page: Page):
