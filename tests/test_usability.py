@@ -269,32 +269,36 @@ def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
         }
     """)
 
-    def assert_height_stable(toggle_selector: str):
-        page.locator(toggle_selector).click()
+    def assert_height_stable(toggle_selector: str = None):
+        if toggle_selector:
+            page.locator(toggle_selector).click()
         # Poll until height stops changing; Chart.js resize callbacks can chain
         # across many rAF cycles when canvases first become visible.
-        prev_h = None
-        stable_count = 0
-        for _ in range(40):  # up to 8s total
-            h = page.evaluate('document.documentElement.scrollHeight')
-            if prev_h is not None and abs(h - prev_h) <= 4:
-                stable_count += 1
-                if stable_count >= 4:  # stable for 800ms
-                    return
-            else:
-                stable_count = 0
-            prev_h = h
-            page.wait_for_timeout(200)
-        assert False, (
-            f'{toggle_selector}: page height never stabilized (last value: {prev_h})'
-        )
+        page.wait_for_function("""
+            () => {
+                window._heightStableContext = window._heightStableContext || { prevH: null, stableCount: 0 };
+                const ctx = window._heightStableContext;
+                const h = document.documentElement.scrollHeight;
+                if (ctx.prevH !== null && Math.abs(h - ctx.prevH) <= 4) {
+                    ctx.stableCount++;
+                    if (ctx.stableCount >= 4) {
+                        return true;
+                    }
+                } else {
+                    ctx.stableCount = 0;
+                }
+                ctx.prevH = h;
+                return false;
+            }
+        """, polling=200, timeout=10000)
+        page.evaluate("delete window._heightStableContext")
 
     assert_height_stable('#rate-btnS')
     page.locator('.tab', has_text='Government Debt').click()
-    page.wait_for_timeout(300)
+    assert_height_stable()
     assert_height_stable('#debt-btnS')
     page.locator('.tab', has_text='Population').click()
-    page.wait_for_timeout(300)
+    assert_height_stable()
     assert_height_stable('#pop-btnS')
 
 
@@ -307,11 +311,27 @@ def test_flood_dashboard_height_stabilizes(page: Page):
     tabs = ['gauge', 'history', 'snowpack']
     for tab in tabs:
         page.locator(f".tab[onclick*=\"'{tab}'\"]").click()
-        page.wait_for_timeout(300)
-        heights = []
-        for _ in range(5):
-            heights.append(page.evaluate('document.documentElement.scrollHeight'))
-            page.wait_for_timeout(200)
+
+        heights = page.wait_for_function("""
+            () => {
+                window._heightTracker = window._heightTracker || { heights: [] };
+                const h = document.documentElement.scrollHeight;
+                window._heightTracker.heights.push(h);
+
+                if (window._heightTracker.heights.length >= 5) {
+                    const recentHeights = window._heightTracker.heights.slice(-5);
+                    const minH = Math.min(...recentHeights);
+                    const maxH = Math.max(...recentHeights);
+                    if (maxH - minH <= 5) {
+                        return recentHeights;
+                    }
+                    // Reset trackers whenever instability is detected to avoid capturing transition frames
+                    window._heightTracker.heights = [];
+                }
+                return false;
+            }
+        """, polling=200, timeout=10000).json_value()
+        page.evaluate("delete window._heightTracker")
         
         diff = max(heights) - min(heights)
         assert diff <= 5, (

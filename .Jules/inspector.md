@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-10-13 - Replace hardcoded wait_for_timeout with auto-retries in Playwright
+**Learning:** Using `page.wait_for_timeout()` for layout stabilization or UI transitions in Playwright UI tests leads to flaky tests and unnecessary delays. Chart.js resize callbacks and layout shifts can be unpredictable.
+**Action:** To prevent flaky tests, avoid hardcoded `page.wait_for_timeout()` loops. Instead, use `page.wait_for_function()` to continuously poll the target state (e.g., element dimensions or cache state) within the browser until the value matches the expected assertion, and use native auto-retrying assertions like `expect(locator).to_have_class(...)` to await state transitions dynamically. When checking height stability using `page.wait_for_function()`, reset the min/max height trackers whenever instability is detected to avoid erroneously capturing unstable transition frames.
