@@ -263,7 +263,14 @@ def _inject_const(html: str, var_name: str, new_value: object) -> tuple[str, boo
     return new_html, n > 0 and new_html != html
 
 
-RE_INJECT_INSIGHT = re.compile(r"<!-- insight-inject -->.*?<!-- /insight-inject -->", flags=re.DOTALL)
+RE_INJECT_INSIGHT = re.compile(
+    r'''
+    <!--\ insight-inject\ -->     # Matches the opening insight injection marker
+    .*?                           # Non-greedily matches any content (including newlines) inside
+    <!--\ /insight-inject\ -->    # Matches the closing insight injection marker
+    ''',
+    flags=re.DOTALL | re.VERBOSE
+)
 
 
 def _inject_insight(html: str, insight: str) -> tuple[str, bool]:

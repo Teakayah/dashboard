@@ -101,3 +101,11 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-08-30 - Standardize Regex Documentation Pattern
 **Learning:** Complex regular expressions embedded directly in single-line strings (like HTML parsing regexes) hinder readability and create a high cognitive load for maintainers. The repository has an established pattern (e.g., in `generate_index.py`) of using `re.VERBOSE` with multiline strings and inline comments for complex regexes.
 **Action:** Always format complex regular expressions using the `re.VERBOSE` flag, separating the pattern into a multiline string where each capture group and match requirement is explicitly explained with inline comments, aligning with the repository's documentation standards.
+
+## 2024-05-15 - Standardize Python Regex Documentation
+**Learning:** Found several complex regular expressions in Python scripts without adequate explanations, leading to reduced clarity.
+**Action:** When adding or modifying complex regular expressions in Python scripts, standardize on using the `re.VERBOSE` flag alongside multiline strings (e.g., `r'''...'''`) and inline comments to clearly document the purpose of each pattern segment.
+
+## 2026-10-13 - Documenting injection regexes with re.VERBOSE
+**Learning:** Found an inline regular expression (`RE_INJECT_INSIGHT`) for HTML injection replacement that was dense and undocumented, reducing code clarity.
+**Action:** When working with regular expressions that parse or replace HTML injection markers, always standardize on using the `re.VERBOSE` flag, separating the pattern into a multiline string where each capture group and match requirement is explicitly explained with inline comments, aligning with the repository's documentation standards.
