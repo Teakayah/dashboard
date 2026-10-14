@@ -827,6 +827,24 @@ clearBtn.addEventListener('click', async () => {
     });
 });
 
+remoteDeltaUrl.addEventListener('input', () => {
+    const hasUrl = remoteDeltaUrl.value.trim().length > 0;
+    loadRemoteDeltaBtn.disabled = !hasUrl;
+    loadRemoteDeltaBtn.title = hasUrl ? 'Load Table' : 'Requires a valid URL';
+});
+
+remoteDeltaUrl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!loadRemoteDeltaBtn.disabled) {
+            loadRemoteDeltaBtn.click();
+        }
+    }
+});
+
+// Initialize state
+remoteDeltaUrl.dispatchEvent(new Event('input'));
+
 loadRemoteDeltaBtn.addEventListener('click', async () => {
     const url = remoteDeltaUrl.value.trim();
     if (!url) return;

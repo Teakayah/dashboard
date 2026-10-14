@@ -426,16 +426,26 @@ def test_load_remote_delta_unsupported_shows_toast(dz: Page):
     expect(toast).to_contain_text(re.compile(r'Delta Lake support is not available', re.IGNORECASE))
 
 
-def test_load_remote_delta_empty_url_does_nothing(dz: Page):
-    """Clicking Load Delta Table with an empty URL should do nothing."""
+def test_load_remote_delta_empty_url_disables_button(dz: Page):
+    """Providing an empty URL should disable the Load Delta Table button."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
     _wait_for_ready(dz)
 
     dz.locator('#remote-delta-url').fill('  ')
-    dz.locator('#load-remote-delta').click()
+    expect(dz.locator('#load-remote-delta')).to_be_disabled(timeout=ACTION_TIMEOUT)
 
-    expect(dz.locator('[role="alert"]')).not_to_be_visible(timeout=1000)
-    expect(dz.locator('#loading')).not_to_be_visible(timeout=1000)
+def test_load_remote_delta_enter_key_submits(dz: Page):
+    """Pressing Enter in the URL input should submit it if valid."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    dz.evaluate("window.deltaSupported = false")
+    dz.locator('#remote-delta-url').fill('https://example.com/data.delta')
+    dz.locator('#remote-delta-url').press('Enter')
+
+    toast = dz.locator('[role="alert"]')
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Delta Lake support is not available', re.IGNORECASE))
 
 def test_load_remote_delta_fails_gracefully(dz: Page):
     """Loading a remote Delta table from an invalid URL should show an error toast."""
