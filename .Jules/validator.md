@@ -56,3 +56,7 @@ Assertion: Use Playwright's `press()` method directly on locators or the page ke
 Coverage Gap: Service worker cache invalidation tests occasionally failed in CI due to arbitrary timeouts.
 Learning: Hardcoded `page.wait_for_timeout` is unreliable for asynchronous browser APIs like `caches.keys()`. Network and CPU constraints in CI cause cache cleanup to take varying amounts of time, leading to flaky assertions.
 Assertion: Use `page.wait_for_function(...)` to continually poll the cache state directly within the browser until the stale caches are removed, instead of guessing an arbitrary timeout.
+## 2026-10-14 - Replace Flaky Timeouts with wait_for_function for Layout Stabilization
+Coverage Gap: Flaky UI layout stabilization tests (`test_usability.py`) failing occasionally due to arbitrary timeouts and resizing cycles.
+Learning: Hardcoded sleeps (`wait_for_timeout`) are unreliable when waiting for complex UI layout changes like canvas resizes. A dynamic sliding window to track stabilization is required instead.
+Assertion: Replace hardcoded `wait_for_timeout` loops with `page.wait_for_function` utilizing sliding windows or robust locators to track layout state inside the browser.
