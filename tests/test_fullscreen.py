@@ -15,6 +15,7 @@ def test_fullscreen_injection_and_toggle_state(page: Page):
     container = btn.locator("..")
     expect(container).to_have_class(re.compile(r"chart-container"))
     expect(container).not_to_have_class(re.compile(r"chart-fullscreen"))
+    expect(btn).to_have_attribute("title", "Full Screen")
     assert page.evaluate("document.body.style.overflow") != "hidden"
 
     # Click to enter fullscreen
@@ -22,6 +23,7 @@ def test_fullscreen_injection_and_toggle_state(page: Page):
     expect(container).to_have_class(re.compile(r"chart-fullscreen"))
     expect(btn).to_have_text("✕")
     expect(btn).to_have_attribute("aria-label", "Exit Full Screen")
+    expect(btn).to_have_attribute("title", "Exit Full Screen")
     assert page.evaluate("document.body.style.overflow") == "hidden"
 
     # Click to exit fullscreen
@@ -29,6 +31,7 @@ def test_fullscreen_injection_and_toggle_state(page: Page):
     expect(container).not_to_have_class(re.compile(r"chart-fullscreen"))
     expect(btn).to_have_text("⛶")
     expect(btn).to_have_attribute("aria-label", "Enter Full Screen")
+    expect(btn).to_have_attribute("title", "Full Screen")
     assert page.evaluate("document.body.style.overflow") != "hidden"
 
 

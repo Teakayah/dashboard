@@ -5,6 +5,7 @@ Run locally or via GitHub Actions on every push.
 """
 
 import argparse
+import concurrent.futures
 import html
 import json
 import re
@@ -717,18 +718,16 @@ def main(argv: Optional[list[str]] = None):
     # Batch git date retrieval for all HTML files
     git_dates = get_git_dates_batched(html_files)
 
-    for filepath in html_files:
+    def process_file(filepath: Path) -> dict:
         date_str = git_dates.get(filepath, "")
         try:
             content = filepath.read_text(encoding='utf-8', errors='ignore')
         except Exception:
             # Fallback for file read errors if any
-            analyses.append(_fallback(filepath, date_str))
-            continue
+            return _fallback(filepath, date_str)
 
         # Extract meta
         meta = extract_meta(filepath, content, descriptions=descriptions, git_date=date_str)
-        analyses.append(meta)
 
         # Inject enhancements
         new_content = inject_responsive(content, meta['filename'], args.responsive_preset)
@@ -741,6 +740,11 @@ def main(argv: Optional[list[str]] = None):
 
         if new_content != content:
             filepath.write_text(new_content, encoding='utf-8')
+
+        return meta
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        analyses = list(executor.map(process_file, html_files))
 
     html = build_html(analyses)
     output = ROOT / 'index.html'

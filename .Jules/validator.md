@@ -56,3 +56,9 @@ Assertion: Use Playwright's `press()` method directly on locators or the page ke
 Coverage Gap: Service worker cache invalidation tests occasionally failed in CI due to arbitrary timeouts.
 Learning: Hardcoded `page.wait_for_timeout` is unreliable for asynchronous browser APIs like `caches.keys()`. Network and CPU constraints in CI cause cache cleanup to take varying amounts of time, leading to flaky assertions.
 Assertion: Use `page.wait_for_function(...)` to continually poll the cache state directly within the browser until the stale caches are removed, instead of guessing an arbitrary timeout.
+
+## 2026-10-14 - Replace arbitrary UI timeouts with auto-retrying assertions
+Coverage Gap: Analysis page UI tests used hardcoded `page.wait_for_timeout` after tab and toggle interactions.
+Learning: Fixed timeouts either waste execution time or fail on slower CI machines during asynchronous Chart.js rendering and DOM state transitions.
+Assertion: Replace `page.wait_for_timeout` with Playwright's native `expect(locator).to_have_class(...)` and `page.wait_for_function(...)` auto-retrying assertions.
+
