@@ -77,3 +77,12 @@
 ## 2026-10-09 - Managing Dynamic Tooltips for Disabled States
 **Learning:** Adding title tooltips to disabled buttons improves accessibility by explaining why an action is unavailable. However, if the tooltip isn't dynamically updated when the button becomes enabled, users see outdated/confusing explanations or no explanations at all.
 **Action:** When adding explanatory tooltips to disabled buttons, always pair the title attribute management with the JS logic that toggles the disabled property. Clear the title (or set it to the normal action description) when disabled = false, and restore the explanation when disabled = true.
+
+## 2026-10-10 - Synchronize title Tooltips with State
+**Learning:** Screen readers and mouse users experience a disconnect when elements (like export buttons or fullscreen toggles) change their functional state (enabled/disabled, or enter/exit) but fail to update their visual `title` tooltip attributes concurrently with the state change or `aria-label`.
+**Action:** When toggling disabled states or aria-labels on interactive elements, always explicitly update the `title` attribute to match the current context so hover states do not present outdated or conflicting information.
+
+## 2026-10-10 - Keyboard Submission for Standalone Inputs
+**Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
+**Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
+

@@ -90,3 +90,7 @@
 ## 2026-10-03 - [Pre-compile regular expressions]
 **Learning:** To optimize Python performance (e.g., in scripts like `generate_feed.py`), repeatedly evaluating `re.search()` with string patterns inside tight loops incurs redundant evaluation overhead.
 **Action:** Pre-compile regular expressions at the module level using `re.compile()` and reuse them, avoiding multiple compilations.
+
+## 2026-10-14 - Optimize index generation with concurrent I/O
+**Learning:** Using sequential loops for I/O bound tasks like reading HTML files and writing back enhancements in `generate_index.py` is inefficient.
+**Action:** Use `concurrent.futures.ThreadPoolExecutor.map` to concurrently read files, extract metadata, and write enhancements, which speeds up index generation significantly while preserving order.
