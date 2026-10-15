@@ -480,7 +480,7 @@ function initSWE() {
 }
 
 /* ── DATA ── */
-const DATA={"timestamp":"2026-10-10T02:35:40.893164+00:00","gauges":{"02LA015":{"level":41.373,"discharge":null,"datetime":"2026-09-09T05:00:00Z","station_id":"02LA015"},"02KF005":{"level":58.031,"discharge":838.0,"datetime":"2026-09-09T05:00:00Z","station_id":"02KF005"},"02LA027":{"level":4.733,"discharge":null,"datetime":"2026-09-09T05:00:00Z","station_id":"02LA027"}},"precip":{"total_7d":1.3,"latest_date":"1938-11-07 00:00:00"},"swe":{"current_season":[38,60,88,105,120,135,142],"label":"2025-2026 season","updated":"2026-10-10T02:35:40.893144+00:00"},"forecast":[0.08,0.15,0.22,0.18],"reservoirs":{"percentage_full":82,"label":"Principal Reservoirs (Baskatong, Cabonga, Dozois)","status":"Normal for season"}};
+const DATA={"timestamp":"2026-10-15T12:38:16.075801+00:00","gauges":{},"precip":null,"swe":{"current_season":[38,60,88,105,120,135,142],"label":"2025-2026 season","updated":"2026-10-15T12:38:16.075773+00:00"},"forecast":[0.08,0.15,0.22,0.18],"reservoirs":{"percentage_full":82,"label":"Principal Reservoirs (Baskatong, Cabonga, Dozois)","status":"Normal for season"}};
 function loadLiveData() {
   if (!DATA.gauges) return;
   REGIONAL_STATIONS.forEach(s => { if (DATA.gauges[s.id]) liveLevels[s.id] = DATA.gauges[s.id].level; });
