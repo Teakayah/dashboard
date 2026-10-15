@@ -56,3 +56,7 @@ Assertion: Use Playwright's `press()` method directly on locators or the page ke
 Coverage Gap: Service worker cache invalidation tests occasionally failed in CI due to arbitrary timeouts.
 Learning: Hardcoded `page.wait_for_timeout` is unreliable for asynchronous browser APIs like `caches.keys()`. Network and CPU constraints in CI cause cache cleanup to take varying amounts of time, leading to flaky assertions.
 Assertion: Use `page.wait_for_function(...)` to continually poll the cache state directly within the browser until the stale caches are removed, instead of guessing an arbitrary timeout.
+## 2026-10-15 - Replace Hardcoded UI Test Timeouts
+Coverage Gap: `tests/test_usability.py` and `tests/test_analysis_pages.py` used fragile `page.wait_for_timeout` loops for UI changes (e.g., waiting for Chart.js rendering height to stabilize, or waiting for tabs to activate), causing potential CI flakiness and slowing down tests.
+Learning: Hardcoded sleep statements cannot guarantee a state has actually updated on slow CI environments and waste time on fast environments.
+Assertion: Replace `wait_for_timeout` with deterministic assertions like `expect(element).to_have_class(..., timeout=...)` for class changes or `page.wait_for_function` using a browser-side sliding window approach to poll for dimension stability (e.g. tracking values in `window.__h_history`).
