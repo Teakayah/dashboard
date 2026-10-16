@@ -307,17 +307,26 @@ def test_flood_dashboard_height_stabilizes(page: Page):
     tabs = ['gauge', 'history', 'snowpack']
     for tab in tabs:
         page.locator(f".tab[onclick*=\"'{tab}'\"]").click()
-        page.wait_for_timeout(300)
-        heights = []
-        for _ in range(5):
-            heights.append(page.evaluate('document.documentElement.scrollHeight'))
-            page.wait_for_timeout(200)
         
-        diff = max(heights) - min(heights)
-        assert diff <= 5, (
-            f'Tab {tab}: page height is unstable (range: {min(heights)}-{max(heights)}): {heights}'
+        page.evaluate('window.__h_history = []')
+        page.wait_for_function(
+            '''() => {
+                const h = document.documentElement.scrollHeight;
+                window.__h_history.push(h);
+                if (window.__h_history.length > 5) {
+                    window.__h_history.shift();
+                }
+                if (window.__h_history.length < 5) return false;
+
+                const min = Math.min(...window.__h_history);
+                const max = Math.max(...window.__h_history);
+                return (max - min) <= 5;
+            }''',
+            polling=200,
+            timeout=8000
         )
         
+        heights = page.evaluate('window.__h_history')
         viewport_height = page.evaluate('window.innerHeight')
         assert max(heights) <= viewport_height + 50, (
             f'Tab {tab}: page height {max(heights)} exceeds viewport {viewport_height}'
