@@ -283,6 +283,25 @@ def test_count_query_returns_single_value(dz: Page):
 
 # ── Export & Copy ─────────────────────────────────────────────────────────────
 
+def test_csv_export_shows_error_toast_on_failure(dz: Page):
+    """Clicking Download CSV when query fails must show an error toast."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    dz.locator('#sql-input').fill('THIS')
+    dz.locator('#download-csv').click()
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Export Error.*THIS', re.IGNORECASE))
+
+
 def test_csv_export_downloads_file(dz: Page):
     """Clicking Download CSV must trigger a file download containing the query results."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
@@ -309,6 +328,25 @@ def test_csv_export_downloads_file(dz: Page):
 
     assert 'id,name,dept_id,salary,join_date' in content, "CSV should contain headers"
     assert '1,Alice,101,85000,2022-01-15' in content, "CSV should contain row data"
+
+def test_export_db_shows_error_toast_on_failure(dz: Page):
+    """Clicking Export Database when it fails must show an error toast."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    dz.evaluate("""
+        window.URL.createObjectURL = () => { throw new Error('Mock export failure'); };
+        undefined;
+    """)
+
+    dz.locator('#export-db').click()
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Database Export Error: Mock export failure', re.IGNORECASE))
+
 
 def test_export_db_downloads_file(dz: Page):
     """Clicking Export Database must trigger a file download containing the DuckDB database."""

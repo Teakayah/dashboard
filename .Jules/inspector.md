@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-10-16 - Testing database and file export error boundaries
+**Learning:** Testing UI interactions that depend on built-in browser blob generation (like `URL.createObjectURL()`) to fail gracefully when processing massive payloads or errors requires explicitly mocking these asynchronous boundaries. Using invalid SQL inputs efficiently asserts UI query error propagation to downloads, while mocking object URL generation asserts unhandled frontend exceptions from internal dependencies are safely caught without crashing the application.
+**Action:** Always assert failure boundaries for browser Blob/ObjectURL APIs and data pipelines using specific UI-driven error states (like invalid inputs or mocked unhandled exceptions) rather than strictly focusing on successful file generation paths.
