@@ -421,7 +421,7 @@ def test_load_remote_delta_unsupported_shows_toast(dz: Page):
     dz.locator('#remote-delta-url').fill('https://example.com/data.delta')
     dz.locator('#load-remote-delta').click()
 
-    toast = dz.locator('[role="alert"]')
+    toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text(re.compile(r'Delta Lake support is not available', re.IGNORECASE))
 
@@ -444,7 +444,7 @@ def test_load_remote_delta_enter_key_submits(dz: Page):
     dz.locator('#remote-delta-url').fill('https://example.com/data.delta')
     dz.locator('#remote-delta-url').press('Enter')
 
-    toast = dz.locator('[role="alert"]')
+    toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text(re.compile(r'Delta Lake support is not available', re.IGNORECASE))
 
