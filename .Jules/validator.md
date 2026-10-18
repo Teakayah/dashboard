@@ -62,3 +62,7 @@ Coverage Gap: Analysis page UI tests used hardcoded `page.wait_for_timeout` afte
 Learning: Fixed timeouts either waste execution time or fail on slower CI machines during asynchronous Chart.js rendering and DOM state transitions.
 Assertion: Replace `page.wait_for_timeout` with Playwright's native `expect(locator).to_have_class(...)` and `page.wait_for_function(...)` auto-retrying assertions.
 
+## 2026-10-18 - Fix flaky layout wait timeouts by polling browser state
+Coverage Gap: UI tests in `tests/test_usability.py` (`test_canadian_dashboard_province_view_height_stabilizes` and `test_flood_dashboard_height_stabilizes`) relied on hardcoded `page.wait_for_timeout` loops to wait for Chart.js and UI layout stabilizations.
+Learning: Hardcoded timeouts are unreliable and flaky, specifically on slow CI runners where rendering logic may take an unpredictable amount of time to execute. Furthermore, Python loops executing evaluate over the wire do not correctly map to actual UI framerate stability.
+Assertion: Replace `page.wait_for_timeout` with Playwright's `page.wait_for_function`. Track a rolling window of history in the browser (e.g. `window.__h_history`) over multiple polling intervals, asserting stability directly inside the evaluate block. Ensure to explicitly reset this tracking array (`window.__h_history = []`) before each check to prevent cross-test leakage.
