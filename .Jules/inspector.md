@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-10-18 - Testing UI History Components
+**Learning:** The query history feature, which relies on `localStorage` and dynamic chip creation, was completely untested. Validating it requires asserting chip visibility after a query execution and simulating a click to verify the state restoration (input repopulation).
+**Action:** Always write UI integration tests for features that save and restore state from `localStorage` to ensure the end-to-end user experience (saving, rendering, and restoring) remains unbroken.
