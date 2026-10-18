@@ -613,6 +613,32 @@ def test_query_recipe_duplicate_rows_executes(dz: Page):
 
 
 
+def test_query_history_saves_and_loads_queries(dz: Page):
+    """Running a query must save it to history, and clicking the history chip must reload it."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    # 1. Run a distinct query
+    test_query = 'SELECT * FROM "employees" LIMIT 123'
+    dz.locator('#sql-input').fill(test_query)
+    dz.locator('#run-query').click()
+    expect(dz.locator('.gridjs-tbody tr, .empty')).not_to_have_count(0, timeout=ACTION_TIMEOUT)
+
+    # 2. Verify history chip is created and visible
+    history_chip = dz.locator('.history-chip').filter(has_text=test_query).first
+    expect(history_chip).to_be_visible(timeout=ACTION_TIMEOUT)
+
+    # 3. Clear input
+    dz.locator('#sql-input').fill('')
+    expect(dz.locator('#sql-input')).to_have_value('')
+
+    # 4. Click history chip and verify reload
+    history_chip.click()
+    expect(dz.locator('#sql-input')).to_have_value(test_query)
+
+
 def test_focus_sql_input_shortcut(dz: Page):
     """Pressing '/' outside of an input should focus the SQL input."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
