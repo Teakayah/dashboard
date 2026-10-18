@@ -350,6 +350,13 @@ async function updateChartBuilderUI() {
 joinTableA.addEventListener('change', updateJoinColumns);
 joinTableB.addEventListener('change', updateJoinColumns);
 
+const submitJoinOnEnter = (e) => {
+    if (e.key === 'Enter') generateJoinBtn.click();
+};
+joinTableA.addEventListener('keydown', submitJoinOnEnter);
+joinTableB.addEventListener('keydown', submitJoinOnEnter);
+joinCol.addEventListener('keydown', submitJoinOnEnter);
+
 generateJoinBtn.addEventListener('click', () => {
     const a = joinTableA.value;
     const b = joinTableB.value;
@@ -375,6 +382,13 @@ generateJoinBtn.addEventListener('click', () => {
     sqlInput.dispatchEvent(new Event('input'));
     sqlInput.focus();
 });
+
+const submitChartOnEnter = (e) => {
+    if (e.key === 'Enter') generateChartBtn.click();
+};
+chartType.addEventListener('keydown', submitChartOnEnter);
+chartXCol.addEventListener('keydown', submitChartOnEnter);
+chartYCol.addEventListener('keydown', submitChartOnEnter);
 
 generateChartBtn.addEventListener('click', () => {
     const currentTableName = getCurrentTableName();
