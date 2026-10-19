@@ -241,15 +241,16 @@ def test_main_missing_file(tmp_path, capsys):
         captured = capsys.readouterr()
         assert '[skip] missing.html not found' in captured.out
 
-def test_missing_env_vars_exits():
-    path = Path('deployment/generate_descriptions.py').resolve()
+def test_missing_env_vars_exits(tmp_path):
+    module = load_generate_descriptions_module()
+    module.OLLAMA_URL = ''
+    module.OLLAMA_MODEL = ''
 
-    # We must patch os.environ so that the module-level sys.exit triggers
-    # and we must catch the SystemExit exception
-    with patch.dict(os.environ, clear=True), \
+    with patch.object(module, 'ROOT', tmp_path), \
+         patch.dict(os.environ, clear=True), \
          patch('sys.exit', side_effect=SystemExit) as mock_exit:
         with pytest.raises(SystemExit):
-            runpy.run_path(str(path))
+            module.main()
 
         mock_exit.assert_called_once()
         assert "OLLAMA_URL" in mock_exit.call_args[0][0]

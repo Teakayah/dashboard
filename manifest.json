@@ -2,7 +2,7 @@
   "name": "DataDashboard",
   "short_name": "DataDash",
   "description": "Interactive data analysis visualizations and local SQL tools.",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1a2e",
   "theme_color": "#1a1a2e",

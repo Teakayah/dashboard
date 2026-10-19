@@ -169,8 +169,8 @@ def main() -> None:
                  'index.html',
                  'feed.xml')
             _run('git', 'commit', '-m', msg)
-            _run('git', 'push', 'origin', 'dev')
-            print('\n  Pushed to dev → CI will merge to main and take screenshots.')
+            _run('git', 'push', 'origin', 'integration')
+            print('\n  Pushed to integration → CI will merge to main and take screenshots.')
 
     print('\n' + '=' * 62)
     print('  ✓  Refresh complete')

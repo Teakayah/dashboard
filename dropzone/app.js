@@ -771,12 +771,41 @@ exportDbBtn.addEventListener('click', async () => {
 
         let buffer;
         try {
-            buffer = await db.copyFileToBuffer('indexeddb://duckdb');
+            buffer = await db.copyFileToBuffer('opfs://duckdb_v1.db');
         } catch (e) {
             try {
-                buffer = await db.copyFileToBuffer('opfs://duckdb_v1.db');
+                buffer = await db.copyFileToBuffer('indexeddb://duckdb');
             } catch (e2) {
-                buffer = new Uint8Array([0x44, 0x55, 0x43, 0x4b]);
+                const exportFile = `export_${Date.now()}.db`;
+                try {
+                    await conn.query(`ATTACH '${exportFile}' AS export_db`);
+                    await conn.query(`COPY FROM DATABASE memory TO export_db`);
+                    await conn.query(`DETACH export_db`);
+                    buffer = await db.copyFileToBuffer(exportFile);
+                    await db.dropFile(exportFile);
+                } catch (e3) {
+                    const tablesRes = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
+                    const tables = getRows(tablesRes).map(r => r.table_name);
+                    const dumpParts = ['-- DuckDB SQL Export'];
+                    for (const table of tables) {
+                        const safeTable = escapeId(table);
+                        const colsRes = await conn.query(`DESCRIBE "${safeTable}"`);
+                        const cols = getRows(colsRes);
+                        const colDefs = cols.map(c => `"${escapeId(c.column_name)}" ${c.column_type}`).join(', ');
+                        dumpParts.push(`CREATE TABLE "${safeTable}" (${colDefs});`);
+                        const rowsRes = await conn.query(`SELECT * FROM "${safeTable}"`);
+                        for (const row of getRows(rowsRes)) {
+                            const vals = cols.map(c => {
+                                const v = row[c.column_name];
+                                if (v === null || v === undefined) return 'NULL';
+                                if (typeof v === 'number' || typeof v === 'bigint' || typeof v === 'boolean') return String(v);
+                                return `'${String(v).replace(/'/g, "''")}'`;
+                            }).join(', ');
+                            dumpParts.push(`INSERT INTO "${safeTable}" VALUES (${vals});`);
+                        }
+                    }
+                    buffer = new TextEncoder().encode(dumpParts.join('\n') + '\n');
+                }
             }
         }
 
