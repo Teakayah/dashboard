@@ -86,3 +86,7 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+
+## 2026-10-20 - Accessible Feedback for Background Clipboard Actions
+**Learning:** When injecting clipboard write operations into static elements (like a Share button) across multiple generated pages, the action is silent to screen readers and visually impaired users.
+**Action:** Always include an `aria-live="polite"` attribute on the button itself and temporarily change the button's inner text (e.g., to 'Copied!') when the clipboard operation succeeds, so that both sighted and screen reader users receive confirmation.

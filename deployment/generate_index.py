@@ -691,16 +691,27 @@ def inject_contrast_fix(content: str, filename: str) -> str:
 
 
 
+import re
+
 def inject_share_fix(content: str, filename: str) -> str:
     """Replace bare navigator.share onclick with a feature-detected version."""
-    unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
     safe = ('onclick="if(navigator.share){navigator.share({title:document.title,'
             'url:window.location.href})}else if(navigator.clipboard)'
-            '{navigator.clipboard.writeText(window.location.href)}"')
-    if unsafe not in content:
-        return content
-    new_content = content.replace(unsafe, safe)
-    if new_content != content:
+            '{navigator.clipboard.writeText(window.location.href).then(()=>{'
+            'const b=this;if(b.innerText===\'Copied!\')return;'
+            'const o=b.innerHTML;b.innerText=\'Copied!\';'
+            'setTimeout(()=>b.innerHTML=o,2000)})}" aria-live="polite"')
+
+    # Match both the old bare version and the previously injected feature-detected version
+    pattern = re.compile(
+        r'onclick="navigator\.share\({title:\s*document\.title,\s*url:\s*window\.location\.href}\)"|'
+        r'onclick="if\(navigator\.share\)\{navigator\.share\(\{title:document\.title,'
+        r'url:window\.location\.href\}\)\}else if\(navigator\.clipboard\)'
+        r'\{navigator\.clipboard\.writeText\(window\.location\.href\)\}"'
+    )
+
+    new_content, count = pattern.subn(safe, content)
+    if count > 0:
         print(f'  Fixed navigator.share in {filename}')
     return new_content
 
