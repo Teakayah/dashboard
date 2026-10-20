@@ -94,3 +94,7 @@
 ## 2026-10-14 - Optimize index generation with concurrent I/O
 **Learning:** Using sequential loops for I/O bound tasks like reading HTML files and writing back enhancements in `generate_index.py` is inefficient.
 **Action:** Use `concurrent.futures.ThreadPoolExecutor.map` to concurrently read files, extract metadata, and write enhancements, which speeds up index generation significantly while preserving order.
+
+## 2026-10-20 - Batching DuckDB Wasm schema creations
+**Learning:** Sequential or parallel `conn.query()` calls (e.g. `CREATE OR REPLACE TABLE`) across the WebWorker boundary have significant IPC overhead. Iterating over an array to sequentially/concurrently execute these queries via `Promise.all()` is slow.
+**Action:** Combine multiple `CREATE OR REPLACE TABLE` statements into a single string separated by newlines and execute them in one `conn.query()` call to minimize IPC roundtrips.
