@@ -734,7 +734,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         }
 
         if (queries.length > 0) {
-            await Promise.all(queries.map(q => conn.query(q)));
+            await conn.query(queries.join('\n'));
         }
 
         for (const tableName of tableNames) {
