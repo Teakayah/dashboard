@@ -94,3 +94,6 @@
 ## 2026-10-14 - Optimize index generation with concurrent I/O
 **Learning:** Using sequential loops for I/O bound tasks like reading HTML files and writing back enhancements in `generate_index.py` is inefficient.
 **Action:** Use `concurrent.futures.ThreadPoolExecutor.map` to concurrently read files, extract metadata, and write enhancements, which speeds up index generation significantly while preserving order.
+## 2026-10-21 - Concurrent file downloads
+**Learning:** Using list comprehensions for network I/O tasks like downloading multiple ZIP files in `update_statcan_data.py` is inefficient as it forces sequential execution.
+**Action:** Use `concurrent.futures.ThreadPoolExecutor.map` to concurrently execute network I/O operations, such as downloading multiple files, to significantly speed up processing time by overlapping wait states.
