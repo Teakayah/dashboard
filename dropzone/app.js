@@ -734,7 +734,8 @@ loadSamplesBtn.addEventListener('click', async () => {
         }
 
         if (queries.length > 0) {
-            await Promise.all(queries.map(q => conn.query(q)));
+            // ⚡ Bolt Optimization: Batch queries to minimize IPC roundtrips
+            await conn.query(queries.join('\n'));
         }
 
         for (const tableName of tableNames) {

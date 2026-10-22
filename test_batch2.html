@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script type="module">
+import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1-dev275.0/+esm';
+const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
+const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+const worker = new Worker(bundle.mainWorker);
+const logger = new duckdb.ConsoleLogger();
+const db = new duckdb.AsyncDuckDB(logger, worker);
+await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+const conn = await db.connect();
+try {
+    await conn.query("CREATE TABLE a AS SELECT 1 AS x; CREATE TABLE b AS SELECT 2 AS y;");
+    const r1 = await conn.query("SELECT * FROM a");
+    const r2 = await conn.query("SELECT * FROM b");
+    document.body.innerHTML += "<p>Success! r1=" + r1.toArray().length + " r2=" + r2.toArray().length + "</p>";
+} catch (e) {
+    document.body.innerHTML += "<p>Error: " + e.message + "</p>";
+}
+</script>
+</body>
+</html>
