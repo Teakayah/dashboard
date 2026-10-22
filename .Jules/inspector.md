@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-10-22 - Axe-Core Injection blocked by strict CSP
+**Learning:** When injecting external evaluation scripts (like `axe-core`) via Playwright into pages with strict Content Security Policies (CSP), the injection may be blocked, causing silent test failures or skips.
+**Action:** Use Playwright's `page.route()` to intercept the HTML response and strip the CSP headers and `<meta>` tags prior to calling `page.goto()`.

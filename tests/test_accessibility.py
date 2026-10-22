@@ -92,6 +92,7 @@ def _fmt(violations: list[dict]) -> str:
 
 @pytest.mark.parametrize('label,path', PAGES)
 def test_page_has_no_critical_or_serious_violations(page: Page, label: str, path: str):
+    _strip_csp(page)
     page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
     try:
         page.wait_for_load_state('networkidle', timeout=8_000)
