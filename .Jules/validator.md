@@ -62,3 +62,7 @@ Coverage Gap: Analysis page UI tests used hardcoded `page.wait_for_timeout` afte
 Learning: Fixed timeouts either waste execution time or fail on slower CI machines during asynchronous Chart.js rendering and DOM state transitions.
 Assertion: Replace `page.wait_for_timeout` with Playwright's native `expect(locator).to_have_class(...)` and `page.wait_for_function(...)` auto-retrying assertions.
 
+## 2026-10-22 - Replacing hardcoded waits with a browser-side sliding window in Playwright
+Coverage Gap: Playwright layout stability checks were flaking due to reliance on `page.wait_for_timeout()` with hardcoded intervals and server-side scalar measurement loops.
+Learning: Chart.js resize callbacks and layout reflows span many rAF cycles, meaning consecutive measurements on the Python side can erroneously appear "stable" between frames, or loop conditions can fail to capture true stability.
+Assertion: Replace loops and `wait_for_timeout` with `page.wait_for_function` that uses a browser-side sliding window (e.g., `window.__h_history`) and a configurable `polling` interval to definitively prove the element has remained stable across a physical time duration. Explicitly reset the global history window before each check.
