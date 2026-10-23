@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-10-23 - Stabilizing layout tests without hardcoded sleeps
+**Learning:** To prevent flaky Playwright UI tests when waiting for layout stabilization (e.g., waiting for asynchronous Chart.js resize callbacks), avoid tracking scalar min/max values with hardcoded `page.wait_for_timeout()` loops. These reset on perceived instability and are generally unreliable.
+**Action:** Instead, use `page.wait_for_function(...)` to continually poll the target state with a browser-side sliding window (e.g., tracking the last N measurements in `window.__h_history`). Explicitly reset this global state before each check, and configure a specific `polling` interval (e.g., `polling=200`) so the measurements span a sufficient physical time duration.
