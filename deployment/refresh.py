@@ -149,9 +149,9 @@ def main() -> None:
     _header(step, total_steps, 'Run test suite')
     _run('python3', '-m', 'pytest', 'tests/', '-v', '--tb=short')
 
-    # 7. Commit + push to dev
+    # 7. Commit + push to integration
     step += 1
-    _header(step, total_steps, 'Commit + push to dev')
+    _header(step, total_steps, 'Commit + push to integration')
 
     if args.no_push:
         print('  --no-push set: skipping git commit and push.')
@@ -169,8 +169,8 @@ def main() -> None:
                  'index.html',
                  'feed.xml')
             _run('git', 'commit', '-m', msg)
-            _run('git', 'push', 'origin', 'dev')
-            print('\n  Pushed to dev → CI will merge to main and take screenshots.')
+            _run('git', 'push', 'origin', 'integration')
+            print('\n  Pushed to integration → CI will merge to main and take screenshots.')
 
     print('\n' + '=' * 62)
     print('  ✓  Refresh complete')
