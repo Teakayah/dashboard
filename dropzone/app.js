@@ -704,18 +704,19 @@ downloadBtn.addEventListener('click', async () => {
 });
 
 const originalCopyJsonText = copyJsonBtn.textContent;
-copyJsonBtn.addEventListener('click', () => {
+copyJsonBtn.addEventListener('click', async () => {
     if (!lastResult) return;
     const json = JSON.stringify(lastResult, null, 2);
-    navigator.clipboard.writeText(json).then(() => {
+    try {
+        await navigator.clipboard.writeText(json);
         if (copyJsonBtn.textContent === 'Copied!') return;
         copyJsonBtn.textContent = 'Copied!';
         showToast('Copied JSON to clipboard', 'success');
         setTimeout(() => { copyJsonBtn.textContent = originalCopyJsonText; }, 2000);
-    }).catch(err => {
+    } catch (err) {
         console.error(err);
         showToast('Clipboard Error: ' + err.message);
-    });
+    }
 });
 
 loadSamplesBtn.addEventListener('click', async () => {
