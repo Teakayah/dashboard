@@ -729,12 +729,14 @@ loadSamplesBtn.addEventListener('click', async () => {
         for (const name of Object.keys(SAMPLE_DATA)) {
             const tableName = name.replace('.csv', '');
             const escapedName = name.replace(/'/g, "''");
-            queries.push(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}');`);
+            queries.push(`CREATE OR REPLACE TABLE "${escapeId(tableName)}" AS SELECT * FROM read_csv_auto('${escapedName}')`);
             tableNames.push(tableName);
         }
 
         if (queries.length > 0) {
-            await Promise.all(queries.map(q => conn.query(q)));
+            // Performance optimization: Batch multiple CREATE TABLE queries into a single string
+            // and execute them in one go to minimize IPC roundtrips across the WebWorker boundary.
+            await conn.query(queries.join(';\n'));
         }
 
         for (const tableName of tableNames) {
