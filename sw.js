@@ -1,12 +1,14 @@
 const CACHE_VERSION = 3;
 const CACHE_NAME = `datadashboard-v${CACHE_VERSION}`;
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/assets/theme.css',
-  '/assets/fullscreen.js',
-  '/dropzone/vendor/gridjs/gridjs.js',
-  '/dropzone/vendor/gridjs/mermaid.min.css'
+  './',
+  './index.html',
+  './assets/theme.css',
+  './assets/fullscreen.js',
+  './dropzone.html',
+  './dropzone/app.js',
+  './dropzone/vendor/gridjs/gridjs.js',
+  './dropzone/vendor/gridjs/mermaid.min.css'
 ];
 
 self.addEventListener('install', (event) => {

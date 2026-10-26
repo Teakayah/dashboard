@@ -14,3 +14,4 @@ tests/**.coverage
 .coverage
 node_modules/
 venv/
+.venv/
