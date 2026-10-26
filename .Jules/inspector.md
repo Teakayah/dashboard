@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-10-26 - Test query history saves and restores in Dropzone
+**Learning:** We need to have end-to-end tests for localStorage features to ensure data correctly renders into the UI upon being clicked.
+**Action:** Always verify both rendering the state into DOM chips and the restoration of state in the UI inputs.

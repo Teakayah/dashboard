@@ -625,3 +625,27 @@ def test_focus_sql_input_shortcut(dz: Page):
     # Assert that the sql-input element is currently focused
     is_focused = dz.evaluate("document.activeElement.id === 'sql-input'")
     assert is_focused, "SQL input should be focused after pressing '/'"
+
+
+def test_query_history_saves_and_restores(dz: Page):
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    sql_input = dz.locator('#sql-input')
+    run_btn = dz.locator('#run-query')
+
+    test_sql = 'SELECT * FROM "employees" LIMIT 2'
+    sql_input.fill(test_sql)
+    run_btn.click()
+
+    expect(dz.locator('.gridjs-tbody tr')).to_have_count(2, timeout=ACTION_TIMEOUT)
+
+    chip = dz.locator('.history-chip', has_text=test_sql)
+    expect(chip).to_be_visible(timeout=10000)
+
+    sql_input.fill("")
+    expect(sql_input).to_have_value("")
+
+    chip.click()
+    expect(sql_input).to_have_value(test_sql)
