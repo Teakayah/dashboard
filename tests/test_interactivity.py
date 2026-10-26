@@ -193,6 +193,27 @@ class TestFloodPageButtons:
         clipboard_content = page.evaluate("navigator.clipboard.readText()")
         assert "flood_risk_gatineau_ottawa.html" in clipboard_content
 
+    def test_generated_share_fallback_announces_clipboard_success(self, page: Page):
+        from deployment.generate_index import inject_share_fix
+
+        unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
+        html = inject_share_fix(
+            f'<html><body><button class="share-btn" {unsafe}>Share</button></body></html>',
+            'test.html',
+        )
+        page.set_content(html)
+        page.evaluate("""
+            delete Navigator.prototype.share;
+            Object.defineProperty(Navigator.prototype, 'clipboard', {
+                configurable: true,
+                value: { writeText: () => Promise.resolve() }
+            });
+        """)
+        button = page.locator('.share-btn')
+        button.click()
+        expect(button).to_have_text('Copied!')
+        expect(button).to_have_attribute('aria-live', 'polite')
+
     def test_reset_button_reverts_offset(self, page: Page):
         _load_page(page, FLOOD_URL)
         slider = page.locator("#levelSlider")
