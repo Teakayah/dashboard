@@ -1,4 +1,4 @@
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page, expect, TimeoutError as PlaywrightTimeoutError
 from pathlib import Path
 import re
 from helpers import (
@@ -20,7 +20,7 @@ def _load_page(page: Page, url: str) -> None:
     page.goto(url, wait_until="domcontentloaded", timeout=60000)
     try:
         page.wait_for_load_state("networkidle", timeout=LOAD_TIMEOUT)
-    except Exception:
+    except PlaywrightTimeoutError:
         pass
 
 
