@@ -1,4 +1,4 @@
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page, expect, TimeoutError as PlaywrightTimeoutError
 from pathlib import Path
 import re
 from helpers import (
@@ -20,7 +20,7 @@ def _load_page(page: Page, url: str) -> None:
     page.goto(url, wait_until="domcontentloaded", timeout=60000)
     try:
         page.wait_for_load_state("networkidle", timeout=LOAD_TIMEOUT)
-    except Exception:
+    except PlaywrightTimeoutError:
         pass
 
 
@@ -192,6 +192,27 @@ class TestFloodPageButtons:
 
         clipboard_content = page.evaluate("navigator.clipboard.readText()")
         assert "flood_risk_gatineau_ottawa.html" in clipboard_content
+
+    def test_generated_share_fallback_announces_clipboard_success(self, page: Page):
+        from deployment.generate_index import inject_share_fix
+
+        unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
+        html = inject_share_fix(
+            f'<html><body><button class="share-btn" {unsafe}>Share</button></body></html>',
+            'test.html',
+        )
+        page.set_content(html)
+        page.evaluate("""
+            delete Navigator.prototype.share;
+            Object.defineProperty(Navigator.prototype, 'clipboard', {
+                configurable: true,
+                value: { writeText: () => Promise.resolve() }
+            });
+        """)
+        button = page.locator('.share-btn')
+        button.click()
+        expect(button).to_have_text('Copied!')
+        expect(button).to_have_attribute('aria-live', 'polite')
 
     def test_reset_button_reverts_offset(self, page: Page):
         _load_page(page, FLOOD_URL)

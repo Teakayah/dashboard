@@ -283,6 +283,25 @@ def test_count_query_returns_single_value(dz: Page):
 
 # ── Export & Copy ─────────────────────────────────────────────────────────────
 
+def test_csv_export_shows_error_toast_on_failure(dz: Page):
+    """Clicking Download CSV when query fails must show an error toast."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    dz.locator('#sql-input').fill('THIS')
+    dz.locator('#download-csv').click()
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Export Error.*THIS', re.IGNORECASE))
+
+
 def test_csv_export_downloads_file(dz: Page):
     """Clicking Download CSV must trigger a file download containing the query results."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
@@ -309,6 +328,25 @@ def test_csv_export_downloads_file(dz: Page):
 
     assert 'id,name,dept_id,salary,join_date' in content, "CSV should contain headers"
     assert '1,Alice,101,85000,2022-01-15' in content, "CSV should contain row data"
+
+def test_export_db_shows_error_toast_on_failure(dz: Page):
+    """Clicking Export Database when it fails must show an error toast."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    dz.evaluate("""
+        window.URL.createObjectURL = () => { throw new Error('Mock export failure'); };
+        undefined;
+    """)
+
+    dz.locator('#export-db').click()
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Database Export Error: Mock export failure', re.IGNORECASE))
+
 
 def test_export_db_downloads_file(dz: Page):
     """Clicking Export Database must trigger a file download containing the DuckDB database."""
@@ -625,3 +663,57 @@ def test_focus_sql_input_shortcut(dz: Page):
     # Assert that the sql-input element is currently focused
     is_focused = dz.evaluate("document.activeElement.id === 'sql-input'")
     assert is_focused, "SQL input should be focused after pressing '/'"
+
+
+def test_query_history_saves_and_restores(dz: Page):
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    sql_input = dz.locator('#sql-input')
+    run_btn = dz.locator('#run-query')
+
+    test_sql = 'SELECT * FROM "employees" LIMIT 2'
+    sql_input.fill(test_sql)
+    run_btn.click()
+
+    expect(dz.locator('.gridjs-tbody tr')).to_have_count(2, timeout=ACTION_TIMEOUT)
+
+    chip = dz.locator('.history-chip', has_text=test_sql)
+    expect(chip).to_be_visible(timeout=10000)
+
+    sql_input.fill("")
+    expect(sql_input).to_have_value("")
+
+    chip.click()
+    expect(sql_input).to_have_value(test_sql)
+
+
+def test_enter_submits_join_builder(dz: Page):
+    """Pressing Enter in a join control generates SQL and focuses the editor."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    dz.select_option('#join-table-a', label='employees')
+    dz.select_option('#join-table-b', label='departments')
+    dz.locator('#join-col').select_option(label='dept_id')
+    dz.locator('#join-col').press('Enter')
+
+    expect(dz.locator('#sql-input')).to_have_value(re.compile(r'JOIN.*dept_id', re.DOTALL))
+    expect(dz.locator('#sql-input')).to_be_focused()
+
+
+def test_enter_submits_chart_builder(dz: Page):
+    """Pressing Enter in a chart control submits it and reports missing axes."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    expect(dz.locator('#chart-builder')).to_be_visible()
+    dz.locator('#chart-type').focus()
+    dz.locator('#chart-type').press('Enter')
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text('Please select both X and Y axes.')

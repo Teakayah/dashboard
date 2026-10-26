@@ -124,6 +124,8 @@ def test_inject_share_fix_replaces_unsafe_handler():
     assert unsafe not in res
     assert 'navigator.share' in res
     assert 'navigator.clipboard' in res
+    assert "innerText='Copied!'" in res
+    assert 'aria-live="polite"' in res
 
 
 def test_inject_share_fix_is_idempotent():

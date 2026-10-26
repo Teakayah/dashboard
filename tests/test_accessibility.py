@@ -15,7 +15,7 @@ from pathlib import Path
 import re
 
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError
 
 from helpers import BASE
 
@@ -61,7 +61,7 @@ def _inject_axe(page: Page) -> None:
     try:
         page.add_script_tag(url=AXE_CDN)
         page.wait_for_function('typeof axe !== "undefined"', timeout=8_000)
-    except Exception as exc:
+    except (Exception, PlaywrightTimeoutError) as exc:
         pytest.skip(f'axe-core CDN unavailable: {exc}')
 
 
@@ -92,10 +92,11 @@ def _fmt(violations: list[dict]) -> str:
 
 @pytest.mark.parametrize('label,path', PAGES)
 def test_page_has_no_critical_or_serious_violations(page: Page, label: str, path: str):
+    _strip_csp(page)
     page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
     try:
         page.wait_for_load_state('networkidle', timeout=8_000)
-    except Exception:
+    except PlaywrightTimeoutError:
         pass
 
     _inject_axe(page)
