@@ -47,16 +47,28 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-_missing = [v for v in ('OLLAMA_URL', 'OLLAMA_MODEL') if not os.environ.get(v)]
-if _missing:
-    sys.exit(f"Error: missing required env var(s): {', '.join(_missing)}. Copy .env.example to .env and fill in the values.")
+OLLAMA_URL = os.environ.get('OLLAMA_URL', '')
+OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', '')
 
-OLLAMA_URL = os.environ['OLLAMA_URL']
-OLLAMA_MODEL = os.environ['OLLAMA_MODEL']
+
+def _check_required_env() -> None:
+    """Validate that required Ollama environment variables are set."""
+    global OLLAMA_URL, OLLAMA_MODEL
+    _load_dotenv()
+    OLLAMA_URL = OLLAMA_URL or os.environ.get('OLLAMA_URL', '')
+    OLLAMA_MODEL = OLLAMA_MODEL or os.environ.get('OLLAMA_MODEL', '')
+    missing = [
+        name for name, value in (('OLLAMA_URL', OLLAMA_URL), ('OLLAMA_MODEL', OLLAMA_MODEL))
+        if not value
+    ]
+    if missing:
+        sys.exit(f"Error: missing required env var(s): {', '.join(missing)}. Copy .env.example to .env and fill in the values.")
 
 
 def ollama_describe(content: str, filename: str) -> str:
     """Ask local Ollama to generate a one-sentence card description from HTML content."""
+    url = OLLAMA_URL or os.environ.get('OLLAMA_URL', '')
+    model = OLLAMA_MODEL or os.environ.get('OLLAMA_MODEL', '')
     snippet = content[:8_000]
     prompt = (
         f"You are summarizing a data analysis HTML page called '{filename}'. "
@@ -65,11 +77,11 @@ def ollama_describe(content: str, filename: str) -> str:
         "Reply with only the sentence — no quotes, no intro.\n\n"
         f"HTML:\n{snippet}"
     )
-    payload = json.dumps({'model': OLLAMA_MODEL, 'prompt': prompt, 'stream': False}).encode()
-    if not OLLAMA_URL.startswith(('http://', 'https://')):
-        raise ValueError(f"Insecure URL scheme in OLLAMA_URL: {OLLAMA_URL}")
+    payload = json.dumps({'model': model, 'prompt': prompt, 'stream': False}).encode()
+    if not url.startswith(('http://', 'https://')):
+        raise ValueError(f"Insecure URL scheme in OLLAMA_URL: {url}")
     req = urllib.request.Request(
-        OLLAMA_URL,
+        url,
         data=payload,
         headers={'Content-Type': 'application/json'},
         method='POST',
@@ -136,6 +148,7 @@ def process_tasks(tasks: list[Path], descriptions: dict) -> int:
 
 
 def main() -> None:
+    _check_required_env()
     args = parse_args()
     descriptions = load_descriptions()
 
