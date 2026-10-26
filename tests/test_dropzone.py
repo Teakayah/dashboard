@@ -337,8 +337,11 @@ def test_export_db_shows_error_toast_on_failure(dz: Page):
     _load_samples_and_wait(dz)
 
     dz.evaluate("""
+        async () => {
+        const { getDb } = await import('/dropzone/src/db.js');
+        getDb().copyFileToBuffer = async () => new Uint8Array([1, 2, 3, 4, 5]);
         window.URL.createObjectURL = () => { throw new Error('Mock export failure'); };
-        undefined;
+        }
     """)
 
     dz.locator('#export-db').click()
@@ -348,28 +351,83 @@ def test_export_db_shows_error_toast_on_failure(dz: Page):
     expect(toast).to_contain_text(re.compile(r'Database Export Error: Mock export failure', re.IGNORECASE))
 
 
-def test_export_db_downloads_file(dz: Page):
-    """Clicking Export Database must trigger a file download containing the DuckDB database."""
+def test_export_db_rejects_incomplete_persistent_file(dz: Page):
+    """A one-byte IndexedDB placeholder must not be offered as a database export."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
 
-    dz.wait_for_function("document.getElementById('status').textContent.includes('Ready') || document.getElementById('status').textContent.includes('Loaded')", timeout=10000)
+    dz.evaluate("""async () => {
+        const { getDb } = await import('/dropzone/src/db.js');
+        const database = getDb();
+        database.copyFileToBuffer = async (path) => {
+            if (path === 'opfs://duckdb_v1.db' || path === 'indexeddb://duckdb') {
+                return new Uint8Array([0xa8]);
+            }
+            throw new Error(`Unexpected path: ${path}`);
+        };
+    }""")
+    dz.locator('#export-db').click()
 
-    dz.locator('#load-samples').click()
-    dz.wait_for_function(
-        "document.getElementById('schema-display').textContent.includes('employees')",
-        timeout=5000,
-    )
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Database Export Error: DuckDB database export failed', re.IGNORECASE))
+
+
+def test_export_db_downloads_copied_database_buffer(dz: Page):
+    """A valid persistent database buffer is downloaded with the expected filename."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+    dz.evaluate("""async () => {
+        const { getDb } = await import('/dropzone/src/db.js');
+        getDb().copyFileToBuffer = async () => new Uint8Array([1, 2, 3, 4, 5]);
+    }""")
 
     with dz.expect_download() as download_info:
         dz.locator('#export-db').click()
 
     download = download_info.value
-    assert download.suggested_filename.startswith('datadashboard_export_'), "Downloaded file name should start with 'datadashboard_export_'"
-    assert download.suggested_filename.endswith('.db'), "Downloaded file name should end with '.db'"
+    assert download.suggested_filename.startswith('datadashboard_export_')
+    assert download.suggested_filename.endswith('.db')
+    assert download.path().read_bytes() == bytes([1, 2, 3, 4, 5])
 
-    path = download.path()
-    import os
-    assert os.path.getsize(path) > 0, "Exported database file should not be empty"
+
+def test_export_db_reports_failure_when_persistent_paths_fail(dz: Page):
+    """Failed database copies must not be reported as successful placeholder exports."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+    result = dz.evaluate("""async () => {
+        const { copyDatabaseBuffer, getDb } = await import('/dropzone/src/db.js');
+        const database = getDb();
+        const originalCopy = database.copyFileToBuffer.bind(database);
+        const attempted = [];
+        database.copyFileToBuffer = async (path) => {
+            attempted.push(path);
+            if (path === 'opfs://duckdb_v1.db' || path === 'indexeddb://duckdb') {
+                throw new Error('simulated persistent file copy failure');
+            }
+            return originalCopy(path);
+        };
+
+        let failureMessage = '';
+        try {
+            await copyDatabaseBuffer(database);
+        } catch (error) {
+            failureMessage = error.message;
+        } finally {
+            database.copyFileToBuffer = originalCopy;
+        }
+
+        return { attempted, failureMessage };
+    }""")
+
+    assert 'opfs://duckdb_v1.db' in result['attempted']
+    assert 'indexeddb://duckdb' in result['attempted']
+    assert result['failureMessage'] == (
+        'DuckDB database export failed: no valid persistent database file could be copied.'
+    )
 
 
 def test_copy_json_copies_to_clipboard(dz: Page):

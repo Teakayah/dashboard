@@ -26,7 +26,8 @@ import {
     getTableSchemaCached,
     getCurrentTableName,
     setCurrentTableName,
-    clearLoadedTables
+    clearLoadedTables,
+    copyDatabaseBuffer
 } from './src/db.js';
 
 // DOM Elements
@@ -784,16 +785,7 @@ exportDbBtn.addEventListener('click', async () => {
         const db = getDb();
         await conn.query(`CHECKPOINT`);
 
-        let buffer;
-        try {
-            buffer = await db.copyFileToBuffer('indexeddb://duckdb');
-        } catch (e) {
-            try {
-                buffer = await db.copyFileToBuffer('opfs://duckdb_v1.db');
-            } catch (e2) {
-                buffer = new Uint8Array([0x44, 0x55, 0x43, 0x4b]);
-            }
-        }
+        const buffer = await copyDatabaseBuffer(db);
 
         const blob = new Blob([buffer], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
