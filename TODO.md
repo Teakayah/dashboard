@@ -163,7 +163,7 @@ Current tests cover Python deployment scripts. None of the **front-end** is test
 ### 4.4 Python coverage holes
 - [ ] `deployment/screenshot.py` is tested but flakily — review and stabilize.
 - [x] `deployment/generate_descriptions.py` coverage improved for security validation and empty CSV handling.
-- [ ] Add a smoke test that runs `deployment/refresh.py` end-to-end against fixture data and asserts the generated HTML has no broken `<script>` SRI mismatches.
+- [x] Add a smoke test that runs `deployment/refresh.py` end-to-end against fixture data and asserts the generated HTML has no broken `<script>` SRI mismatches.
 
 ---
 
