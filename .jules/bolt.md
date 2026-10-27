@@ -1,0 +1,3 @@
+## 2025-02-12 - Minimize IPC overhead across WebWorker boundary
+**Learning:** To minimize IPC overhead across the WebWorker boundary in DuckDB-Wasm, combine multiple schema-modifying queries (e.g., `CREATE OR REPLACE TABLE`, `DROP TABLE`) into a single string and execute them in one `conn.query()` call, rather than iterating over an array to execute them sequentially or concurrently via `Promise.all()`. Explicitly delimit them using `.join(";\n")` to ensure valid SQL syntax and prevent parser errors.
+**Action:** Replace `await Promise.all(queries.map(q => conn.query(q)));` with `await conn.query(queries.join(";\n"));` where multiple queries are executed against DuckDB.
