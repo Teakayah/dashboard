@@ -86,3 +86,6 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+## 2026-10-27 - Explicit Empty States for Schema Display
+**Learning:** The `#schema-display` container was being completely emptied out via `schemaDisplay.textContent = "";` instead of using the central `showEmptyState` function, leading to a broken/empty-looking UI when all tables were cleared.
+**Action:** Always prefer rendering an explicit empty state over emptying out the `textContent` of dynamic result containers.

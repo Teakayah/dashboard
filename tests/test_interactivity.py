@@ -120,7 +120,7 @@ class TestDropzoneButtons:
         dz.on("dialog", lambda d: d.accept())
         dz.locator("#clear-data").click()
 
-        expect(dz.locator("#schema-display")).to_be_empty()
+        expect(dz.locator("#schema-display")).to_contain_text("No tables loaded")
         expect(dz.locator("#chart-builder")).to_be_hidden()
         expect(dz.locator("#join-assistant")).to_be_hidden()
         expect(dz.locator("#instant-previews")).to_be_empty()
