@@ -158,7 +158,7 @@ def test_clear_data_wipes_schema(dz: Page):
         timeout=ACTION_TIMEOUT,
     )
 
-    expect(dz.locator('#schema-display')).to_have_text('')
+    expect(dz.locator('#schema-display')).to_contain_text('No tables loaded')
     expect(dz.locator('#chart-builder')).to_be_hidden()
     expect(dz.locator('#join-assistant')).to_be_hidden()
 
