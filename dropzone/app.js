@@ -750,7 +750,10 @@ loadSamplesBtn.addEventListener('click', async () => {
         }
 
         if (queries.length > 0) {
-            await Promise.all(queries.map(q => conn.query(q)));
+            // ⚡ Bolt Optimization: Batch queries to minimize WebWorker IPC overhead.
+            // Executing multiple queries in a single IPC call avoids roundtrip latency.
+            // Impact: Reduces sample loading time across the WebWorker boundary.
+            await conn.query(queries.join(';\n'));
         }
 
         for (const tableName of tableNames) {
