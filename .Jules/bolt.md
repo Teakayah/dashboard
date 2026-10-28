@@ -94,3 +94,6 @@
 ## 2026-10-14 - Optimize index generation with concurrent I/O
 **Learning:** Using sequential loops for I/O bound tasks like reading HTML files and writing back enhancements in `generate_index.py` is inefficient.
 **Action:** Use `concurrent.futures.ThreadPoolExecutor.map` to concurrently read files, extract metadata, and write enhancements, which speeds up index generation significantly while preserving order.
+## 2026-10-28 - [Avoid lru_cache for re.compile]
+**Learning:** Wrapping `re.compile()` in Python with `@functools.lru_cache` is often a redundant micro-optimization. The standard library's `re` module natively maintains an internal C-level cache (typically up to 512 patterns). Adding `lru_cache` replaces this highly optimized internal lookup with a slower Python-level cache lookup, yielding no measurable performance gain and sometimes adding overhead.
+**Action:** When optimizing regular expression compilation in Python, extract static patterns to the module level as constants. Avoid applying `lru_cache` to functions whose sole purpose is to dynamically generate and compile regular expressions, as it is functionally redundant to the `re` module's native behavior.
