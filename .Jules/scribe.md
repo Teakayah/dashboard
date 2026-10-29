@@ -101,3 +101,7 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-08-30 - Standardize Regex Documentation Pattern
 **Learning:** Complex regular expressions embedded directly in single-line strings (like HTML parsing regexes) hinder readability and create a high cognitive load for maintainers. The repository has an established pattern (e.g., in `generate_index.py`) of using `re.VERBOSE` with multiline strings and inline comments for complex regexes.
 **Action:** Always format complex regular expressions using the `re.VERBOSE` flag, separating the pattern into a multiline string where each capture group and match requirement is explicitly explained with inline comments, aligning with the repository's documentation standards.
+
+## 2026-10-29 - Use re.VERBOSE for complex HTML parsing regexes
+**Learning:** Dense regular expressions, such as the one used to match and upgrade the `navigator.share` injected button in `deployment/generate_index.py`, are incredibly difficult to read and maintain when compressed into a single-line string with escaped quotes and parentheses.
+**Action:** When working with complex regular expressions for HTML replacement (like finding specific inline JavaScript handlers), always convert them to multiline strings using `re.VERBOSE` and add inline comments to explain exactly what each OR `|` branch is attempting to match.
