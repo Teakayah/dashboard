@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-10-29 - Avoid blind exception handling in Playwright
+**Learning:** Using `except Exception: pass` to swallow expected timeouts (e.g., waiting for slow network assets) is dangerous because it also swallows real failures like browser crashes or connection errors.
+**Action:** Always specifically catch `TimeoutError` (imported as `TimeoutError as PlaywrightTimeoutError` from `playwright.sync_api`) to ensure unexpected exceptions are still raised.
