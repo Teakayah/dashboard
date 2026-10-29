@@ -1,0 +1,4 @@
+## 2026-10-29 - Improve timeout handling in screenshot script
+Coverage Gap: The `wait_for_timeout` in `deployment/screenshot.py` is skipped if `wait_for_selector` raises an exception, which leads to flaky screenshot rendering where charts haven't fully animated, and a silent swallowing of real timeouts.
+Learning: The blind `except Exception: pass` swallows actual Playwright `TimeoutError` exceptions. In Playwright, if `wait_for_selector` fails, it raises a `playwright.sync_api.TimeoutError`. If this happens, we should probably still wait a bit, or at least we shouldn't swallow connection exceptions. More importantly, we should catch `TimeoutError` specifically instead of blind `Exception`.
+Assertion: Refactor the wait block to use `TimeoutError as PlaywrightTimeoutError` from `playwright.sync_api` and avoid blind exception handling.
