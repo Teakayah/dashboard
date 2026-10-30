@@ -94,3 +94,7 @@
 ## 2026-10-14 - Optimize index generation with concurrent I/O
 **Learning:** Using sequential loops for I/O bound tasks like reading HTML files and writing back enhancements in `generate_index.py` is inefficient.
 **Action:** Use `concurrent.futures.ThreadPoolExecutor.map` to concurrently read files, extract metadata, and write enhancements, which speeds up index generation significantly while preserving order.
+
+## 2026-10-30 - Pre-compile regular expressions outside loops
+**Learning:** Compiling a regular expression (like `re.compile()`) inside a function that is executed repetitively in a loop across many files creates unnecessary processing overhead.
+**Action:** Extract the `re.compile` call to the module level and assign it to a constant, so the pattern is only compiled once, eliminating redundant evaluations.
