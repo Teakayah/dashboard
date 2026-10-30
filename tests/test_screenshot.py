@@ -152,7 +152,8 @@ def test_main_timeout_waiting_for_load_state():
     mock_browser = MagicMock()
     mock_page = MagicMock()
     mock_browser.new_page.return_value = mock_page
-    mock_page.wait_for_load_state.side_effect = Exception("Timeout")
+    class MockTimeoutError(Exception): pass
+    mock_page.wait_for_load_state.side_effect = MockTimeoutError("Timeout")
 
     mock_pw = MagicMock()
     mock_pw.chromium.launch.return_value = mock_browser
@@ -165,7 +166,7 @@ def test_main_timeout_waiting_for_load_state():
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen'), \
          patch('socket.create_connection'), \
-         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
+         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright, TimeoutError=MockTimeoutError)}), \
          patch('pathlib.Path.mkdir'), \
          patch('pathlib.Path.stat') as mock_stat:
 
@@ -202,8 +203,9 @@ def test_main_wait_for_selector_exception():
     mock_page = MagicMock()
     mock_browser.new_page.return_value = mock_page
 
+    class MockTimeoutError(Exception): pass
     # Simulate wait_for_selector throwing an Exception
-    mock_page.wait_for_selector.side_effect = Exception("Timeout waiting for selector")
+    mock_page.wait_for_selector.side_effect = MockTimeoutError("Timeout waiting for selector")
 
     mock_pw = MagicMock()
     mock_pw.chromium.launch.return_value = mock_browser
@@ -216,7 +218,7 @@ def test_main_wait_for_selector_exception():
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen') as _, \
          patch('socket.create_connection'), \
-         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
+         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright, TimeoutError=MockTimeoutError)}), \
          patch('pathlib.Path.mkdir'), \
          patch('pathlib.Path.stat') as mock_stat:
 

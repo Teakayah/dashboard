@@ -7,7 +7,7 @@ Requires: pip install pytest pytest-playwright
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page, expect, TimeoutError as PlaywrightTimeoutError
 
 BASE = 'http://localhost:8765'
 REPO_ROOT = Path(__file__).parent.parent
@@ -29,7 +29,7 @@ def analysis_pages() -> list[str]:
 def _wait_for_networkidle(page: Page, timeout: int = 8000):
     try:
         page.wait_for_load_state('networkidle', timeout=timeout)
-    except Exception:  # noqa: BLE001, S110
+    except PlaywrightTimeoutError:  # noqa: BLE001
         pass
 
 def test_index_title(page: Page):
