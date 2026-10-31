@@ -68,7 +68,7 @@ def _ensure_test_pages_hydrated() -> None:
                     )
                     target.write_bytes(content)
                     break
-                except Exception:
+                except subprocess.CalledProcessError:
                     continue
 
 
