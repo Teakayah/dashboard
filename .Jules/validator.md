@@ -62,3 +62,8 @@ Coverage Gap: Analysis page UI tests used hardcoded `page.wait_for_timeout` afte
 Learning: Fixed timeouts either waste execution time or fail on slower CI machines during asynchronous Chart.js rendering and DOM state transitions.
 Assertion: Replace `page.wait_for_timeout` with Playwright's native `expect(locator).to_have_class(...)` and `page.wait_for_function(...)` auto-retrying assertions.
 
+
+## 2026-11-01 - Cover extract_statcan_data ref_date branch logic
+Coverage Gap: The `extract_statcan_data` function in `deployment/rebuild_analyses.py` lacked branch coverage for checking `len(ref_date) >= 4` when `ref_date` was short or empty.
+Learning: Short or empty `REF_DATE` values in the extraction step bypass year parsing but were not verified in unit tests, causing an untaken branch metric.
+Assertion: Supply `ref_date="ABC"` and `ref_date=""` in test row data to explicitly trigger the false branch condition for the minimum string length check.
