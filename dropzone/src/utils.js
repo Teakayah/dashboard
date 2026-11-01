@@ -86,7 +86,10 @@ export function triggerDownload(url, filename) {
 }
 
 /**
- * Utility to clear and populate a <select> element.
+ * Clears an existing HTML <select> element and populates it with new options.
+ * This is used extensively in the Join Assistant and Chart Builder UIs to dynamically
+ * update available column choices when new tables are loaded or selected.
+ *
  * @param {HTMLSelectElement} select - The select element to populate.
  * @param {Array<string|Object>} options - Array of values or column objects.
  * @param {string} [defaultMsg] - Optional default disabled option.
@@ -181,7 +184,9 @@ export async function withLoading(errorPrefix, asyncFn) {
 }
 
 /**
- * Renders an accessible empty state inside a container using safe DOM elements.
+ * Renders a standardized, accessible empty state inside a container using safe DOM elements.
+ * Prevents broken or blank UIs when data results are empty by providing a visual fallback
+ * with an SVG icon and descriptive text (e.g. for query results or previews).
  *
  * @param {HTMLElement} containerEl - The container element to populate.
  * @param {string} title - Heading for the empty state.
