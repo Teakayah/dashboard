@@ -192,6 +192,9 @@ def test_needs_screenshot_mtime_fallback():
         mock_stat.side_effect = [MagicMock(st_mtime=100), MagicMock(st_mtime=50)]
         assert module.needs_screenshot('test_page.html', 0, 0) is False
 
+class MockTimeoutError(Exception):
+    pass
+
 @patch("sys.argv", ["screenshot.py"])
 def test_main_wait_for_selector_exception():
     module = load_screenshot_module()
@@ -202,8 +205,8 @@ def test_main_wait_for_selector_exception():
     mock_page = MagicMock()
     mock_browser.new_page.return_value = mock_page
 
-    # Simulate wait_for_selector throwing an Exception
-    mock_page.wait_for_selector.side_effect = Exception("Timeout waiting for selector")
+    # Simulate wait_for_selector throwing a TimeoutError
+    mock_page.wait_for_selector.side_effect = MockTimeoutError("Timeout waiting for selector")
 
     mock_pw = MagicMock()
     mock_pw.chromium.launch.return_value = mock_browser
@@ -211,18 +214,23 @@ def test_main_wait_for_selector_exception():
     mock_sync_playwright = MagicMock()
     mock_sync_playwright.return_value.__enter__.return_value = mock_pw
 
+    mock_playwright_module = MagicMock(
+        sync_playwright=mock_sync_playwright,
+        TimeoutError=MockTimeoutError
+    )
+
     with patch('pathlib.Path.glob', return_value=[mock_p]), \
          patch.object(module, 'get_git_commit_times_batched', return_value={}), \
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen') as _, \
          patch('socket.create_connection'), \
-         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
+         patch.dict('sys.modules', {'playwright.sync_api': mock_playwright_module}), \
          patch('pathlib.Path.mkdir'), \
          patch('pathlib.Path.stat') as mock_stat:
 
         mock_stat.return_value.st_size = 1024
         module.main()
 
-    mock_page.wait_for_selector.assert_called_once()
+    mock_page.wait_for_selector.assert_called_once_with('canvas, .grid, .container', timeout=10000)
     mock_page.wait_for_timeout.assert_not_called()
     mock_page.screenshot.assert_called_once()
