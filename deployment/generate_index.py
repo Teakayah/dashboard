@@ -58,7 +58,9 @@ RE_STRIP_RESPONSIVE = re.compile(
     \s*                                     # Match any leading whitespace
     <!--\ responsive-inject(?:-v\d+)?\ -->  # Opening marker with optional version (e.g. -v5)
     \s*<style>.*?</style>                   # Match the injected CSS block non-greedily
-    \s*<script>.*?</script>                 # Match the injected JavaScript block non-greedily
+    (?:                                     # Optional injected JavaScript block
+        \s*<script>.*?</script>
+    )?
     (?:                                     # Optional non-capturing group for the closing marker
         \s*<!--\ /responsive-inject(?:-v\d+)?\ -->
     )?
