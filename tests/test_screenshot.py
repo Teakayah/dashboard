@@ -1,3 +1,6 @@
+class MockTimeoutError(Exception):
+    pass
+
 import importlib.util
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -99,7 +102,7 @@ def test_main_success_flow():
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen') as mock_popen, \
          patch('socket.create_connection'), \
-         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
+         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright, TimeoutError=MockTimeoutError)}), \
          patch('pathlib.Path.mkdir'), \
          patch('pathlib.Path.stat') as mock_stat:
 
@@ -136,7 +139,7 @@ def test_main_screenshot_failure():
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen'), \
          patch('socket.create_connection'), \
-         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
+         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright, TimeoutError=MockTimeoutError)}), \
          patch('pathlib.Path.mkdir'), \
          pytest.raises(SystemExit) as exc_info:
         module.main()
@@ -165,7 +168,7 @@ def test_main_timeout_waiting_for_load_state():
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen'), \
          patch('socket.create_connection'), \
-         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
+         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright, TimeoutError=MockTimeoutError)}), \
          patch('pathlib.Path.mkdir'), \
          patch('pathlib.Path.stat') as mock_stat:
 
@@ -203,7 +206,7 @@ def test_main_wait_for_selector_exception():
     mock_browser.new_page.return_value = mock_page
 
     # Simulate wait_for_selector throwing an Exception
-    mock_page.wait_for_selector.side_effect = Exception("Timeout waiting for selector")
+    mock_page.wait_for_selector.side_effect = MockTimeoutError("Timeout waiting for selector")
 
     mock_pw = MagicMock()
     mock_pw.chromium.launch.return_value = mock_browser
@@ -216,7 +219,7 @@ def test_main_wait_for_selector_exception():
          patch.object(module, 'needs_screenshot', return_value=True), \
          patch('subprocess.Popen') as _, \
          patch('socket.create_connection'), \
-         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright)}), \
+         patch.dict('sys.modules', {'playwright.sync_api': MagicMock(sync_playwright=mock_sync_playwright, TimeoutError=MockTimeoutError)}), \
          patch('pathlib.Path.mkdir'), \
          patch('pathlib.Path.stat') as mock_stat:
 
