@@ -1085,3 +1085,11 @@ def test_script_entrypoint(mock_write, mock_exit):
     path = Path(__file__).parent.parent / 'deployment' / 'rebuild_analyses.py'
     runpy.run_path(str(path), run_name='__main__')
     mock_exit.assert_called_once()
+
+def test_extract_short_or_empty_ref_date():
+    rows = [
+        create_row(geo="Ontario", ref_date="ABC", value="100.0"),
+        create_row(geo="Ontario", ref_date="", value="100.0")
+    ]
+    result = extract_statcan_data(rows, '14100287', 'empRate')
+    assert result == {}
