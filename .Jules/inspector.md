@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-11-02 - Testing localStorage state restoration
+**Learning:** When writing Playwright tests for features that persist state to `localStorage` (like query history or schema), just verifying that the state is recorded in the current session is insufficient.
+**Action:** Always verify the end-to-end user experience by adding a page reload (`dz.reload(wait_until="domcontentloaded")`), waiting for readiness, and asserting that the UI successfully renders the saved state (e.g., query chips) and allows full restoration of that state across sessions.

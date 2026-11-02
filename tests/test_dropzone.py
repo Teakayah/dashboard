@@ -746,6 +746,14 @@ def test_query_history_saves_and_restores(dz: Page):
     chip.click()
     expect(sql_input).to_have_value(test_sql)
 
+    # Reload page and verify history chip is restored
+    dz.reload(wait_until="domcontentloaded")
+    _wait_for_ready(dz)
+    chip_restored = dz.locator('.history-chip', has_text=test_sql)
+    expect(chip_restored).to_be_visible(timeout=10000)
+    chip_restored.click()
+    expect(dz.locator('#sql-input')).to_have_value(test_sql)
+
 
 def test_enter_submits_join_builder(dz: Page):
     """Pressing Enter in a join control generates SQL and focuses the editor."""
