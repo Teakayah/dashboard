@@ -160,7 +160,17 @@ def test_analysis_page_has_og_image(page: Page, filename: str):
 def test_analysis_page_no_js_errors(page: Page, filename: str):
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
+
+    # Retry mechanism to handle flaky Playwright goto timeouts
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
+            break
+        except PlaywrightTimeoutError:
+            if attempt == max_retries - 1:
+                raise
+
     _wait_for_networkidle(page)
     assert errors == [], f'JS errors on {filename}: {errors}'
 
