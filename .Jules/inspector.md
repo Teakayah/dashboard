@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-11-04 - Fix flaky usability test for page loading
+**Learning:** Hardcoded timeouts during page navigation in Playwright's `page.goto` can cause intermittent "Timeout exceeded" errors, especially for web pages with varying asset load times or unpredictable network environments. While we can use a generous timeout (e.g. 60000ms), a retry mechanism should be used in the rare cases the test still fails for this reason to ensure it passes properly. Catching and silently suppressing the exception is a testing anti-pattern as it masks the failure completely.
+**Action:** When a timeout during `page.goto` is expected or tolerated, explicitly catch the `TimeoutError` (imported correctly from `playwright.sync_api` as `PlaywrightTimeoutError`) and wrap it in a retry loop using a `try-except` block to ensure tests pass but real timeout failures are surfaced if the retries run out.
