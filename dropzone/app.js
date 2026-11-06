@@ -750,7 +750,8 @@ loadSamplesBtn.addEventListener('click', async () => {
         }
 
         if (queries.length > 0) {
-            await Promise.all(queries.map(q => conn.query(q)));
+            // Performance optimization: Batch queries to minimize DuckDB-Wasm IPC overhead
+            await conn.query(queries.join('\n'));
         }
 
         for (const tableName of tableNames) {
