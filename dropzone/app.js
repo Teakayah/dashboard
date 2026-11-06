@@ -45,6 +45,7 @@ const recipeSelect = document.getElementById('query-recipes');
 const schemaDisplay = document.getElementById('schema-display');
 const loadingOverlay = document.getElementById('loading');
 const previewsContainer = document.getElementById('instant-previews');
+const remoteDeltaForm = document.getElementById('remote-delta-form');
 const remoteDeltaUrl = document.getElementById('remote-delta-url');
 const loadRemoteDeltaBtn = document.getElementById('load-remote-delta');
 const initProgressContainer = document.getElementById('init-progress-container');
@@ -841,19 +842,11 @@ remoteDeltaUrl.addEventListener('input', () => {
     loadRemoteDeltaBtn.title = hasUrl ? 'Load Table' : 'Requires a valid URL';
 });
 
-remoteDeltaUrl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        if (!loadRemoteDeltaBtn.disabled) {
-            loadRemoteDeltaBtn.click();
-        }
-    }
-});
-
 // Initialize state
 remoteDeltaUrl.dispatchEvent(new Event('input'));
 
-loadRemoteDeltaBtn.addEventListener('click', async () => {
+remoteDeltaForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
     const url = remoteDeltaUrl.value.trim();
     if (!url) return;
 
