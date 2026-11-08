@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-11-08 - File Size Assertion in Download Tests
+**Learning:** Checking that a downloaded file matches specific bytes inherently checks its size. Adding an explicit `os.path.getsize(download.path()) > 0` check before a strict byte match check (like `assert download.path().read_bytes() == bytes([...])`) is redundant and constitutes a minor code smell.
+**Action:** Do not add explicit file size checks (like `os.path.getsize > 0`) if the test immediately follows up with a strict assertion on the exact byte content of the file.

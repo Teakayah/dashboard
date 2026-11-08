@@ -390,6 +390,8 @@ def test_export_db_downloads_copied_database_buffer(dz: Page):
     download = download_info.value
     assert download.suggested_filename.startswith('datadashboard_export_')
     assert download.suggested_filename.endswith('.db')
+    import os
+    assert os.path.getsize(download.path()) > 0, "Downloaded DB file should not be empty"
     assert download.path().read_bytes() == bytes([1, 2, 3, 4, 5])
 
 
@@ -517,7 +519,7 @@ def test_load_remote_delta_unsupported_shows_toast(dz: Page):
     dz.locator('#remote-delta-url').fill('https://example.com/data.delta')
     dz.locator('#load-remote-delta').click()
 
-    toast = dz.locator('[role="alert"]')
+    toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text(re.compile(r'Delta Lake support is not available', re.IGNORECASE))
 
@@ -540,7 +542,7 @@ def test_load_remote_delta_enter_key_submits(dz: Page):
     dz.locator('#remote-delta-url').fill('https://example.com/data.delta')
     dz.locator('#remote-delta-url').press('Enter')
 
-    toast = dz.locator('[role="alert"]')
+    toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text(re.compile(r'Delta Lake support is not available', re.IGNORECASE))
 
