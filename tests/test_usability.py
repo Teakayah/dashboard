@@ -7,7 +7,7 @@ Requires: pip install pytest pytest-playwright
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page, expect, TimeoutError as PlaywrightTimeoutError
 
 BASE = 'http://localhost:8765'
 REPO_ROOT = Path(__file__).parent.parent
@@ -387,22 +387,25 @@ def test_viz_elements_have_height(page: Page, filename: str):
 
             # Wait for any visible canvas/map in the active panel to have a height >= 10,
             # or for no such elements to exist. This avoids hardcoded timeouts.
-            page.wait_for_function("""
-                () => {
-                    const activePanel = document.querySelector('.panel.active');
-                    const container = activePanel || document.body;
-                    const canvases = container.querySelectorAll('canvas');
-                    const maps = container.querySelectorAll('#floodMap, .leaflet-container');
+            try:
+                page.wait_for_function("""
+                    () => {
+                        const activePanel = document.querySelector('.panel.active');
+                        const container = activePanel || document.body;
+                        const canvases = container.querySelectorAll('canvas');
+                        const maps = container.querySelectorAll('#floodMap, .leaflet-container');
 
-                    for (let c of canvases) {
-                        if (c.offsetParent !== null && c.offsetHeight < 10) return false;
+                        for (let c of canvases) {
+                            if (c.offsetParent !== null && c.offsetHeight < 10) return false;
+                        }
+                        for (let m of maps) {
+                            if (m.offsetParent !== null && m.offsetHeight < 10) return false;
+                        }
+                        return true;
                     }
-                    for (let m of maps) {
-                        if (m.offsetParent !== null && m.offsetHeight < 10) return false;
-                    }
-                    return true;
-                }
-            """, timeout=15000)
+                """, timeout=15000)
+            except PlaywrightTimeoutError:
+                pass
             
             elements = page.evaluate("""
                 () => {
@@ -432,15 +435,18 @@ def test_viz_elements_have_height(page: Page, filename: str):
             assert not elements, f"Collapsed visualizations on {filename} tab '{tab_name}': {elements}"
     else:
         # Standard page with no tabs
-        page.wait_for_function("""
-            () => {
-                const canvases = document.querySelectorAll('canvas');
-                for (let c of canvases) {
-                    if (c.offsetParent !== null && c.offsetHeight < 10) return false;
+        try:
+            page.wait_for_function("""
+                () => {
+                    const canvases = document.querySelectorAll('canvas');
+                    for (let c of canvases) {
+                        if (c.offsetParent !== null && c.offsetHeight < 10) return false;
+                    }
+                    return true;
                 }
-                return true;
-            }
-        """, timeout=15000)
+            """, timeout=15000)
+        except PlaywrightTimeoutError:
+            pass
 
         elements = page.evaluate("""
             () => {
