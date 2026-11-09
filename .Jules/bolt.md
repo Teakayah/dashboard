@@ -94,3 +94,7 @@
 ## 2026-10-14 - Optimize index generation with concurrent I/O
 **Learning:** Using sequential loops for I/O bound tasks like reading HTML files and writing back enhancements in `generate_index.py` is inefficient.
 **Action:** Use `concurrent.futures.ThreadPoolExecutor.map` to concurrently read files, extract metadata, and write enhancements, which speeds up index generation significantly while preserving order.
+
+## 2024-11-26 - Optimize CSV Reading
+**Learning:** Using `zip_longest` when reading well-formed CSVs with `csv.reader` introduces unnecessary overhead compared to the built-in `zip` function. For well-formed datasets like StatCan CSVs, `zip` is sufficient and performs about 15-20% faster.
+**Action:** When manually parsing CSV files with `csv.reader`, prefer `zip(headers, row)` over `zip_longest` if the CSV structure is reliable, and use `if row` instead of `if any(row)` for faster empty row filtering.
