@@ -307,6 +307,16 @@ async function updateJoinColumns() {
     } catch (err) {
         console.error('Error fetching columns for join:', err);
     }
+    updateJoinButtonState();
+}
+
+/**
+ * Updates the disabled state and tooltip of the Generate Join button.
+ */
+function updateJoinButtonState() {
+    const hasValues = joinTableA.value && joinTableB.value && joinCol.value;
+    generateJoinBtn.disabled = !hasValues;
+    generateJoinBtn.title = hasValues ? 'Generate Join SQL' : 'Requires tables and a common column';
 }
 
 /**
@@ -346,6 +356,16 @@ async function updateChartBuilderUI() {
     } catch (err) {
         console.error('Error updating chart builder UI:', err);
     }
+    updateChartButtonState();
+}
+
+/**
+ * Updates the disabled state and tooltip of the Generate Chart button.
+ */
+function updateChartButtonState() {
+    const hasValues = chartXCol.value && chartYCol.value;
+    generateChartBtn.disabled = !hasValues;
+    generateChartBtn.title = hasValues ? 'Generate Chart SQL' : 'Requires both X and Y axes';
 }
 
 const submitChartOnEnter = (e) => {
@@ -357,6 +377,10 @@ chartYCol.addEventListener('keydown', submitChartOnEnter);
 
 joinTableA.addEventListener('change', updateJoinColumns);
 joinTableB.addEventListener('change', updateJoinColumns);
+joinCol.addEventListener('change', updateJoinButtonState);
+
+chartXCol.addEventListener('change', updateChartButtonState);
+chartYCol.addEventListener('change', updateChartButtonState);
 
 const submitJoinOnEnter = (e) => {
     if (e.key === 'Enter') generateJoinBtn.click();

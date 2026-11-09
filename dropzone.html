@@ -345,7 +345,7 @@
                 <select id="join-col" aria-label="Column to join on" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
                     <option value="" disabled selected>Select Column...</option>
                 </select>
-                <button id="generate-join" class="secondary" style="background-color: #0d9488;">Generate Join SQL</button>
+                <button id="generate-join" class="secondary" disabled title="Requires tables and a common column" style="background-color: #0d9488;">Generate Join SQL</button>
             </div>
         </div>
 
@@ -365,7 +365,7 @@
                 <select id="chart-y-col" aria-label="Y-Axis Column" style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); min-width: 150px;">
                     <option value="" disabled selected>Select Column...</option>
                 </select>
-                <button id="generate-chart" class="secondary" style="background-color: #ea580c;">Generate Chart SQL</button>
+                <button id="generate-chart" class="secondary" disabled title="Requires both X and Y axes" style="background-color: #ea580c;">Generate Chart SQL</button>
             </div>
         </div>
 
