@@ -43,7 +43,6 @@ const loadSamplesBtn = document.getElementById('load-samples');
 const exportDbBtn = document.getElementById('export-db');
 const recipeSelect = document.getElementById('query-recipes');
 const schemaDisplay = document.getElementById('schema-display');
-const loadingOverlay = document.getElementById('loading');
 const previewsContainer = document.getElementById('instant-previews');
 const remoteDeltaUrl = document.getElementById('remote-delta-url');
 const loadRemoteDeltaBtn = document.getElementById('load-remote-delta');
