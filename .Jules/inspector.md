@@ -69,3 +69,6 @@
 ## 2026-09-09 - Testing Asynchronous UI Assertions
 **Learning:** Using synchronous assertions like `toast.wait_for(state="visible", timeout=3000)` combined with `assert ... in toast.inner_text().lower()` is flaky for dynamic DOM elements and can timeout prematurely.
 **Action:** Always use Playwright's native auto-retrying assertions like `expect(locator).to_be_visible(timeout=...)` and `expect(locator).to_contain_text(...)` to ensure tests remain robust.
+## 2026-10-09 - Avoid flaky timeouts using wait_for_function
+**Learning:** Using hardcoded `page.wait_for_timeout()` (e.g. 1000ms) to wait for complex asynchronous browser actions like Service Worker cache clearance is extremely flaky. Depending on CI speed or browser load, the action may take longer, causing the assertion to fail.
+**Action:** Replace arbitrary `page.wait_for_timeout(ms)` delays with explicit, polled checks using `page.wait_for_function()` to repeatedly poll the browser state (e.g., checking `caches.keys()`) until the expected condition is met.
