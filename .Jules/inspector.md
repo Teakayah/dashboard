@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-11-10 - Fix Toast Notification Strict Mode Violations
+**Learning:** Successive actions can trigger multiple toast notifications to appear in the DOM sequentially. Using a bare locator like `[role="alert"]` in Playwright tests causes strict mode violations because multiple elements match.
+**Action:** Always use `.last` or `.filter(has_text=...)` (e.g., `page.locator('[role="alert"]').last`) when asserting on toast notifications to ensure tests remain robust and flake-free.
