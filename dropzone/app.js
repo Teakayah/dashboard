@@ -114,9 +114,7 @@ async function restoreState() {
             sqlInput.value = `SELECT * FROM "${escapeId(getCurrentTableName())}" LIMIT 100`;
             sqlInput.dispatchEvent(new Event('input'));
 
-            updateJoinUI();
-            updateChartBuilderUI();
-            updateConsoleActionsUI();
+            await refreshUIPanels();
         }
     } catch (err) {
         console.warn('Failed to restore state:', err);
@@ -260,7 +258,7 @@ async function displayTableSchema(tableName) {
 /**
  * Toggles and populates the Join Assistant UI based on the current state of loaded tables.
  */
-function updateJoinUI() {
+async function updateJoinUI() {
     if (loadedTables.size >= 2) {
         joinAssistant.style.display = 'flex';
         const tables = Array.from(loadedTables);
@@ -273,10 +271,19 @@ function updateJoinUI() {
             joinTableB.selectedIndex = 1;
         }
 
-        updateJoinColumns();
+        await updateJoinColumns();
     } else {
         joinAssistant.style.display = 'none';
     }
+}
+
+/**
+ * Sequentially refreshes all UI panels to prevent concurrent DuckDB-Wasm queries.
+ */
+async function refreshUIPanels() {
+    await updateJoinUI();
+    await updateChartBuilderUI();
+    updateConsoleActionsUI();
 }
 
 /**
@@ -522,8 +529,7 @@ async function handleFiles(files) {
         }
 
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
-        updateJoinUI();
-        updateConsoleActionsUI();
+        await refreshUIPanels();
     });
 }
 
@@ -752,9 +758,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         }
 
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
-        updateJoinUI();
-        updateChartBuilderUI();
-        updateConsoleActionsUI();
+        await refreshUIPanels();
 
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
@@ -820,9 +824,7 @@ clearBtn.addEventListener('click', async () => {
         downloadBtn.title = 'Requires query results';
         copyJsonBtn.disabled = true;
         copyJsonBtn.title = 'Requires query results';
-        joinAssistant.style.display = 'none';
-        updateChartBuilderUI();
-        updateConsoleActionsUI();
+        await refreshUIPanels();
         statusEl.textContent = 'Storage cleared';
     });
 });
@@ -848,7 +850,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         await onTableLoaded(tableName);
 
         statusEl.textContent = `Loaded remote table: ${tableName}`;
-        updateConsoleActionsUI();
+        await refreshUIPanels();
 
         const originalText = loadRemoteDeltaBtn.textContent;
         loadRemoteDeltaBtn.textContent = 'Table Loaded!';
