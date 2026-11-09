@@ -151,6 +151,17 @@ export function insertAtCursor(myField, myValue) {
     }
 }
 
+export function withTemporaryText(btnEl, tempText, duration = 2000) {
+    if (btnEl.dataset.tempTextActive === 'true') return;
+    btnEl.dataset.tempTextActive = 'true';
+    const originalText = btnEl.textContent;
+    btnEl.textContent = tempText;
+    setTimeout(() => {
+        btnEl.textContent = originalText;
+        delete btnEl.dataset.tempTextActive;
+    }, duration);
+}
+
 /**
  * Wraps an async function with loading overlay state management.
  *

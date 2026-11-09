@@ -7,6 +7,7 @@ import {
     insertAtCursor,
     showToast,
     withLoading,
+    withTemporaryText,
     showEmptyState
 } from './src/utils.js';
 import { addToHistory, renderHistory } from './src/history.js';
@@ -705,10 +706,8 @@ copyJsonBtn.addEventListener('click', () => {
     if (!lastResult) return;
     const json = JSON.stringify(lastResult, null, 2);
     navigator.clipboard.writeText(json).then(() => {
-        const originalText = copyJsonBtn.textContent;
-        copyJsonBtn.textContent = 'Copied!';
+        withTemporaryText(copyJsonBtn, 'Copied!');
         showToast('Copied JSON to clipboard', 'success');
-        setTimeout(() => { copyJsonBtn.textContent = originalText; }, 2000);
     }).catch(err => {
         console.error(err);
         showToast('Clipboard Error: ' + err.message);
@@ -754,9 +753,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         updateChartBuilderUI();
         updateConsoleActionsUI();
 
-        const originalText = loadSamplesBtn.textContent;
-        loadSamplesBtn.textContent = 'Samples Loaded!';
-        setTimeout(() => { loadSamplesBtn.textContent = originalText; }, 2000);
+        withTemporaryText(loadSamplesBtn, 'Samples Loaded!');
     });
 });
 
@@ -848,9 +845,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         statusEl.textContent = `Loaded remote table: ${tableName}`;
         updateConsoleActionsUI();
 
-        const originalText = loadRemoteDeltaBtn.textContent;
-        loadRemoteDeltaBtn.textContent = 'Table Loaded!';
-        setTimeout(() => { loadRemoteDeltaBtn.textContent = originalText; }, 2000);
+        withTemporaryText(loadRemoteDeltaBtn, 'Table Loaded!');
     });
 });
 
