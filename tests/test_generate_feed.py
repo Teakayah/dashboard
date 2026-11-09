@@ -113,9 +113,9 @@ def test_atom_entry_escapes_url_and_id():
 def test_load_descriptions_exists():
     module = load_generate_feed_module()
     mock_data = '{"test.html": "A description"}'
-    with patch.object(module.Path, 'exists', return_value=True):
-        with patch.object(module.Path, 'read_text', return_value=mock_data):
-            assert module._load_descriptions() == {"test.html": "A description"}
+    with patch.object(module.Path, 'exists', return_value=True), \
+         patch.object(module.Path, 'read_text', return_value=mock_data):
+        assert module._load_descriptions() == {"test.html": "A description"}
 
 def test_load_descriptions_not_exists():
     module = load_generate_feed_module()
@@ -205,22 +205,22 @@ def test_build_feed_with_entries():
 def test_main():
     module = load_generate_feed_module()
 
-    with patch.object(module, '_load_descriptions', return_value={}):
-        with patch('pathlib.Path.glob') as mock_glob:
-            mock_html = MagicMock(spec=Path)
-            mock_html.name = "test.html"
-            mock_html.stem = "test"
-            mock_html.read_text.return_value = "<title>Test</title>"
-            mock_glob.return_value = [mock_html]
+    with patch.object(module, '_load_descriptions', return_value={}), \
+         patch('pathlib.Path.glob') as mock_glob:
+        mock_html = MagicMock(spec=Path)
+        mock_html.name = "test.html"
+        mock_html.stem = "test"
+        mock_html.read_text.return_value = "<title>Test</title>"
+        mock_glob.return_value = [mock_html]
 
-            with patch.object(module, '_get_batched_git_isos', return_value={mock_html: "2023-10-27T10:00:00Z"}):
-                with patch('pathlib.Path.write_text') as mock_write:
-                    with patch('builtins.print'):
-                        module.main()
+        with patch.object(module, '_get_batched_git_isos', return_value={mock_html: "2023-10-27T10:00:00Z"}), \
+             patch('pathlib.Path.write_text') as mock_write, \
+             patch('builtins.print'):
+            module.main()
 
-                        mock_write.assert_called_once()
-                        written_content = mock_write.call_args[0][0]
-                        assert "<title>Test</title>" in written_content
+            mock_write.assert_called_once()
+            written_content = mock_write.call_args[0][0]
+            assert "<title>Test</title>" in written_content
 
 def test_get_batched_git_isos_empty_line():
     module = load_generate_feed_module()
