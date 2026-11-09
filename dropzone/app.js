@@ -348,22 +348,18 @@ async function updateChartBuilderUI() {
     }
 }
 
-const submitChartOnEnter = (e) => {
-    if (e.key === 'Enter') generateChartBtn.click();
-};
-chartType.addEventListener('keydown', submitChartOnEnter);
-chartXCol.addEventListener('keydown', submitChartOnEnter);
-chartYCol.addEventListener('keydown', submitChartOnEnter);
-
 joinTableA.addEventListener('change', updateJoinColumns);
 joinTableB.addEventListener('change', updateJoinColumns);
 
-const submitJoinOnEnter = (e) => {
-    if (e.key === 'Enter') generateJoinBtn.click();
-};
-joinTableA.addEventListener('keydown', submitJoinOnEnter);
-joinTableB.addEventListener('keydown', submitJoinOnEnter);
-joinCol.addEventListener('keydown', submitJoinOnEnter);
+document.getElementById('join-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    generateJoinBtn.click();
+});
+
+document.getElementById('chart-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    generateChartBtn.click();
+});
 
 generateJoinBtn.addEventListener('click', () => {
     const a = joinTableA.value;
