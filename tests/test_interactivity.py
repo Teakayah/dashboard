@@ -69,6 +69,18 @@ class TestDropzoneButtons:
         expect(toast).to_be_visible(timeout=3000)
         expect(toast).to_contain_text(re.compile(r'select both tables', re.IGNORECASE))
 
+    def test_generate_join_validation_same_table(self, dz: Page):
+        dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
+        wait_for_duckdb_ready(dz)
+        load_samples(dz)
+        dz.select_option('#join-table-a', index=1)
+        dz.select_option('#join-table-b', index=1)
+        dz.select_option('#join-col', index=1)
+        dz.locator("#generate-join").click()
+        toast = dz.locator('[role="alert"]').last
+        expect(toast).to_be_visible(timeout=3000)
+        expect(toast).to_contain_text(re.compile(r'select two different tables', re.IGNORECASE))
+
     def test_chart_builder_appears_after_loading_data(self, dz: Page):
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
