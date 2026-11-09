@@ -18,6 +18,7 @@ import csv
 import json
 import sys
 import urllib.request
+import concurrent.futures
 from typing import Optional, Union
 import zipfile
 from datetime import date, datetime, timezone
@@ -200,7 +201,9 @@ def main() -> int:
 
     # ── Phase 2: download the tables that changed ─────────────────────────────
     print(f'Downloading {len(tables_to_download)} table(s)...\n')
-    downloaded = [download_table(t) for t in tables_to_download]
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Use ThreadPoolExecutor for concurrent HTTP downloads to speed up Phase 2
+        downloaded = list(executor.map(download_table, tables_to_download))
 
     # Merge in skipped tables (marked not updated)
     downloaded_ids = {r['id'] for r in downloaded}
