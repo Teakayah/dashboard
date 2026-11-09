@@ -258,14 +258,14 @@ def test_main_block():
     path = Path('deployment/generate_descriptions.py').resolve()
 
     # Provide env vars so it doesn't fail at module level
-    with patch.dict(os.environ, {'OLLAMA_URL': 'test', 'OLLAMA_MODEL': 'test'}):
-        # We patch sys.argv and underlying functions called by main()
-        with patch('sys.argv', ['generate_descriptions.py']), \
-             patch('pathlib.Path.glob', return_value=[]) as mock_glob, \
-             patch('pathlib.Path.write_text'), \
-             patch('pathlib.Path.exists', return_value=False):
+    # We patch sys.argv and underlying functions called by main()
+    with patch.dict(os.environ, {'OLLAMA_URL': 'test', 'OLLAMA_MODEL': 'test'}), \
+         patch('sys.argv', ['generate_descriptions.py']), \
+         patch('pathlib.Path.glob', return_value=[]) as mock_glob, \
+         patch('pathlib.Path.write_text'), \
+         patch('pathlib.Path.exists', return_value=False):
 
-            runpy.run_path(str(path), run_name='__main__')
+        runpy.run_path(str(path), run_name='__main__')
 
-            # If main() was called, glob should have been called
-            mock_glob.assert_called_once_with('*.html')
+        # If main() was called, glob should have been called
+        mock_glob.assert_called_once_with('*.html')

@@ -48,39 +48,39 @@ def test_benchmark_final():
         with patch('builtins.open', mock_open(read_data="")):
             assert module._read_csv_stripped(Path("empty_fake")) == []
 
-        with patch('pathlib.Path.exists', return_value=True):
-            with patch('time.time', side_effect=[1, 2, 3, 4]):
-                with patch('builtins.print') as mock_print:
-                    run_script('benchmark_final_test.py')
-                    assert mock_print.call_count >= 2
+        with patch('pathlib.Path.exists', return_value=True), \
+             patch('time.time', side_effect=[1, 2, 3, 4]), \
+             patch('builtins.print') as mock_print:
+            run_script('benchmark_final_test.py')
+            assert mock_print.call_count >= 2
 
-        with patch('pathlib.Path.exists', return_value=False):
-            with patch('builtins.print') as mock_print:
-                with patch('sys.exit') as mock_exit:
-                    run_script('benchmark_final_test.py')
-                    assert mock_print.call_count >= 1
-                    mock_exit.assert_called_once_with(0)
+        with patch('pathlib.Path.exists', return_value=False), \
+             patch('builtins.print') as mock_print, \
+             patch('sys.exit') as mock_exit:
+            run_script('benchmark_final_test.py')
+            assert mock_print.call_count >= 1
+            mock_exit.assert_called_once_with(0)
 
 
 def test_benchmark_generate_index():
-    with patch('time.time', side_effect=[1, 2]):
-        with patch('subprocess.run') as mock_run:
-            with patch('builtins.print') as mock_print:
-                run_script('benchmark_generate_index.py')
-                assert mock_run.call_count == 1
-                assert mock_print.call_count >= 1
+    with patch('time.time', side_effect=[1, 2]), \
+         patch('subprocess.run') as mock_run, \
+         patch('builtins.print') as mock_print:
+        run_script('benchmark_generate_index.py')
+        assert mock_run.call_count == 1
+        assert mock_print.call_count >= 1
 
 def test_dummy_data_gen():
-    with patch('pathlib.Path.mkdir') as mock_mkdir:
-        with patch('builtins.open', mock_open()) as m_open:
-            with patch('csv.DictWriter') as MockWriter:
-                instance = MockWriter.return_value
-                run_script('dummy_data_gen.py')
+    with patch('pathlib.Path.mkdir') as mock_mkdir, \
+         patch('builtins.open', mock_open()) as m_open, \
+         patch('csv.DictWriter') as MockWriter:
+        instance = MockWriter.return_value
+        run_script('dummy_data_gen.py')
 
-                assert mock_mkdir.call_count >= 1
-                assert m_open.call_count == 4
-                assert instance.writerow.call_count == 400000
-                assert instance.writeheader.call_count == 4
+        assert mock_mkdir.call_count >= 1
+        assert m_open.call_count == 4
+        assert instance.writerow.call_count == 400000
+        assert instance.writeheader.call_count == 4
 
 def test_generate_icons(tmp_path):
     from PIL import Image
@@ -176,9 +176,9 @@ def test_debug_browser_callbacks():
                 mock_print.assert_called_once_with("PAGE ERROR: Test error")
 
 def test_debug_browser_entrypoint():
-    with patch('threading.Thread') as mock_thread:
-        with patch('playwright.sync_api.sync_playwright') as mock_pw:
-            with patch('builtins.print'):
-                run_script('debug_browser.py')
-                mock_thread.assert_called_once()
-                mock_pw.assert_called_once()
+    with patch('threading.Thread') as mock_thread, \
+         patch('playwright.sync_api.sync_playwright') as mock_pw, \
+         patch('builtins.print'):
+        run_script('debug_browser.py')
+        mock_thread.assert_called_once()
+        mock_pw.assert_called_once()
