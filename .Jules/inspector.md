@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-11-09 - Playwright Timeout Assertions vs Hardcoded Sleeps
+**Learning:** Hardcoded `page.wait_for_timeout()` calls (e.g. 200ms loops or 2s tab settle times) in Playwright tests are inherently flaky because they do not synchronize with the browser's event loop or rendering engine (e.g., Chart.js async resizing or tab transition animations).
+**Action:** Always replace hardcoded sleeps with `page.wait_for_function()` using a sliding window for layout stabilization, and `expect(locator).to_have_class(..., timeout=...)` for class transitions to dramatically improve test reliability and execution speed.
