@@ -9,6 +9,7 @@ import functools
 import json
 import re
 import sys
+import concurrent.futures
 from collections import defaultdict
 from itertools import zip_longest
 from pathlib import Path
@@ -100,10 +101,12 @@ def extract_statcan_data(
         v_is_clean = v.strip() == v
         optimized_filters.append((k, v, v_len, v_is_clean))
 
+    clean = _clean
     for row in rows:
         match = True
+        get = row.get
         for k, v, v_len, v_is_clean in optimized_filters:
-            val = row.get(k, '')
+            val = get(k)
             if val == v:
                 continue
 
@@ -111,7 +114,7 @@ def extract_statcan_data(
             # Optimization: val.strip() == v can only be true if:
             # 1. v has no surrounding whitespace
             # 2. val is longer than v (since it must contain v + whitespace)
-            if v_is_clean and len(val) > v_len and val.strip() == v:
+            if val is not None and v_is_clean and len(val) > v_len and val.strip() == v:
                 # Match! Memoize the stripped value to speed up subsequent passes.
                 row[k] = v
                 continue
@@ -120,17 +123,17 @@ def extract_statcan_data(
             break
 
         if match:
-            val = _clean(row["VALUE"])
+            val = clean(row["VALUE"])
             if val is not None:
                 # Handle different date formats
-                ref_date = row.get("REF_DATE", "")
-                if len(ref_date) >= 4:
+                ref_date = get("REF_DATE")
+                if ref_date and len(ref_date) >= 4:
                     try:
                         year = int(ref_date[:4])
                     except ValueError:
                         continue
 
-                    geo = row.get("GEO", "Canada")
+                    geo = get("GEO") or "Canada"
                     if geo != "Canada":
                         geo = geo.strip()
                     buckets[geo][year].append(val)
@@ -401,21 +404,30 @@ REBUILDERS = {
 }
 
 
+def _process_file(item: tuple[str, Any]) -> bool:
+    filename, rebuild_fn = item
+    html_path = ROOT / filename
+    if not html_path.exists():
+        print(f"SKIP {filename} — file not found in repo root.\n")
+        return False
+    try:
+        changed = rebuild_fn(html_path)
+        print()
+        return changed
+    except Exception as exc:
+        print(f"  ERROR rebuilding {filename}: {exc}\n")
+        return False
+
 def main() -> int:
     print("Rebuilding analysis pages from Stats Canada data...\n")
-    any_changed = False
 
-    for filename, rebuild_fn in REBUILDERS.items():
-        html_path = ROOT / filename
-        if not html_path.exists():
-            print(f"SKIP {filename} — file not found in repo root.\n")
-            continue
-        try:
-            changed = rebuild_fn(html_path)
-            any_changed = any_changed or changed
-        except Exception as exc:
-            print(f"  ERROR rebuilding {filename}: {exc}")
-        print()
+    # ⚡ Bolt Optimization: Use ThreadPoolExecutor to rebuild files concurrently.
+    # Rebuilding pages involves reading large CSV files and modifying files, which
+    # are heavily I/O-bound. Running them concurrently improves speed.
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        results = list(executor.map(_process_file, REBUILDERS.items()))
+
+    any_changed = any(results)
 
     print(f"Done. Files changed: {any_changed}")
     return 1 if any_changed else 0
