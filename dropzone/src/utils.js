@@ -137,24 +137,15 @@ export function showToast(msg, type = 'error') {
  * @param {string} myValue - The text to insert.
  */
 export function insertAtCursor(myField, myValue) {
-    if (myField.selectionStart !== undefined) {
-        const startPos = myField.selectionStart;
-        const endPos = myField.selectionEnd;
-        myField.value = myField.value.substring(0, startPos)
-            + myValue
-            + myField.value.substring(endPos, myField.value.length);
-        myField.selectionStart = startPos + myValue.length;
-        myField.selectionEnd = startPos + myValue.length;
+    if (myField.setRangeText) {
+        myField.setRangeText(myValue, myField.selectionStart, myField.selectionEnd, 'end');
     } else {
         myField.value += myValue;
     }
     myField.focus();
     myField.dispatchEvent(new Event('input'));
     if (myField.id === 'sql-input') {
-        let displayValue = myValue;
-        if (displayValue.length > 30) {
-            displayValue = displayValue.substring(0, 30) + '...';
-        }
+        const displayValue = myValue.length > 30 ? `${myValue.substring(0, 30)}...` : myValue;
         showToast('Inserted ' + displayValue + ' into query editor', 'success');
     }
 }
