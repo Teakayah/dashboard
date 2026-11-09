@@ -12,13 +12,13 @@ import sys
 from collections import defaultdict
 from itertools import zip_longest
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any
 
 # Import centralized configuration
 try:
-    from config import ROOT, SRC, EXTRACTION_CONFIGS
+    from config import EXTRACTION_CONFIGS, ROOT, SRC
 except ImportError:
-    from deployment.config import ROOT, SRC, EXTRACTION_CONFIGS
+    from deployment.config import EXTRACTION_CONFIGS, ROOT, SRC
 
 
 # ── CSV helpers ────────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ def _read_csv(path: Path) -> list[dict]:
 
 
 @functools.lru_cache(maxsize=4096)
-def _clean(val: str) -> Optional[float]:
+def _clean(val: str) -> float | None:
     """
     Return float or None for Stats Canada VALUE cells.
 
@@ -69,7 +69,7 @@ def _clean(val: str) -> Optional[float]:
 
 
 def extract_statcan_data(
-    rows: list[dict], table_id: str, variant: Optional[str] = None
+    rows: list[dict], table_id: str, variant: str | None = None
 ) -> Any:
     """Generic engine to filter and group StatCan data based on config."""
     config = EXTRACTION_CONFIGS.get(table_id)

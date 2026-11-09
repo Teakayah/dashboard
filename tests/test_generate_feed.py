@@ -1,6 +1,7 @@
-from unittest.mock import patch, MagicMock
 import importlib.util
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 
 def load_generate_feed_module():
     path = Path(__file__).parent.parent / 'deployment' / 'generate_feed.py'

@@ -1,7 +1,9 @@
 import importlib.util
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
+
 
 def load_screenshot_module():
     path = Path(__file__).parent.parent / 'deployment' / 'screenshot.py'

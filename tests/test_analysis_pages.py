@@ -10,9 +10,8 @@ Run with:  pytest tests/test_analysis_pages.py -v
 
 import re
 
-from playwright.sync_api import Page, expect
-
 from helpers import BASE
+from playwright.sync_api import Page, expect
 
 LOAD_TIMEOUT = 8_000   # ms
 TAB_TIMEOUT  = 2_000   # ms — post-click settle

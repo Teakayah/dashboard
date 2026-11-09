@@ -7,7 +7,7 @@ Saves to source/.flood_data.json for injection into analysis HTML.
 import concurrent.futures
 import json
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
@@ -100,7 +100,7 @@ def main():
     swe = {
         "current_season": [38, 60, 88, 105, 120, 135, 142],  # Oct-Apr
         "label": "2025-2026 season",
-        "updated": datetime.now(timezone.utc).isoformat(),
+        "updated": datetime.now(UTC).isoformat(),
     }
 
     # 4. Forecast & Reservoirs (New Enhancements)
@@ -115,7 +115,7 @@ def main():
     }
 
     result = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "gauges": gauges,
         "precip": precip,
         "swe": swe,

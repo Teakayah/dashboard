@@ -6,11 +6,11 @@ Each analysis page becomes a feed entry, sorted newest-first by git commit date.
 The feed is regenerated on every deploy so subscribers always see the latest updates.
 """
 
+import concurrent.futures
 import html as html_lib
 import json
 import re
-import concurrent.futures
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
@@ -140,7 +140,7 @@ def build_feed(entries: list[dict]) -> str:
     feed_updated = (
         max(e['updated'] for e in entries)
         if entries
-        else datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        else datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
     )
 
     entries_xml = '\n'.join(_atom_entry(e) for e in entries)
@@ -167,7 +167,7 @@ def main() -> None:
 
     html_files_unsorted = [p for p in ROOT.glob('*.html') if p.name.lower() not in EXCLUDE]
     git_isos = _get_batched_git_isos(html_files_unsorted)
-    fallback_time = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    fallback_time = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     html_files = sorted(
         html_files_unsorted,

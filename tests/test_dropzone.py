@@ -5,19 +5,24 @@ Requires the local HTTP server started automatically by conftest.py (port 8765).
 Run with:  pytest tests/test_dropzone.py -v
 """
 
-from pathlib import Path
-import re
-
 import os
-
-from playwright.sync_api import Page, expect
+import re
+from pathlib import Path
 
 from helpers import (
-    DROPZONE_URL as DROPZONE,
     ACTION_TIMEOUT,
+)
+from helpers import (
+    DROPZONE_URL as DROPZONE,
+)
+from helpers import (
     DUCKDB_READY_TIMEOUT as READY_TIMEOUT,
+)
+from helpers import (
     wait_for_duckdb_ready as _wait_for_ready,
 )
+from playwright.sync_api import Page, expect
+
 
 def _load_samples_and_wait(dz: Page):
     """Helper to click load samples and wait for schema parsing."""

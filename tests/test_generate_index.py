@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 from unittest.mock import patch
+
 import pytest
 
 
@@ -36,17 +37,7 @@ def test_inject_responsive_is_idempotent():
 
 def test_inject_responsive_replaces_older_versions():
     module = load_generate_index_module()
-    initial_content = '\n'.join([
-        '<html>',
-        '<head>',
-        '  <!-- responsive-inject-v3 -->',
-        '  <style>.old { color: red; }</style>',
-        '  <script>window.oldResponsive = true;</script>',
-        '  <!-- /responsive-inject-v3 -->',
-        '</head>',
-        '<body></body>',
-        '</html>',
-    ])
+    initial_content = '<html>\n<head>\n  <!-- responsive-inject-v3 -->\n  <style>.old { color: red; }</style>\n  <script>window.oldResponsive = true;</script>\n  <!-- /responsive-inject-v3 -->\n</head>\n<body></body>\n</html>'
     content = module.inject_responsive(initial_content, 'analysis.html')
 
     assert '<!-- responsive-inject-v3 -->' not in content

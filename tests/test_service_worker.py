@@ -1,5 +1,5 @@
-from playwright.sync_api import Page
 from helpers import BASE
+from playwright.sync_api import Page
 
 
 def test_service_worker_clears_old_caches(page: Page):

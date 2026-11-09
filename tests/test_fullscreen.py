@@ -1,6 +1,7 @@
 import re
-from playwright.sync_api import Page, expect
+
 from helpers import BASE
+from playwright.sync_api import Page, expect
 
 
 def test_fullscreen_injection_and_toggle_state(page: Page):
