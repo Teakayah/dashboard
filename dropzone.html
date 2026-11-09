@@ -446,6 +446,15 @@
         navigator.clipboard.writeText(window.location.href).then(() => {
           if (shareBtn && shareBtn.innerText !== 'Copied!') {
             shareBtn.innerText = 'Copied!';
+
+            const toast = document.createElement('div');
+            toast.textContent = 'Link copied to clipboard';
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 5000);
+
             setTimeout(() => { shareBtn.innerText = originalShareText; }, 2000);
           }
         }).catch(() => {});

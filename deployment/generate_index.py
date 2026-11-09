@@ -695,7 +695,11 @@ def inject_share_fix(content: str, filename: str) -> str:
     unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
     safe = ('onclick="if(navigator.share){navigator.share({title:document.title,'
             'url:window.location.href})}else if(navigator.clipboard)'
-            '{navigator.clipboard.writeText(window.location.href)}"')
+            '{navigator.clipboard.writeText(window.location.href).then(()=>'
+            '{const t=document.createElement(\'div\');t.textContent=\'Link copied to clipboard\';'
+            't.setAttribute(\'role\',\'alert\');t.setAttribute(\'aria-live\',\'assertive\');'
+            't.style.cssText=\'position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);\';'
+            'document.body.appendChild(t);setTimeout(()=>t.remove(),5000);})}"')
     if unsafe not in content:
         return content
     new_content = content.replace(unsafe, safe)
