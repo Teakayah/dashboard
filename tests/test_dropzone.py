@@ -775,3 +775,29 @@ def test_enter_submits_chart_builder(dz: Page):
     toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text('Please select both X and Y axes.')
+
+
+def test_clickable_column_inserts_name_and_profiles(dz: Page):
+    """Clicking a column in the schema must insert its name and run profiling."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    # clear input
+    dz.locator('#sql-input').fill('')
+
+    col_btn = dz.locator('.clickable-col').first
+    expect(col_btn).to_be_visible()
+    col_name = col_btn.inner_text().split(" ")[0]
+
+    # Click column and verify SQL input changes
+    col_btn.click()
+    sql_input = dz.locator('#sql-input')
+    expect(sql_input).to_have_value(f'"{col_name}"')
+
+    # Wait for profiling stats and distribution chart
+    stats_container = dz.locator('#schema-display').locator('div').filter(has_text=re.compile(r'Stats for')).first
+    expect(stats_container).to_be_visible(timeout=5000)
+
+    chart_canvas = stats_container.locator('canvas')
+    expect(chart_canvas).to_be_visible()

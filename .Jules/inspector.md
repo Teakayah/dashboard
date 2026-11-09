@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-11-03 - Test clickable UI elements inserting into dynamic inputs
+**Learning:** UI features like `clickable-col` that insert text into dynamically initialized elements (like a SQL editor) or trigger asynchronous background tasks (like profiling with Chart.js) often lack integration coverage because they sit at the intersection of DOM interaction and heavy third-party libraries.
+**Action:** Always add Playwright tests for UI interactions that trigger complex asynchronous side effects, ensuring you wait for the dynamically generated DOM elements (like `canvas`) to become visible before marking the test successful.
