@@ -721,6 +721,26 @@ def test_get_git_dates_batched_invalid_iso_format(monkeypatch, tmp_path):
     assert file1 in dates
     assert "202" in dates[file1] or "Jan" in dates[file1] or "Feb" in dates[file1] or "Mar" in dates[file1] or "Apr" in dates[file1] or "May" in dates[file1] or "Jun" in dates[file1] or "Jul" in dates[file1] or "Aug" in dates[file1] or "Sep" in dates[file1] or "Oct" in dates[file1] or "Nov" in dates[file1] or "Dec" in dates[file1]
 
+def test_main_with_none_responsive_preset_removes_v7_enhancer(tmp_path, monkeypatch):
+    import sys
+    module = load_generate_index_module()
+    analysis = tmp_path / 'sample.html'
+    analysis.write_text(
+        '<html><head><title>Sample</title></head><body><!-- responsive-inject-v7 -->\n<style>body { color: red; }</style>\n<!-- /responsive-inject-v7 -->\n<p>Hello</p></body></html>',
+        encoding='utf-8',
+    )
+
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setattr(module, 'EXCLUDE', {'index.html'})
+    monkeypatch.setattr(sys, 'argv', ['generate_index.py', '--responsive-preset', 'none'])
+
+    module.main()
+
+    content = analysis.read_text(encoding='utf-8')
+    assert '<!-- responsive-inject-v7 -->' not in content
+    assert '<style>body { color: red; }</style>' not in content
+    assert '<p>Hello</p>' in content
+
 def test_main_with_none_responsive_preset_removes_enhancer(tmp_path, monkeypatch):
     import sys
     module = load_generate_index_module()
