@@ -1,6 +1,7 @@
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from deployment import git_utils
+import subprocess
 
 def test_get_git_log_batched_empty():
     assert git_utils.get_git_log_batched([], '%ci') == {}
@@ -68,3 +69,14 @@ def test_get_batched_git_isos_valid(monkeypatch):
 
 def test_get_git_commit_times_batched_empty():
     assert git_utils.get_git_commit_times_batched([]) == {}
+
+def test_get_git_log_batched_called_process_error():
+    with patch('subprocess.run', side_effect=subprocess.CalledProcessError(1, 'git')) as mock_run:
+        res = git_utils.get_git_log_batched(['index.html'], '%ci')
+        assert res == {}
+        mock_run.assert_called_once_with(
+            ['git', 'log', '--format=TS:%ci', '--name-only', '--', 'index.html'],
+            capture_output=True,
+            text=True,
+            cwd=str(git_utils.ROOT)
+        )
