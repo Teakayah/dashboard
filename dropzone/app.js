@@ -841,19 +841,12 @@ remoteDeltaUrl.addEventListener('input', () => {
     loadRemoteDeltaBtn.title = hasUrl ? 'Load Table' : 'Requires a valid URL';
 });
 
-remoteDeltaUrl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        if (!loadRemoteDeltaBtn.disabled) {
-            loadRemoteDeltaBtn.click();
-        }
-    }
-});
-
 // Initialize state
 remoteDeltaUrl.dispatchEvent(new Event('input'));
 
-loadRemoteDeltaBtn.addEventListener('click', async () => {
+document.getElementById('remote-delta-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (loadRemoteDeltaBtn.disabled) return;
     const url = remoteDeltaUrl.value.trim();
     if (!url) return;
 
