@@ -65,16 +65,6 @@ RE_STRIP_RESPONSIVE = re.compile(
     ''',
     flags=re.DOTALL | re.VERBOSE,
 )
-RE_BACK_LINK = re.compile(
-    r'''
-    \n?                            # Match an optional newline
-    <!--\ back-link-inject\ -->    # Match the specific HTML comment marker
-    (?:                            # Optional non-capturing group for the div
-        <div[^>]*>.*?</div>        # Match the div and its contents non-greedily
-    )?
-    ''',
-    re.DOTALL | re.VERBOSE,
-)
 
 EXCLUDE = {'index.html'}
 
@@ -215,20 +205,6 @@ def inject_responsive(content: str, filename: str, preset_name: str = 'default')
     if final_content != new_content:
         print(f'  Injected responsive enhancer into {filename}')
     return final_content
-
-
-BACK_LINK_MARKER = '<!-- back-link-inject -->'
-
-
-def strip_back_link(content: str, filename: str) -> str:
-    """Remove the legacy arrow back-link div; the unified header is the canonical nav."""
-    if BACK_LINK_MARKER not in content:
-        return content
-    new_content = RE_BACK_LINK.sub('', content, count=1)
-    if new_content != content:
-        print(f'  Stripped legacy back-link from {filename}')
-    return new_content
-
 
 
 def inject_favicon(content: str, filename: str) -> str:
@@ -747,7 +723,6 @@ def main(argv: Optional[list[str]] = None):
 
         # Inject enhancements
         new_content = inject_responsive(content, meta['filename'], args.responsive_preset)
-        new_content = strip_back_link(new_content, meta['filename'])
         new_content = inject_favicon(new_content, meta['filename'])
         new_content = inject_og_tags(new_content, meta['filename'], filepath.stem)
         new_content = inject_share_fix(new_content, meta['filename'])

@@ -54,32 +54,6 @@ def test_inject_responsive_replaces_older_versions():
     assert content.count('<!-- responsive-inject-v7 -->') == 1
 
 
-def test_strip_back_link_removes_existing():
-    module = load_generate_index_module()
-    snippet = ('<!-- back-link-inject -->'
-               '<div style="x"><a href="/">&#8592; DataDashboard</a></div>')
-    content = f'<html><body>\n{snippet}\n<h1>Test</h1></body></html>'
-    res = module.strip_back_link(content, 'test.html')
-    assert '<!-- back-link-inject -->' not in res
-    assert '<h1>Test</h1>' in res
-
-
-def test_strip_back_link_no_op_when_absent():
-    module = load_generate_index_module()
-    content = '<html><body><h1>Test</h1></body></html>'
-    assert module.strip_back_link(content, 'test.html') == content
-
-
-def test_strip_back_link_is_idempotent():
-    module = load_generate_index_module()
-    snippet = ('<!-- back-link-inject -->'
-               '<div style="x"><a href="/">&#8592; DataDashboard</a></div>')
-    content = f'<html><body>\n{snippet}\n<h1>Test</h1></body></html>'
-    first = module.strip_back_link(content, 'test.html')
-    second = module.strip_back_link(first, 'test.html')
-    assert first == second
-
-
 def test_inject_favicon_adds_link(monkeypatch):
     module = load_generate_index_module()
     monkeypatch.setattr(module, 'SITE_URL', 'https://testsite.com')
@@ -189,12 +163,6 @@ def test_inject_functions_handle_missing_tags():
     assert res1 == content_no_tags
     assert isinstance(res1, str)
 
-    content_no_body = "<html><head></head>No body here</html>"
-    # strip_back_link is a no-op when marker is absent
-    res2 = module.strip_back_link(content_no_body, "test.html")
-    assert res2 == content_no_body
-    assert isinstance(res2, str)
-
     # inject_og_tags expects </head>
     res3 = module.inject_og_tags(content_no_tags, "test.html", "test")
     assert res3 == content_no_tags
@@ -278,7 +246,6 @@ def test_main_with_none_skips_responsive_but_keeps_other_injections(tmp_path, mo
 
     content = analysis.read_text(encoding='utf-8')
     assert '<!-- responsive-inject-v7 -->' not in content
-    assert module.BACK_LINK_MARKER not in content
     assert 'og:image' in content
     assert (tmp_path / 'index.html').exists()
 
