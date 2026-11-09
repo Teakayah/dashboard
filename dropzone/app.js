@@ -303,10 +303,19 @@ async function updateJoinColumns() {
         } else {
             populateSelect(joinCol, sharedCols, 'Select Common Column...');
         }
+        updateJoinButtonState();
     } catch (err) {
         console.error('Error fetching columns for join:', err);
     }
 }
+
+function updateJoinButtonState() {
+    const isValid = joinTableA.value && joinTableB.value && joinCol.value;
+    generateJoinBtn.disabled = !isValid;
+    generateJoinBtn.title = isValid ? 'Generate Join SQL' : 'Requires tables and a common column';
+}
+
+joinCol.addEventListener('change', updateJoinButtonState);
 
 /**
  * Updates the disabled state and tooltips of the console action buttons.
@@ -342,10 +351,20 @@ async function updateChartBuilderUI() {
 
         populateSelect(chartXCol, cols, 'Select X-Axis...');
         populateSelect(chartYCol, numericCols, 'Select Y-Axis (Numeric)...');
+        updateChartButtonState();
     } catch (err) {
         console.error('Error updating chart builder UI:', err);
     }
 }
+
+function updateChartButtonState() {
+    const isValid = chartXCol.value && chartYCol.value;
+    generateChartBtn.disabled = !isValid;
+    generateChartBtn.title = isValid ? 'Generate Chart SQL' : 'Requires X and Y axes';
+}
+
+chartXCol.addEventListener('change', updateChartButtonState);
+chartYCol.addEventListener('change', updateChartButtonState);
 
 joinTableA.addEventListener('change', updateJoinColumns);
 joinTableB.addEventListener('change', updateJoinColumns);

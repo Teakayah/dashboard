@@ -86,3 +86,7 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+
+## 2026-10-18 - Dynamically Disable Contextual Form Buttons
+**Learning:** Action buttons that rely on dropdown selections (like "Generate Join" or "Generate Chart") cause confusion if they remain fully enabled but fail with a toast error when clicked with incomplete selections. Relying solely on toasts for prerequisites is poor UX.
+**Action:** Always dynamically disable contextual action buttons when their prerequisites (like selected dropdown values) are not met. Pair the disabled state with an updated title attribute explaining why the button is unavailable.

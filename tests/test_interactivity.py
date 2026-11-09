@@ -63,11 +63,10 @@ class TestDropzoneButtons:
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
-        # Don't select anything — just click
-        dz.locator("#generate-join").click()
-        toast = dz.locator('[role="alert"]').last
-        expect(toast).to_be_visible(timeout=3000)
-        expect(toast).to_contain_text(re.compile(r'select both tables', re.IGNORECASE))
+        # Don't select anything — button should be disabled
+        btn = dz.locator("#generate-join")
+        expect(btn).to_be_disabled()
+        expect(btn).to_have_attribute("title", "Requires tables and a common column")
 
     def test_chart_builder_appears_after_loading_data(self, dz: Page):
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
@@ -91,10 +90,9 @@ class TestDropzoneButtons:
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
-        dz.locator("#generate-chart").click()
-        toast = dz.locator('[role="alert"]').last
-        expect(toast).to_be_visible(timeout=3000)
-        expect(toast).to_contain_text(re.compile(r'select both X and Y', re.IGNORECASE))
+        btn = dz.locator("#generate-chart")
+        expect(btn).to_be_disabled()
+        expect(btn).to_have_attribute("title", "Requires X and Y axes")
 
     def test_export_db_button_triggers_download_or_error(self, dz: Page):
         """Export Database must either download a file or show an error — no silent crash."""
