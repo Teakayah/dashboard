@@ -161,6 +161,7 @@ def test_clear_data_wipes_schema(dz: Page):
     expect(dz.locator('#schema-display')).to_have_text('')
     expect(dz.locator('#chart-builder')).to_be_hidden()
     expect(dz.locator('#join-assistant')).to_be_hidden()
+    expect(dz.locator('#instant-previews')).to_be_empty()
 
 
 
