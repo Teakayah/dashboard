@@ -77,3 +77,7 @@
 ## 2026-10-09 - Managing Dynamic Tooltips for Disabled States
 **Learning:** Adding title tooltips to disabled buttons improves accessibility by explaining why an action is unavailable. However, if the tooltip isn't dynamically updated when the button becomes enabled, users see outdated/confusing explanations or no explanations at all.
 **Action:** When adding explanatory tooltips to disabled buttons, always pair the title attribute management with the JS logic that toggles the disabled property. Clear the title (or set it to the normal action description) when disabled = false, and restore the explanation when disabled = true.
+
+## 2026-10-11 - Visual Feedback for Clipboard Fallbacks on Inline Elements
+**Learning:** When using `navigator.clipboard.writeText` as a fallback for `navigator.share` in inline HTML event handlers (like `onclick`), the action is completely silent visually and semantically, leaving users without confirmation.
+**Action:** Always provide inline visual feedback (e.g., temporarily changing the button text to 'Copied!' with race-condition protection) and ensure the element has `aria-live="polite"` so screen readers announce the state change, even when injecting raw HTML strings.
