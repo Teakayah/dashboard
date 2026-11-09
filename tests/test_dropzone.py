@@ -390,6 +390,7 @@ def test_export_db_downloads_copied_database_buffer(dz: Page):
     download = download_info.value
     assert download.suggested_filename.startswith('datadashboard_export_')
     assert download.suggested_filename.endswith('.db')
+    assert os.path.getsize(download.path()) > 0, "Downloaded DB file should not be empty"
     assert download.path().read_bytes() == bytes([1, 2, 3, 4, 5])
 
 
