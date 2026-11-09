@@ -263,9 +263,13 @@ def _inject_const(html: str, var_name: str, new_value: object) -> tuple[str, boo
 
 def _inject_insight(html: str, insight: str) -> tuple[str, bool]:
     """Replace content between <!-- insight-inject --> markers."""
-    pattern = r"<!-- insight-inject -->.*?<!-- /insight-inject -->"
+    pattern = r'''
+        <!--\ insight-inject\ -->  # Match the opening marker
+        .*?                        # Non-greedily match any content between markers
+        <!--\ /insight-inject\ --> # Match the closing marker
+    '''
     replacement = f'<!-- insight-inject --><div class="insight-badge">{insight}</div><!-- /insight-inject -->'
-    new_html, n = re.subn(pattern, replacement, html, flags=re.DOTALL)
+    new_html, n = re.subn(pattern, replacement, html, flags=re.DOTALL | re.VERBOSE)
     return new_html, n > 0 and new_html != html
 
 

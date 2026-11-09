@@ -101,3 +101,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-08-30 - Standardize Regex Documentation Pattern
 **Learning:** Complex regular expressions embedded directly in single-line strings (like HTML parsing regexes) hinder readability and create a high cognitive load for maintainers. The repository has an established pattern (e.g., in `generate_index.py`) of using `re.VERBOSE` with multiline strings and inline comments for complex regexes.
 **Action:** Always format complex regular expressions using the `re.VERBOSE` flag, separating the pattern into a multiline string where each capture group and match requirement is explicitly explained with inline comments, aligning with the repository's documentation standards.
+## 2026-09-02 - Standardize Regex Documentation Pattern in build scripts
+**Learning:** The `_inject_insight` function in `deployment/rebuild_analyses.py` used a single-line regex (`r"<!-- insight-inject -->.*?<!-- /insight-inject -->"`) which hindered readability, going against the repo's established `re.VERBOSE` pattern.
+**Action:** When working on deployment scripts, actively hunt for and format complex single-line regular expressions using the `re.VERBOSE` flag, separating the pattern into a multiline string where each capture group and match requirement is explicitly explained with inline comments.
