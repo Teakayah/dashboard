@@ -60,7 +60,7 @@
 ## 2026-06-30 - Convert emulated buttons to native button tags
 **Learning:** Using `span` elements with `role="button"` and `tabIndex="0"` is bad for accessibility as it requires manually managing keyboard events (Enter/Space) and often misses out on native screen reader benefits.
 **Action:** Always prefer semantic HTML tags like `<button>` over generic container tags (`span`, `div`) with ARIA roles when creating interactive click targets, using CSS resets (`background: transparent`, `border: none`) to bypass native styling if necessary.
-## $(date +%Y-%m-%d) - Convert emulated drop-zone div to native button
+## 2026-11-09 - Convert emulated drop-zone div to native button
 **Learning:** Even though `div` elements can emulate buttons using `role="button"` and `tabindex="0"`, nesting an `<input>` inside them is semantically questionable and they require manual keyboard event handlers. Using a native `<button>` element provides robust keyboard accessibility out-of-the-box and ensures semantic HTML.
 ## 2026-07-31 - Accessible Feedback for Background Actions
 **Learning:** File downloads and clipboard operations in JavaScript are silent to screen readers by default. Relying solely on visual cues (like a button text temporarily changing to 'Copied!') leaves visually impaired users without confirmation that an action succeeded.
@@ -86,3 +86,6 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+## 2026-11-09 - Convert standalone inputs to native form submissions
+**Learning:** Standalone inputs paired with action buttons (like the Join Assistant and Chart Builder in the dropzone) that aren't wrapped in a `<form>` tag fail to submit reliably when the user presses 'Enter', particularly for native `<select>` dropdowns which swallow the keydown events. This breaks keyboard navigation expectations.
+**Action:** Wrap logically related input controls (like text inputs, select dropdowns, and buttons) within `<form>` tags and explicitly assign a `submit` event listener, rather than manually proxying `keydown` events. This ensures standard, accessible browser behaviors out of the box.

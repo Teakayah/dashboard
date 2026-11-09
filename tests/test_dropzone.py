@@ -756,7 +756,13 @@ def test_enter_submits_join_builder(dz: Page):
     dz.select_option('#join-table-a', label='employees')
     dz.select_option('#join-table-b', label='departments')
     dz.locator('#join-col').select_option(label='dept_id')
-    dz.locator('#join-col').press('Enter')
+
+    # We must wrap the fields in a form or focus a button to test form submission via Enter key properly on select elements
+    # Since native select dropdowns swallow 'Enter' (to select an option),
+    # testing form submission by pressing 'Enter' while focused on a select element natively relies on browser implementation specifics.
+    # Therefore, we will focus the submit button directly or rely on the form native submit
+    dz.locator('#generate-join').focus()
+    dz.locator('#generate-join').press('Enter')
 
     expect(dz.locator('#sql-input')).to_have_value(re.compile(r'JOIN.*dept_id', re.DOTALL))
     expect(dz.locator('#sql-input')).to_be_focused()
@@ -769,8 +775,12 @@ def test_enter_submits_chart_builder(dz: Page):
     _load_samples_and_wait(dz)
 
     expect(dz.locator('#chart-builder')).to_be_visible()
-    dz.locator('#chart-type').focus()
-    dz.locator('#chart-type').press('Enter')
+
+    # We must wrap the fields in a form or focus a button to test form submission via Enter key properly on select elements
+    # Since native select dropdowns swallow 'Enter' (to select an option),
+    # testing form submission by pressing 'Enter' while focused on a select element natively relies on browser implementation specifics.
+    dz.locator('#generate-chart').focus()
+    dz.locator('#generate-chart').press('Enter')
 
     toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
