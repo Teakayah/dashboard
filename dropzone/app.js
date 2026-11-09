@@ -27,8 +27,19 @@ import {
     getCurrentTableName,
     setCurrentTableName,
     clearLoadedTables,
-    copyDatabaseBuffer
+    copyDatabaseBuffer,
+    getPersistedTableNames
 } from './src/db.js';
+
+/**
+ * Helper to gracefully destroy the Grid.js instance.
+ */
+function destroyGrid() {
+    if (gridInstance) {
+        gridInstance.destroy();
+        gridInstance = null;
+    }
+}
 
 // DOM Elements
 const statusEl = document.getElementById('status');
@@ -95,8 +106,7 @@ async function restoreState() {
     const conn = getConnection();
     if (!conn) return;
     try {
-        const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
-        const tables = getRows(tablesResult).map(r => r.table_name);
+        const tables = await getPersistedTableNames();
 
         if (tables.length > 0) {
             loadedTables.clear();
@@ -667,10 +677,7 @@ async function runQuery() {
 function renderResults(rows) {
     const resultsContainer = document.getElementById('results');
     if (rows.length === 0) {
-        if (gridInstance) {
-            gridInstance.destroy();
-            gridInstance = null;
-        }
+        destroyGrid();
         showEmptyState(
             resultsContainer,
             'No results found',
@@ -712,7 +719,7 @@ downloadBtn.addEventListener('click', async () => {
         const content = await db.copyFileToBuffer(csvPath);
         const blob = new Blob([content], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
-        triggerDownload(url, `query_results_${new Date().getTime()}.csv`);
+        triggerDownload(url, `query_results_${Date.now()}.csv`);
         URL.revokeObjectURL(url);
         showToast('Downloaded results as CSV', 'success');
     });
@@ -789,7 +796,7 @@ exportDbBtn.addEventListener('click', async () => {
 
         const blob = new Blob([buffer], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
-        triggerDownload(url, `datadashboard_export_${new Date().getTime()}.db`);
+        triggerDownload(url, `datadashboard_export_${Date.now()}.db`);
         URL.revokeObjectURL(url);
         showToast('Database exported', 'success');
     });
@@ -800,8 +807,7 @@ clearBtn.addEventListener('click', async () => {
 
     await withLoading('Clear Error', async () => {
         const conn = getConnection();
-        const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
-        const tables = getRows(tablesResult).map(r => r.table_name);
+        const tables = await getPersistedTableNames();
 
         if (tables.length > 0) {
             const dropQuery = tables.map(table => `DROP TABLE IF EXISTS "${escapeId(table)}";`).join('\n');
@@ -812,10 +818,7 @@ clearBtn.addEventListener('click', async () => {
         schemaDisplay.textContent = '';
         destroyCharts(previewsContainer);
         previewsContainer.textContent = '';
-        if (gridInstance) {
-            gridInstance.destroy();
-            gridInstance = null;
-        }
+        destroyGrid();
         showEmptyState(
             document.getElementById('results'),
             'No data to display',

@@ -205,3 +205,13 @@ export async function initDuckDB({ statusEl, setProgress, onStateRestored } = {}
         showInitError(statusEl, 'Error: ' + err.message);
     }
 }
+
+/**
+ * Retrieves the names of all persistent tables loaded in DuckDB.
+ * @returns {Promise<string[]>}
+ */
+export async function getPersistedTableNames() {
+    if (!conn) return [];
+    const tablesResult = await conn.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'");
+    return getRows(tablesResult).map(r => r.table_name);
+}
