@@ -734,7 +734,9 @@ loadSamplesBtn.addEventListener('click', async () => {
         }
 
         if (queries.length > 0) {
-            await Promise.all(queries.map(q => conn.query(q)));
+            // Performance optimization: Batch CREATE TABLE statements into a single
+            // string to minimize IPC roundtrips across the DuckDB WebWorker boundary.
+            await conn.query(queries.join('\n'));
         }
 
         for (const tableName of tableNames) {
