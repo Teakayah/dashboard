@@ -86,3 +86,7 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+
+## 2026-10-15 - Unfocusing Search Inputs on Enter
+**Learning:** For standalone search inputs that filter in real-time, users often press 'Enter' when they finish typing. If 'Enter' does nothing, the virtual keyboard remains open on mobile, covering the results and causing frustration.
+**Action:** Always add a `keydown` listener for 'Enter' on standalone search inputs that calls `blur()` on the input to explicitly dismiss the virtual keyboard and signal that the search action is complete.
