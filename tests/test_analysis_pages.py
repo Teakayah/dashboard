@@ -10,7 +10,7 @@ Run with:  pytest tests/test_analysis_pages.py -v
 
 import re
 
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page, expect, TimeoutError as PlaywrightTimeoutError
 
 from helpers import BASE
 
@@ -22,7 +22,7 @@ def _load(page: Page, path: str) -> None:
     page.goto(f'{BASE}{path}', wait_until='domcontentloaded', timeout=60000)
     try:
         page.wait_for_load_state('networkidle', timeout=LOAD_TIMEOUT)
-    except Exception:
+    except PlaywrightTimeoutError:
         pass   # CDN assets (Chart.js, Leaflet) may be slow in CI
 
 
