@@ -750,7 +750,9 @@ loadSamplesBtn.addEventListener('click', async () => {
         }
 
         if (queries.length > 0) {
-            await Promise.all(queries.map(q => conn.query(q)));
+            // Performance optimization: Batch queries to reduce IPC overhead across the WebWorker boundary
+            const batchedQuery = queries.map(q => q.trim().endsWith(';') ? q : q + ';').join('\n');
+            await conn.query(batchedQuery);
         }
 
         for (const tableName of tableNames) {
