@@ -19,7 +19,7 @@ except ImportError:
     from deployment.config import ROOT, SITE_URL, LIBRARY_PATTERNS, ACCENT_COLORS
 
 COMPILED_LIBRARY_PATTERNS = {
-    name: re.compile(pattern, re.IGNORECASE)
+    name: re.compile(pattern)
     for name, pattern in LIBRARY_PATTERNS.items()
 }
 
@@ -126,8 +126,11 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
     description = html.unescape(description)
 
     # Detect visualization libraries
+    # ⚡ Bolt Optimization: Using lower() once and matching without re.IGNORECASE
+    # is significantly faster than using re.IGNORECASE for multiple patterns.
+    content_lower = content.lower()
     tags = [name for name, pattern in COMPILED_LIBRARY_PATTERNS.items()
-            if pattern.search(content)]
+            if pattern.search(content_lower)]
 
     return {
         'filename': filepath.name,
