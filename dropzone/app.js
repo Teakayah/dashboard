@@ -260,6 +260,7 @@ async function displayTableSchema(tableName) {
 
 /**
  * Toggles and populates the Join Assistant UI based on the current state of loaded tables.
+ * Requires at least 2 loaded tables to activate the UI.
  */
 function updateJoinUI() {
     if (loadedTables.size >= 2) {
@@ -282,6 +283,8 @@ function updateJoinUI() {
 
 /**
  * Dynamically queries the DuckDB schema to populate the join column dropdowns.
+ * Requires both tables to be selected. Finds common columns between the two tables
+ * and populates the join column select element.
  */
 async function updateJoinColumns() {
     const tableA = joinTableA.value;
@@ -327,6 +330,8 @@ function updateConsoleActionsUI() {
 
 /**
  * Initializes and populates the Chart Builder UI drop-downs.
+ * Requires an active current table. Dynamically queries the DuckDB schema
+ * to populate the X-Axis and Y-Axis column dropdowns, filtering Y-Axis options to numeric types.
  */
 async function updateChartBuilderUI() {
     const currentTableName = getCurrentTableName();
