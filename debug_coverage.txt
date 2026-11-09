@@ -1,0 +1,47 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.0.3, pluggy-1.7.0
+rootdir: /app
+configfile: pytest.ini
+plugins: base-url-2.1.0, cov-7.1.0, playwright-0.10.0
+collected 408 items
+
+tests/scripts/test_scripts.py .........                                  [  2%]
+tests/test_accessibility.py .................                            [  6%]
+tests/test_analysis_pages.py ..................                          [ 10%]
+tests/test_dropzone.py ...................................               [ 19%]
+tests/test_fullscreen.py ...                                             [ 20%]
+tests/test_interactivity.py ...............                              [ 23%]
+tests/test_service_worker.py .                                           [ 24%]
+tests/test_usability.py ................................................ [ 35%]
+.                                                                        [ 36%]
+tests/test_generate_descriptions.py .................                    [ 40%]
+tests/test_generate_feed.py ......................                       [ 45%]
+tests/test_generate_index.py ........................................... [ 56%]
+.....                                                                    [ 57%]
+tests/test_git_utils.py ............                                     [ 60%]
+tests/test_rebuild_analyses.py ......................................... [ 70%]
+.................................                                        [ 78%]
+tests/test_refresh.py ....................                               [ 83%]
+tests/test_screenshot.py ...................                             [ 87%]
+tests/test_update_flood_data.py .........                                [ 90%]
+tests/test_update_statcan_data.py ...................................... [ 99%]
+..                                                                       [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.13-final-0 _______________
+
+Name                                  Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------
+deployment/config.py                      9      0   100%
+deployment/generate_descriptions.py      97      0   100%
+deployment/generate_feed.py              71      0   100%
+deployment/generate_index.py            172      0   100%
+deployment/git_utils.py                  74      0   100%
+deployment/rebuild_analyses.py          220      0   100%
+deployment/refresh.py                    95      0   100%
+deployment/screenshot.py                 93      0   100%
+deployment/update_flood_data.py          68      0   100%
+deployment/update_statcan_data.py       135      0   100%
+-------------------------------------------------------------------
+TOTAL                                  1034      0   100%
+======================= 408 passed in 168.17s (0:02:48) ========================
