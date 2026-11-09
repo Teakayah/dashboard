@@ -390,7 +390,11 @@ def test_export_db_downloads_copied_database_buffer(dz: Page):
     download = download_info.value
     assert download.suggested_filename.startswith('datadashboard_export_')
     assert download.suggested_filename.endswith('.db')
-    assert download.path().read_bytes() == bytes([1, 2, 3, 4, 5])
+
+    path = download.path()
+    import os
+    assert os.path.getsize(path) > 0, "Downloaded DB file should not be empty"
+    assert path.read_bytes() == bytes([1, 2, 3, 4, 5])
 
 
 def test_export_db_reports_failure_when_persistent_paths_fail(dz: Page):
