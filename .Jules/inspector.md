@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-10-11 - Testing Download Buttons on Auto-Generated UI
+**Learning:** Testing export functionalities (like downloading PNGs) on dynamically generated UI elements (like auto-generated chart preview cards) requires ensuring the export logic produces a valid, non-empty file, just as with manual exports.
+**Action:** Always add functional download tests verifying the file extension and size (e.g. `os.path.getsize > 0`) for elements that can be both manually and automatically generated.
