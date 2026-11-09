@@ -486,6 +486,37 @@ def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
     assert previews.count() > 0
 
 
+def test_instant_chart_export_downloads_png(dz: Page, tmp_path: Path):
+    """Clicking 💾 PNG on an instant chart preview must trigger a valid PNG download."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    csv = tmp_path / 'sales_data.csv'
+    csv.write_text(
+        'date,product,revenue\n'
+        '2022-01-01,Widget,100\n'
+        '2022-01-02,Gadget,200\n'
+        '2022-01-03,Doohickey,50\n'
+    )
+
+    dz.evaluate("document.getElementById('file-input').removeAttribute('webkitdirectory')")
+    dz.locator('#file-input').set_input_files(str(csv))
+
+    previews = dz.locator('#instant-previews .preview-card')
+    expect(previews.first).to_be_visible(timeout=ACTION_TIMEOUT)
+
+    # Click the download button on the first generated preview card
+    with dz.expect_download() as download_info:
+        previews.first.locator('button:has-text("💾 PNG")').click()
+
+    download = download_info.value
+    assert download.suggested_filename.endswith('.png'), "Downloaded file name should end with '.png'"
+
+    path = download.path()
+    import os
+    assert os.path.getsize(path) > 0, "Downloaded PNG image should not be empty"
+
+
 def test_no_unhandled_promise_rejections_on_load(dz: Page):
     """Loading the Drop-Zone and samples must not reject promises globally."""
     rejections: list[str] = []
