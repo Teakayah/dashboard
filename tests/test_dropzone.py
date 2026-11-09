@@ -762,6 +762,22 @@ def test_enter_submits_join_builder(dz: Page):
     expect(dz.locator('#sql-input')).to_be_focused()
 
 
+def test_enter_submits_join_builder_same_table(dz: Page):
+    """Pressing Enter in a join control with same tables reports an error."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    dz.select_option('#join-table-a', label='employees')
+    dz.select_option('#join-table-b', label='employees')
+    dz.locator('#join-col').select_option(label='id')
+    dz.locator('#join-col').press('Enter')
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text('Please select two different tables to join.')
+
+
 def test_enter_submits_chart_builder(dz: Page):
     """Pressing Enter in a chart control submits it and reports missing axes."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
