@@ -94,3 +94,6 @@
 ## 2026-10-14 - Optimize index generation with concurrent I/O
 **Learning:** Using sequential loops for I/O bound tasks like reading HTML files and writing back enhancements in `generate_index.py` is inefficient.
 **Action:** Use `concurrent.futures.ThreadPoolExecutor.map` to concurrently read files, extract metadata, and write enhancements, which speeds up index generation significantly while preserving order.
+## 2026-10-19 - [Batch CREATE OR REPLACE TABLE Queries]
+**Learning:** Sequential `conn.query()` calls across the WebWorker boundary, even when using `Promise.all()`, still incur multiple IPC roundtrips overhead for each query.
+**Action:** Combine multiple `CREATE OR REPLACE TABLE` statements into a single string separated by newlines and execute them in one `conn.query()` call to minimize IPC roundtrips.
