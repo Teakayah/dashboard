@@ -107,7 +107,7 @@ export function populateSelect(select, options, defaultMsg) {
         }
     });
 
-    if (!defaultMsg && options.some(opt => typeof opt === 'object' ? opt.column_name === currentVal : opt === currentVal)) {
+    if (!defaultMsg && options.some(opt => (opt.column_name ?? opt) === currentVal)) {
         select.value = currentVal;
     }
 }
