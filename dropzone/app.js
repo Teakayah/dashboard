@@ -98,7 +98,7 @@ async function restoreState() {
         const tables = getRows(tablesResult).map(r => r.table_name);
 
         if (tables.length > 0) {
-            loadedTables.clear();
+            clearLoadedTables();
             tables.forEach(t => loadedTables.add(t));
             setCurrentTableName(tables[tables.length - 1]);
             statusEl.textContent = `Restored ${tables.length} table(s)`;
