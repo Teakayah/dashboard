@@ -126,8 +126,21 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
     description = html.unescape(description)
 
     # Detect visualization libraries
-    tags = [name for name, pattern in COMPILED_LIBRARY_PATTERNS.items()
-            if pattern.search(content)]
+    # ⚡ Bolt Optimization: Fast substring check to avoid slow regex on large files
+    fast_checks = {
+        'Chart.js': ('chart', 'Chart'),
+        'D3.js': ('d3', 'D3'),
+        'Plotly': ('plotly', 'Plotly'),
+        'Vega': ('vega', 'Vega'),
+        'DuckDB': ('duckdb', 'DuckDB'),
+        'Grid.js': ('gridjs', 'Gridjs')
+    }
+    tags = []
+    for name, pattern in COMPILED_LIBRARY_PATTERNS.items():
+        variants = fast_checks.get(name)
+        if not variants or any(v in content for v in variants):
+            if pattern.search(content):
+                tags.append(name)
 
     return {
         'filename': filepath.name,
