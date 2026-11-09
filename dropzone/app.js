@@ -477,6 +477,8 @@ fileInput.addEventListener('change', () => {
 
 /**
  * Processes dropped or selected files.
+ * Groups files by directory to support Delta Lake multi-part datasets
+ * (which have a `_delta_log` directory) because HTML file inputs flatten directories.
  *
  * @param {FileList|Array<File>} files
  */
@@ -544,6 +546,8 @@ async function handleFiles(files) {
 
 /**
  * Loads a single file into DuckDB-Wasm and registers it as a table.
+ * Infers the correct DuckDB import function (read_parquet, read_csv_auto, read_json_auto)
+ * dynamically based on the file extension.
  *
  * @param {File} file
  * @param {string} path
