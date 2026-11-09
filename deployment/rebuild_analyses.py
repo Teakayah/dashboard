@@ -33,13 +33,15 @@ def _read_csv(path: Path) -> list[dict]:
         # on large StatCan datasets (100k+ rows) during the I/O load phase.
         # zip_longest ensures missing columns become None, preserving exact
         # DictReader backwards compatibility.
+        # ⚡ Bolt Optimization (Secondary): Replace zip_longest + any(row) with zip + if row.
+        # This eliminates the overhead of filling non-existent columns with None and the any() function overhead.
         reader = csv.reader(f)
         try:
             headers = [h.strip() for h in next(reader)]
         except StopIteration:
             return []
 
-        return [dict(zip_longest(headers, row)) for row in reader if any(row)]
+        return [dict(zip(headers, row)) for row in reader if row]
 
 
 @functools.lru_cache(maxsize=4096)
@@ -94,24 +96,19 @@ def extract_statcan_data(
 
     # Pre-calculate filter values and metadata for faster matching.
     # val.strip() == v is only possible if v itself is clean.
-    optimized_filters = []
-    for k, v in filter_items:
-        v_len = len(v)
-        v_is_clean = v.strip() == v
-        optimized_filters.append((k, v, v_len, v_is_clean))
+    optimized_filters = tuple(
+        (k, v, len(v), v.strip() == v)
+        for k, v in filter_items
+    )
 
     for row in rows:
         match = True
         for k, v, v_len, v_is_clean in optimized_filters:
-            val = row.get(k, '')
+            val = row.get(k)
             if val == v:
                 continue
 
-            # If we're here, val != v.
-            # Optimization: val.strip() == v can only be true if:
-            # 1. v has no surrounding whitespace
-            # 2. val is longer than v (since it must contain v + whitespace)
-            if v_is_clean and len(val) > v_len and val.strip() == v:
+            if val is not None and v_is_clean and len(val) > v_len and val.strip() == v:
                 # Match! Memoize the stripped value to speed up subsequent passes.
                 row[k] = v
                 continue
@@ -120,20 +117,22 @@ def extract_statcan_data(
             break
 
         if match:
-            val = _clean(row["VALUE"])
-            if val is not None:
-                # Handle different date formats
-                ref_date = row.get("REF_DATE", "")
-                if len(ref_date) >= 4:
-                    try:
-                        year = int(ref_date[:4])
-                    except ValueError:
-                        continue
+            val_raw = row.get("VALUE")
+            if val_raw is not None:
+                val = _clean(val_raw)
+                if val is not None:
+                    # Handle different date formats
+                    ref_date = row.get("REF_DATE", "")
+                    if len(ref_date) >= 4:
+                        try:
+                            year = int(ref_date[:4])
+                        except ValueError:
+                            continue
 
-                    geo = row.get("GEO", "Canada")
-                    if geo != "Canada":
-                        geo = geo.strip()
-                    buckets[geo][year].append(val)
+                        geo = row.get("GEO", "Canada")
+                        if geo != "Canada":
+                            geo = geo.strip()
+                        buckets[geo][year].append(val)
 
     # Post-processing based on variant or table_id
     if variant == "empRate":
