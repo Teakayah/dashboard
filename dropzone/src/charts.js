@@ -133,7 +133,9 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
     if (dateCols.length > 0 && numericCols.length > 0) {
         const dCol = dateCols[0];
         const nCol = numericCols[0];
-        createPreviewCard(`Trend: ${nCol} over ${dCol}`, async (canvasId) => {
+        try {
+            // Performance optimization: Await the query sequentially to prevent concurrent query collisions
+            // in the single-threaded DuckDB-Wasm environment before rendering the preview card.
             const result = await conn.query(`
                 SELECT "${escapeId(dCol)}" as date, AVG("${escapeId(nCol)}") as val
                 FROM "${escapeId(tableName)}"
@@ -141,17 +143,21 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
                 GROUP BY 1 ORDER BY 1 ASC LIMIT 100
             `);
             const rows = getRows(result);
-            renderChart(canvasId, 'line', {
-                labels: rows.map(r => r.date),
-                datasets: [{
-                    label: `Avg ${nCol}`,
-                    data: rows.map(r => r.val),
-                    borderColor: '#4bc0c0',
-                    tension: 0.1,
-                    fill: false
-                }]
-            });
-        }, previewsContainer);
+            createPreviewCard(`Trend: ${nCol} over ${dCol}`, (canvasId) => {
+                renderChart(canvasId, 'line', {
+                    labels: rows.map(r => r.date),
+                    datasets: [{
+                        label: `Avg ${nCol}`,
+                        data: rows.map(r => r.val),
+                        borderColor: '#4bc0c0',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                });
+            }, previewsContainer);
+        } catch (e) {
+            console.warn('Trend check failed', e);
+        }
     }
 
     // 2. Correlation detection
@@ -186,9 +192,11 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
                 }
             }
 
-            createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, async (canvasId) => {
-                const result = await conn.query(`SELECT "${escapeId(bestPair[0])}" as x, "${escapeId(bestPair[1])}" as y FROM "${escapeId(tableName)}" WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
-                const rows = getRows(result);
+            // Performance optimization: Await the query sequentially to prevent concurrent query collisions
+            // in the single-threaded DuckDB-Wasm environment before rendering the preview card.
+            const result = await conn.query(`SELECT "${escapeId(bestPair[0])}" as x, "${escapeId(bestPair[1])}" as y FROM "${escapeId(tableName)}" WHERE x IS NOT NULL AND y IS NOT NULL LIMIT 500`);
+            const rows = getRows(result);
+            createPreviewCard(`Correlation: ${bestPair[0]} vs ${bestPair[1]}`, (canvasId) => {
                 renderChart(canvasId, 'scatter', {
                     datasets: [{
                         label: `${bestPair[0]} vs ${bestPair[1]}`,
@@ -208,7 +216,9 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
     if (textCols.length > 0 && numericCols.length > 0) {
         const tCol = textCols[0];
         const nCol = numericCols[0];
-        createPreviewCard(`Distribution: ${nCol} by ${tCol}`, async (canvasId) => {
+        try {
+            // Performance optimization: Await the query sequentially to prevent concurrent query collisions
+            // in the single-threaded DuckDB-Wasm environment before rendering the preview card.
             const result = await conn.query(`
                 SELECT "${escapeId(tCol)}" as label, AVG("${escapeId(nCol)}") as value
                 FROM "${escapeId(tableName)}"
@@ -217,14 +227,18 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
                 LIMIT 10
             `);
             const rows = getRows(result);
-            renderChart(canvasId, 'bar', {
-                labels: rows.map(r => r.label),
-                datasets: [{
-                    label: `Average ${nCol}`,
-                    data: rows.map(r => r.value),
-                    backgroundColor: '#ff6384'
-                }]
-            });
-        }, previewsContainer);
+            createPreviewCard(`Distribution: ${nCol} by ${tCol}`, (canvasId) => {
+                renderChart(canvasId, 'bar', {
+                    labels: rows.map(r => r.label),
+                    datasets: [{
+                        label: `Average ${nCol}`,
+                        data: rows.map(r => r.value),
+                        backgroundColor: '#ff6384'
+                    }]
+                });
+            }, previewsContainer);
+        } catch (e) {
+            console.warn('Distribution check failed', e);
+        }
     }
 }

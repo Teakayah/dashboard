@@ -90,3 +90,7 @@
 ## 2026-10-03 - [Pre-compile regular expressions]
 **Learning:** To optimize Python performance (e.g., in scripts like `generate_feed.py`), repeatedly evaluating `re.search()` with string patterns inside tight loops incurs redundant evaluation overhead.
 **Action:** Pre-compile regular expressions at the module level using `re.compile()` and reuse them, avoiding multiple compilations.
+
+## 2026-10-15 - [Sequential DuckDB-Wasm Queries for Chart Previews]
+**Learning:** Do not use fire-and-forget optimizations (like running async queries without `await` inside callbacks) for query executions against single-threaded environments like DuckDB-Wasm (e.g., generating chart previews). This causes concurrent query collisions and race conditions.
+**Action:** Always await queries sequentially (or pipeline them properly using `Promise.all` if supported by the architecture) before updating UI state or creating components based on their results.
