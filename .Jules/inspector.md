@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-11-06 - Disable Chart Animations in Playwright UI Tests
+**Learning:** When performing Playwright UI tests that assert on chart dimensions or DOM layout stability, Chart.js animations can cause layout flakiness because the DOM height might change during the animation duration.
+**Action:** Always disable Chart.js animations using `page.evaluate` before asserting on stable layout dimensions in tests.
