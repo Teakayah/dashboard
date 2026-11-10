@@ -106,7 +106,7 @@ async function restoreState() {
             schemaDisplay.textContent = '';
             // Performance optimization: Fetch schemas concurrently to eliminate
             // redundant sequential IPC roundtrips across the WebWorker boundary.
-            await Promise.all(tables.map(t => getTableSchemaCached(t)));
+            await Promise.all(tables.map(t => getTableSchemaCached(t).catch(e => console.error(e))));
             for (const table of tables) {
                 await displayTableSchema(table);
             }
@@ -499,7 +499,7 @@ async function handleFiles(files) {
                 const fullPath = getFilePath(file);
                 const buffer = await file.arrayBuffer();
                 await db.registerFileBuffer(fullPath, new Uint8Array(buffer));
-            }));
+            }).map(p => p.catch(e => console.error(e))));
 
             if (isDelta) {
                 if (!window.deltaSupported) {
@@ -722,7 +722,7 @@ loadSamplesBtn.addEventListener('click', async () => {
     await withLoading('Sample Loading Error', async () => {
         const db = getDb();
         const conn = getConnection();
-        await Promise.all(Object.entries(SAMPLE_DATA).map(([name, content]) => db.registerFileText(name, content)));
+        await Promise.all(Object.entries(SAMPLE_DATA).map(([name, content]) => db.registerFileText(name, content).catch(e => console.error(e))));
 
         const queries = [];
         const tableNames = [];
@@ -734,7 +734,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         }
 
         if (queries.length > 0) {
-            await Promise.all(queries.map(q => conn.query(q)));
+            await conn.query(queries.join('\n'));
         }
 
         for (const tableName of tableNames) {
@@ -747,7 +747,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         sqlInput.dispatchEvent(new Event('input'));
 
         schemaDisplay.textContent = '';
-        await Promise.all(Array.from(loadedTables).map(t => getTableSchemaCached(t)));
+        await Promise.all(Array.from(loadedTables).map(t => getTableSchemaCached(t).catch(e => console.error(e))));
         for (const table of loadedTables) {
             await displayTableSchema(table);
         }
