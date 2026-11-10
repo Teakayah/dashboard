@@ -68,6 +68,13 @@ const generateChartBtn = document.getElementById('generate-chart');
 let lastResult = null;
 let gridInstance = null;
 
+function destroyGrid() {
+    if (gridInstance) {
+        gridInstance.destroy();
+        gridInstance = null;
+    }
+}
+
 /**
  * Updates the DuckDB-Wasm initialization progress bar in the UI.
  * The progress bar is automatically hidden when progress is 0% or 100%.
@@ -667,10 +674,7 @@ async function runQuery() {
 function renderResults(rows) {
     const resultsContainer = document.getElementById('results');
     if (rows.length === 0) {
-        if (gridInstance) {
-            gridInstance.destroy();
-            gridInstance = null;
-        }
+        destroyGrid();
         showEmptyState(
             resultsContainer,
             'No results found',
@@ -812,10 +816,7 @@ clearBtn.addEventListener('click', async () => {
         schemaDisplay.textContent = '';
         destroyCharts(previewsContainer);
         previewsContainer.textContent = '';
-        if (gridInstance) {
-            gridInstance.destroy();
-            gridInstance = null;
-        }
+        destroyGrid();
         showEmptyState(
             document.getElementById('results'),
             'No data to display',
