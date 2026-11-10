@@ -86,3 +86,6 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+## 2026-11-10 - Synchronize Tooltips and Disabled States Dynamically
+**Learning:** When action buttons require prerequisite data inputs (like selecting tables to join or columns for a chart), leaving them enabled but throwing an error toast upon click creates a confusing UX and frustrates users. Instead, they should be disabled by default.
+**Action:** Always dynamically synchronize the disabled state of buttons with a descriptive tooltip (`title` attribute) that explains exactly what inputs are missing, and attach event listeners to the prerequisite inputs to continually update this state, ensuring users understand why an action is unavailable before clicking.

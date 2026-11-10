@@ -306,6 +306,24 @@ async function updateJoinColumns() {
     } catch (err) {
         console.error('Error fetching columns for join:', err);
     }
+    updateJoinBtnState();
+}
+
+function updateJoinBtnState() {
+    const a = joinTableA.value;
+    const b = joinTableB.value;
+    const col = joinCol.value;
+
+    if (!a || !b || !col) {
+        generateJoinBtn.disabled = true;
+        generateJoinBtn.title = 'Please select both tables and a common column.';
+    } else if (a === b) {
+        generateJoinBtn.disabled = true;
+        generateJoinBtn.title = 'Please select two different tables to join.';
+    } else {
+        generateJoinBtn.disabled = false;
+        generateJoinBtn.title = 'Generate Join SQL';
+    }
 }
 
 /**
@@ -345,10 +363,25 @@ async function updateChartBuilderUI() {
     } catch (err) {
         console.error('Error updating chart builder UI:', err);
     }
+    updateChartBtnState();
 }
+
+function updateChartBtnState() {
+    if (!chartXCol.value || !chartYCol.value) {
+        generateChartBtn.disabled = true;
+        generateChartBtn.title = 'Please select both X and Y axes.';
+    } else {
+        generateChartBtn.disabled = false;
+        generateChartBtn.title = 'Generate Chart SQL';
+    }
+}
+
+chartXCol.addEventListener('change', updateChartBtnState);
+chartYCol.addEventListener('change', updateChartBtnState);
 
 joinTableA.addEventListener('change', updateJoinColumns);
 joinTableB.addEventListener('change', updateJoinColumns);
+joinCol.addEventListener('change', updateJoinBtnState);
 
 generateJoinBtn.addEventListener('click', () => {
     const a = joinTableA.value;
