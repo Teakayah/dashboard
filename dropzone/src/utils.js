@@ -96,18 +96,18 @@ export function populateSelect(select, options, defaultMsg) {
     select.textContent = '';
 
     if (defaultMsg) {
-        select.add(new Option(defaultMsg, '', true, true));
+        const opt = document.createElement('option'); opt.textContent = defaultMsg; opt.value = ''; opt.defaultSelected = true; opt.selected = true; select.appendChild(opt);
     }
 
     options.forEach(item => {
         if (typeof item === 'object') {
-            select.add(new Option(`${item.column_name} (${item.column_type})`, item.column_name));
+            const opt = document.createElement('option'); opt.textContent = `${item.column_name} (${item.column_type})`; opt.value = item.column_name; select.appendChild(opt);
         } else {
-            select.add(new Option(item, item));
+            const opt = document.createElement('option'); opt.textContent = item; opt.value = item; select.appendChild(opt);
         }
     });
 
-    if (!defaultMsg && options.some(opt => typeof opt === 'object' ? opt.column_name === currentVal : opt === currentVal)) {
+    if (!defaultMsg && options.some(opt => (opt.column_name ?? opt) === currentVal)) {
         select.value = currentVal;
     }
 }
@@ -138,13 +138,7 @@ export function showToast(msg, type = 'error') {
  */
 export function insertAtCursor(myField, myValue) {
     if (myField.selectionStart !== undefined) {
-        const startPos = myField.selectionStart;
-        const endPos = myField.selectionEnd;
-        myField.value = myField.value.substring(0, startPos)
-            + myValue
-            + myField.value.substring(endPos, myField.value.length);
-        myField.selectionStart = startPos + myValue.length;
-        myField.selectionEnd = startPos + myValue.length;
+        myField.setRangeText(myValue, myField.selectionStart, myField.selectionEnd, 'end');
     } else {
         myField.value += myValue;
     }
