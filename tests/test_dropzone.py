@@ -283,6 +283,33 @@ def test_count_query_returns_single_value(dz: Page):
 
 # ── Export & Copy ─────────────────────────────────────────────────────────────
 
+def test_csv_export_shows_error_toast_on_failure(dz: Page):
+    """Clicking Download CSV when export fails must show an error toast."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+    dz.locator('#sql-input').fill('SELECT * FROM "employees" LIMIT 1')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    # Mocking document.createElement('a') throws an error during the triggerDownload function
+    # instead of inside the Playwright evaluate block.
+    dz.evaluate("""
+        const origCreate = document.createElement;
+        document.createElement = function(tagName) {
+            if (tagName && tagName.toLowerCase && tagName.toLowerCase() === 'a') {
+                throw new Error('Mocked Anchor Error');
+            }
+            return origCreate.call(document, tagName);
+        };
+    """)
+    dz.locator('#download-csv').click()
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Export Error', re.IGNORECASE))
+
+
 def test_csv_export_downloads_file(dz: Page):
     """Clicking Download CSV must trigger a file download containing the query results."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
@@ -309,6 +336,32 @@ def test_csv_export_downloads_file(dz: Page):
 
     assert 'id,name,dept_id,salary,join_date' in content, "CSV should contain headers"
     assert '1,Alice,101,85000,2022-01-15' in content, "CSV should contain row data"
+
+def test_export_db_shows_error_toast_on_failure(dz: Page):
+    """Clicking Export Database when export fails must show an error toast."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    dz.wait_for_function("document.getElementById('status').textContent.includes('Ready') || document.getElementById('status').textContent.includes('Loaded')", timeout=10000)
+    dz.locator('#load-samples').click()
+    dz.wait_for_function(
+        "document.getElementById('schema-display').textContent.includes('employees')",
+        timeout=5000,
+    )
+
+    dz.evaluate("""
+        const origCreate = document.createElement;
+        document.createElement = function(tagName) {
+            if (tagName && tagName.toLowerCase && tagName.toLowerCase() === 'a') {
+                throw new Error('Mocked Anchor Error');
+            }
+            return origCreate.call(document, tagName);
+        };
+    """)
+    dz.locator('#export-db').click()
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text(re.compile(r'Database Export Error', re.IGNORECASE))
+
 
 def test_export_db_downloads_file(dz: Page):
     """Clicking Export Database must trigger a file download containing the DuckDB database."""

@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-10-10 - Mocking File Download Errors
+**Learning:** File generation and download operations triggered by JS `Blob` and `URL.createObjectURL` can fail. Mocking the final anchor click or file export processes (e.g. by intercepting `document.createElement('a')` globally in the test) verifies that the UI correctly reports export errors via toasts instead of failing silently.
+**Action:** Always include tests that mock promise/function rejections for file downloads and verify that the UI correctly displays the error toast.
