@@ -69,3 +69,22 @@ def test_fullscreen_mutation_observer_wraps_dynamic_canvas(page: Page):
     dynamic_btn = page.locator("#dynamic-canvas").locator("..").locator(".fullscreen-btn")
     expect(dynamic_btn).to_be_visible(timeout=5000)
     expect(dynamic_btn).to_have_text("⛶")
+
+
+def test_fullscreen_escape_key_exits(page: Page):
+    """Verify that pressing the Escape key exits fullscreen mode."""
+    page.goto(f"{BASE}/nhpi_big6_comparison.html", wait_until="domcontentloaded", timeout=60000)
+
+    btn = page.locator(".fullscreen-btn").first
+    expect(btn).to_be_visible(timeout=10000)
+    container = btn.locator("..")
+
+    # Enter fullscreen
+    btn.click()
+    expect(container).to_have_class(re.compile(r"chart-fullscreen"))
+    assert page.evaluate("document.body.style.overflow") == "hidden"
+
+    # Press Escape to exit fullscreen
+    page.keyboard.press("Escape")
+    expect(container).not_to_have_class(re.compile(r"chart-fullscreen"))
+    assert page.evaluate("document.body.style.overflow") != "hidden"

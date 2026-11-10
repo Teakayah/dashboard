@@ -63,4 +63,13 @@
   } else {
     initFullscreen();
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.chart-fullscreen').forEach(container => {
+        const btn = container.querySelector('.fullscreen-btn');
+        if (btn) btn.click();
+      });
+    }
+  });
 })();

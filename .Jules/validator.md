@@ -62,3 +62,7 @@ Coverage Gap: Analysis page UI tests used hardcoded `page.wait_for_timeout` afte
 Learning: Fixed timeouts either waste execution time or fail on slower CI machines during asynchronous Chart.js rendering and DOM state transitions.
 Assertion: Replace `page.wait_for_timeout` with Playwright's native `expect(locator).to_have_class(...)` and `page.wait_for_function(...)` auto-retrying assertions.
 
+## 2026-11-10 - Cover Escape Key for Custom Fullscreen UI
+Coverage Gap: The user interaction to exit a custom Chart.js fullscreen view (`.chart-fullscreen`) using the keyboard "Escape" key lacked both implementation and test coverage.
+Learning: For custom, non-native fullscreen implementations (manipulating DOM classes and body overflow instead of the Fullscreen API), native keyboard behaviors like pressing Escape must be manually bound to the `document` via a `keydown` listener and explicitly tested using Playwright's `page.keyboard.press()`.
+Assertion: When implementing custom UI state toggles, attach global `keydown` listeners for standard exit behaviors (like Escape) and test them explicitly via Playwright's `keyboard.press()` to ensure full keyboard accessibility coverage.
