@@ -450,7 +450,10 @@
     });
 
     if (!navigator.share && !navigator.clipboard) {
-      if (shareBtn) shareBtn.style.display = 'none';
+      if (shareBtn) {
+        shareBtn.disabled = true;
+        shareBtn.title = 'Sharing is not supported in this browser';
+      }
     }
 
     if ('serviceWorker' in navigator) {

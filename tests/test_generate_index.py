@@ -119,7 +119,7 @@ def test_inject_share_fix_replaces_unsafe_handler():
     module = load_generate_index_module()
 
     unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
-    content = f'<html><body><button {unsafe}>Share</button></body></html>'
+    content = f'<html><body><button class="share-btn" {unsafe}>Share</button></body></html>'
     res = module.inject_share_fix(content, 'test.html')
     assert unsafe not in res
     assert 'navigator.share' in res
@@ -132,7 +132,7 @@ def test_inject_share_fix_is_idempotent():
     module = load_generate_index_module()
 
     unsafe = 'onclick="navigator.share({title: document.title, url: window.location.href})"'
-    content = f'<html><body><button {unsafe}>Share</button></body></html>'
+    content = f'<html><body><button class="share-btn" {unsafe}>Share</button></body></html>'
     first = module.inject_share_fix(content, 'test.html')
     second = module.inject_share_fix(first, 'test.html')
     assert first == second
