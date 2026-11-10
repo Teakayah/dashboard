@@ -201,6 +201,8 @@ class TestFloodPageButtons:
             f'<html><body><button class="share-btn" {unsafe}>Share</button></body></html>',
             'test.html',
         )
+        # Strip the disable script from the HTML for this test to just test the click handler
+        html = re.sub(r'<script>.*?</script>', '', html)
         page.set_content(html)
         page.evaluate("""
             delete Navigator.prototype.share;

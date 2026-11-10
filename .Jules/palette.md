@@ -86,3 +86,7 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+
+## 2026-11-10 - Managing Dynamic Tooltips for Disabled States on Share Buttons
+**Learning:** Hiding elements dynamically (like a Share button on unsupported browsers) can cause layout shifts and confusion if users are looking for a feature they expect to be there. A better UX pattern is to leave the button visible but explicitly disable it, accompanied by a tooltip explaining why it is unavailable (e.g., 'Sharing is not supported in this browser').
+**Action:** When adding explanatory tooltips to disabled buttons, ensure you set both `disabled=true` and a descriptive `title` attribute. Apply this consistently across statically rendered HTML (like `dropzone.html`) and dynamically injected scripts (like via `deployment/generate_index.py`).
