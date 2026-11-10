@@ -86,3 +86,6 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+## 2026-11-09 - Managing Dynamic Tooltips for Disabled Chart and Join Actions
+**Learning:** Adding title tooltips to disabled action buttons (like "Generate Join SQL" and "Generate Chart SQL") improves accessibility by explaining why the action is unavailable. If the tooltip isn't dynamically updated when the required selects are changed and the button becomes enabled or disabled, users see outdated/confusing explanations or no explanations at all.
+**Action:** When adding explanatory tooltips to action buttons that rely on dropdown selections, always pair the title attribute management with the JS logic that toggles the disabled property. Clear the title when disabled = false, and restore the explanation when disabled = true. Update this state on every relevant select change event.

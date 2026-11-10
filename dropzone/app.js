@@ -303,6 +303,7 @@ async function updateJoinColumns() {
         } else {
             populateSelect(joinCol, sharedCols, 'Select Common Column...');
         }
+        updateJoinButtonState();
     } catch (err) {
         console.error('Error fetching columns for join:', err);
     }
@@ -311,6 +312,25 @@ async function updateJoinColumns() {
 /**
  * Updates the disabled state and tooltips of the console action buttons.
  */
+
+function updateJoinButtonState() {
+    const a = joinTableA.value;
+    const b = joinTableB.value;
+    const col = joinCol.value;
+    const hasValidJoin = a && b && col;
+    generateJoinBtn.disabled = !hasValidJoin;
+    generateJoinBtn.title = hasValidJoin ? '' : 'Requires valid table and column selection';
+}
+
+function updateChartButtonState() {
+    const type = chartType.value;
+    const xCol = chartXCol.value;
+    const yCol = chartYCol.value;
+    const hasValidChart = type && xCol && yCol;
+    generateChartBtn.disabled = !hasValidChart;
+    generateChartBtn.title = hasValidChart ? '' : 'Requires X and Y axes selection';
+}
+
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
 
@@ -342,13 +362,21 @@ async function updateChartBuilderUI() {
 
         populateSelect(chartXCol, cols, 'Select X-Axis...');
         populateSelect(chartYCol, numericCols, 'Select Y-Axis (Numeric)...');
+        updateChartButtonState();
     } catch (err) {
         console.error('Error updating chart builder UI:', err);
     }
 }
 
-joinTableA.addEventListener('change', updateJoinColumns);
-joinTableB.addEventListener('change', updateJoinColumns);
+
+joinTableA.addEventListener('change', () => { updateJoinColumns(); updateJoinButtonState(); });
+joinTableB.addEventListener('change', () => { updateJoinColumns(); updateJoinButtonState(); });
+joinCol.addEventListener('change', updateJoinButtonState);
+
+chartType.addEventListener('change', updateChartButtonState);
+chartXCol.addEventListener('change', updateChartButtonState);
+chartYCol.addEventListener('change', updateChartButtonState);
+
 
 generateJoinBtn.addEventListener('click', () => {
     const a = joinTableA.value;
