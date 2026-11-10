@@ -95,15 +95,26 @@ export function populateSelect(select, options, defaultMsg) {
     const currentVal = select.value;
     select.textContent = '';
 
+    const addOpt = (text, val, defaultSelected = false) => {
+        const o = document.createElement('option');
+        o.textContent = text;
+        o.value = val;
+        if (defaultSelected) {
+            o.defaultSelected = true;
+            o.selected = true;
+        }
+        select.appendChild(o);
+    };
+
     if (defaultMsg) {
-        select.add(new Option(defaultMsg, '', true, true));
+        addOpt(defaultMsg, '', true);
     }
 
     options.forEach(item => {
         if (typeof item === 'object') {
-            select.add(new Option(`${item.column_name} (${item.column_type})`, item.column_name));
+            addOpt(`${item.column_name} (${item.column_type})`, item.column_name);
         } else {
-            select.add(new Option(item, item));
+            addOpt(item, item);
         }
     });
 
@@ -137,7 +148,9 @@ export function showToast(msg, type = 'error') {
  * @param {string} myValue - The text to insert.
  */
 export function insertAtCursor(myField, myValue) {
-    if (myField.selectionStart !== undefined) {
+    if (myField.setRangeText) {
+        myField.setRangeText(myValue, myField.selectionStart, myField.selectionEnd, 'end');
+    } else if (myField.selectionStart !== undefined) {
         const startPos = myField.selectionStart;
         const endPos = myField.selectionEnd;
         myField.value = myField.value.substring(0, startPos)
