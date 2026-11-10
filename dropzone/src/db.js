@@ -83,7 +83,7 @@ export function showInitError(statusEl, message) {
     const btn = document.createElement('button');
     btn.textContent = 'Reload without service worker';
     btn.style.cssText = 'margin-left:8px;padding:2px 8px;cursor:pointer;font-size:inherit';
-    btn.addEventListener('click', reloadWithoutSW);
+    btn.addEventListener('click', () => reloadWithoutSW());
     statusEl.appendChild(btn);
 }
 
@@ -91,11 +91,11 @@ export function showInitError(statusEl, message) {
  * Forcefully reloads the application while unregistering any active Service Workers.
  * This serves as an escape hatch when the DuckDB-Wasm initialization times out.
  */
-export function reloadWithoutSW() {
+export async function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations()
-            .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-            .then(() => location.reload());
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+        location.reload();
     } else {
         location.reload();
     }
