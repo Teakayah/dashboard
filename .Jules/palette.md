@@ -86,3 +86,6 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+## 2026-11-10 - Synchronize Tooltips and Disabled states correctly
+**Learning:** For manually managed buttons (like `runBtn`), changing the input disables/enables the button without synchronizing tooltips. This is similar to managing dynamic tooltips for disabled states, but applied specifically to where the input event happens.
+**Action:** When updating form buttons like `runBtn` within `updateConsoleActionsUI`, explicitly check the `sqlInput` validity and update the `runBtn` disabled state and tooltip so it matches the input state.

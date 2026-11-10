@@ -323,6 +323,10 @@ function updateConsoleActionsUI() {
     setBtnState(recipeSelect, hasData, 'Requires loaded data', 'Select a query recipe');
     setBtnState(exportDbBtn, hasData, 'Requires loaded data', 'Export Database (.db)');
     setBtnState(clearBtn, hasData, 'Requires loaded data', 'Clear All Data');
+
+    // Explicitly update runBtn disabled state and tooltip so it matches the SQL input state
+    const hasQuery = sqlInput.value.trim().length > 0;
+    setBtnState(runBtn, hasQuery, 'Requires a valid query', 'Run Query (Ctrl+Enter)');
 }
 
 /**
