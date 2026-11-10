@@ -1,3 +1,4 @@
+import os
 """
 Front-end integration tests for the Analytical Drop-Zone (DuckDB-Wasm).
 
@@ -321,7 +322,7 @@ def test_csv_export_downloads_file(dz: Page):
     assert download.suggested_filename.endswith('.csv'), "Downloaded file name should end with '.csv'"
 
     path = download.path()
-    import os
+
     assert os.path.getsize(path) > 0, "Downloaded CSV file should not be empty"
     with open(path, 'r') as f:
         content = f.read()
@@ -390,7 +391,11 @@ def test_export_db_downloads_copied_database_buffer(dz: Page):
     download = download_info.value
     assert download.suggested_filename.startswith('datadashboard_export_')
     assert download.suggested_filename.endswith('.db')
-    assert download.path().read_bytes() == bytes([1, 2, 3, 4, 5])
+
+    path = download.path()
+
+    assert os.path.getsize(path) > 0, "Downloaded Database file should not be empty"
+    assert path.read_bytes() == bytes([1, 2, 3, 4, 5])
 
 
 def test_export_db_reports_failure_when_persistent_paths_fail(dz: Page):
