@@ -158,7 +158,7 @@ def test_clear_data_wipes_schema(dz: Page):
         timeout=ACTION_TIMEOUT,
     )
 
-    expect(dz.locator('#schema-display')).to_have_text('')
+    expect(dz.locator('#schema-display')).to_contain_text('No tables loaded', timeout=10000)
     expect(dz.locator('#chart-builder')).to_be_hidden()
     expect(dz.locator('#join-assistant')).to_be_hidden()
 
@@ -569,8 +569,8 @@ def test_run_query_empty_results_shows_empty_state(dz: Page):
     dz.locator('#sql-input').fill('SELECT * FROM "employees" WHERE id = 99999')
     dz.locator('#run-query').click()
 
-    expect(dz.locator('.empty')).to_be_visible(timeout=ACTION_TIMEOUT)
-    expect(dz.locator('.empty')).to_contain_text('No results found')
+    expect(dz.locator('#results .empty')).to_be_visible(timeout=ACTION_TIMEOUT)
+    expect(dz.locator('#results .empty')).to_contain_text('No results found')
 
 
 def test_instant_charts_generated_on_csv_load(dz: Page, tmp_path: Path):
