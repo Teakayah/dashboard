@@ -340,6 +340,12 @@
     }
   });
 
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+  });
+
   function debounce(func, wait) {
     let timeout;
     return function(...args) {
