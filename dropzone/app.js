@@ -365,7 +365,8 @@ joinTableA.addEventListener('keydown', submitJoinOnEnter);
 joinTableB.addEventListener('keydown', submitJoinOnEnter);
 joinCol.addEventListener('keydown', submitJoinOnEnter);
 
-generateJoinBtn.addEventListener('click', () => {
+document.getElementById('join-form').addEventListener('submit', (e) => {
+    e.preventDefault();
     const a = joinTableA.value;
     const b = joinTableB.value;
     const col = joinCol.value;
@@ -391,7 +392,8 @@ generateJoinBtn.addEventListener('click', () => {
     sqlInput.focus();
 });
 
-generateChartBtn.addEventListener('click', () => {
+document.getElementById('chart-form').addEventListener('submit', (e) => {
+    e.preventDefault();
     const currentTableName = getCurrentTableName();
     const type = chartType.value;
     const xCol = chartXCol.value;
@@ -841,19 +843,13 @@ remoteDeltaUrl.addEventListener('input', () => {
     loadRemoteDeltaBtn.title = hasUrl ? 'Load Table' : 'Requires a valid URL';
 });
 
-remoteDeltaUrl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        if (!loadRemoteDeltaBtn.disabled) {
-            loadRemoteDeltaBtn.click();
-        }
-    }
-});
 
 // Initialize state
 remoteDeltaUrl.dispatchEvent(new Event('input'));
 
-loadRemoteDeltaBtn.addEventListener('click', async () => {
+document.getElementById('remote-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (loadRemoteDeltaBtn.disabled) return;
     const url = remoteDeltaUrl.value.trim();
     if (!url) return;
 
