@@ -62,3 +62,7 @@ Coverage Gap: Analysis page UI tests used hardcoded `page.wait_for_timeout` afte
 Learning: Fixed timeouts either waste execution time or fail on slower CI machines during asynchronous Chart.js rendering and DOM state transitions.
 Assertion: Replace `page.wait_for_timeout` with Playwright's native `expect(locator).to_have_class(...)` and `page.wait_for_function(...)` auto-retrying assertions.
 
+## 2026-11-10 - Catching TimeoutErrors in Playwright Waiters
+Coverage Gap: Blind exception handling (`except Exception: pass`) in test wait handlers for network idle or subprocess commands.
+Learning: `subprocess.check_output` with a timeout raises `subprocess.TimeoutExpired`, which inherits from `subprocess.SubprocessError` but not `subprocess.CalledProcessError`. Playwright wait functions raise `TimeoutError` from `playwright.sync_api`. Catching `Exception` swallows unrelated failures.
+Assertion: When handling timeouts or process failures, specifically catch `subprocess.SubprocessError` for subprocesses and `TimeoutError` (imported as `PlaywrightTimeoutError`) for Playwright wait functions.
