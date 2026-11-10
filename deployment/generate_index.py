@@ -22,27 +22,6 @@ COMPILED_LIBRARY_PATTERNS = {
     for name, pattern in LIBRARY_PATTERNS.items()
 }
 
-RE_TITLE = re.compile(r'<title[^>]*>(.*?)</title>', re.IGNORECASE | re.DOTALL)
-RE_META_DESC = re.compile(
-    r'''
-    <meta[^>]*                # Matches the opening <meta tag and any attributes before 'name'
-    name=["']description["']  # Matches the name attribute with either single or double quotes
-    [^>]*                     # Matches any intermediate attributes before 'content'
-    content=["'](.*?)["']     # Group 1: Non-greedily captures the actual description text
-    ''',
-    re.IGNORECASE | re.VERBOSE
-)
-RE_SUBTITLE = re.compile(
-    r'''
-    <([a-zA-Z0-9]+)                                  # Group 1: Captures the HTML tag name (e.g., div, span, p)
-    [^>]*class=["'][^"']*subtitle[^"']*["'][^>]*>    # Ensures the tag has a class attribute containing 'subtitle'
-    (.*?)                                            # Group 2: Non-greedily captures the inner content
-    </\1>                                            # The \1 backreference dynamically matches the exact closing tag
-    ''',
-    re.IGNORECASE | re.DOTALL | re.VERBOSE
-)
-RE_HTML_TAGS = re.compile(r'<[^>]+>')
-RE_WHITESPACE = re.compile(r'\s+')
 RE_HEAD_CLOSE = re.compile(r'(</head>)', re.IGNORECASE)
 RE_HEAD_OPEN = re.compile(r'(<head[^>]*>)', re.IGNORECASE)
 RE_STRIP_RESPONSIVE = re.compile(
@@ -82,8 +61,10 @@ def load_descriptions() -> dict:
 
 try:
     from git_utils import get_git_dates_batched
+    from html_meta import extract_title, extract_description
 except ImportError:
     from deployment.git_utils import get_git_dates_batched
+    from deployment.html_meta import extract_title, extract_description
 
 
 def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = None, git_date: Optional[str] = None) -> dict:
@@ -92,30 +73,8 @@ def extract_meta(filepath: Path, content: str, descriptions: Optional[dict] = No
     Falls back to pre-generated descriptions from descriptions.json when no
     <meta name="description"> or subtitle element is found in the HTML.
     """
-    # Title
-    title_match = RE_TITLE.search(content)
-    title = title_match.group(1).strip() if title_match else filepath.stem.replace('_', ' ').title()
-    # Clean HTML entities in title
-    title = html.unescape(title)
-
-    # Meta description
-    desc_match = RE_META_DESC.search(content)
-    description = desc_match.group(1).strip() if desc_match else ''
-
-    # If no meta description, look for a subtitle element (common pattern in your files)
-    if not description:
-        sub_match = RE_SUBTITLE.search(content)
-        if sub_match:
-            description = RE_HTML_TAGS.sub('', sub_match.group(2)).strip()
-            description = RE_WHITESPACE.sub(' ', description)
-            if len(description) > 120:
-                description = description[:117] + '…'
-
-    # Fallback: use pre-generated description from descriptions.json
-    if not description and descriptions:
-        description = descriptions.get(filepath.name, '')
-
-    description = html.unescape(description)
+    title = extract_title(content, filepath.stem)
+    description = extract_description(content, filepath.name, descriptions)
 
     # Detect visualization libraries
     tags = [name for name, pattern in COMPILED_LIBRARY_PATTERNS.items()
@@ -266,9 +225,8 @@ def inject_og_tags(content: str, filename: str, stem: str) -> str:
     image_url = f'{SITE_URL}/previews/{stem}.png'
 
     # Extract title for og:title
-    title_match = RE_TITLE.search(content)
-    title = title_match.group(1).strip() if title_match else stem.replace('_', ' ').title()
-    title = html.escape(html.unescape(title), quote=True)
+    title = extract_title(content, stem)
+    title = html.escape(title, quote=True)
 
     og_block = (
         f'\n  <!-- Open Graph / Social Sharing -->'

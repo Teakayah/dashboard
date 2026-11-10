@@ -74,7 +74,7 @@ def test_extract_description_subtitle():
     # Subtitle exceeding 120 characters
     long_text = 'A' * 125
     content4 = f'<html><body><h3 class="subtitle">{long_text}</h3></body></html>'
-    expected_long = 'A' * 120 + '…'
+    expected_long = 'A' * 117 + '…'
     assert module._extract_description(content4, 'test.html', {}) == expected_long
 
 def test_extract_description_fallback_dict():

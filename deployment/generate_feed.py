@@ -28,67 +28,10 @@ def _load_descriptions() -> dict:
 
 try:
     from git_utils import _get_batched_git_isos
+    from html_meta import extract_title as _extract_title, extract_description as _extract_description
 except ImportError:
     from deployment.git_utils import _get_batched_git_isos
-
-
-RE_TITLE = re.compile(
-    r'''
-    <title[^>]*>  # Match the opening <title> tag and any attributes
-    (.*?)         # Group 1: Non-greedily capture the inner text
-    </title>      # Match the closing </title> tag
-    ''',
-    re.IGNORECASE | re.DOTALL | re.VERBOSE,
-)
-
-RE_META_DESC = re.compile(
-    r'''
-    <meta[^>]*                  # Match the opening <meta tag and any attributes before 'name'
-    name=["\']description["\']  # Match the name attribute with either single or double quotes
-    [^>]*                       # Match any intermediate attributes before 'content'
-    content=["\'](.*?)["\']     # Group 1: Non-greedily capture the actual description text
-    ''',
-    re.IGNORECASE | re.VERBOSE,
-)
-
-RE_SUBTITLE = re.compile(
-    r'''
-    <([a-zA-Z0-9]+)                              # Group 1: Capture the HTML opening tag name (e.g., div, span, p)
-    [^>]*class=["\'][^"\']*subtitle[^"\']*["\']  # Ensure the tag has a class attribute containing 'subtitle'
-    [^>]*>                                       # Match the remainder of the opening tag
-    (.*?)                                        # Group 2: Non-greedily capture the inner content
-    </\1>                                        # Use \1 backreference to match the exact closing tag from Group 1
-    ''',
-    re.IGNORECASE | re.DOTALL | re.VERBOSE,
-)
-
-RE_HTML_TAGS = re.compile(r'<[^>]+>')
-RE_WHITESPACE = re.compile(r'\s+')
-
-def _extract_title(content: str, stem: str) -> str:
-    m = RE_TITLE.search(content)
-    raw = m.group(1).strip() if m else stem.replace('_', ' ').title()
-    return (raw
-            .replace('&amp;', '&').replace('&lt;', '<')
-            .replace('&gt;', '>').replace('&#39;', "'"))
-
-
-def _extract_description(content: str, filename: str, descriptions: dict) -> str:
-    # 1. <meta name="description">
-    m = RE_META_DESC.search(content)
-    if m:
-        return m.group(1).strip()
-
-    # 2. Subtitle element
-    # Extract inner content from elements with the 'subtitle' class.
-    m = RE_SUBTITLE.search(content)
-    if m:
-        text = RE_HTML_TAGS.sub('', m.group(2)).strip()
-        text = html_lib.unescape(RE_WHITESPACE.sub(' ', text))
-        return text[:120] + '…' if len(text) > 120 else text
-
-    # 3. Pre-generated description from descriptions.json
-    return descriptions.get(filename, '')
+    from deployment.html_meta import extract_title as _extract_title, extract_description as _extract_description
 
 
 def _build_entry(filepath: Path, descriptions: dict, git_iso: str) -> dict:
