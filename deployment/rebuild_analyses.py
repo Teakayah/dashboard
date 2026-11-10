@@ -247,18 +247,18 @@ def _inject_const(html: str, var_name: str, new_value: object) -> tuple[str, boo
     new_json = (
         new_json.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     )
-    # Regex breakdown:
-    # const {var_name}  - Matches the exact const declaration for the given variable name
-    # \s*=\s*           - Matches the assignment operator with optional surrounding whitespace
-    # \{{.*?\}}         - Non-greedily matches the JSON object payload enclosed in braces
-    # ;                 - Matches the trailing semicolon to complete the statement
-    pattern = rf"const {re.escape(var_name)}\s*=\s*\{{.*?\}};"
+    pattern = rf'''
+        const\ {re.escape(var_name)}  # Matches the exact const declaration for the given variable name
+        \s*=\s*                       # Matches the assignment operator with optional surrounding whitespace
+        \{{.*?\}}                     # Non-greedily matches the JSON object payload enclosed in braces
+        ;                             # Matches the trailing semicolon to complete the statement
+    '''
     new_html, n = re.subn(
         pattern,
         lambda m: f"const {var_name}={new_json};",
         html,
         count=1,
-        flags=re.DOTALL,
+        flags=re.DOTALL | re.VERBOSE,
     )
     return new_html, n > 0 and new_html != html
 
