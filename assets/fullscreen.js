@@ -15,6 +15,7 @@
     container.appendChild(canvas);
 
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = 'fullscreen-btn';
     btn.textContent = '⛶';
     btn.title = 'Full Screen';

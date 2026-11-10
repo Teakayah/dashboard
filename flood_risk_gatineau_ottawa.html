@@ -148,7 +148,7 @@
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
   <div class="nav-links">
-    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:document.title,url:window.location.href})}else if(navigator.clipboard){navigator.clipboard.writeText(window.location.href)}">Share</button>
+    <button type="button" class="share-btn" onclick="if(navigator.share){navigator.share({title:document.title,url:window.location.href})}else if(navigator.clipboard){navigator.clipboard.writeText(window.location.href)}">Share</button>
   </div>
 </header>
 
@@ -164,9 +164,9 @@
 </div>
 
 <div class="tabs" role="tablist" aria-label="Dashboard sections">
-  <button class="tab active" role="tab" aria-selected="true" tabindex="0" onclick="showTab('gauge')">&#127777; River Vitals</button>
-  <button class="tab" role="tab" aria-selected="false" tabindex="-1" onclick="showTab('history')">&#128200; Historical Floods</button>
-  <button class="tab" role="tab" aria-selected="false" tabindex="-1" onclick="showTab('snowpack')">&#10052; Snowpack Risk</button>
+  <button type="button" class="tab active" role="tab" aria-selected="true" tabindex="0" onclick="showTab('gauge')">&#127777; River Vitals</button>
+  <button type="button" class="tab" role="tab" aria-selected="false" tabindex="-1" onclick="showTab('history')">&#128200; Historical Floods</button>
+  <button type="button" class="tab" role="tab" aria-selected="false" tabindex="-1" onclick="showTab('snowpack')">&#10052; Snowpack Risk</button>
 </div>
 
 <!-- ══ TAB 1: GAUGE ════════════════════════════════════════════════════ -->
@@ -220,7 +220,7 @@
             <span>-1m (Dry)</span><span>0m (Live)</span><span>+1m</span><span>+2m</span><span>+3m (Extreme)</span>
           </div>
           <div id="offsetDisplay" style="text-align:center; font-size:0.75rem; font-weight:700; color:#4f8ef7; margin-top:6px;">Current Offset: 0.00m</div>
-          <button onclick="resetLevel()" style="margin-top:10px;padding:5px 16px;font-size:0.72rem;font-weight:600;background:#f0f0ec;border:1px solid #ddd;border-radius:6px;cursor:pointer;color:#555;">&#8635; Reset to Live Data</button>
+          <button type="button" onclick="resetLevel()" style="margin-top:10px;padding:5px 16px;font-size:0.72rem;font-weight:600;background:#f0f0ec;border:1px solid #ddd;border-radius:6px;cursor:pointer;color:#555;">&#8635; Reset to Live Data</button>
         </div>
       </div>
 

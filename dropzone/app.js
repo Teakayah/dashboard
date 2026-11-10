@@ -145,6 +145,7 @@ async function displayTableSchema(tableName) {
 
     const cols = getRows(schemaResult).map(r => {
         const btn = document.createElement('button');
+        btn.type = 'button';
         btn.className = 'clickable-col';
         btn.style.cursor = 'pointer';
         btn.style.textDecoration = 'underline';

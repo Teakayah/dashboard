@@ -69,3 +69,7 @@
 ## YYYY-MM-DD - Explicit Empty States for Dynamic Result Containers
 **Learning:** Container blocks for dynamic data results (like grids or tables) should never be left completely blank when empty or cleared, as this creates a confusing, broken-looking UI.
 **Action:** Always render an explicit empty state in the HTML initially and explicitly restore it via JavaScript when data is cleared to guide the user on next steps.
+
+## 2026-11-10 - Explicitly declare type='button' on all buttons
+**Learning:** Buttons inside or near form elements (or when dynamically created) can default to `type="submit"` in some contexts, potentially causing unwanted page reloads or form submissions. It is critical for web accessibility and functional correctness to explicitly set `type="button"` on any interactive element that shouldn't submit a form.
+**Action:** Add `type="button"` to all static buttons in HTML and dynamically created buttons in JS.

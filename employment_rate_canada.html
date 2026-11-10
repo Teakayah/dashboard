@@ -71,7 +71,7 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
   <div class="nav-links">
-    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:document.title,url:window.location.href})}else if(navigator.clipboard){navigator.clipboard.writeText(window.location.href)}">Share</button>
+    <button type="button" class="share-btn" onclick="if(navigator.share){navigator.share({title:document.title,url:window.location.href})}else if(navigator.clipboard){navigator.clipboard.writeText(window.location.href)}">Share</button>
   </div>
 </header>
 
@@ -81,10 +81,10 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
 <!-- insight-inject --><!-- /insight-inject -->
 
 <div class="tabs" role="tablist" aria-label="Dashboard sections">
-  <button class="tab active" role="tab" aria-selected="true" tabindex="0" onclick="showTab('rate')">📈 Employment Rate</button>
-  <button class="tab" role="tab" aria-selected="false" tabindex="-1" onclick="showTab('jobs')">👷 Jobs Created</button>
-  <button class="tab" role="tab" aria-selected="false" tabindex="-1" onclick="showTab('debt')">💰 Government Debt</button>
-  <button class="tab" role="tab" aria-selected="false" tabindex="-1" onclick="showTab('pop')">🧑‍🤝‍🧑 Population</button>
+  <button type="button" class="tab active" role="tab" aria-selected="true" tabindex="0" onclick="showTab('rate')">📈 Employment Rate</button>
+  <button type="button" class="tab" role="tab" aria-selected="false" tabindex="-1" onclick="showTab('jobs')">👷 Jobs Created</button>
+  <button type="button" class="tab" role="tab" aria-selected="false" tabindex="-1" onclick="showTab('debt')">💰 Government Debt</button>
+  <button type="button" class="tab" role="tab" aria-selected="false" tabindex="-1" onclick="showTab('pop')">🧑‍🤝‍🧑 Population</button>
 </div>
 
 <!-- ══ TAB 1: Employment Rate ═══════════════════════════════════════════════ -->
@@ -92,8 +92,8 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
   <div class="controls">
     <label>View:</label>
     <div class="btn-group">
-      <button id="rate-btnO" class="active" onclick="rateView('overlay')">All overlaid</button>
-      <button id="rate-btnS" onclick="rateView('small')">By province</button>
+      <button type="button" id="rate-btnO" class="active" onclick="rateView('overlay')">All overlaid</button>
+      <button type="button" id="rate-btnS" onclick="rateView('small')">By province</button>
     </div>
     <span class="note">Shaded bands = recessions</span>
   </div>
@@ -121,8 +121,8 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
   <div class="controls">
     <label>View:</label>
     <div class="btn-group">
-      <button id="debt-btnO" class="active" onclick="debtView('overlay')">All overlaid</button>
-      <button id="debt-btnS" onclick="debtView('small')">By province</button>
+      <button type="button" id="debt-btnO" class="active" onclick="debtView('overlay')">All overlaid</button>
+      <button type="button" id="debt-btnS" onclick="debtView('small')">By province</button>
     </div>
     <span class="note">Provincial total liabilities ($B) · 2007–2024 &nbsp;|&nbsp; Federal liabilities ($B) · 1990–2025</span>
   </div>
@@ -138,16 +138,16 @@ footer{font-size:0.7rem;color:#bbb;text-align:center;margin-top:18px;font-style:
   <div class="controls">
     <label>Metric:</label>
     <div class="btn-group">
-      <button id="pop-btnAbs"  class="active" onclick="popMetric('abs')">Total population</button>
-      <button id="pop-btnChg"  onclick="popMetric('chg')">Annual change (#)</button>
-      <button id="pop-btnPct"  onclick="popMetric('pct')">Annual change (%)</button>
+      <button type="button" id="pop-btnAbs"  class="active" onclick="popMetric('abs')">Total population</button>
+      <button type="button" id="pop-btnChg"  onclick="popMetric('chg')">Annual change (#)</button>
+      <button type="button" id="pop-btnPct"  onclick="popMetric('pct')">Annual change (%)</button>
     </div>
   </div>
   <div class="controls">
     <label>View:</label>
     <div class="btn-group">
-      <button id="pop-btnO" class="active" onclick="popView('overlay')">All overlaid</button>
-      <button id="pop-btnS" onclick="popView('small')">By province</button>
+      <button type="button" id="pop-btnO" class="active" onclick="popView('overlay')">All overlaid</button>
+      <button type="button" id="pop-btnS" onclick="popView('small')">By province</button>
     </div>
     <div class="toggle-chips" id="pop-chips" style="margin-left:8px"></div>
     <span class="note">1971–2025</span>

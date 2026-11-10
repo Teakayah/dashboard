@@ -46,6 +46,7 @@ export function renderHistory(container, sqlInput) {
 
     queryHistory.forEach(sql => {
         const chip = document.createElement('button');
+        chip.type = 'button';
         chip.className = 'history-chip';
         chip.style.fontFamily = 'inherit';
         chip.style.fontSize = 'inherit';
