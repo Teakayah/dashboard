@@ -101,3 +101,6 @@ Action: Future enhancements or additions of dynamic content into HTML templates 
 ## 2026-08-30 - Standardize Regex Documentation Pattern
 **Learning:** Complex regular expressions embedded directly in single-line strings (like HTML parsing regexes) hinder readability and create a high cognitive load for maintainers. The repository has an established pattern (e.g., in `generate_index.py`) of using `re.VERBOSE` with multiline strings and inline comments for complex regexes.
 **Action:** Always format complex regular expressions using the `re.VERBOSE` flag, separating the pattern into a multiline string where each capture group and match requirement is explicitly explained with inline comments, aligning with the repository's documentation standards.
+## $(date +%Y-%m-%d) - Documenting data profiling heuristics
+**Learning:** Functions like `generateInstantCharts` use heuristic logic (like checking for Date and Numeric columns) to determine which charts (Time-Series, Correlation, Category Distribution) to automatically generate for a dataset.
+**Action:** Always document data profiling heuristic logic with comprehensive JSDoc blocks explaining *why* the heuristic exists and *how* it determines its output, rather than relying on brief single-line comments.
