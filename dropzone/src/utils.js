@@ -161,9 +161,11 @@ export function insertAtCursor(myField, myValue) {
 
 /**
  * Wraps an async function with loading overlay state management.
+ * Automatically catches exceptions, logs them to the console, and displays an accessible error toast.
  *
  * @param {string} errorPrefix - Prefix for the error toast message.
  * @param {Function} asyncFn - The async function to execute.
+ * @returns {Promise<void>} Resolves when the async function and loading state cleanup complete.
  */
 export async function withLoading(errorPrefix, asyncFn) {
     const loadingOverlay = document.getElementById('loading');
