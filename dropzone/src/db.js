@@ -109,7 +109,7 @@ export function showInitError(statusEl, message) {
     const btn = document.createElement('button');
     btn.textContent = 'Reload without service worker';
     btn.style.cssText = 'margin-left:8px;padding:2px 8px;cursor:pointer;font-size:inherit';
-    btn.addEventListener('click', reloadWithoutSW);
+    btn.addEventListener('click', () => reloadWithoutSW());
     statusEl.appendChild(btn);
 }
 
