@@ -23,7 +23,14 @@ COMPILED_LIBRARY_PATTERNS = {
     for name, pattern in LIBRARY_PATTERNS.items()
 }
 
-RE_TITLE = re.compile(r'<title[^>]*>(.*?)</title>', re.IGNORECASE | re.DOTALL)
+RE_TITLE = re.compile(
+    r'''
+    <title[^>]*>  # Match the opening <title> tag and any attributes
+    (.*?)         # Group 1: Non-greedily capture the inner text
+    </title>      # Match the closing </title> tag
+    ''',
+    re.IGNORECASE | re.DOTALL | re.VERBOSE,
+)
 RE_META_DESC = re.compile(
     r'''
     <meta[^>]*                # Matches the opening <meta tag and any attributes before 'name'
