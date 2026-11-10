@@ -86,3 +86,7 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+
+## 2026-11-03 - Prevent premature submission on select elements
+**Learning:** Attaching 'Enter' key `keydown` listeners directly to `<select>` elements breaks standard browser behavior, as pressing 'Enter' to confirm a choice within an opened dropdown prematurely triggers the submission logic.
+**Action:** When implementing keyboard submission for standalone fields, avoid `<select>` elements. Either wrap the fields in a `<form>` element to rely on native submit behavior, or restrict custom `keydown` listeners exclusively to text `<input>` elements.
