@@ -86,3 +86,6 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+## 2026-11-10 - Enforce Color Contrast Accessibility Testing
+**Learning:** Hardcoded primary colors on dark backgrounds (like `#1d4ed8` on `#1a1a2e`) often fail WCAG AA contrast ratios (producing ~2.2:1). The axe-core `color-contrast` rule is crucial for catching these regressions automatically in CI.
+**Action:** When creating dark UI elements like unified headers, use dedicated CSS variables (e.g., `--header-accent: #60a5fa`) that ensure sufficient contrast. Always leave the `'color-contrast'` rule enabled in automated accessibility tests (like Playwright with `axe-core`) to prevent regressions.
