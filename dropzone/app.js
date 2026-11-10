@@ -104,20 +104,10 @@ async function restoreState() {
             setCurrentTableName(tables[tables.length - 1]);
             statusEl.textContent = `Restored ${tables.length} table(s)`;
 
-            schemaDisplay.textContent = '';
-            // Performance optimization: Fetch schemas concurrently to eliminate
-            // redundant sequential IPC roundtrips across the WebWorker boundary.
-            await Promise.all(tables.map(t => getTableSchemaCached(t)));
-            for (const table of tables) {
-                await displayTableSchema(table);
-            }
+            await refreshUIState();
 
             sqlInput.value = `SELECT * FROM "${escapeId(getCurrentTableName())}" LIMIT 100`;
             sqlInput.dispatchEvent(new Event('input'));
-
-            updateJoinUI();
-            updateChartBuilderUI();
-            updateConsoleActionsUI();
         }
     } catch (err) {
         console.warn('Failed to restore state:', err);
@@ -256,6 +246,21 @@ async function displayTableSchema(tableName) {
     cols.forEach(c => tableDiv.appendChild(c));
     tableDiv.appendChild(statsContainer);
     schemaDisplay.appendChild(tableDiv);
+}
+
+/**
+ * Refreshes the core UI state by rendering table schemas and updating contextual action buttons.
+ */
+async function refreshUIState() {
+    schemaDisplay.textContent = '';
+    const tables = Array.from(loadedTables);
+    await Promise.all(tables.map(t => getTableSchemaCached(t)));
+    for (const table of tables) {
+        await displayTableSchema(table);
+    }
+    updateJoinUI();
+    updateChartBuilderUI();
+    updateConsoleActionsUI();
 }
 
 /**
@@ -762,16 +767,8 @@ loadSamplesBtn.addEventListener('click', async () => {
         sqlInput.value = `SELECT * FROM "employees" JOIN "departments" ON "employees"."dept_id" = "departments"."dept_id" LIMIT 100`;
         sqlInput.dispatchEvent(new Event('input'));
 
-        schemaDisplay.textContent = '';
-        await Promise.all(Array.from(loadedTables).map(t => getTableSchemaCached(t)));
-        for (const table of loadedTables) {
-            await displayTableSchema(table);
-        }
-
         statusEl.textContent = `Loaded ${loadedTables.size} table(s)`;
-        updateJoinUI();
-        updateChartBuilderUI();
-        updateConsoleActionsUI();
+        await refreshUIState();
 
         const originalText = loadSamplesBtn.textContent;
         loadSamplesBtn.textContent = 'Samples Loaded!';
@@ -809,7 +806,6 @@ clearBtn.addEventListener('click', async () => {
         }
 
         clearLoadedTables();
-        schemaDisplay.textContent = '';
         destroyCharts(previewsContainer);
         previewsContainer.textContent = '';
         if (gridInstance) {
@@ -828,9 +824,9 @@ clearBtn.addEventListener('click', async () => {
         downloadBtn.title = 'Requires query results';
         copyJsonBtn.disabled = true;
         copyJsonBtn.title = 'Requires query results';
+
+        await refreshUIState();
         joinAssistant.style.display = 'none';
-        updateChartBuilderUI();
-        updateConsoleActionsUI();
         statusEl.textContent = 'Storage cleared';
     });
 });
