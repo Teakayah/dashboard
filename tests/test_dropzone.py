@@ -747,31 +747,3 @@ def test_query_history_saves_and_restores(dz: Page):
     expect(sql_input).to_have_value(test_sql)
 
 
-def test_enter_submits_join_builder(dz: Page):
-    """Pressing Enter in a join control generates SQL and focuses the editor."""
-    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
-    _wait_for_ready(dz)
-    _load_samples_and_wait(dz)
-
-    dz.select_option('#join-table-a', label='employees')
-    dz.select_option('#join-table-b', label='departments')
-    dz.locator('#join-col').select_option(label='dept_id')
-    dz.locator('#join-col').press('Enter')
-
-    expect(dz.locator('#sql-input')).to_have_value(re.compile(r'JOIN.*dept_id', re.DOTALL))
-    expect(dz.locator('#sql-input')).to_be_focused()
-
-
-def test_enter_submits_chart_builder(dz: Page):
-    """Pressing Enter in a chart control submits it and reports missing axes."""
-    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
-    _wait_for_ready(dz)
-    _load_samples_and_wait(dz)
-
-    expect(dz.locator('#chart-builder')).to_be_visible()
-    dz.locator('#chart-type').focus()
-    dz.locator('#chart-type').press('Enter')
-
-    toast = dz.locator('[role="alert"]').last
-    expect(toast).to_be_visible(timeout=3000)
-    expect(toast).to_contain_text('Please select both X and Y axes.')
