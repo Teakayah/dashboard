@@ -77,3 +77,7 @@
 ## 2026-10-09 - Managing Dynamic Tooltips for Disabled States
 **Learning:** Adding title tooltips to disabled buttons improves accessibility by explaining why an action is unavailable. However, if the tooltip isn't dynamically updated when the button becomes enabled, users see outdated/confusing explanations or no explanations at all.
 **Action:** When adding explanatory tooltips to disabled buttons, always pair the title attribute management with the JS logic that toggles the disabled property. Clear the title (or set it to the normal action description) when disabled = false, and restore the explanation when disabled = true.
+
+## 2026-11-10 - Accessible Feedback for Clipboard/Share Action
+**Learning:** File downloads and clipboard operations (such as clicking the 'Share' button to copy a URL) are silent to screen readers by default. The visual cue of updating the button text to 'Copied!' does not communicate completion to users with visual impairments.
+**Action:** Always trigger an `aria-live` announcement when a background file export or clipboard operation succeeds. For inline scripts where a global toast function isn't available, inject a temporary DOM element with `role="alert"` and `aria-live="assertive"` that automatically removes itself, ensuring all users receive completion feedback.

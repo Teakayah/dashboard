@@ -128,7 +128,7 @@
             background-color: #64748b;
         }
         button:disabled { background-color: #94a3b8; cursor: not-allowed; }
-        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .share-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
         .results-container {
             background: var(--card-bg);
             border-radius: 0.75rem;
@@ -448,6 +448,13 @@
             shareBtn.innerText = 'Copied!';
             setTimeout(() => { shareBtn.innerText = originalShareText; }, 2000);
           }
+          const toastEl = document.createElement('div');
+          toastEl.textContent = 'Copied URL to clipboard';
+          toastEl.setAttribute('role', 'alert');
+          toastEl.setAttribute('aria-live', 'assertive');
+          toastEl.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+          document.body.appendChild(toastEl);
+          setTimeout(() => toastEl.remove(), 5000);
         }).catch(() => {});
       }
     });
