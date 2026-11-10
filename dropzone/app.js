@@ -68,6 +68,13 @@ const generateChartBtn = document.getElementById('generate-chart');
 let lastResult = null;
 let gridInstance = null;
 
+function temporarilyUpdateBtnText(btn, newText, duration = 2000) {
+    if (!btn) return;
+    const originalText = btn.textContent;
+    btn.textContent = newText;
+    setTimeout(() => { btn.textContent = originalText; }, duration);
+}
+
 /**
  * Updates the DuckDB-Wasm initialization progress bar in the UI.
  * The progress bar is automatically hidden when progress is 0% or 100%.
@@ -718,16 +725,15 @@ downloadBtn.addEventListener('click', async () => {
     });
 });
 
-const originalCopyJsonText = copyJsonBtn.textContent;
+
 copyJsonBtn.addEventListener('click', async () => {
     if (!lastResult) return;
     const json = JSON.stringify(lastResult, null, 2);
     try {
         await navigator.clipboard.writeText(json);
         if (copyJsonBtn.textContent === 'Copied!') return;
-        copyJsonBtn.textContent = 'Copied!';
         showToast('Copied JSON to clipboard', 'success');
-        setTimeout(() => { copyJsonBtn.textContent = originalCopyJsonText; }, 2000);
+        temporarilyUpdateBtnText(copyJsonBtn, 'Copied!');
     } catch (err) {
         console.error(err);
         showToast('Clipboard Error: ' + err.message);
@@ -773,9 +779,7 @@ loadSamplesBtn.addEventListener('click', async () => {
         updateChartBuilderUI();
         updateConsoleActionsUI();
 
-        const originalText = loadSamplesBtn.textContent;
-        loadSamplesBtn.textContent = 'Samples Loaded!';
-        setTimeout(() => { loadSamplesBtn.textContent = originalText; }, 2000);
+        temporarilyUpdateBtnText(loadSamplesBtn, 'Samples Loaded!');
     });
 });
 
@@ -876,9 +880,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         statusEl.textContent = `Loaded remote table: ${tableName}`;
         updateConsoleActionsUI();
 
-        const originalText = loadRemoteDeltaBtn.textContent;
-        loadRemoteDeltaBtn.textContent = 'Table Loaded!';
-        setTimeout(() => { loadRemoteDeltaBtn.textContent = originalText; }, 2000);
+        temporarilyUpdateBtnText(loadRemoteDeltaBtn, 'Table Loaded!');
     });
 });
 
