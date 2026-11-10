@@ -73,3 +73,11 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-11-10 - Masking Playwright TimeoutErrors
+**Learning:** Using a bare `except Exception:` block around Playwright interactions (like `page.wait_for_load_state` or `wait_for_selector`) silently masks legitimate errors like browser crashes or syntax issues, making test failures difficult to debug.
+**Action:** Always import `TimeoutError` directly from `playwright.sync_api` and catch it explicitly (e.g., `except TimeoutError:`) rather than using a catch-all `Exception` block.
+
+## 2026-11-10 - Mocking Custom Module Exceptions
+**Learning:** When writing unit tests that mock external library exceptions (like Playwright's `TimeoutError`), injecting a custom local exception into the mocked module (`sys.modules`) ensures that exception matching (`except TimeoutError`) operates correctly during tests, rather than failing because it expects a generic `Exception`.
+**Action:** Define a custom local exception (e.g., `class MockTimeoutError(Exception): pass`) and explicitly inject it into the mocked module context (e.g., `patch.dict('sys.modules', {'playwright.sync_api': MagicMock(TimeoutError=MockTimeoutError)})`) to accurately simulate exception handling logic.
