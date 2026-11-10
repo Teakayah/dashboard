@@ -102,6 +102,19 @@ def test_index_footer_rss_link(page: Page):
     assert href and 'feed.xml' in href
 
 
+def test_index_search_enter_does_not_reload(page: Page):
+    """Pressing Enter in the search input should not reload the page."""
+    page.goto(BASE, wait_until="domcontentloaded", timeout=60000)
+
+    # We will detect a reload if this variable disappears
+    page.evaluate("window.__TEST_MARKER = true;")
+
+    page.locator('#search').fill("Employment")
+    page.locator('#search').press('Enter')
+    page.wait_for_timeout(100)
+    assert page.evaluate("window.__TEST_MARKER") is True, "Page reloaded after Enter in search input"
+
+
 def test_index_no_js_errors(page: Page):
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))

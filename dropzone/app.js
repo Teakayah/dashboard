@@ -590,13 +590,21 @@ async function onTableLoaded(tableName) {
     sqlInput.dispatchEvent(new Event('input'));
 }
 
-recipeSelect.addEventListener('change', () => {
+const applyQueryRecipe = () => {
     const currentTableName = getCurrentTableName();
     if (!currentTableName) return;
     const recipe = recipeSelect.value.replace(/{{TABLE}}/g, `"${escapeId(currentTableName)}"`);
     sqlInput.value = recipe;
     sqlInput.dispatchEvent(new Event('input'));
     recipeSelect.selectedIndex = 0;
+};
+
+recipeSelect.addEventListener('change', applyQueryRecipe);
+recipeSelect.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        applyQueryRecipe();
+    }
 });
 
 let sqlInputDebounceTimeout;

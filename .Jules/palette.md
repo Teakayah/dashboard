@@ -86,3 +86,10 @@
 **Learning:** Standalone text inputs paired with action buttons (like a URL input to load a remote table) that aren't wrapped in a `<form>` tag fail to submit when the user presses 'Enter'. This breaks a core user expectation for keyboard navigation.
 **Action:** Whenever a text input and button function as a logical form but lack a `<form>` wrapper, explicitly add a `keydown` listener for the 'Enter' key on the input to trigger the button's action programmatically.
 
+## 2026-11-09 - Prevent default behavior of search inputs on Enter key
+**Learning:** The global search input on the index page is used exclusively to dynamically filter grid content via an `input` event listener, without any actual form submission. Pressing the `Enter` key inside the search input implicitly attempts to submit a form (if wrapped) or may interact unexpectedly depending on the browser behavior.
+**Action:** When a global search input filters items dynamically, add a `keydown` event listener to explicitly `e.preventDefault()` for the `Enter` key to avoid any unwanted navigation or native browser submission events that disrupt the user experience.
+
+## 2026-11-09 - Allow keyboard submission (Enter) on select inputs
+**Learning:** `select` elements trigger actions based on `change` events. However, users interacting through the keyboard may find it unintuitive if pressing `Enter` on the `select` element does not commit the chosen action when it acts as an immediate trigger (e.g. for applying a recipe), making it less accessible for keyboard users.
+**Action:** When a `<select>` element acts as a command trigger, ensure a `keydown` event listener is explicitly provided that executes the trigger on `Enter`.

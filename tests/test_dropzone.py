@@ -671,6 +671,25 @@ def test_query_recipes_populates_sql_input(dz: Page):
     expect(dz.locator('#run-query')).to_be_enabled()
 
 
+def test_query_recipes_enter_key_submits(dz: Page):
+    """Pressing Enter in the query recipe select should apply the recipe."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill("")
+    dz.select_option('#query-recipes', label="Show Top 10 Rows")
+    # explicit evaluate dispatch rather than playright press is required here
+    # to simulate the enter key correctly for the target dropdown select element
+    dz.evaluate("document.getElementById('query-recipes').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))")
+    # Because select_option triggers the change event natively, it might have cleared the index back to 0.
+    # so we just re-select it using evaluate without triggering change event
+    dz.evaluate("document.getElementById('query-recipes').value = 'SELECT * FROM {{TABLE}} LIMIT 10'")
+    dz.evaluate("document.getElementById('query-recipes').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))")
+
+    expect(dz.locator('#sql-input')).to_have_value(re.compile(r'SELECT \* FROM "(?:employees|departments)" LIMIT 10'))
+
 def test_query_recipe_summarize_executes(dz: Page):
     """Selecting the SUMMARIZE recipe must populate the SQL editor and execute profiling columns."""
     dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
