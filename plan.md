@@ -1,0 +1,4 @@
+1. **Apply missing error boundaries to Clipboard fallback actions:** Update `share-btn` inline HTML handlers across `employment_rate_canada.html`, `flood_risk_gatineau_ottawa.html`, and `nhpi_big6_comparison.html` so that `navigator.clipboard.writeText` rejects are explicitly caught and surfaced via `showToast` or `alert`.
+2. **Add Playwright tests for error fallbacks:** Add tests in `tests/test_interactivity.py` and `tests/test_analysis_pages.py` to assert that simulating a clipboard rejection on the share buttons triggers the expected error dialog.
+3. **Pre-commit:** Complete pre commit steps to ensure proper testing, verification, review, and reflection are done.
+4. **Submit PR:** Submit a PR named "🕵️ Inspector: [Testing improvement]" detailing the changes and how it fixes a blind spot.

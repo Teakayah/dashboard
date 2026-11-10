@@ -73,3 +73,7 @@
 ## 2026-10-07 - Python Playwright coverage limitations
 **Learning:** `pytest-cov` only measures Python code execution. It cannot measure frontend JavaScript code (e.g. `assets/fullscreen.js`) executed inside the Playwright browser.
 **Action:** Do not attempt to use `--cov=assets` for JS files. Focus on writing good functional Playwright tests to verify the UI behavior.
+
+## 2026-11-09 - Alert/Toast fallback on Share Button Clipboard Errors
+**Learning:** `navigator.clipboard.writeText` failures in UI components (like the share button fallback) must not be silently swallowed. They require a `.catch()` that issues a user-visible notification. When a global `showToast` method is not reliably available across all views (e.g., standard analysis pages vs `dropzone.html`), the exception handler should fall back to the native `alert()` API to ensure the error boundary remains testable and visible. Playwright's `page.on("dialog", ...)` can successfully assert these fallback alerts.
+**Action:** When adding missing clipboard `.catch()` blocks in HTML event handlers across disparate UI pages, always implement a robust fallback logic (e.g., `typeof showToast !== 'undefined' ? showToast(...) : alert(...)`) and write corresponding Playwright tests that inject mock `clipboard` rejections to explicitly assert the error notification.

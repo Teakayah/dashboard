@@ -193,6 +193,42 @@ class TestFloodPageButtons:
         clipboard_content = page.evaluate("navigator.clipboard.readText()")
         assert "flood_risk_gatineau_ottawa.html" in clipboard_content
 
+    def test_share_button_shows_error_toast_on_clipboard_failure(self, page: Page):
+        """Clicking share when clipboard write fails must show an error toast, not silently fail."""
+        _load_page(page, FLOOD_URL)
+
+        # Disable native share to trigger clipboard fallback
+        page.evaluate("delete Navigator.prototype.share")
+
+        # Force clipboard.writeText to reject
+        page.evaluate("""
+            Object.defineProperty(navigator, 'clipboard', {
+                value: {
+                    writeText: () => Promise.reject(new Error('Write permission denied'))
+                },
+                writable: true,
+                configurable: true
+            });
+        """)
+
+        share_btn = page.locator(".share-btn")
+        expect(share_btn).to_be_visible()
+
+        # Track dialogs in case we hit a browser alert() fallback
+        dialogs = []
+        page.on("dialog", lambda dialog: (dialogs.append(dialog.message), dialog.dismiss()))
+
+        share_btn.click()
+
+        # Check if fallback alert was shown
+        try:
+            page.wait_for_function("() => arguments[0].length > 0", arg=dialogs, timeout=3000)
+        except Exception:
+            pass
+
+        assert len(dialogs) > 0, "Expected a toast or alert to be shown on clipboard failure"
+        assert "Clipboard Error" in dialogs[0], f"Unexpected alert message: {dialogs[0]}"
+
     def test_reset_button_reverts_offset(self, page: Page):
         _load_page(page, FLOOD_URL)
         slider = page.locator("#levelSlider")

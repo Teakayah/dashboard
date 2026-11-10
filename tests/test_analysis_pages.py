@@ -299,3 +299,53 @@ def test_flood_snowpack_chart_renders(page: Page):
         }
     """)
     assert height > 0, 'Snowpack panel canvas has zero height'
+
+def test_employment_share_button_shows_error_toast_on_clipboard_failure(page: Page):
+    """Clicking share when clipboard write fails must show an error toast, not silently fail."""
+    _load(page, EMPLOYMENT_URL)
+
+    page.evaluate("delete Navigator.prototype.share")
+    page.evaluate("""
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText: () => Promise.reject(new Error('Write permission denied')) },
+            writable: true, configurable: true
+        });
+    """)
+
+    share_btn = page.locator(".share-btn")
+    expect(share_btn).to_be_visible()
+
+    # Hook early
+    dialogs = []
+    page.on("dialog", lambda dialog: (dialogs.append(dialog.message), dialog.dismiss()))
+
+    # Click using evaluate to bypass locator waiting constraints for JS alerts
+    page.evaluate('document.querySelector(".share-btn").click()')
+
+    assert len(dialogs) > 0, "Expected a toast or alert to be shown on clipboard failure"
+    assert "Clipboard Error" in dialogs[0], f"Unexpected alert message: {dialogs[0]}"
+
+def test_nhpi_share_button_shows_error_toast_on_clipboard_failure(page: Page):
+    """Clicking share when clipboard write fails must show an error toast, not silently fail."""
+    _load(page, NHPI_URL)
+
+    page.evaluate("delete Navigator.prototype.share")
+    page.evaluate("""
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText: () => Promise.reject(new Error('Write permission denied')) },
+            writable: true, configurable: true
+        });
+    """)
+
+    share_btn = page.locator(".share-btn")
+    expect(share_btn).to_be_visible()
+
+    # Hook early
+    dialogs = []
+    page.on("dialog", lambda dialog: (dialogs.append(dialog.message), dialog.dismiss()))
+
+    # Click using evaluate to bypass locator waiting constraints for JS alerts
+    page.evaluate('document.querySelector(".share-btn").click()')
+
+    assert len(dialogs) > 0, "Expected a toast or alert to be shown on clipboard failure"
+    assert "Clipboard Error" in dialogs[0], f"Unexpected alert message: {dialogs[0]}"
