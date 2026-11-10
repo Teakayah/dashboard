@@ -90,6 +90,8 @@ renderHistory(queryHistoryEl, sqlInput);
  * Restores the Analytical Drop-Zone UI state after a browser reload.
  * Queries the DuckDB instance's information_schema to discover tables that were
  * persisted across sessions (e.g., within OPFS).
+ *
+ * @returns {Promise<void>} Resolves when the UI and cache are fully restored.
  */
 async function restoreState() {
     const conn = getConnection();
@@ -260,6 +262,9 @@ async function displayTableSchema(tableName) {
 
 /**
  * Toggles and populates the Join Assistant UI based on the current state of loaded tables.
+ * Displays the UI if 2 or more tables are available, enabling foreign key joins.
+ *
+ * @returns {void}
  */
 function updateJoinUI() {
     if (loadedTables.size >= 2) {
@@ -282,6 +287,9 @@ function updateJoinUI() {
 
 /**
  * Dynamically queries the DuckDB schema to populate the join column dropdowns.
+ * Identifies shared columns between the two selected tables to suggest valid join keys.
+ *
+ * @returns {Promise<void>} Resolves when the column dropdown is populated.
  */
 async function updateJoinColumns() {
     const tableA = joinTableA.value;
@@ -311,6 +319,9 @@ async function updateJoinColumns() {
 
 /**
  * Updates the disabled state and tooltips of the console action buttons.
+ * Action buttons like Export and Clear are disabled when no tables are loaded.
+ *
+ * @returns {void}
  */
 function updateConsoleActionsUI() {
     const hasData = loadedTables.size > 0;
@@ -327,6 +338,9 @@ function updateConsoleActionsUI() {
 
 /**
  * Initializes and populates the Chart Builder UI drop-downs.
+ * Automatically filters columns to ensure only numeric columns can be selected for the Y-Axis.
+ *
+ * @returns {Promise<void>} Resolves when the Chart Builder UI is fully populated.
  */
 async function updateChartBuilderUI() {
     const currentTableName = getCurrentTableName();
