@@ -129,7 +129,11 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
 
     if (numericCols.length === 0) return;
 
-    // 1. Time-Series Trend detection
+    /**
+     * 1. Time-Series Trend detection
+     * Displays a line chart if the table contains both date and numeric columns.
+     * Useful for visualizing trends and changes in numeric values over time.
+     */
     if (dateCols.length > 0 && numericCols.length > 0) {
         const dCol = dateCols[0];
         const nCol = numericCols[0];
@@ -154,7 +158,12 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
         }, previewsContainer);
     }
 
-    // 2. Correlation detection
+    /**
+     * 2. Correlation detection
+     * Evaluates up to 10 pairs of numeric columns using DuckDB's `corr` function.
+     * Renders a scatter plot of the pair with the highest absolute correlation
+     * to highlight potential linear relationships between variables.
+     */
     if (numericCols.length >= 2) {
         try {
             let bestPair = [numericCols[0], numericCols[1]];
@@ -204,7 +213,12 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
         }
     }
 
-    // 3. Category Distribution
+    /**
+     * 3. Category Distribution
+     * Displays a bar chart if the table contains both text and numeric columns.
+     * Aggregates the numeric column by the text category to show the top 10 values,
+     * highlighting the distribution of data across discrete categories.
+     */
     if (textCols.length > 0 && numericCols.length > 0) {
         const tCol = textCols[0];
         const nCol = numericCols[0];
