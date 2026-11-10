@@ -726,7 +726,7 @@ def test_main_with_none_responsive_preset_removes_enhancer(tmp_path, monkeypatch
     module = load_generate_index_module()
     analysis = tmp_path / 'sample.html'
     analysis.write_text(
-        '<html><head><title>Sample</title></head><body><!-- responsive-inject-v6 -->\n<style>body { color: red; }</style>\n<script>alert(1);</script>\n<p>Hello</p></body></html>',
+        '<html><head><title>Sample</title></head><body><!-- responsive-inject-v7 -->\n<style>body { color: red; }</style>\n<script>alert(1);</script>\n<p>Hello</p></body></html>',
         encoding='utf-8',
     )
 
@@ -737,6 +737,6 @@ def test_main_with_none_responsive_preset_removes_enhancer(tmp_path, monkeypatch
     module.main()
 
     content = analysis.read_text(encoding='utf-8')
-    assert '<!-- responsive-inject-v6 -->' not in content
+    assert '<!-- responsive-inject-v7 -->' not in content
     assert '<script>alert(1);</script>' not in content
     assert '<p>Hello</p>' in content
