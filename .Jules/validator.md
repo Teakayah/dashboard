@@ -62,3 +62,7 @@ Coverage Gap: Analysis page UI tests used hardcoded `page.wait_for_timeout` afte
 Learning: Fixed timeouts either waste execution time or fail on slower CI machines during asynchronous Chart.js rendering and DOM state transitions.
 Assertion: Replace `page.wait_for_timeout` with Playwright's native `expect(locator).to_have_class(...)` and `page.wait_for_function(...)` auto-retrying assertions.
 
+## 2026-11-11 - Narrow exceptions for reliability
+Coverage Gap: `tests/conftest.py` and `tests/test_usability.py` contained generic `except Exception:` blocks, allowing unrelated errors (like unhandled NameErrors, unexpected server shutdown, browser crashes) to be swallowed silently as expected control flow timeouts.
+Learning: Swallowing generic exceptions directly affects CI integrity, as it hides the actual reason for pipeline failure.
+Assertion: Specify precise error types such as `subprocess.SubprocessError` and `playwright.sync_api.TimeoutError` to only trap the intended behaviors (git command issues and UI loading timeouts).
