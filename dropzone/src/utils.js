@@ -138,13 +138,7 @@ export function showToast(msg, type = 'error') {
  */
 export function insertAtCursor(myField, myValue) {
     if (myField.selectionStart !== undefined) {
-        const startPos = myField.selectionStart;
-        const endPos = myField.selectionEnd;
-        myField.value = myField.value.substring(0, startPos)
-            + myValue
-            + myField.value.substring(endPos, myField.value.length);
-        myField.selectionStart = startPos + myValue.length;
-        myField.selectionEnd = startPos + myValue.length;
+        myField.setRangeText(myValue, myField.selectionStart, myField.selectionEnd, 'end');
     } else {
         myField.value += myValue;
     }
