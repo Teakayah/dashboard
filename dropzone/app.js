@@ -750,7 +750,11 @@ loadSamplesBtn.addEventListener('click', async () => {
         }
 
         if (queries.length > 0) {
-            await Promise.all(queries.map(q => conn.query(q)));
+            // Performance optimization: Combine multiple CREATE TABLE statements into a single string
+            // and execute them in one conn.query() call. This minimizes IPC roundtrips across the WebWorker boundary,
+            // significantly speeding up the loading of multiple sample tables.
+            const batchQuery = queries.join('\n');
+            await conn.query(batchQuery);
         }
 
         for (const tableName of tableNames) {
