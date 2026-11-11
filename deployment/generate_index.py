@@ -709,10 +709,14 @@ def inject_share_fix(content: str, filename: str) -> str:
 
     # Match both the old bare version and the previously injected feature-detected version
     pattern = re.compile(
-        r'onclick="navigator\.share\({title:\s*document\.title,\s*url:\s*window\.location\.href}\)"|'
-        r'onclick="if\(navigator\.share\)\{navigator\.share\(\{title:document\.title,'
-        r'url:window\.location\.href\}\)\}else if\(navigator\.clipboard\)'
-        r'\{navigator\.clipboard\.writeText\(window\.location\.href\)\}"'
+        r'''
+        onclick="navigator\.share\({title:\s*document\.title,\s*url:\s*window\.location\.href}\)"  # Match the old bare version
+        |                                                                                           # OR
+        onclick="if\(navigator\.share\)\{navigator\.share\(\{title:document\.title,                 # Match the feature-detected version
+        url:window\.location\.href\}\)\}else\ if\(navigator\.clipboard\)                            # Fallback to clipboard if share is unsupported
+        \{navigator\.clipboard\.writeText\(window\.location\.href\)\}"                              # Execute clipboard write
+        ''',
+        re.VERBOSE
     )
 
     new_content, count = pattern.subn(safe, content)
