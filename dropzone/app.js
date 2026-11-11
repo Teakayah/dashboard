@@ -853,7 +853,9 @@ remoteDeltaUrl.addEventListener('keydown', (e) => {
 // Initialize state
 remoteDeltaUrl.dispatchEvent(new Event('input'));
 
-loadRemoteDeltaBtn.addEventListener('click', async () => {
+const remoteDeltaForm = document.getElementById('remote-delta-form');
+remoteDeltaForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
     const url = remoteDeltaUrl.value.trim();
     if (!url) return;
 
