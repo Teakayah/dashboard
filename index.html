@@ -348,6 +348,12 @@
     };
   }
 
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      input.blur();
+    }
+  });
+
   input.addEventListener('input', debounce(() => {
     const q = input.value.trim().toLowerCase();
     let visibleCount = 0;
