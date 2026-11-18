@@ -44,6 +44,7 @@ const exportDbBtn = document.getElementById('export-db');
 const recipeSelect = document.getElementById('query-recipes');
 const schemaDisplay = document.getElementById('schema-display');
 const previewsContainer = document.getElementById('instant-previews');
+const remoteDeltaForm = document.getElementById('remote-delta-form');
 const remoteDeltaUrl = document.getElementById('remote-delta-url');
 const loadRemoteDeltaBtn = document.getElementById('load-remote-delta');
 const initProgressContainer = document.getElementById('init-progress-container');
@@ -823,7 +824,12 @@ clearBtn.addEventListener('click', async () => {
         }
 
         clearLoadedTables();
-        schemaDisplay.textContent = '';
+        showEmptyState(
+            schemaDisplay,
+            'No tables loaded',
+            'Drop a file above or use the sample data to get started.',
+            'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4'
+        );
         destroyCharts(previewsContainer);
         previewsContainer.textContent = '';
         destroyGrid();
@@ -850,19 +856,11 @@ remoteDeltaUrl.addEventListener('input', () => {
     loadRemoteDeltaBtn.title = hasUrl ? 'Load Table' : 'Requires a valid URL';
 });
 
-remoteDeltaUrl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        if (!loadRemoteDeltaBtn.disabled) {
-            loadRemoteDeltaBtn.click();
-        }
-    }
-});
-
 // Initialize state
 remoteDeltaUrl.dispatchEvent(new Event('input'));
 
-loadRemoteDeltaBtn.addEventListener('click', async () => {
+remoteDeltaForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
     const url = remoteDeltaUrl.value.trim();
     if (!url) return;
 
@@ -883,7 +881,7 @@ loadRemoteDeltaBtn.addEventListener('click', async () => {
         await onTableLoaded(tableName);
 
         statusEl.textContent = `Loaded remote table: ${tableName}`;
-        updateConsoleActionsUI();
+        await refreshUIPanels();
 
         const originalText = loadRemoteDeltaBtn.textContent;
         loadRemoteDeltaBtn.textContent = 'Table Loaded!';

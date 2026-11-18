@@ -633,6 +633,13 @@ def build_html(analyses: list[dict]) -> str:
     }}
   }});
 
+  input.addEventListener('keydown', (e) => {{
+    if (e.key === 'Enter') {{
+      e.preventDefault();
+      input.blur();
+    }}
+  }});
+
   function debounce(func, wait) {{
     let timeout;
     return function(...args) {{
