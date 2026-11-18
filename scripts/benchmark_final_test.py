@@ -11,8 +11,20 @@ lfs_csv = ROOT / '14100287-eng' / '14100287.csv'
 
 
 def _clean(val: str) -> Optional[float]:
+    """
+    Return float or None for Stats Canada VALUE cells.
+
+    Statistics Canada uses specific symbols in data cells that indicate null,
+    suppressed, or unreliable data:
+    - '..' : Not available for a specific reference period
+    - 'x'  : Suppressed to meet the confidentiality requirements of the Statistics Act
+    - 'F'  : Too unreliable to be published
+    - 'E'  : Use with caution
+    - 'r'  : Revised
+    - 'p'  : Preliminary
+    """
     v = val.strip()
-    if v in ('', '..', 'F', 'x', 'E', 'r', 'p'):
+    if v in {'', '..', 'F', 'x', 'E', 'r', 'p'}:
         return None
     try:
         return float(v)

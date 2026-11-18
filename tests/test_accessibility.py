@@ -132,7 +132,7 @@ def test_dropzone_status_has_live_region(page: Page):
     live = page.evaluate(
         "document.getElementById('status')?.getAttribute('aria-live')"
     )
-    assert live in ('polite', 'assertive'), (
+    assert live in {'polite', 'assertive'}, (
         f'#status is missing aria-live (got {live!r}) — screen readers won\'t '
         'announce DuckDB init messages'
     )
