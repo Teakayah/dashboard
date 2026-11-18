@@ -1,6 +1,8 @@
-name: CI (PR Validation)
+name: CI (Validation)
 
 on:
+  push:
+    branches: [integration]
   pull_request:
     branches: [integration, main]
 
@@ -14,7 +16,7 @@ permissions:
 jobs:
   repo-hygiene:
     name: Verify No Forbidden Generated Files
-    if: github.base_ref == 'integration'
+    if: github.event_name == 'pull_request' && github.base_ref == 'integration'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

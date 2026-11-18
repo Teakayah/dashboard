@@ -15,19 +15,18 @@ deployment/         Python pipeline (regenerates index, analyses, feed, previews
 dropzone/           Drop-Zone front-end + vendored DuckDB-Wasm / Grid.js
 assets/             theme.css, fullscreen.js
 scripts/            One-off utilities, benchmarks
-tests/              pytest + Playwright (Python only; front-end is uncovered)
+tests/              pytest + Playwright (Python pipeline + Drop-Zone, a11y, and UI suites)
 *.html, index.html, Generated; see §3 for the commit policy
 feed.xml, previews/
 ```
 
 ## 3. Git workflow
 
-- `main` — deployed; CI commits regenerated artifacts here.
-- `integration` — target for all human / agent PRs.
-- Feature branches branch from and target `integration`. Squash-merge.
-- CI (`.github/workflows/ci-automerge.yml`) runs on PRs into `main` from `integration`: pytest → merge → regenerate → push.
-- **Generated files (`index.html`, root `*.html`, `feed.xml`, `previews/`, `favicon.ico`, `descriptions.json`) live on `main` only.** Don't commit them from feature branches. Edit the source (in `deployment/` and `source/`) and let CI render.
-- Exception: `dropzone.html` at root is source and may be edited on feature branches.
+- `integration` — local development and target for feature PRs. Pushing to `integration` or opening a PR runs `.github/workflows/ci.yml` (Python + Playwright tests).
+- `main` — production branch served by GitHub Pages. Changes are promoted from `integration` → `main` via human-reviewed PR merge (no auto-merge on PR creation).
+- When `main` is updated, `.github/workflows/deploy.yml` runs once to regenerate `index.html`, `feed.xml`, `previews/`, and analysis pages, commits any updated artifacts to `main` with `[skip ci]`, and fast-forwards `origin/integration` to `main` so both branches stay synchronized.
+- **Do not manually commit generated output files (`index.html`, root analysis `*.html`, `feed.xml`, `previews/`, `favicon.ico`, `descriptions.json`) on feature branches.** Edit the sources in `deployment/` and `source/`, and let CI render them on `main`.
+- Exception: `dropzone.html` at root is source and may be edited on `integration` or feature branches.
 
 ## 4. Coding rules (the ones that have been violated)
 
@@ -42,16 +41,16 @@ feed.xml, previews/
 
 ## 5. Testing
 
-- `pytest tests/` — Python-side only. Front-end is uncovered (TODO §4).
+- `pytest tests/` covers both the Python deployment pipeline and Playwright front-end suites (`test_dropzone.py`, `test_accessibility.py`, `test_analysis_pages.py`, `test_interactivity.py`, `test_service_worker.py`, `test_fullscreen.py`, `test_usability.py`).
 - Add a Playwright test next to any front-end change you make. Tests passing does not equal feature working when no test exercises the feature.
 
 ## 6. AI-agent posture
 
-This repo has accumulated churn and dead code from multiple agents (`palette/`, `validator/`, `janitor/`, `bolt-`, `scribe-`, `jules/`). When acting as an agent here:
+When operating as an agent here:
 
 - One concern per PR, small and focused. No drive-by reformatting.
 - No new features unless asked — prefer closing items in `TODO.md`.
-- Prefer **deletion** when consolidating duplicated code from prior agent passes.
+- Prefer **deletion** when consolidating duplicated code.
 - Never auto-merge without a human review path.
 - Update `TODO.md` when you complete or invalidate an item there.
 

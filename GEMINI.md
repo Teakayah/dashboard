@@ -18,7 +18,7 @@ deployment/         Python pipeline: generate_index, rebuild_analyses, refresh, 
 dropzone/           Drop-Zone front-end (app.js + vendored DuckDB-Wasm + Grid.js)
 assets/             theme.css, fullscreen.js
 scripts/            One-off utilities and benchmarks
-tests/              pytest + Playwright (Python-side only; front-end is currently untested)
+tests/              pytest + Playwright (Python pipeline + Drop-Zone, a11y, and UI suites)
 source/             Raw data inputs (not always committed)
 *.html, feed.xml,
 previews/, index.html  Generated artifacts (see §3)
@@ -27,18 +27,15 @@ previews/, index.html  Generated artifacts (see §3)
 ## 3. Git workflow
 
 **Branching:**
-- `main` — production, deployed by GitHub Pages. CI commits regenerated artifacts here.
-- `integration` — all human + agent PRs target this branch.
-- Feature branches branch from and target `integration`.
+- `integration` — local development and target for feature PRs. Pushing to `integration` or opening a PR runs `.github/workflows/ci.yml` (Python + Playwright tests).
+- `main` — production branch served by GitHub Pages. Changes are promoted from `integration` → `main` via human-reviewed PR merge (no auto-merge on PR creation).
 
-**Merging:** Squash and merge into `integration`. CI auto-merges `integration` → `main` when a PR from `integration` is opened against `main`.
+**Deploying & syncing:**
+- When `main` is updated, `.github/workflows/deploy.yml` runs once to regenerate `index.html`, `feed.xml`, `previews/`, and analysis pages, commits any updated artifacts to `main` with `[skip ci]`, and fast-forwards `origin/integration` to `main` so both branches stay synchronized.
 
 **Generated artifacts** (`index.html`, the per-analysis `*.html` at the repo root, `feed.xml`, `previews/`, `favicon.ico`, `descriptions.json`):
-- These live on `main` only. GitHub Pages serves from the repo root; CI regenerates them on every merge.
-- **Never commit generated files from `integration` or feature branches.** Edit the sources in `deployment/` and `source/`, then let CI render the canonical versions on `main`.
-- `dropzone.html` at root is source — it may be edited on feature branches.
-
-`.github/workflows/ci-automerge.yml` runs on `pull_request` against `main`. It runs pytest, merges `integration`, regenerates artifacts, and pushes back to `main`.
+- **Do not manually commit generated output files on feature branches.** Edit the sources in `deployment/` and `source/`, then let CI render the canonical versions on `main`.
+- `dropzone.html` at root is source — it may be edited on `integration` or feature branches.
 
 ## 4. Style and behaviour rules
 
@@ -53,19 +50,19 @@ previews/, index.html  Generated artifacts (see §3)
 
 ## 5. Testing
 
-- `pytest tests/` covers the Python deployment pipeline only.
-- Front-end coverage is currently a gap (see `TODO.md` §4). When you add front-end behaviour, add a Playwright test in `tests/test_usability.py` or a sibling file.
+- `pytest tests/` covers both the Python deployment pipeline and Playwright front-end suites (`test_dropzone.py`, `test_accessibility.py`, `test_analysis_pages.py`, `test_interactivity.py`, `test_service_worker.py`, `test_fullscreen.py`, `test_usability.py`).
+- When you add front-end behaviour, add a Playwright test in `tests/test_usability.py` or a sibling file.
 - Do not mark a task complete on the basis of tests passing if the tests do not exercise the feature you changed.
 
 ## 6. AI-agent specific
 
-This repo has historically accepted PRs from multiple automated agents (`palette/`, `validator/`, `janitor/`, `bolt-`, `scribe-`, `jules/`). The result has been code churn, dead code, and regressions that slipped past auto-merge. When operating as an agent:
+When operating as an agent:
 
 - **Small, focused PRs.** One concern per PR. No drive-by reformatting.
 - **No new features unless explicitly requested.** Prefer fixing existing TODOs.
 - **Read `TODO.md` first.** Do not re-introduce items already flagged as broken.
 - **Never auto-merge without a human review path.** If you have permission to merge, still request review.
-- **Prefer deletion over addition** when consolidating duplicated code from prior agent merges.
+- **Prefer deletion over addition** when consolidating duplicated code.
 
 ## 7. Tools available
 

@@ -27,7 +27,7 @@ This project is actively being refactored. Please read [`TODO.md`](TODO.md) befo
 *   **Database**: [DuckDB-Wasm](https://duckdb.org/docs/api/wasm) for high-performance in-browser SQL.
 *   **Visualization**: [Chart.js](https://www.chartjs.org/) and [Grid.js](https://gridjs.io/).
 *   **ETL Pipeline**: Python-based automation for StatCan data extraction and HTML injection.
-*   **Testing**: Test suite using `pytest` and Playwright (currently covers Python deployment scripts, frontend coverage is a work in progress).
+*   **Testing**: Test suite using `pytest` and Playwright covering both Python deployment scripts and front-end UI/accessibility suites.
 
 ## 📊 Pre-built Analyses
 *   **[Canadian Labour & Fiscal Dashboard](employment_rate_canada.html)**: Displays Statistics Canada's seasonally adjusted employment rate data for Canadian provincial governments.
@@ -35,12 +35,9 @@ This project is actively being refactored. Please read [`TODO.md`](TODO.md) befo
 *   **[Ottawa-Gatineau Flood Risk](flood_risk_gatineau_ottawa.html)**: Interactive flood risk dashboard for Ottawa-Gatineau: Station 02KF005 level simulator, historical flood peaks, snowpack (SWE) risk, and flood zone map.
 
 ## 🔄 Contribution Workflow
-This project uses a dual-branch CI workflow:
-*   **`integration`**: All feature branches and Pull Requests must target this branch.
-*   **`main`**: Reserved exclusively for CI-generated production artifacts (HTML, XML, PNGs) and must never be committed to directly by contributors.
-
-## ⚠️ Known Issues
-Before proposing changes, please read the [TODO.md](TODO.md) file to check for current critical bugs and ongoing accessibility/hygiene work that should not be regressed.
+This project uses a two-branch development and release workflow:
+*   **`integration`**: Local development and target for feature PRs. Pushing or opening a PR runs `.github/workflows/ci.yml` (Python + Playwright tests).
+*   **`main`**: Published to GitHub Pages. Updated via human-reviewed PR merge from `integration` (when `main` is updated, `.github/workflows/deploy.yml` regenerates production artifacts and fast-forwards `integration` to keep both branches in sync).
 
 ## 🚀 Getting Started
 
@@ -73,12 +70,6 @@ Before proposing changes, please read the [TODO.md](TODO.md) file to check for c
     *   `nhpi_big6_comparison.html`: Compares New Housing Price Indices across six major Canadian cities.
     *   `flood_risk_gatineau_ottawa.html`: Visualizes flood risk assessment data for the Gatineau-Ottawa region.
 *   **Update Data**: Run `python3 deployment/refresh.py` to rebuild all analysis pages from source data.
-
-
-### Contributing & Branch Workflow
-This project uses a dual-branch workflow:
-*   `integration`: All PRs and active development should target this branch. AI-agent branches and feature work land here.
-*   `main`: Reserved exclusively for CI-generated production artifacts (HTML, XML, PNGs). **Do not commit directly to `main`.**
 
 ## 🧪 Development & Testing
 Run the test suite to verify data extraction and UI components.

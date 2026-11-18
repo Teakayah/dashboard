@@ -129,9 +129,9 @@ The site fails several WCAG 2.1 AA checks. Failures are not edge cases — they 
 Recent history shows long sequences of merges from `palette/…`, `validator/…`, `janitor/…`, `bolt-…`, `scribe-…`, `jules/…`. Some merges introduce dead code (e.g. duplicated styles, unused vars cleaned up two commits later).
 
 **Actions:**
-- [ ] Require **human review on every agent PR** before merge into `integration` — currently the CI auto-merges integration → main without gating.
+- [x] Require **human review on every PR** before merging `integration` → `main` (replaced `ci-automerge.yml` with human-merged PRs + post-push `.github/workflows/deploy.yml` that auto-syncs `main` → `integration`).
 - [ ] Add a branch-name allow-list / required-check rule on `integration`.
-- [x] Pruned inactive and regressive agent branches from the repository (audited PRs #795–#809, consolidated valid improvements into `integration`, closed redundant PRs, and pruned remote branches).
+- [x] Pruned obsolete `.Jules/` persona journals and all 136 stale remote branches from `origin`.
 
 ### 3.3 Dead / suspect code
 - [x] `dropzone/vendor/duckdb/duckdb-wasm-browser.mjs` — verified as already deleted.
