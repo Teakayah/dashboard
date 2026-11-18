@@ -99,7 +99,7 @@ def main():
         sys.exit(f'HTTP server did not start on localhost:{PORT}')
 
     try:
-        from playwright.sync_api import sync_playwright
+        from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
     except ImportError:
         server.terminate()
         sys.exit('Playwright is not installed. Run: pip install playwright && python -m playwright install chromium')
@@ -123,7 +123,7 @@ def main():
                     page.wait_for_selector('canvas, .grid, .container', timeout=10000)
                     # Give charts a moment to animate
                     page.wait_for_timeout(1000)
-                except Exception:
+                except PlaywrightTimeoutError:
                     pass
                 
                 # Capture the top of the page (which usually contains the main viz)

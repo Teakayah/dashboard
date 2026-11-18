@@ -7,7 +7,7 @@ Requires: pip install pytest pytest-playwright
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page, expect, TimeoutError as PlaywrightTimeoutError
 
 BASE = 'http://localhost:8765'
 REPO_ROOT = Path(__file__).parent.parent
@@ -29,7 +29,7 @@ def analysis_pages() -> list[str]:
 def _wait_for_networkidle(page: Page, timeout: int = 8000):
     try:
         page.wait_for_load_state('networkidle', timeout=timeout)
-    except Exception:  # noqa: BLE001, S110
+    except PlaywrightTimeoutError:  # noqa: S110
         pass
 
 def test_index_title(page: Page):
@@ -254,12 +254,8 @@ def test_analysis_page_no_vertical_clip_desktop(page: Page, filename: str):
     assert clipped is None, f'{filename}: canvas overflows its container — {clipped}'
 
 
-def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
-    page.set_viewport_size({'width': 1280, 'height': 800})
-    page.goto(f'{BASE}/employment_rate_canada.html', wait_until='domcontentloaded', timeout=60000)
-    _wait_for_networkidle(page)
-
-    # Disable animations on all existing Chart instances and future ones
+def _disable_chart_animations(page: Page):
+    """Disable animations on all existing Chart instances and future ones to stabilize layouts."""
     page.evaluate("""
         if (window.Chart) {
             Chart.defaults.animation = false;
@@ -268,6 +264,14 @@ def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
             });
         }
     """)
+
+
+def test_canadian_dashboard_province_view_height_stabilizes(page: Page):
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.goto(f'{BASE}/employment_rate_canada.html', wait_until='domcontentloaded', timeout=60000)
+    _wait_for_networkidle(page)
+
+    _disable_chart_animations(page)
 
     def assert_height_stable(toggle_selector: str):
         if toggle_selector:
@@ -301,6 +305,7 @@ def test_flood_dashboard_height_stabilizes(page: Page):
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded', timeout=60000)
     _wait_for_networkidle(page)
+    _disable_chart_animations(page)
 
     tabs = ['gauge', 'history', 'snowpack']
     for tab in tabs:
@@ -333,6 +338,7 @@ def test_flood_charts_no_overflow_card(page: Page):
     """Ensure that charts do not spill out of their cards on the flood dashboard."""
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.goto(f'{BASE}/flood_risk_gatineau_ottawa.html', wait_until='domcontentloaded', timeout=60000)
+    _disable_chart_animations(page)
 
     page.wait_for_selector('canvas#gaugeChart')
     page.wait_for_selector('canvas#comparisonChart')
@@ -376,6 +382,7 @@ def test_viz_elements_have_height(page: Page, filename: str):
     """Ensure that critical visualization elements (canvases, maps) have a non-zero height when visible."""
     page.goto(f'{BASE}/{filename}', wait_until='domcontentloaded', timeout=60000)
     _wait_for_networkidle(page)
+    _disable_chart_animations(page)
 
     # Check multiple tabs if the page has a .tab interface
     tab_count = page.locator('.tab').count()

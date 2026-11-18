@@ -518,7 +518,7 @@ def test_load_remote_delta_unsupported_shows_toast(dz: Page):
     dz.locator('#remote-delta-url').fill('https://example.com/data.delta')
     dz.locator('#load-remote-delta').click()
 
-    toast = dz.locator('[role="alert"]')
+    toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text(re.compile(r'Delta Lake support is not available', re.IGNORECASE))
 
@@ -541,7 +541,7 @@ def test_load_remote_delta_enter_key_submits(dz: Page):
     dz.locator('#remote-delta-url').fill('https://example.com/data.delta')
     dz.locator('#remote-delta-url').press('Enter')
 
-    toast = dz.locator('[role="alert"]')
+    toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text(re.compile(r'Delta Lake support is not available', re.IGNORECASE))
 
@@ -747,6 +747,14 @@ def test_query_history_saves_and_restores(dz: Page):
     chip.click()
     expect(sql_input).to_have_value(test_sql)
 
+    # Reload page and verify history chip is restored
+    dz.reload(wait_until="domcontentloaded")
+    _wait_for_ready(dz)
+    chip_restored = dz.locator('.history-chip', has_text=test_sql)
+    expect(chip_restored).to_be_visible(timeout=10000)
+    chip_restored.click()
+    expect(dz.locator('#sql-input')).to_have_value(test_sql)
+
 
 def test_enter_submits_join_builder(dz: Page):
     """Pressing Enter in a join control generates SQL and focuses the editor."""
@@ -761,6 +769,22 @@ def test_enter_submits_join_builder(dz: Page):
 
     expect(dz.locator('#sql-input')).to_have_value(re.compile(r'JOIN.*dept_id', re.DOTALL))
     expect(dz.locator('#sql-input')).to_be_focused()
+
+
+def test_enter_submits_join_builder_same_table(dz: Page):
+    """Pressing Enter in a join control with same tables reports an error."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    dz.select_option('#join-table-a', label='employees')
+    dz.select_option('#join-table-b', label='employees')
+    dz.locator('#join-col').select_option(label='id')
+    dz.locator('#join-col').press('Enter')
+
+    toast = dz.locator('[role="alert"]').last
+    expect(toast).to_be_visible(timeout=3000)
+    expect(toast).to_contain_text('Please select two different tables to join.')
 
 
 def test_enter_submits_chart_builder(dz: Page):
