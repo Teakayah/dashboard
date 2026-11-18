@@ -57,12 +57,12 @@ def _check_required_env() -> None:
     _load_dotenv()
     OLLAMA_URL = OLLAMA_URL or os.environ.get('OLLAMA_URL', '')
     OLLAMA_MODEL = OLLAMA_MODEL or os.environ.get('OLLAMA_MODEL', '')
-    _missing = [
-        name for name, val in (('OLLAMA_URL', OLLAMA_URL), ('OLLAMA_MODEL', OLLAMA_MODEL))
-        if not val
+    missing = [
+        name for name, value in (('OLLAMA_URL', OLLAMA_URL), ('OLLAMA_MODEL', OLLAMA_MODEL))
+        if not value
     ]
-    if _missing:
-        sys.exit(f"Error: missing required env var(s): {', '.join(_missing)}. Copy .env.example to .env and fill in the values.")
+    if missing:
+        sys.exit(f"Error: missing required env var(s): {', '.join(missing)}. Copy .env.example to .env and fill in the values.")
 
 
 def ollama_describe(content: str, filename: str) -> str:

@@ -6,8 +6,12 @@ import os
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-def load_generate_descriptions_module():
-    with patch.dict(os.environ, {'OLLAMA_URL': 'http://localhost:11434/api/generate', 'OLLAMA_MODEL': 'llama3'}):
+def load_generate_descriptions_module(with_env=True):
+    env = (
+        {'OLLAMA_URL': 'http://localhost:11434/api/generate', 'OLLAMA_MODEL': 'llama3'}
+        if with_env else {}
+    )
+    with patch.dict(os.environ, env, clear=not with_env):
         path = Path(__file__).parent.parent / 'deployment' / 'generate_descriptions.py'
         spec = importlib.util.spec_from_file_location('deployment.generate_descriptions', path)
         module = importlib.util.module_from_spec(spec)
@@ -241,10 +245,15 @@ def test_main_missing_file(tmp_path, capsys):
         captured = capsys.readouterr()
         assert '[skip] missing.html not found' in captured.out
 
+def test_module_import_does_not_require_ollama_env():
+    module = load_generate_descriptions_module(with_env=False)
+
+    assert module.OLLAMA_URL == ''
+    assert module.OLLAMA_MODEL == ''
+
+
 def test_missing_env_vars_exits(tmp_path):
-    module = load_generate_descriptions_module()
-    module.OLLAMA_URL = ''
-    module.OLLAMA_MODEL = ''
+    module = load_generate_descriptions_module(with_env=False)
 
     with patch.object(module, 'ROOT', tmp_path), \
          patch.dict(os.environ, clear=True), \

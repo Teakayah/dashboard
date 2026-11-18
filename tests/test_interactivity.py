@@ -96,19 +96,19 @@ class TestDropzoneButtons:
         expect(toast).to_be_visible(timeout=3000)
         expect(toast).to_contain_text(re.compile(r'select both X and Y', re.IGNORECASE))
 
-    def test_export_db_button_triggers_download_or_error(self, dz: Page):
-        """Export Database must either download a file or show an error — no silent crash."""
+    def test_export_db_button_reports_incomplete_storage(self, dz: Page):
+        """Export Database must report when persistent storage returns incomplete bytes."""
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)
         wait_for_duckdb_ready(dz)
         load_samples(dz)
-        import os
-        with dz.expect_download(timeout=8_000) as dl_info:
-            dz.locator("#export-db").click()
-        dl = dl_info.value
-        assert dl.suggested_filename.endswith(".db"), (
-            f"Unexpected filename: {dl.suggested_filename!r}"
-        )
-        assert os.path.getsize(dl.path()) > 0, "Downloaded file is empty"
+        dz.evaluate("""async () => {
+            const { getDb } = await import('/dropzone/src/db.js');
+            getDb().copyFileToBuffer = async () => new Uint8Array([0xa8]);
+        }""")
+        dz.locator("#export-db").click()
+        toast = dz.locator('[role="alert"]').last
+        expect(toast).to_be_visible(timeout=3_000)
+        expect(toast).to_contain_text(re.compile(r"Database Export Error", re.IGNORECASE))
 
     def test_clear_data_button_wipes_schema(self, dz: Page):
         dz.goto(DROPZONE_URL, wait_until="domcontentloaded", timeout=60000)

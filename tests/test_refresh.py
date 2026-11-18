@@ -124,6 +124,22 @@ def test_main_success_all_steps(mock_subprocess, mock_sys_exit, mock_path, monke
     assert 'git' in calls
     mock_sys_exit.assert_not_called()
 
+
+def test_main_pushes_refresh_changes_to_integration(
+    mock_subprocess, mock_sys_exit, mock_path, monkeypatch
+):
+    module = load_refresh_module()
+    monkeypatch.setattr(sys, 'argv', ['refresh.py'])
+
+    with patch.object(module, '_git', return_value=' M index.html'):
+        module.main()
+
+    mock_subprocess.assert_any_call(
+        ('git', 'push', 'origin', 'integration'),
+        cwd=str(module.ROOT),
+    )
+    mock_sys_exit.assert_not_called()
+
 def test_main_no_push(mock_subprocess, mock_sys_exit, mock_path, monkeypatch):
     module = load_refresh_module()
     monkeypatch.setattr(sys, 'argv', ['refresh.py', '--no-push'])

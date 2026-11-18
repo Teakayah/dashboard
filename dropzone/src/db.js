@@ -36,6 +36,32 @@ export function getCurrentTableName() {
 }
 
 /**
+ * Copies the active DuckDB database to a buffer from its persistent store.
+ * Never return placeholder bytes as a successful export.
+ *
+ * @param {duckdb.AsyncDuckDB} database
+ * @returns {Promise<Uint8Array>}
+ */
+export async function copyDatabaseBuffer(database) {
+    let lastError;
+    for (const path of ['opfs://duckdb_v1.db', 'indexeddb://duckdb']) {
+        try {
+            const buffer = await database.copyFileToBuffer(path);
+            if (buffer.byteLength > 4) {
+                return buffer;
+            }
+            lastError = new Error(`Persistent database file at ${path} is empty or incomplete.`);
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw new Error('DuckDB database export failed: no valid persistent database file could be copied.', {
+        cause: lastError,
+    });
+}
+
+/**
  * Sets the currently active table name.
  * @param {string} name
  */
@@ -91,11 +117,11 @@ export function showInitError(statusEl, message) {
  * Forcefully reloads the application while unregistering any active Service Workers.
  * This serves as an escape hatch when the DuckDB-Wasm initialization times out.
  */
-export function reloadWithoutSW() {
+export async function reloadWithoutSW() {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations()
-            .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-            .then(() => location.reload());
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+        location.reload();
     } else {
         location.reload();
     }
