@@ -1,6 +1,6 @@
 import * as duckdb from '../vendor/duckdb/duckdb-browser.mjs';
 import { MANUAL_BUNDLES, INIT_TIMEOUT_MS } from './config.js';
-import { escapeId, getRows } from './utils.js';
+import { escapeId } from './utils.js';
 
 let db = null;
 let conn = null;

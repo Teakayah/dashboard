@@ -86,7 +86,10 @@ export function triggerDownload(url, filename) {
 }
 
 /**
- * Utility to clear and populate a <select> element.
+ * Clears an existing HTML <select> element and populates it with new options.
+ * This is used extensively in the Join Assistant and Chart Builder UIs to dynamically
+ * update available column choices when new tables are loaded or selected.
+ *
  * @param {HTMLSelectElement} select - The select element to populate.
  * @param {Array<string|Object>} options - Array of values or column objects.
  * @param {string} [defaultMsg] - Optional default disabled option.
@@ -107,7 +110,7 @@ export function populateSelect(select, options, defaultMsg) {
         }
     });
 
-    if (!defaultMsg && options.some(opt => typeof opt === 'object' ? opt.column_name === currentVal : opt === currentVal)) {
+    if (!defaultMsg && options.some(opt => (opt.column_name ?? opt) === currentVal)) {
         select.value = currentVal;
     }
 }
@@ -138,13 +141,7 @@ export function showToast(msg, type = 'error') {
  */
 export function insertAtCursor(myField, myValue) {
     if (myField.selectionStart !== undefined) {
-        const startPos = myField.selectionStart;
-        const endPos = myField.selectionEnd;
-        myField.value = myField.value.substring(0, startPos)
-            + myValue
-            + myField.value.substring(endPos, myField.value.length);
-        myField.selectionStart = startPos + myValue.length;
-        myField.selectionEnd = startPos + myValue.length;
+        myField.setRangeText(myValue, myField.selectionStart, myField.selectionEnd, 'end');
     } else {
         myField.value += myValue;
     }
@@ -181,7 +178,9 @@ export async function withLoading(errorPrefix, asyncFn) {
 }
 
 /**
- * Renders an accessible empty state inside a container using safe DOM elements.
+ * Renders a standardized, accessible empty state inside a container using safe DOM elements.
+ * Prevents broken or blank UIs when data results are empty by providing a visual fallback
+ * with an SVG icon and descriptive text (e.g. for query results or previews).
  *
  * @param {HTMLElement} containerEl - The container element to populate.
  * @param {string} title - Heading for the empty state.
