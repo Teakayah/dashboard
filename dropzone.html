@@ -98,8 +98,68 @@
         }
         .console-actions {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             align-items: center;
+        }
+        .saved-query-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .saved-query-form input {
+            flex: 1;
+            min-width: 180px;
+            padding: 0.45rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            font: inherit;
+            font-size: 0.85rem;
+        }
+        .saved-query-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .saved-query-delete {
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            line-height: 1.2;
+            border-radius: 9999px;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            min-height: 24px;
+            min-width: 24px;
+        }
+        .saved-query-delete:hover {
+            color: #dc2626;
+            border-color: #dc2626;
+            opacity: 1;
+        }
+        .result-chart-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .result-chart-controls select {
+            padding: 0.45rem 0.6rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            font: inherit;
+            font-size: 0.85rem;
+        }
+        .result-chart-canvas-wrap {
+            position: relative;
+            height: 320px;
+            width: 100%;
+            margin-top: 0.75rem;
         }
         textarea {
             width: 100%;
@@ -390,11 +450,12 @@
                     <option value="SELECT *, count(*) as duplicate_count FROM {{TABLE}} GROUP BY ALL HAVING count(*) > 1">Find Duplicate Rows</option>
                 </select>
                 <div style="flex: 1"></div>
-                <button id="clear-data" disabled title="Requires loaded data" class="secondary" style="background-color: #dc2626;">Clear All Data</button>
-                <button id="run-query" disabled title="Requires a valid query">Run Query</button>
-                <button id="download-csv" class="secondary" disabled title="Requires query results">Download Results as CSV</button>
-                <button id="copy-json" class="secondary" disabled title="Requires query results">Copy JSON</button>
-                <button id="export-db" disabled title="Requires loaded data" class="secondary" style="background-color: #7c3aed;">Export Database (.db)</button>
+                <button type="button" id="clear-data" disabled title="Requires loaded data" class="secondary" style="background-color: #dc2626;">Clear All Data</button>
+                <button type="button" id="run-query" disabled title="Requires a valid query">Run Query</button>
+                <button type="button" id="download-csv" class="secondary" disabled title="Requires query results">Download Results as CSV</button>
+                <button type="button" id="download-parquet" class="secondary" disabled title="Requires query results">Export Parquet</button>
+                <button type="button" id="copy-json" class="secondary" disabled title="Requires query results">Copy JSON</button>
+                <button type="button" id="export-db" disabled title="Requires loaded data" class="secondary" style="background-color: #7c3aed;">Export Database (.db)</button>
             </div>
             <div class="input-wrapper">
                 <label for="sql-input" class="visually-hidden">SQL query input</label>
@@ -403,8 +464,39 @@
                 <div class="run-hint" aria-hidden="true"><kbd>⌘/Ctrl</kbd>+<kbd>Enter</kbd> to run</div>
             </div>
             <div id="query-history" class="query-history-container"></div>
+            <form id="save-query-form" class="saved-query-form">
+                <label for="save-query-name" class="visually-hidden">Save current SQL query name</label>
+                <input type="text" id="save-query-name" name="save_query_name" placeholder="Name current SQL query to save..." autocomplete="off">
+                <button type="submit" id="save-query-btn" class="secondary" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;">Save Query</button>
+            </form>
+            <div id="saved-queries" class="query-history-container" style="display: none;"></div>
             <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 5px;">Tip: Click column names in the schema above to insert them into your query.</p>
         </div>
+
+        <section id="result-chart-panel" class="sql-console" style="display: none; border-left: 4px solid var(--primary);">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: var(--primary);">📈 Visualize Query Results</div>
+                <button type="button" id="toggle-result-chart" class="secondary" aria-expanded="false" aria-controls="result-chart-body" style="padding: 0.4rem 0.9rem; font-size: 0.85rem;">Show Chart</button>
+            </div>
+            <div id="result-chart-body" style="display: none;">
+                <div class="result-chart-controls">
+                    <label for="result-chart-type">Type:</label>
+                    <select id="result-chart-type">
+                        <option value="bar">Bar Chart</option>
+                        <option value="line">Line Chart</option>
+                        <option value="scatter">Scatter Plot</option>
+                    </select>
+                    <label for="result-chart-x">X-Axis:</label>
+                    <select id="result-chart-x"></select>
+                    <label for="result-chart-y">Y-Axis:</label>
+                    <select id="result-chart-y"></select>
+                    <button type="button" id="download-result-chart" class="secondary" aria-label="Download query chart as PNG" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;">💾 Download PNG</button>
+                </div>
+                <div class="result-chart-canvas-wrap">
+                    <canvas id="result-chart-canvas" role="img" aria-label="Query results visualization"></canvas>
+                </div>
+            </div>
+        </section>
 
         <div id="results" class="results-container">
             <div class="empty" style="text-align: center; padding: 40px 20px;">

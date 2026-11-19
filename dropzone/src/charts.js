@@ -242,3 +242,62 @@ export async function generateInstantCharts(tableName, conn, getSchemaFn, previe
         }, previewsContainer);
     }
 }
+
+/**
+ * Renders a live Chart.js visualization directly from arbitrary SQL query result rows.
+ * Limits points to 200 rows for responsive browser performance.
+ *
+ * @param {string} canvasId - Target canvas element ID.
+ * @param {Array<Object>} rows - Query result rows from DuckDB.
+ * @param {'bar'|'line'|'scatter'} type - Chart.js chart type.
+ * @param {string} xCol - Column name for the X-axis / labels.
+ * @param {string} yCol - Column name for the Y-axis numeric values.
+ */
+export function renderQueryResultChart(canvasId, rows, type, xCol, yCol) {
+    if (!rows || rows.length === 0 || !xCol || !yCol) return;
+    const sample = rows.slice(0, 200);
+    const toNum = (v) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+    };
+
+    if (type === 'scatter') {
+        const points = sample
+            .map(r => ({ x: toNum(r[xCol]), y: toNum(r[yCol]) }))
+            .filter(p => p.x !== null && p.y !== null);
+        renderChart(canvasId, 'scatter', {
+            datasets: [{
+                label: `${yCol} vs ${xCol}`,
+                data: points,
+                backgroundColor: '#1d4ed8'
+            }]
+        }, {
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: xCol } },
+                y: { title: { display: true, text: yCol } }
+            }
+        });
+        return;
+    }
+
+    const labels = sample.map(r => r[xCol] === null || r[xCol] === undefined ? '' : String(r[xCol]));
+    const values = sample.map(r => toNum(r[yCol]));
+    renderChart(canvasId, type, {
+        labels,
+        datasets: [{
+            label: yCol,
+            data: values,
+            backgroundColor: type === 'bar' ? '#2563eb' : 'rgba(37, 99, 235, 0.15)',
+            borderColor: '#1d4ed8',
+            tension: 0.15,
+            fill: false
+        }]
+    }, {
+        maintainAspectRatio: false,
+        scales: {
+            x: { title: { display: true, text: xCol } },
+            y: { title: { display: true, text: yCol } }
+        }
+    });
+}

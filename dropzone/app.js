@@ -10,12 +10,13 @@ import {
     showEmptyState,
     getFilePath
 } from './src/utils.js';
-import { addToHistory, renderHistory } from './src/history.js';
+import { addToHistory, renderHistory, saveQuery, renderSavedQueries } from './src/history.js';
 import {
     destroyCharts,
     renderChart,
     createPreviewCard,
-    generateInstantCharts
+    generateInstantCharts,
+    renderQueryResultChart
 } from './src/charts.js';
 import {
     initDuckDB,
@@ -38,6 +39,7 @@ const sqlInput = document.getElementById('sql-input');
 const runBtn = document.getElementById('run-query');
 const clearBtn = document.getElementById('clear-data');
 const downloadBtn = document.getElementById('download-csv');
+const downloadParquetBtn = document.getElementById('download-parquet');
 const copyJsonBtn = document.getElementById('copy-json');
 const loadSamplesBtn = document.getElementById('load-samples');
 const exportDbBtn = document.getElementById('export-db');
@@ -50,6 +52,18 @@ const loadRemoteDeltaBtn = document.getElementById('load-remote-delta');
 const initProgressContainer = document.getElementById('init-progress-container');
 const initProgress = document.getElementById('init-progress');
 const queryHistoryEl = document.getElementById('query-history');
+const saveQueryForm = document.getElementById('save-query-form');
+const saveQueryNameInput = document.getElementById('save-query-name');
+const savedQueriesEl = document.getElementById('saved-queries');
+
+// Live Result Chart Elements
+const resultChartPanel = document.getElementById('result-chart-panel');
+const toggleResultChartBtn = document.getElementById('toggle-result-chart');
+const resultChartBody = document.getElementById('result-chart-body');
+const resultChartType = document.getElementById('result-chart-type');
+const resultChartX = document.getElementById('result-chart-x');
+const resultChartY = document.getElementById('result-chart-y');
+const downloadResultChartBtn = document.getElementById('download-result-chart');
 
 // Join Assistant Elements
 const joinAssistant = document.getElementById('join-assistant');
@@ -90,8 +104,77 @@ function setProgress(percent) {
     initProgress.style.width = `${percent}%`;
 }
 
-// Initial history render
+// Initial history & saved queries render
 renderHistory(queryHistoryEl, sqlInput);
+renderSavedQueries(savedQueriesEl, sqlInput);
+
+saveQueryForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = saveQueryNameInput?.value.trim() || '';
+    const sql = sqlInput.value.trim();
+    if (!sql) {
+        showToast('Enter a SQL query before saving.');
+        sqlInput.focus();
+        return;
+    }
+    if (!name) {
+        showToast('Enter a name for the saved query.');
+        saveQueryNameInput?.focus();
+        return;
+    }
+    if (saveQuery(name, sql, savedQueriesEl, sqlInput)) {
+        saveQueryNameInput.value = '';
+    }
+});
+
+function hideResultChartPanel() {
+    if (!resultChartPanel || !resultChartBody || !toggleResultChartBtn) return;
+    destroyCharts(resultChartBody);
+    resultChartBody.style.display = 'none';
+    resultChartPanel.style.display = 'none';
+    toggleResultChartBtn.setAttribute('aria-expanded', 'false');
+    toggleResultChartBtn.textContent = 'Show Chart';
+}
+
+function drawResultChart() {
+    if (!lastResult || lastResult.length === 0 || !resultChartX || !resultChartY || !resultChartType) return;
+    renderQueryResultChart(
+        'result-chart-canvas',
+        lastResult,
+        resultChartType.value,
+        resultChartX.value,
+        resultChartY.value
+    );
+}
+
+toggleResultChartBtn?.addEventListener('click', () => {
+    const isExpanded = toggleResultChartBtn.getAttribute('aria-expanded') === 'true';
+    const nextExpanded = !isExpanded;
+    toggleResultChartBtn.setAttribute('aria-expanded', String(nextExpanded));
+    toggleResultChartBtn.textContent = nextExpanded ? 'Hide Chart' : 'Show Chart';
+    resultChartBody.style.display = nextExpanded ? 'block' : 'none';
+    if (nextExpanded) {
+        drawResultChart();
+    } else {
+        destroyCharts(resultChartBody);
+    }
+});
+
+[resultChartType, resultChartX, resultChartY].forEach(ctrl => {
+    ctrl?.addEventListener('change', () => {
+        if (toggleResultChartBtn?.getAttribute('aria-expanded') === 'true') {
+            drawResultChart();
+        }
+    });
+});
+
+downloadResultChartBtn?.addEventListener('click', () => {
+    const canvas = document.getElementById('result-chart-canvas');
+    if (!canvas) return;
+    const url = canvas.toDataURL('image/png');
+    triggerDownload(url, `query_chart_${Date.now()}.png`);
+    showToast('Downloaded query chart as PNG', 'success');
+});
 
 /**
  * Restores the Analytical Drop-Zone UI state after a browser reload.
@@ -670,6 +753,10 @@ async function runQuery() {
         const hasResults = lastResult.length > 0;
         downloadBtn.disabled = !hasResults;
         downloadBtn.title = hasResults ? 'Download Results as CSV' : 'Requires query results';
+        if (downloadParquetBtn) {
+            downloadParquetBtn.disabled = !hasResults;
+            downloadParquetBtn.title = hasResults ? 'Export Results as Parquet' : 'Requires query results';
+        }
         copyJsonBtn.disabled = !hasResults;
         copyJsonBtn.title = hasResults ? 'Copy JSON' : 'Requires query results';
         statusEl.textContent = `Query executed in ${duration}ms`;
@@ -686,6 +773,7 @@ function renderResults(rows) {
     const resultsContainer = document.getElementById('results');
     if (rows.length === 0) {
         destroyGrid();
+        hideResultChartPanel();
         showEmptyState(
             resultsContainer,
             'No results found',
@@ -695,6 +783,19 @@ function renderResults(rows) {
         return;
     }
     const columns = Object.keys(rows[0]);
+
+    if (resultChartPanel && resultChartX && resultChartY && columns.length >= 2) {
+        populateSelect(resultChartX, columns);
+        populateSelect(resultChartY, columns);
+        const numericCol = columns.find((col, idx) => idx > 0 && Number.isFinite(Number(rows[0][col])));
+        resultChartY.value = numericCol || columns[columns.length - 1];
+        resultChartPanel.style.display = 'flex';
+        if (toggleResultChartBtn?.getAttribute('aria-expanded') === 'true') {
+            drawResultChart();
+        }
+    } else {
+        hideResultChartPanel();
+    }
 
     if (gridInstance) {
         gridInstance.updateConfig({
@@ -730,6 +831,25 @@ downloadBtn.addEventListener('click', async () => {
         triggerDownload(url, `query_results_${new Date().getTime()}.csv`);
         URL.revokeObjectURL(url);
         showToast('Downloaded results as CSV', 'success');
+    });
+});
+
+downloadParquetBtn?.addEventListener('click', async () => {
+    if (!lastResult || lastResult.length === 0) return;
+    await withLoading('Parquet Export Error', async () => {
+        const parquetPath = 'export.parquet';
+        const userQuery = sqlInput.value.trim().replace(/;+$/, '');
+        const conn = getConnection();
+        const db = getDb();
+        await conn.query(`COPY (${userQuery}) TO '${parquetPath}' (FORMAT PARQUET)`);
+
+        const content = await db.copyFileToBuffer(parquetPath);
+        await db.dropFile(parquetPath);
+        const blob = new Blob([content], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        triggerDownload(url, `query_results_${Date.now()}.parquet`);
+        URL.revokeObjectURL(url);
+        showToast('Exported results as Parquet', 'success');
     });
 });
 
@@ -833,6 +953,7 @@ clearBtn.addEventListener('click', async () => {
         destroyCharts(previewsContainer);
         previewsContainer.textContent = '';
         destroyGrid();
+        hideResultChartPanel();
         showEmptyState(
             document.getElementById('results'),
             'No data to display',
@@ -843,6 +964,10 @@ clearBtn.addEventListener('click', async () => {
         sqlInput.dispatchEvent(new Event('input'));
         downloadBtn.disabled = true;
         downloadBtn.title = 'Requires query results';
+        if (downloadParquetBtn) {
+            downloadParquetBtn.disabled = true;
+            downloadParquetBtn.title = 'Requires query results';
+        }
         copyJsonBtn.disabled = true;
         copyJsonBtn.title = 'Requires query results';
         await refreshUIPanels();

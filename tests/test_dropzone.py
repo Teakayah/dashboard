@@ -800,3 +800,82 @@ def test_enter_submits_chart_builder(dz: Page):
     toast = dz.locator('[role="alert"]').last
     expect(toast).to_be_visible(timeout=3000)
     expect(toast).to_contain_text('Please select both X and Y axes.')
+
+
+def test_visualize_query_results_chart_and_png_export(dz: Page):
+    """Running a multi-column query reveals the live result visualizer and supports PNG export."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill('SELECT name, salary FROM "employees" ORDER BY salary DESC')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    panel = dz.locator('#result-chart-panel')
+    expect(panel).to_be_visible(timeout=ACTION_TIMEOUT)
+
+    toggle = dz.locator('#toggle-result-chart')
+    expect(toggle).to_have_attribute('aria-expanded', 'false')
+    toggle.click()
+    expect(toggle).to_have_attribute('aria-expanded', 'true')
+    expect(dz.locator('#result-chart-canvas')).to_be_visible()
+
+    dz.select_option('#result-chart-type', 'line')
+    has_chart = dz.evaluate("Boolean(window.Chart && window.Chart.getChart('result-chart-canvas'))")
+    assert has_chart, "Expected Chart.js instance on #result-chart-canvas"
+
+    with dz.expect_download() as download_info:
+        dz.locator('#download-result-chart').click()
+    dl = download_info.value
+    assert dl.suggested_filename.endswith('.png')
+    assert os.path.getsize(dl.path()) > 0
+
+
+def test_parquet_export_downloads_valid_file(dz: Page):
+    """Clicking Export Parquet downloads a valid Parquet file with PAR1 magic bytes."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+    _load_samples_and_wait(dz)
+
+    dz.locator('#sql-input').fill('SELECT id, name, salary FROM "employees" LIMIT 3')
+    dz.locator('#run-query').click()
+    dz.wait_for_selector('.gridjs-tbody tr', timeout=ACTION_TIMEOUT)
+
+    expect(dz.locator('#download-parquet')).to_be_enabled()
+    with dz.expect_download() as download_info:
+        dz.locator('#download-parquet').click()
+
+    dl = download_info.value
+    assert dl.suggested_filename.startswith('query_results_')
+    assert dl.suggested_filename.endswith('.parquet')
+    raw = Path(dl.path()).read_bytes()
+    assert raw[:4] == b'PAR1', f"Expected Parquet magic header PAR1, got {raw[:4]!r}"
+
+
+def test_saved_queries_persist_and_delete(dz: Page):
+    """Users can save named SQL queries to localStorage, reload, restore, and delete them."""
+    dz.goto(DROPZONE, wait_until="domcontentloaded", timeout=60000)
+    _wait_for_ready(dz)
+
+    sql = 'SELECT name, salary FROM "employees" WHERE salary > 80000'
+    dz.locator('#sql-input').fill(sql)
+    dz.locator('#save-query-name').fill('Top Salaries')
+    dz.locator('#save-query-btn').click()
+
+    chip = dz.locator('.saved-query-chip', has_text='Top Salaries')
+    expect(chip).to_be_visible(timeout=5000)
+
+    # Reload and confirm persistence
+    dz.reload(wait_until="domcontentloaded")
+    _wait_for_ready(dz)
+    chip_after = dz.locator('.saved-query-chip', has_text='Top Salaries')
+    expect(chip_after).to_be_visible(timeout=5000)
+
+    dz.locator('#sql-input').fill('')
+    chip_after.click()
+    expect(dz.locator('#sql-input')).to_have_value(sql)
+
+    # Delete saved query
+    dz.locator('button[aria-label="Delete saved query: Top Salaries"]').click()
+    expect(dz.locator('.saved-query-chip', has_text='Top Salaries')).to_have_count(0)
