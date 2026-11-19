@@ -188,6 +188,7 @@
         }
         button:disabled { background-color: #94a3b8; cursor: not-allowed; }
         button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+        .unified-header .share-btn:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
         .results-container {
             background: var(--card-bg);
             border-radius: 0.75rem;
@@ -359,7 +360,7 @@
     <a href="https://teakayah.github.io/dashboard/" style="opacity:0.7;">Analyses</a>
   </div>
   <div class="nav-links">
-    <button class="share-btn" id="share-btn" aria-live="polite">Share</button>
+    <button type="button" class="share-btn" id="share-btn" aria-live="polite">Share</button>
   </div>
 </header>
 
@@ -370,7 +371,7 @@
                     <h1>Analytical Drop-Zone</h1>
                     <p>Drag & Drop CSV, JSON, Parquet, or Delta Lake files to query them locally with SQL.</p>
                 </div>
-                <button id="load-samples" class="secondary" style="background-color: #4f46e5;">Load Sample Datasets</button>
+                <button type="button" id="load-samples" class="secondary" style="background-color: #4f46e5;">Load Sample Datasets</button>
             </div>
             <div id="status" aria-live="polite">Initializing DuckDB...</div>
             <div class="progress-container" id="init-progress-container"><div id="init-progress"></div></div>

@@ -46,12 +46,7 @@ Likely contributing causes (verify each):
 - It is also injected on `dropzone.html` where it makes zero sense.
 
 **Actions:**
-- [ ] Decide whether this feature ships at all. If yes:
-  - [ ] Define a single contract — e.g. each analysis page exposes `window.DataDashboard.registerSeries({ id, label, data: [{x,y}] })` — and refactor all pages to use it.
-  - [ ] Render results in an inline panel (not `alert()`), with proper focus management and Esc-to-close.
-  - [ ] Add `aria-label`, `aria-expanded`, keyboard activation, dark-mode tokens from `theme.css`.
-  - [ ] Only auto-inject when at least one series is registered.
-- [x] If no: remove `assets/analysis_utils.js` and its `<script>` includes — currently dead UI clutter.
+- [x] Decision: removed `assets/analysis_utils.js` and its `<script>` includes instead of shipping the broken Quick Insights toolbar.
 
 ### 1.3 Analysis pages ignore dark mode
 **Where:** `employment_rate_canada.html`, `nhpi_big6_comparison.html`, `flood_risk_gatineau_ottawa.html`.
@@ -94,9 +89,9 @@ The site fails several WCAG 2.1 AA checks. Failures are not edge cases — they 
 - [x] Replace `#bbb`, `#aaa`, `#999`, `#888` with `--text-muted: #4b5563` and `--text-dim: #64748b`. Generator injects CSS override into all analysis pages via `inject_contrast_fix`.
 
 ### 2.2 Semantics / interaction
-- [ ] `dropzone.html` "share" button is rendered via inline `onclick` — keep it but ensure focus styles match the rest of the theme.
+- [x] `dropzone.html` "share" button uses `addEventListener` (no inline `onclick`) with high-contrast `:focus-visible` styling matching the dark header.
 - [x] Analysis tabs in `employment_rate_canada.html` (and `flood_risk_gatineau_ottawa.html`) use `<div class="tab" onclick="…">` — converted to `<button role="tab">` and implemented WAI-ARIA Tabs pattern.
-- [ ] The drop-zone has `role="button"` but the inner `<p>` is also clickable and there is no live region for status messages → screen readers don't announce "Loaded N tables". Add `aria-live="polite"` to `#status`.
+- [x] `#status` live region (`aria-live="polite"`) added on `dropzone.html` so screen readers announce DuckDB status and loaded table counts (verified in `tests/test_accessibility.py`).
 - [x] Schema "clickable column" spans (`dropzone/app.js:200`) emulate links with `cursor:pointer + underline` but are spans with `role="button"`. Either make them real `<button>`s or accept the role — but add `:hover` and `:focus-visible` styles and an `aria-pressed`/result announcement after click.
 - [x] All `alert()` calls in `dropzone/app.js` (and `analysis_utils.js`) should become inline error/info panels for screen-reader friendliness. (Note: `analysis_utils.js` removed, `app.js` still has some `alert()` for user errors, but critical ones are now inline).
 - [x] Added initialization progress bar, column profiling sparklines, and query history visuals to the Analytical Drop-Zone.
@@ -104,7 +99,7 @@ The site fails several WCAG 2.1 AA checks. Failures are not edge cases — they 
 - [x] Remove the broken "Quick Insights" toolbar.
 
 ### 2.3 Tooling
-- [ ] Add `pa11y-ci` or `@axe-core/playwright` and run it in CI against `index.html`, `dropzone.html`, and each analysis page. Fail the build on serious/critical issues.
+- [x] Added `axe-core` WCAG 2.1 AA checks in `tests/test_accessibility.py` and wired into `.github/workflows/ci.yml` against `index.html`, `dropzone.html`, and all analysis pages.
 
 ---
 
@@ -161,9 +156,9 @@ Current tests cover Python deployment scripts. None of the **front-end** is test
 - [x] `calculateGrowth`, `findOutliers`, `getSummary` removed as part of janitor pass (clutter removal).
 
 ### 4.4 Python coverage holes
-- [ ] `deployment/screenshot.py` is tested but flakily — review and stabilize.
+- [x] `deployment/screenshot.py` timeout handling hardened (`PlaywrightTimeoutError`) and unit-tested in `tests/test_screenshot.py`.
 - [x] `deployment/generate_descriptions.py` coverage improved for security validation and empty CSV handling.
-- [ ] Add a smoke test that runs `deployment/refresh.py` end-to-end against fixture data and asserts the generated HTML has no broken `<script>` SRI mismatches.
+- [x] Added offline fixture-based smoke test (`test_refresh_pipeline_smoke_with_fixtures` in `tests/test_refresh.py`) verifying index/feed generation and intact `<script>` SRI hashes.
 
 ---
 

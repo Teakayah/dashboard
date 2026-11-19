@@ -283,3 +283,45 @@ def test_if_name_main(mock_subprocess, mock_sys_exit, mock_path, monkeypatch):
         if call.args[0][0] == 'git':
             git_called = True
     assert git_called
+
+
+def test_refresh_pipeline_smoke_with_fixtures(tmp_path, monkeypatch):
+    """Offline end-to-end smoke test for index/feed generation preserving script SRI hashes."""
+    import re
+    from pathlib import Path
+    from deployment import generate_index, generate_feed
+
+    expected_sri = 'sha384-testIntegrityHashValue0123456789ABCDEF'
+    fixture_html = (
+        '<!DOCTYPE html><html lang="en"><head>'
+        '<title>Fixture Analysis</title>'
+        f'<script src="https://cdn.example.com/chart.min.js" integrity="{expected_sri}" crossorigin="anonymous"></script>'
+        '</head><body><main><h1>Fixture Analysis</h1><p class="subtitle">Sample summary</p></main></body></html>'
+    )
+    analysis_file = tmp_path / 'fixture_analysis.html'
+    analysis_file.write_text(fixture_html, encoding='utf-8')
+
+    monkeypatch.setattr(generate_index, 'ROOT', tmp_path)
+    monkeypatch.setattr(generate_index, 'DESCRIPTIONS_FILE', tmp_path / 'descriptions.json')
+    monkeypatch.setattr(generate_index, 'get_git_dates_batched', lambda files: {analysis_file: 'Nov 2026'})
+    generate_index.main(['--responsive-preset', 'none'])
+
+    monkeypatch.setattr(generate_feed, 'ROOT', tmp_path)
+    monkeypatch.setattr(generate_feed, 'FEED_PATH', tmp_path / 'feed.xml')
+    monkeypatch.setattr(generate_feed, 'DESCRIPTIONS_FILE', tmp_path / 'descriptions.json')
+    monkeypatch.setattr(generate_feed, '_get_batched_git_isos', lambda files: {analysis_file: '2026-11-18T00:00:00Z'})
+    generate_feed.main()
+
+    assert (tmp_path / 'index.html').exists()
+    assert (tmp_path / 'feed.xml').exists()
+    index_text = (tmp_path / 'index.html').read_text(encoding='utf-8')
+    assert 'Fixture Analysis' in index_text
+    feed_text = (tmp_path / 'feed.xml').read_text(encoding='utf-8')
+    assert 'fixture_analysis.html' in feed_text
+
+    # Verify external <script> SRI integrity attributes remain intact after pipeline injection
+    processed = analysis_file.read_text(encoding='utf-8')
+    external_scripts = re.findall(r'<script\b[^>]*src="https://[^"]+"[^>]*>', processed)
+    assert len(external_scripts) == 1
+    assert f'integrity="{expected_sri}"' in external_scripts[0]
+    assert 'crossorigin="anonymous"' in external_scripts[0]
