@@ -1,0 +1,92 @@
+name: Weekly Data Refresh (StatCan & Flood)
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: weekly-data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh-data:
+    name: Fetch Latest Data & Open PR to main
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4.3.1
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Cache Playwright Chromium Binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('requirements.txt') }}
+
+      - name: Install Playwright Chromium with dependencies
+        run: python -m playwright install --with-deps chromium
+
+      - name: Fetch StatCan & Flood datasets and rebuild analyses
+        run: |
+          mkdir -p source
+          python3 deployment/update_statcan_data.py || [ $? -eq 1 ]
+          python3 deployment/update_flood_data.py
+          python3 deployment/rebuild_analyses.py || [ $? -eq 1 ]
+
+      - name: Check for analysis updates
+        id: changes
+        run: |
+          CHANGED=$(git diff --name-only employment_rate_canada.html nhpi_big6_comparison.html flood_risk_gatineau_ottawa.html)
+          if [ -n "$CHANGED" ]; then
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+            echo "Changed analysis pages:"
+            echo "$CHANGED"
+          else
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+            echo "No analysis pages changed."
+          fi
+
+      - name: Run full test suite on updated pages
+        if: steps.changes.outputs.updated == 'true'
+        run: pytest tests/ -v --tb=short
+
+      - name: Push refresh branch and open PR to main
+        if: steps.changes.outputs.updated == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="chore/weekly-data-refresh"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add employment_rate_canada.html nhpi_big6_comparison.html flood_risk_gatineau_ottawa.html
+          git commit -m "chore: weekly StatCan and flood data refresh ($(date -u +%Y-%m-%d))"
+          git push origin "$BRANCH" --force-with-lease
+
+          EXISTING_PR=$(gh pr list --base main --head "$BRANCH" --state open --json number --jq '.[0].number')
+          if [ -z "$EXISTING_PR" ]; then
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "chore: weekly data refresh ($(date -u +%Y-%m-%d))" \
+              --body "Automated weekly refresh of Statistics Canada and Ottawa-Gatineau flood datasets. All unit and Playwright tests passed. Merging into \`main\` will trigger \`deploy.yml\` to refresh \`index.html\`, \`feed.xml\`, and previews and sync \`integration\`."
+          else
+            echo "Updated existing open PR #$EXISTING_PR"
+          fi
